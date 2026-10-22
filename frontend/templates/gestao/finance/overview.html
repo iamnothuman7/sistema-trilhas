@@ -1,0 +1,184 @@
+{% extends "gestao/base_gestao.html" %}
+
+{% block title %}Financeiro Gerencial: {{ event.title }} | Painel Gestão{% endblock %}
+{% block gestao_header %}Demonstrativo Financeiro & Conciliação: {{ event.title }}{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF;">Financeiro da Edição</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Extrato gerencial, conciliação do Mercado Pago e despesas operacionais.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <button type="button" class="btn btn-primary" onclick="document.getElementById('expenseModal').style.display = 'block'">
+            + Nova Despesa
+        </button>
+        <a href="{% url 'gestao:export_financial' event_id=event.id %}" class="btn btn-secondary">
+            📥 Exportar Extrato (CSV)
+        </a>
+    </div>
+</div>
+
+<!-- Resumo do Caixa e Resultado -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+    <div class="card" style="border-top: 4px solid var(--secondary);">
+        <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Receitas Confirmadas (MP)</div>
+        <div style="font-size: 1.8rem; font-weight: 900; color: #FFF; margin-top: 0.25rem;">
+            R$ {{ kpi.total_received_cents|stringformat:"d"|slice:":-2"|default:"0" }},{{ kpi.total_received_cents|stringformat:"d"|slice:"-2:"|default:"00" }}
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--accent);">
+        <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Tarifas Mercado Pago</div>
+        <div style="font-size: 1.8rem; font-weight: 900; color: #F87171; margin-top: 0.25rem;">
+            - R$ {{ kpi.total_fees_cents|stringformat:"d"|slice:":-2"|default:"0" }},{{ kpi.total_fees_cents|stringformat:"d"|slice:"-2:"|default:"00" }}
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid #F59E0B;">
+        <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Despesas Operacionais Pagas</div>
+        <div style="font-size: 1.8rem; font-weight: 900; color: #FBBF24; margin-top: 0.25rem;">
+            - R$ {{ kpi.total_expenses_cents|stringformat:"d"|slice:":-2"|default:"0" }},{{ kpi.total_expenses_cents|stringformat:"d"|slice:"-2:"|default:"00" }}
+        </div>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--primary);">
+        <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Resultado Líquido Caixa</div>
+        <div style="font-size: 1.8rem; font-weight: 900; color: var(--primary); margin-top: 0.25rem;">
+            R$ {{ kpi.net_profit_cents|stringformat:"d"|slice:":-2"|default:"0" }},{{ kpi.net_profit_cents|stringformat:"d"|slice:"-2:"|default:"00" }}
+        </div>
+    </div>
+</div>
+
+<!-- Tabela de Despesas Operacionais -->
+<div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+        <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">Despesas Operacionais e Fornecedores</h2>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Fornecedor</th>
+                    <th>Valor</th>
+                    <th>Vencimento</th>
+                    <th>Situação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exp in expenses %}
+                    <tr>
+                        <td style="font-weight: 700; color: #FFF;">{{ exp.description }}</td>
+                        <td><span class="badge badge-info">{{ exp.get_category_display }}</span></td>
+                        <td>{{ exp.vendor.name|default:"Geral / Avulso" }}</td>
+                        <td style="font-weight: 800; color: var(--accent);">
+                            R$ {{ exp.amount_cents|stringformat:"d"|slice:":-2" }},{{ exp.amount_cents|stringformat:"d"|slice:"-2:" }}
+                        </td>
+                        <td>{{ exp.due_at|date:"d/m/Y" }}</td>
+                        <td>
+                            <span class="badge {% if exp.status == 'PAID' %}badge-success{% else %}badge-warning{% endif %}">
+                                {{ exp.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                            Nenhuma despesa operacional cadastrada ainda.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Livro Razão Imutável (Financial Ledger) -->
+<div class="card">
+    <div class="card-header">
+        <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">Livro Razão Gerencial (Lançamentos Imutáveis)</h2>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Data / Hora</th>
+                    <th>Tipo de Movimento</th>
+                    <th>Descrição</th>
+                    <th>Valor</th>
+                    <th>Referência</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                    <tr>
+                        <td style="font-size: 0.85rem; color: var(--text-muted);">{{ entry.recognized_at|date:"d/m/Y H:i" }}</td>
+                        <td><span class="badge badge-warning">{{ entry.get_kind_display }}</span></td>
+                        <td style="color: #FFF; font-weight: 600;">{{ entry.description }}</td>
+                        <td style="font-weight: 800; font-family: monospace; font-size: 1.05rem; color: {% if entry.amount_cents_signed >= 0 %}#34D399{% else %}#F87171{% endif %};">
+                            {{ entry.formatted_amount }}
+                        </td>
+                        <td style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">{{ entry.source_reference }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                            Nenhum lançamento no livro razão gerencial.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal para Nova Despesa -->
+<div id="expenseModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="card" style="max-width: 500px; margin: 10% auto;">
+        <div class="card-header">
+            <h3 style="color: #FFF; font-size: 1.2rem;">Lançar Nova Despesa</h3>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('expenseModal').style.display = 'none'">&times;</button>
+        </div>
+
+        <form method="POST" action="{% url 'gestao:add_expense' event_id=event.id %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Descrição da Despesa *</label>
+                <input type="text" name="description" class="form-control" required placeholder="Ex: Confecção de 200 Camisetas">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Categoria de Custo *</label>
+                <select name="category" class="form-control">
+                    <option value="KITS_CAMISETAS">Kits e Camisetas</option>
+                    <option value="ALIMENTACAO">Alimentação e Bebidas</option>
+                    <option value="ESTRUTURA">Estrutura, Som e Pódio</option>
+                    <option value="PREMIACOES">Troféus e Medalhas</option>
+                    <option value="RESGATE">Combustível e Resgate</option>
+                    <option value="MARKETING">Marketing e Mídia</option>
+                    <option value="OUTROS">Outros</option>
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Valor (R$) *</label>
+                    <input type="text" name="amount" class="form-control" required placeholder="1500,00">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Data de Vencimento *</label>
+                    <input type="date" name="due_at" class="form-control" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
+                Gravar Despesa
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

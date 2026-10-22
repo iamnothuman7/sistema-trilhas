@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Pagamento do Pedido #{{ order.merchant_reference }} | Equipe Morcego{% endblock %}
+
+{% block content %}
+<div class="container container-narrow" style="padding: 3.5rem 1.25rem;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <span class="badge badge-warning">ETAPA FINAL: PAGAMENTO</span>
+        <h1 style="font-size: 2.2rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
+            Revise Seu Pedido e Escolha Como Pagar
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+            Referência: <strong>#{{ order.merchant_reference }}</strong> &bull; Vagas reservadas temporariamente
+        </p>
+    </div>
+
+    <!-- Resumo dos Itens e Valores -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">Resumo da Inscrição</h2>
+            <span class="badge badge-warning">Reserva Ativa</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
+            {% for line in order.lines.all %}
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+                    <div>
+                        <div style="font-weight: 800; color: #FFF; font-size: 1.05rem;">
+                            {{ line.intended_person_name }}
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 0.85rem;">
+                            {{ line.item_snapshot_json.product_name }} &bull; Camiseta Tam. {{ line.intended_variant_code }}
+                        </div>
+                    </div>
+                    <div style="font-weight: 800; color: var(--primary); font-size: 1.1rem;">
+                        R$ {{ line.net_cents|stringformat:"d"|slice:":-2" }},{{ line.net_cents|stringformat:"d"|slice:"-2:" }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Totais -->
+        <div style="background-color: var(--surface-hover); padding: 1.25rem; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 0.5rem;">
+            <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.95rem;">
+                <span>Subtotal Bruto:</span>
+                <span>R$ {{ order.formatted_gross }}</span>
+            </div>
+            {% if order.discount_cents > 0 %}
+                <div style="display: flex; justify-content: space-between; color: var(--secondary); font-size: 0.95rem;">
+                    <span>Desconto do Cupom:</span>
+                    <span>- R$ {{ order.formatted_discount }}</span>
+                </div>
+            {% endif %}
+            <div style="display: flex; justify-content: space-between; font-size: 1.35rem; font-weight: 900; color: #FFF; border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 0.25rem;">
+                <span>Total a Pagar:</span>
+                <span style="color: var(--primary);">R$ {{ order.formatted_total }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Meios de Pagamento Mercado Pago -->
+    <div class="card">
+        <h2 style="font-size: 1.3rem; font-weight: 800; color: #FFF; margin-bottom: 1.5rem; text-align: center;">
+            Selecione o Meio de Pagamento
+        </h2>
+
+        <!-- Opção 1: Pix Instantâneo -->
+        <div style="border: 2px solid var(--primary); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; background: rgba(245, 158, 11, 0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="font-size: 2rem;">⚡</span>
+                    <div>
+                        <div style="font-size: 1.2rem; font-weight: 800; color: #FFF;">Pix Instantâneo</div>
+                        <div style="color: #10B981; font-size: 0.85rem; font-weight: 700;">Confirmação Imediata &bull; Sem taxa extra</div>
+                    </div>
+                </div>
+                <span class="badge badge-success">RECOMENDADO</span>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+                Você receberá o QR Code e o código Copia-e-Cola do Mercado Pago. O sistema identifica seu pagamento em tempo real.
+            </p>
+            <form method="POST" action="{% url 'checkout:process_payment' order_id=order.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="payment_method" value="pix">
+                <button type="submit" class="btn btn-primary btn-block btn-lg" style="font-size: 1.15rem;">
+                    Pagar R$ {{ order.formatted_total }} via Pix
+                </button>
+            </form>
+        </div>
+
+        <!-- Opção 2: Cartão de Crédito -->
+        <div style="border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; background: var(--surface-hover);">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+                <span style="font-size: 2rem;">💳</span>
+                <div>
+                    <div style="font-size: 1.2rem; font-weight: 800; color: #FFF;">Cartão de Crédito</div>
+                    <div style="color: var(--text-muted); font-size: 0.85rem;">Parcelamento disponível via Mercado Pago</div>
+                </div>
+            </div>
+
+            <form method="POST" action="{% url 'checkout:process_payment' order_id=order.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="payment_method" value="credit_card">
+                <input type="hidden" name="card_token" value="MOCK_TOKEN_DEMO">
+
+                <div class="form-group">
+                    <label class="form-label">Parcelamento</label>
+                    <select name="installments" class="form-control">
+                        <option value="1">1x de R$ {{ order.formatted_total }} (À vista)</option>
+                        <option value="2">2x no Cartão</option>
+                        <option value="3">3x no Cartão</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-secondary btn-block btn-lg">
+                    Prosseguir com Cartão de Crédito
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

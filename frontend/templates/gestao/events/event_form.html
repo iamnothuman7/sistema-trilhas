@@ -1,0 +1,89 @@
+{% extends "gestao/base_gestao.html" %}
+
+{% block title %}Criar Novo Evento | Painel Gestão{% endblock %}
+{% block gestao_header %}Cadastro de Nova Edição de Evento{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h2 style="font-size: 1.5rem; font-weight: 900; color: #FFF; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+        Nova Edição de Evento
+    </h2>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="form-label">Nome Oficial do Evento *</label>
+            <input type="text" name="title" class="form-control" required placeholder="Ex: 3º Trilhão Tianguá Off Road">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">Identificador na URL (Slug) *</label>
+                <input type="text" name="slug" class="form-control" required placeholder="ex: 3-trilhao-tiangua">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Número da Edição *</label>
+                <input type="number" name="edition_number" class="form-control" value="3" min="1">
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">Tipo do Evento *</label>
+                <select name="type" class="form-control">
+                    <option value="TRILHAO">Trilhão Off-Road (1 Dia)</option>
+                    <option value="EXPEDITION">Expedição (Múltiplos Dias)</option>
+                    <option value="ENCOUNTER">Encontro / Passeio Off-Road</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Capacidade Máxima de Pilotos *</label>
+                <input type="number" name="max_attendees" class="form-control" value="300" min="10">
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">Local de Concentração *</label>
+                <input type="text" name="venue" class="form-control" required value="Polo de Lazer de Tianguá">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cidade / UF *</label>
+                <input type="text" name="city" class="form-control" required value="Tianguá">
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">Data e Hora de Início *</label>
+                <input type="datetime-local" name="starts_at" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Data e Hora de Término *</label>
+                <input type="datetime-local" name="ends_at" class="form-control" required>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">Abertura das Inscrições *</label>
+                <input type="datetime-local" name="registration_opens_at" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Encerramento das Inscrições *</label>
+                <input type="datetime-local" name="registration_closes_at" class="form-control" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Apresentação / Descrição do Evento</label>
+            <textarea name="description" class="form-control" rows="4" placeholder="Detalhes, percurso e atrações..."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+            <a href="{% url 'gestao:event_list' %}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary btn-lg">Salvar e Criar Estrutura</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

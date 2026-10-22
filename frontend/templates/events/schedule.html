@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Programação Oficial | {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container container-narrow" style="padding: 4rem 1.25rem;">
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+        <span class="badge badge-warning">CRONOGRAMA DO EVENTO</span>
+        <h1 style="font-size: 2.5rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
+            Programação Oficial
+        </h1>
+        <p style="color: var(--text-muted); font-size: 1.05rem;">{{ event.title }}</p>
+    </div>
+
+    {% if schedule %}
+        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            {% for item in schedule %}
+                <div class="card" style="display: flex; gap: 1.5rem; align-items: flex-start;">
+                    <div style="background-color: var(--surface-hover); padding: 0.75rem 1rem; border-radius: var(--radius-md); text-align: center; min-width: 100px; border: 1px solid var(--border);">
+                        <div style="font-weight: 900; color: var(--primary); font-size: 1.25rem;">{{ item.starts_at|date:"H:i" }}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">{{ item.starts_at|date:"d/m/Y" }}</div>
+                    </div>
+                    <div>
+                        <h3 style="color: #FFF; font-size: 1.25rem; font-weight: 800; margin-bottom: 0.25rem;">{{ item.title }}</h3>
+                        <div style="color: var(--primary); font-size: 0.9rem; margin-bottom: 0.5rem;">📍 {{ item.location }}</div>
+                        {% if item.description %}
+                            <p style="color: var(--text-muted); font-size: 0.95rem;">{{ item.description }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <p style="color: var(--text-muted);">A programação detalhada está sendo finalizada pela coordenação e será publicada em breve.</p>
+        </div>
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 2.5rem;">
+        <a href="{% url 'events:detail' slug=event.slug %}" class="btn btn-secondary">&larr; Voltar ao Evento</a>
+    </div>
+</div>
+{% endblock %}

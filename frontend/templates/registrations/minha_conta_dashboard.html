@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Área do Piloto | Minhas Inscrições | Equipe Morcego{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 3.5rem 1.25rem;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <span class="badge badge-warning">ÁREA DO PILOTO</span>
+            <h1 style="font-size: 2.4rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
+                Olá, {{ request.user.full_name }}!
+            </h1>
+            <p style="color: var(--text-muted); font-size: 1rem;">
+                Gerencie suas inscrições, aceite os regulamentos e acesse seus QR Codes de credenciamento.
+            </p>
+        </div>
+        <a href="{% url 'events:list' %}" class="btn btn-primary">
+            + Nova Inscrição
+        </a>
+    </div>
+
+    <!-- Lista de Inscrições -->
+    <h2 style="font-size: 1.4rem; font-weight: 800; color: #FFF; margin-bottom: 1.25rem;">
+        Suas Inscrições em Eventos
+    </h2>
+
+    {% if registrations %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1.75rem;">
+            {% for reg in registrations %}
+                <div class="card" style="display: flex; flex-direction: column; justify-content: space-between; border-left: 4px solid {% if reg.operational_state == 'READY' or reg.operational_state == 'CHECKED_IN' %}var(--secondary){% else %}var(--primary){% endif %};">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <span class="badge {% if reg.commercial_state == 'ACTIVE' %}badge-success{% else %}badge-warning{% endif %}">
+                                {{ reg.get_commercial_state_display }}
+                            </span>
+                            <span style="font-weight: 800; color: var(--primary); font-size: 1.1rem;">
+                                #{% if reg.registration_number %}{{ reg.registration_number }}{% else %}---{% endif %}
+                            </span>
+                        </div>
+
+                        <h3 style="font-size: 1.35rem; font-weight: 800; color: #FFF; margin-bottom: 0.5rem;">
+                            {{ reg.event.title }}
+                        </h3>
+
+                        <div style="font-size: 0.92rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+                            <div>Piloto: <strong style="color: #FFF;">{{ reg.person.full_name }}</strong></div>
+                            <div>Modalidade: {{ reg.category_name }}</div>
+                            <div>Camiseta: Tamanho {{ reg.shirt_size }}</div>
+                            <div>Data: {{ reg.event.starts_at|date:"d/m/Y \à\s H:i" }}</div>
+                        </div>
+
+                        <!-- Status Operacional -->
+                        <div style="background-color: var(--surface-hover); padding: 0.75rem 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; font-size: 0.85rem;">
+                            {% if reg.operational_state == 'CHECKED_IN' %}
+                                <span style="color: #34D399; font-weight: 700;">✅ Presença Confirmada no Evento</span>
+                            {% elif reg.operational_state == 'READY' %}
+                                <span style="color: #34D399; font-weight: 700;">🟢 Apto para Credenciamento (QR Liberado)</span>
+                            {% else %}
+                                <span style="color: #FBBF24; font-weight: 700;">⚠️ Pendente de Aceite do Regulamento</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem;">
+                        <a href="{% url 'minha_conta:registration_detail' registration_id=reg.id %}" class="btn btn-secondary" style="flex: 1;">
+                            Ver Detalhes
+                        </a>
+                        {% if reg.is_eligible_for_qr %}
+                            <a href="{% url 'minha_conta:credential_view' registration_id=reg.id %}" class="btn btn-primary" style="flex: 1;">
+                                📱 Ver QR Code
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card" style="text-align: center; padding: 3.5rem;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🏍️</div>
+            <h3 style="color: #FFF; font-size: 1.4rem; margin-bottom: 0.5rem;">Você ainda não possui inscrições</h3>
+            <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto 1.5rem;">
+                Escolha um dos trilhões ou expedições da Equipe Morcego e garanta sua vaga agora mesmo!
+            </p>
+            <a href="{% url 'events:list' %}" class="btn btn-primary btn-lg">Explorar Próximos Trilhões</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

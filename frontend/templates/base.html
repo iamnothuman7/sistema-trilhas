@@ -1,0 +1,84 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Equipe Morcego | Gestão de Trilhões e Expedições Off-Road{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Top Navigation -->
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="{% url 'core:home' %}" class="brand-logo">
+                <span>🦇 EQUIPE MORCEGO</span>
+                <span class="brand-badge">OFF-ROAD</span>
+            </a>
+
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="{% url 'core:home' %}" class="nav-link">Início</a></li>
+                    <li><a href="{% url 'events:list' %}" class="nav-link">Eventos & Trilhões</a></li>
+                    <li><a href="{% url 'core:about' %}" class="nav-link">A Equipe</a></li>
+                    <li><a href="{% url 'core:contact' %}" class="nav-link">Contato</a></li>
+
+                    {% if request.user.is_authenticated %}
+                        {% if request.user.is_staff or user_memberships %}
+                            <li><a href="{% url 'gestao:dashboard' %}" class="btn btn-sm btn-secondary">⚡ Painel Gestão</a></li>
+                        {% endif %}
+                        <li><a href="{% url 'minha_conta:dashboard' %}" class="btn btn-sm btn-primary">Área do Piloto</a></li>
+                        <li><a href="{% url 'identity:logout' %}" class="nav-link" style="color: var(--accent);">Sair</a></li>
+                    {% else %}
+                        <li><a href="{% url 'identity:login' %}" class="nav-link">Entrar</a></li>
+                        <li><a href="{% url 'identity:register' %}" class="btn btn-sm btn-primary">Cadastrar</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Mensagens do Sistema (Toasts/Alerts) -->
+    {% if messages %}
+        <div class="container" style="margin-top: 1.5rem;">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Conteúdo Principal -->
+    <main style="flex: 1;">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: gap; gap: 1.5rem;">
+            <div>
+                <div style="font-weight: 800; color: #FFF; font-size: 1.1rem; margin-bottom: 0.25rem;">
+                    EQUIPE MORCEGO OFF-ROAD
+                </div>
+                <div>Gestão oficial de trilhões, expedições e eventos off-road em Tianguá e região.</div>
+                <div style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-muted);">
+                    Administrado por Kelvim Muniz &copy; {{ current_year }}. Todos os direitos reservados.
+                </div>
+            </div>
+            <div style="display: flex; gap: 1.5rem;">
+                <a href="{% url 'core:about' %}" class="nav-link">Sobre</a>
+                <a href="{% url 'core:privacy' %}" class="nav-link">Privacidade & LGPD</a>
+                <a href="{% url 'core:contact' %}" class="nav-link">Suporte</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

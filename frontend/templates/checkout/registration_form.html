@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Inscrição Oficial | {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container container-narrow" style="padding: 3.5rem 1.25rem;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <span class="badge badge-warning">CHECKOUT TRANSPARENTE OFICIAL</span>
+        <h1 style="font-size: 2.3rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
+            Inscrição: {{ event.title }}
+        </h1>
+        <p style="color: var(--text-muted); font-size: 1rem;">
+            Preencha seus dados para reservar sua vaga com segurança.
+        </p>
+    </div>
+
+    <form method="POST" id="registrationForm">
+        {% csrf_token %}
+
+        <!-- Seção 1: Dados do Comprador / Responsável pelo Pagamento -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+                <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">
+                    1. Dados do Pagador / Comprador
+                </h2>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Quem receberá o comprovante</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">Nome Completo do Comprador *</label>
+                    <input type="text" name="purchaser_name" class="form-control" required placeholder="Ex: Kelvim Muniz" value="{% if request.user.is_authenticated %}{{ request.user.full_name }}{% endif %}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">E-mail para Receber o Ingresso *</label>
+                    <input type="email" name="purchaser_email" class="form-control" required placeholder="seu@email.com" value="{% if request.user.is_authenticated %}{{ request.user.email }}{% endif %}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">WhatsApp com DDD *</label>
+                    <input type="text" name="purchaser_phone" class="form-control" required placeholder="(88) 99999-9999" value="{% if request.user.is_authenticated %}{{ request.user.phone }}{% endif %}">
+                </div>
+
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label">CPF do Titular do Pagamento (Exigido pelo Mercado Pago) *</label>
+                    <input type="text" name="purchaser_document" class="form-control" required placeholder="000.000.000-00">
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 2: Participantes / Pilotos -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+                <div>
+                    <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">
+                        2. Identificação dos Pilotos / Participantes
+                    </h2>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">
+                        Você pode inscrever a si mesmo ou comprar para sua equipe/amigos em uma única transação
+                    </div>
+                </div>
+                <button type="button" id="btnAddParticipant" class="btn btn-sm btn-secondary">
+                    + Adicionar Outro Piloto
+                </button>
+            </div>
+
+            <div id="participantsContainer">
+                <!-- Card do Piloto 1 -->
+                <div class="participant-item card" style="background-color: var(--surface-hover); margin-bottom: 1.25rem; border: 1px solid var(--border);">
+                    <div style="font-weight: 800; color: var(--primary); margin-bottom: 1rem; font-size: 1rem;">
+                        PILOTO #1
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Nome Completo do Piloto *</label>
+                            <input type="text" name="participant_name[]" class="form-control" required placeholder="Nome do Piloto">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">WhatsApp do Piloto</label>
+                            <input type="text" name="participant_phone[]" class="form-control" placeholder="(88) 99999-9999">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Modalidade / Pacote *</label>
+                            <select name="participant_product[]" class="form-control" required>
+                                {% for prod in products %}
+                                    <option value="{{ prod.id }}">{{ prod.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Lote Vigente *</label>
+                            <select name="participant_lot[]" class="form-control" required>
+                                {% for lot in active_lots %}
+                                    <option value="{{ lot.id }}">{{ lot.title }} - R$ {{ lot.formatted_price }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Tamanho da Camisa *</label>
+                            <select name="participant_shirt[]" class="form-control" required>
+                                <option value="P">P (Pequeno)</option>
+                                <option value="M" selected>M (Médio)</option>
+                                <option value="G">G (Grande)</option>
+                                <option value="GG">GG (Extra Grande)</option>
+                                <option value="XG">XG (Especial)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label class="form-label">Cidade</label>
+                            <input type="text" name="participant_city[]" class="form-control" value="Tianguá">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">UF</label>
+                            <input type="text" name="participant_state[]" class="form-control" value="CE" maxlength="2">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Equipe / Moto Clube</label>
+                            <input type="text" name="participant_team[]" class="form-control" placeholder="Ex: Equipe Morcego">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção 3: Cupom de Desconto -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label">Possui Cupom de Desconto?</label>
+                <div style="display: flex; gap: 0.75rem;">
+                    <input type="text" name="coupon_code" class="form-control" placeholder="CÓDIGO DO CUPOM" style="text-transform: uppercase;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Botão Final de Submissão -->
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="font-size: 1.25rem;">
+            Avançar para Pagamento com Segurança &rarr;
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let count = 1;
+    const btnAdd = document.getElementById("btnAddParticipant");
+    const container = document.getElementById("participantsContainer");
+
+    btnAdd.addEventListener("click", function() {
+        count++;
+        const item = document.createElement("div");
+        item.className = "participant-item card";
+        item.style.backgroundColor = "var(--surface-hover)";
+        item.style.marginBottom = "1.25rem";
+        item.style.border = "1px solid var(--border)";
+
+        item.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div style="font-weight: 800; color: var(--primary); font-size: 1rem;">
+                    PILOTO #${count}
+                </div>
+                <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.participant-item').remove()">Remover</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Nome Completo do Piloto *</label>
+                    <input type="text" name="participant_name[]" class="form-control" required placeholder="Nome do Piloto">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">WhatsApp do Piloto</label>
+                    <input type="text" name="participant_phone[]" class="form-control" placeholder="(88) 99999-9999">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Modalidade / Pacote *</label>
+                    <select name="participant_product[]" class="form-control" required>
+                        {% for prod in products %}
+                            <option value="{{ prod.id }}">{{ prod.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Lote Vigente *</label>
+                    <select name="participant_lot[]" class="form-control" required>
+                        {% for lot in active_lots %}
+                            <option value="{{ lot.id }}">{{ lot.title }} - R$ {{ lot.formatted_price }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tamanho da Camisa *</label>
+                    <select name="participant_shirt[]" class="form-control" required>
+                        <option value="P">P (Pequeno)</option>
+                        <option value="M" selected>M (Médio)</option>
+                        <option value="G">G (Grande)</option>
+                        <option value="GG">GG (Extra Grande)</option>
+                        <option value="XG">XG (Especial)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Cidade</label>
+                    <input type="text" name="participant_city[]" class="form-control" value="Tianguá">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">UF</label>
+                    <input type="text" name="participant_state[]" class="form-control" value="CE" maxlength="2">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Equipe / Moto Clube</label>
+                    <input type="text" name="participant_team[]" class="form-control" placeholder="Ex: Equipe Morcego">
+                </div>
+            </div>
+        `;
+        container.appendChild(item);
+    });
+});
+</script>
+{% endblock %}

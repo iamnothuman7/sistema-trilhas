@@ -1,0 +1,69 @@
+{% extends "gestao/base_gestao.html" %}
+
+{% block title %}Edições e Eventos | Painel Gestão{% endblock %}
+{% block gestao_header %}Gerenciamento de Eventos e Trilhões{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF;">Edições Cadastradas</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Crie novos eventos, duplique edições passadas e altere status.</p>
+    </div>
+    <a href="{% url 'gestao:event_create' %}" class="btn btn-primary">
+        + Nova Edição de Evento
+    </a>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Edição</th>
+                    <th>Tipo</th>
+                    <th>Cidade / Local</th>
+                    <th>Data do Evento</th>
+                    <th>Inscrições</th>
+                    <th>Situação</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ev in events %}
+                    <tr>
+                        <td>
+                            <strong style="color: #FFF; font-size: 1.05rem;">
+                                <a href="{% url 'gestao:event_detail' event_id=ev.id %}">{{ ev.title }}</a>
+                            </strong>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">Slug: /eventos/{{ ev.slug }}/</div>
+                        </td>
+                        <td><span class="badge badge-info">{{ ev.get_type_display }}</span></td>
+                        <td>{{ ev.venue }} - {{ ev.city }}/{{ ev.state }}</td>
+                        <td>{{ ev.starts_at|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            <strong>{{ ev.registrations.count }}</strong> / {{ ev.max_attendees }}
+                        </td>
+                        <td>
+                            <span class="badge {% if ev.status == 'PUBLISHED' %}badge-success{% elif ev.status == 'DRAFT' %}badge-warning{% else %}badge-info{% endif %}">
+                                {{ ev.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <a href="{% url 'gestao:event_detail' event_id=ev.id %}" class="btn btn-sm btn-secondary">Gerenciar</a>
+                                <a href="{% url 'gestao:event_duplicate' event_id=ev.id %}" class="btn btn-sm btn-secondary" onclick="return confirm('Deseja duplicar este evento para uma nova edição em rascunho? Nenhuma inscrição ou dado financeiro será copiado.')">Duplicar</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                            Nenhum evento cadastrado.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

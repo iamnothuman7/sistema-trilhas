@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Regulamento Oficial | {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container container-narrow" style="padding: 4rem 1.25rem;">
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+        <span class="badge badge-warning">DOCUMENTAÇÃO OFICIAL</span>
+        <h1 style="font-size: 2.5rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
+            Regulamento e Termos de Responsabilidade
+        </h1>
+        <p style="color: var(--text-muted); font-size: 1.05rem;">{{ event.title }}</p>
+    </div>
+
+    {% if docs %}
+        {% for doc in docs %}
+            <div class="card" style="margin-bottom: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+                    <div>
+                        <h2 style="color: #FFF; font-size: 1.35rem; font-weight: 800;">{{ doc.get_kind_display }}</h2>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">
+                            Versão v{{ doc.version_number }} &bull; Publicada em {{ doc.published_at|date:"d/m/Y H:i" }}
+                        </div>
+                    </div>
+                    <span class="badge badge-info" title="Hash criptográfico SHA-256">SHA-256: {{ doc.sha256|slice:":8" }}...</span>
+                </div>
+
+                <div style="color: #E2E8F0; line-height: 1.8; white-space: pre-line; font-size: 0.98rem;">
+                    {{ doc.content }}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="card">
+            <h3 style="color: #FFF; margin-bottom: 1rem;">Orientações Gerais do Evento</h3>
+            <p style="color: var(--text-muted); line-height: 1.8;">
+                {{ event.rules_summary|default:"Uso obrigatório de capacete, botas, calça e equipamentos de segurança. Proibido consumo de álcool durante o percurso da trilha. Respeito às orientações dos carros e motos de apoio." }}
+            </p>
+        </div>
+    {% endif %}
+
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="{% url 'events:detail' slug=event.slug %}" class="btn btn-secondary">&larr; Voltar ao Evento</a>
+    </div>
+</div>
+{% endblock %}

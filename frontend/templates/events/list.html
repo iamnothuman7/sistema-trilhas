@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Eventos e Trilhões | Equipe Morcego{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 4rem 1.25rem;">
+    <div style="margin-bottom: 3rem; text-align: center;">
+        <span class="badge badge-warning">CALENDÁRIO OFICIAL</span>
+        <h1 style="font-size: 2.8rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
+            Trilhões, Expedições e Passeios Off-Road
+        </h1>
+        <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 650px; margin: 0.5rem auto 0;">
+            Escolha seu desafio, consulte os lotes e garanta sua vaga com segurança antes que os lotes esgotem.
+        </p>
+    </div>
+
+    <!-- Eventos Ativos -->
+    <h2 style="font-size: 1.6rem; font-weight: 800; color: #FFF; margin-bottom: 1.5rem; border-left: 4px solid var(--primary); padding-left: 0.75rem;">
+        Inscrições Abertas e Próximas Edições
+    </h2>
+
+    {% if active_events %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2rem; margin-bottom: 4rem;">
+            {% for event in active_events %}
+                <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <span class="badge badge-success">{{ event.get_status_display }}</span>
+                            <span style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">{{ event.get_type_display }}</span>
+                        </div>
+
+                        <h3 style="font-size: 1.5rem; font-weight: 800; color: #FFF; margin-bottom: 0.75rem;">
+                            <a href="{% url 'events:detail' slug=event.slug %}" style="color: inherit;">
+                                {{ event.title }}
+                            </a>
+                        </h3>
+
+                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">
+                            {{ event.description|truncatewords:20 }}
+                        </p>
+
+                        <div style="background-color: var(--surface-hover); padding: 1rem; border-radius: var(--radius-md); font-size: 0.9rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.5rem;">
+                            <div>🗓️ {{ event.starts_at|date:"d/m/Y \à\s H:i" }}</div>
+                            <div>📍 {{ event.venue }} - {{ event.city }}/{{ event.state }}</div>
+                            <div>👥 Até {{ event.max_attendees }} vagas</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem;">
+                        <a href="{% url 'events:detail' slug=event.slug %}" class="btn btn-primary" style="flex: 1;">
+                            Detalhes & Inscrição
+                        </a>
+                        <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary" title="Moldura">
+                            📸
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p style="color: var(--text-muted); margin-bottom: 3rem;">Nenhum evento com inscrições ativas no momento.</p>
+    {% endif %}
+
+    <!-- Eventos Passados -->
+    {% if past_events %}
+        <h2 style="font-size: 1.6rem; font-weight: 800; color: #FFF; margin-bottom: 1.5rem; border-left: 4px solid var(--border); padding-left: 0.75rem;">
+            Histórico de Edições Realizadas
+        </h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+            {% for event in past_events %}
+                <div class="card" style="opacity: 0.85;">
+                    <span class="badge" style="background: rgba(255,255,255,0.1); color: #9CA3AF; margin-bottom: 0.75rem;">CONCLUÍDO</span>
+                    <h3 style="color: #FFF; font-size: 1.25rem; font-weight: 700;">{{ event.title }}</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+                        Realizado em {{ event.ends_at|date:"d/m/Y" }} em {{ event.city }}/{{ event.state }}
+                    </p>
+                    <a href="{% url 'events:detail' slug=event.slug %}" class="btn btn-secondary btn-sm" style="margin-top: 1rem;">
+                        Ver Resumo Histórico
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

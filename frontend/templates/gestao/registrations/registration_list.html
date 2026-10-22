@@ -1,0 +1,115 @@
+{% extends "gestao/base_gestao.html" %}
+
+{% block title %}Inscrições: {{ event.title }} | Painel Gestão{% endblock %}
+{% block gestao_header %}Participantes Cadastrados: {{ event.title }}{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+        <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF;">Inscrições da Edição</h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Controle de participantes, status comercial e kits.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{% url 'gestao:credenciamento' event_id=event.id %}" class="btn btn-success">
+            ⚡ Scanner QR Code
+        </a>
+        <a href="{% url 'gestao:export_participants' event_id=event.id %}" class="btn btn-secondary">
+            📥 Exportar Lista (CSV)
+        </a>
+    </div>
+</div>
+
+<!-- Filtros de Busca -->
+<div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+    <form method="GET" style="display: grid; grid-template-columns: 3fr 2fr 2fr auto; gap: 1rem; align-items: end;">
+        <div>
+            <label class="form-label" style="font-size: 0.8rem;">Buscar por Nome, Equipe, Telefone ou Número:</label>
+            <input type="text" name="q" class="form-control" value="{{ q }}" placeholder="Digite para buscar...">
+        </div>
+        <div>
+            <label class="form-label" style="font-size: 0.8rem;">Status Comercial:</label>
+            <select name="status" class="form-control">
+                <option value="">Todos os status</option>
+                <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>Ativo / Confirmado</option>
+                <option value="RESERVED" {% if status_filter == 'RESERVED' %}selected{% endif %}>Reservado (Aguardando Pagamento)</option>
+                <option value="CANCELED" {% if status_filter == 'CANCELED' %}selected{% endif %}>Cancelado</option>
+            </select>
+        </div>
+        <div>
+            <label class="form-label" style="font-size: 0.8rem;">Status Operacional:</label>
+            <select name="op_status" class="form-control">
+                <option value="">Todos</option>
+                <option value="READY" {% if op_filter == 'READY' %}selected{% endif %}>Apto (QR Liberado)</option>
+                <option value="CHECKED_IN" {% if op_filter == 'CHECKED_IN' %}selected{% endif %}>Credenciado (Presente)</option>
+                <option value="NOT_READY" {% if op_filter == 'NOT_READY' %}selected{% endif %}>Pendente Termos</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="height: 42px;">Filtrar</button>
+    </form>
+</div>
+
+<!-- Tabela de Inscrições -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Piloto / Contato</th>
+                    <th>Modalidade</th>
+                    <th>Camisa</th>
+                    <th>Comercial</th>
+                    <th>Credenciamento</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reg in registrations %}
+                    <tr>
+                        <td style="font-weight: 900; color: var(--primary); font-size: 1.1rem;">
+                            #{{ reg.registration_number|default:'---' }}
+                        </td>
+                        <td>
+                            <strong style="color: #FFF; font-size: 1.05rem;">
+                                <a href="{% url 'gestao:registration_detail' event_id=event.id reg_id=reg.id %}">
+                                    {{ reg.person.full_name }}
+                                </a>
+                            </strong>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                                {{ reg.team_name|default:reg.person.team_name|default:"Sem equipe" }} &bull; {{ reg.person.city }}/{{ reg.person.state }}
+                            </div>
+                        </td>
+                        <td>{{ reg.category_name }}</td>
+                        <td>
+                            <span class="badge" style="background: rgba(255,255,255,0.1); color: #FFF;">
+                                Tam. {{ reg.shirt_size }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if reg.commercial_state == 'ACTIVE' %}badge-success{% elif reg.commercial_state == 'RESERVED' %}badge-warning{% else %}badge-danger{% endif %}">
+                                {{ reg.get_commercial_state_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if reg.operational_state == 'CHECKED_IN' %}badge-success{% elif reg.operational_state == 'READY' %}badge-info{% else %}badge-warning{% endif %}">
+                                {{ reg.get_operational_state_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'gestao:registration_detail' event_id=event.id reg_id=reg.id %}" class="btn btn-sm btn-secondary">
+                                Ver Ficha
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                            Nenhuma inscrição localizada com os filtros selecionados.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "gestao/base_gestao.html" %}
+{% load static %}
+
+{% block title %}Scanner de Credenciamento | {{ event.title }}{% endblock %}
+{% block gestao_header %}Secretaria & Credenciamento Rápido: {{ event.title }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+        <span class="badge badge-success">SCANNER ATIVO</span>
+        <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF; margin-top: 0.25rem;">
+            Leitura de QR Code & Entrega de Kits
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+            Aponte a câmera para o QR Code do piloto ou digite o número/código abaixo
+        </p>
+    </div>
+
+    <!-- Câmera do Scanner -->
+    <div class="scanner-viewport">
+        <video id="scannerVideo" autoplay muted playsinline style="width: 100%; height: 100%; object-fit: cover;"></video>
+        <div class="scanner-laser"></div>
+        <div id="scannerPlaceholder" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none;"></div>
+    </div>
+
+    <!-- Busca Rápida Manual -->
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="manualCodeInput" class="form-control" placeholder="Digitar número (#101), nome ou código do QR..." autofocus>
+            <button type="button" id="btnManualSearch" class="btn btn-primary" style="white-space: nowrap;">
+                🔍 Buscar
+            </button>
+        </div>
+    </div>
+
+    <!-- Resultado do Participante / Ficha de Entrega -->
+    <div id="scannerResult" style="margin-bottom: 2rem;">
+        <!-- Injetado dinamicamente via scanner.js -->
+    </div>
+
+    <!-- Histórico dos Últimos Atendidos -->
+    <div class="card">
+        <h3 style="font-size: 1.05rem; font-weight: 800; color: #FFF; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+            Últimos Credenciados Hoje
+        </h3>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+            {% for checkin in recent_checkins %}
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.4rem 0; border-bottom: 1px solid var(--border); font-size: 0.9rem;">
+                    <div>
+                        <strong style="color: #FFF;">#{{ checkin.registration.registration_number }} - {{ checkin.registration.person.full_name }}</strong>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">
+                            Camiseta: Tam. {{ checkin.registration.shirt_size }} &bull; Atendido por {{ checkin.operator.full_name|default:"Operador" }}
+                        </div>
+                    </div>
+                    <div style="color: var(--secondary); font-weight: 700;">
+                        {{ checkin.occurred_at|date:"H:i" }}
+                    </div>
+                </div>
+            {% empty %}
+                <p style="color: var(--text-muted); font-size: 0.85rem;">Nenhum participante credenciado nesta sessão ainda.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/scanner.js' %}"></script>
+<script>
+let scannerApp;
+document.addEventListener("DOMContentLoaded", function() {
+    const lookupUrl = "{% url 'gestao:credenciamento_lookup' event_id=event.id %}";
+    const confirmUrl = "{% url 'gestao:credenciamento_confirm' event_id=event.id %}";
+    const deliverUrl = "{% url 'gestao:deliver_benefit' event_id=event.id %}";
+
+    scannerApp = new EventScanner("{{ event.id }}", lookupUrl, confirmUrl, deliverUrl);
+    scannerApp.startCamera();
+});
+</script>
+{% endblock %}

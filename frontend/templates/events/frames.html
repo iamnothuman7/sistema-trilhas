@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Moldura Oficial | {{ event.title }} | Equipe Morcego{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 3.5rem 1.25rem;">
+    <div style="text-align: center; max-width: 700px; margin: 0 auto 2.5rem;">
+        <span class="badge badge-warning">GERADOR OFICIAL DE FOTOS</span>
+        <h1 style="font-size: 2.6rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
+            Crie Sua Moldura Digital Oficial
+        </h1>
+        <p style="color: var(--text-muted); font-size: 1.05rem;">
+            Coloque sua foto na moldura oficial do <strong>{{ event.title }}</strong>, personalize com seu nome e equipe e poste no seu Instagram!
+        </p>
+        <div style="font-size: 0.85rem; color: #10B981; margin-top: 0.5rem;">
+            🔒 <strong>100% Seguro:</strong> Sua foto é processada diretamente no seu aparelho, sem envio para servidores.
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: start; max-width: 1050px; margin: 0 auto;">
+        <!-- Coluna da Esquerda: Controles -->
+        <div class="card">
+            <h2 style="font-size: 1.3rem; font-weight: 800; color: #FFF; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+                1. Personalize Sua Arte
+            </h2>
+
+            <!-- Escolha do Modelo -->
+            <div class="form-group">
+                <label class="form-label">Modelo da Moldura</label>
+                <select id="templateSelect" class="form-control">
+                    {% if templates %}
+                        {% for t in templates %}
+                            <option value="{{ t.overlay_asset.url }}" data-format="{{ t.format }}" data-width="{{ t.width }}" data-height="{{ t.height }}" data-text-y="{{ t.text_position_y }}">
+                                {{ t.title }} ({{ t.get_format_display }})
+                            </option>
+                        {% endfor %}
+                    {% else %}
+                        <option value="{% static 'img/frame_default_demo.png' %}" data-format="FEED_1080x1350" data-width="1080" data-height="1350" data-text-y="1200">
+                            Moldura Padrão 3º Trilhão Tianguá (1080 x 1350)
+                        </option>
+                    {% endif %}
+                </select>
+            </div>
+
+            <!-- Upload da Foto -->
+            <div class="form-group">
+                <label class="form-label">Sua Foto (Galeria ou Câmera)</label>
+                <input type="file" id="photoInput" accept="image/*" class="form-control" style="cursor: pointer;">
+                <small style="color: var(--text-muted);">Formatos suportados: JPG, PNG, WebP.</small>
+            </div>
+
+            <!-- Nome e Equipe -->
+            <div class="form-group">
+                <label class="form-label">Seu Nome / Apelido</label>
+                <input type="text" id="pilotNameInput" class="form-control" placeholder="Ex: KELVIM MUNIZ">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Sua Equipe / Moto Clube</label>
+                <input type="text" id="teamNameInput" class="form-control" placeholder="Ex: EQUIPE MORCEGO">
+            </div>
+
+            <!-- Ajustes de Imagem (Zoom e Rotação) -->
+            <div style="background: var(--surface-hover); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+                <div style="font-size: 0.9rem; font-weight: 700; color: #FFF; margin-bottom: 1rem;">
+                    Ajustes de Posição da Foto:
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" style="display: flex; justify-content: space-between;">
+                        <span>Zoom / Escala</span>
+                        <span id="zoomVal" style="color: var(--primary);">1.0x</span>
+                    </label>
+                    <input type="range" id="zoomRange" min="0.4" max="3.0" step="0.05" value="1.0" class="form-control" style="padding: 0;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="display: flex; justify-content: space-between;">
+                        <span>Girar Foto</span>
+                        <span id="rotVal" style="color: var(--primary);">0°</span>
+                    </label>
+                    <input type="range" id="rotRange" min="-180" max="180" step="1" value="0" class="form-control" style="padding: 0;">
+                </div>
+                <small style="color: var(--text-muted); display: block; margin-top: 0.75rem;">
+                    💡 <em>Dica: Você também pode clicar/tocar e arrastar a foto diretamente na tela para enquadrar!</em>
+                </small>
+            </div>
+
+            <!-- Botão de Download -->
+            <button id="btnDownload" class="btn btn-primary btn-block btn-lg" style="font-size: 1.15rem;">
+                ⬇️ BAIXAR MOLDURA EM ALTA DEFINIÇÃO
+            </button>
+        </div>
+
+        <!-- Coluna da Direita: Prévia do Canvas -->
+        <div>
+            <div class="canvas-preview-container">
+                <canvas id="frameCanvas"></canvas>
+            </div>
+            <div style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+                Arraste a foto com o dedo ou mouse para ajustar a posição.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/frame_editor.js' %}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const select = document.getElementById("templateSelect");
+    const photoInput = document.getElementById("photoInput");
+    const nameInput = document.getElementById("pilotNameInput");
+    const teamInput = document.getElementById("teamNameInput");
+    const zoomRange = document.getElementById("zoomRange");
+    const zoomVal = document.getElementById("zoomVal");
+    const rotRange = document.getElementById("rotRange");
+    const rotVal = document.getElementById("rotVal");
+    const btnDownload = document.getElementById("btnDownload");
+
+    // Instancia o editor Canvas
+    const selectedOpt = select.options[select.selectedIndex];
+    const width = parseInt(selectedOpt.dataset.width || 1080);
+    const height = parseInt(selectedOpt.dataset.height || 1350);
+    const textY = parseInt(selectedOpt.dataset.textY || 1200);
+
+    const editor = new FrameCanvasEditor("frameCanvas", {
+        width: width,
+        height: height,
+        textY: textY
+    });
+
+    // Carregar moldura inicial
+    editor.loadOverlay(selectedOpt.value);
+
+    // Eventos
+    select.addEventListener("change", function() {
+        const opt = select.options[select.selectedIndex];
+        editor.width = parseInt(opt.dataset.width || 1080);
+        editor.height = parseInt(opt.dataset.height || 1350);
+        editor.textY = parseInt(opt.dataset.textY || 1200);
+        editor.canvas.width = editor.width;
+        editor.canvas.height = editor.height;
+        editor.loadOverlay(opt.value);
+    });
+
+    photoInput.addEventListener("change", function(e) {
+        if (e.target.files && e.target.files[0]) {
+            editor.loadUserPhoto(e.target.files[0]);
+            zoomRange.value = 1.0;
+            rotRange.value = 0;
+            zoomVal.innerText = "1.0x";
+            rotVal.innerText = "0°";
+        }
+    });
+
+    nameInput.addEventListener("input", function() {
+        editor.pilotName = nameInput.value;
+        editor.render();
+    });
+
+    teamInput.addEventListener("input", function() {
+        editor.teamName = teamInput.value;
+        editor.render();
+    });
+
+    zoomRange.addEventListener("input", function() {
+        editor.scale = parseFloat(zoomRange.value);
+        zoomVal.innerText = `${editor.scale.toFixed(1)}x`;
+        editor.render();
+    });
+
+    rotRange.addEventListener("input", function() {
+        editor.rotation = parseInt(rotRange.value);
+        rotVal.innerText = `${editor.rotation}°`;
+        editor.render();
+    });
+
+    btnDownload.addEventListener("click", function() {
+        editor.download(`moldura-${nameInput.value || 'piloto'}.png`);
+    });
+});
+</script>
+{% endblock %}

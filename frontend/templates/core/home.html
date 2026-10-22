@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Equipe Morcego | Portal Oficial de Trilhões e Expedições Off-Road{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="container">
+        <span class="badge badge-warning" style="margin-bottom: 1rem; font-size: 0.85rem;">
+            🏔️ SERRA DA IBIAPABA & REGIONAL OFF-ROAD
+        </span>
+        <h1 class="hero-title">
+            DESBRAVE AS MELHORES TRILHAS COM A EQUIPE MORCEGO
+        </h1>
+        <p class="hero-subtitle">
+            Inscrições online seguras, credenciamento rápido com QR Code, café da manhã, troféus, kits personalizados e total apoio nas trilhas mais brutas do Ceará e Piauí.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+            {% if featured_events %}
+                <a href="{% url 'events:detail' slug=featured_events.0.slug %}" class="btn btn-primary btn-lg">
+                    ⚡ Inscrição: {{ featured_events.0.title }}
+                </a>
+            {% endif %}
+            <a href="{% url 'events:list' %}" class="btn btn-secondary btn-lg">
+                📅 Ver Todos os Eventos
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Próximos Eventos -->
+<section class="container" style="padding: 4rem 1.25rem;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+        <div>
+            <span class="badge badge-warning">CALENDÁRIO OFICIAL</span>
+            <h2 style="font-size: 2rem; font-weight: 900; margin-top: 0.5rem; color: #FFF;">
+                Próximos Trilhões e Expedições
+            </h2>
+        </div>
+        <a href="{% url 'events:list' %}" class="btn btn-secondary btn-sm">Ver todos &rarr;</a>
+    </div>
+
+    {% if featured_events %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.75rem;">
+            {% for event in featured_events %}
+                <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                            <span class="badge {% if event.status == 'PUBLISHED' %}badge-success{% else %}badge-info{% endif %}">
+                                {{ event.get_status_display }}
+                            </span>
+                            <span style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">
+                                Edição #{{ event.edition_number }}
+                            </span>
+                        </div>
+
+                        <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 0.75rem; color: #FFF;">
+                            <a href="{% url 'events:detail' slug=event.slug %}" style="color: inherit;">
+                                {{ event.title }}
+                            </a>
+                        </h3>
+
+                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">
+                            {{ event.description|truncatewords:22 }}
+                        </p>
+
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem; background: var(--surface-hover); padding: 1rem; border-radius: var(--radius-md);">
+                            <div>📍 <strong>Local:</strong> {{ event.venue }} - {{ event.city }}/{{ event.state }}</div>
+                            <div>🗓️ <strong>Data:</strong> {{ event.starts_at|date:"d/m/Y (l) \à\s H:i" }}</div>
+                            <div>👥 <strong>Vagas:</strong> Até {{ event.max_attendees }} pilotos</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem;">
+                        <a href="{% url 'events:detail' slug=event.slug %}" class="btn btn-primary" style="flex: 2;">
+                            Garantir Vaga
+                        </a>
+                        <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary" style="flex: 1; text-align: center;" title="Gerar Moldura Oficial">
+                            📸 Moldura
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card" style="text-align: center; padding: 3rem;">
+            <h3 style="color: #FFF; margin-bottom: 0.5rem;">Nenhum evento com inscrições abertas no momento</h3>
+            <p style="color: var(--text-muted);">Fique atento às redes sociais da Equipe Morcego para os próximos lançamentos!</p>
+        </div>
+    {% endif %}
+</section>
+
+<!-- Benefícios e Estrutura -->
+<section style="background-color: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 4.5rem 0;">
+    <div class="container">
+        <div style="text-align: center; max-width: 650px; margin: 0 auto 3rem;">
+            <span class="badge badge-warning">PADRÃO EQUIPE MORCEGO</span>
+            <h2 style="font-size: 2.2rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
+                Por Que Pilotos de Todo o Brasil Escolhem Nossos Eventos?
+            </h2>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.75rem;">
+            <div class="card" style="background-color: var(--bg-dark);">
+                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">🛡️</div>
+                <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Segurança e Resgate</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Pontos de apoio estratégicos, equipe de resgate, carros 4x4 de suporte e mecânicos prontos em todo o trajeto.
+                </p>
+            </div>
+
+            <div class="card" style="background-color: var(--bg-dark);">
+                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">⚡</div>
+                <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Credenciamento Veloz</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Chegue no evento, apresente seu QR Code no celular e retire seu kit em segundos. Sem filas e sem dor de cabeça.
+                </p>
+            </div>
+
+            <div class="card" style="background-color: var(--bg-dark);">
+                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">🍖</div>
+                <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Café e Almoço Inclusos</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Café da manhã reforçado na concentração e almoço completo com churrasco e música ao vivo na linha de chegada.
+                </p>
+            </div>
+
+            <div class="card" style="background-color: var(--bg-dark);">
+                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">🏆</div>
+                <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Troféus e Kits Brutos</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">
+                    Camisetas em tecido tecnológico de alta qualidade, troféus pesados para equipes e pilotos e brindes oficiais.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

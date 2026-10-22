@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Sobre a Equipe Morcego | Tradição Off-Road{% endblock %}
+
+{% block content %}
+<div class="container container-narrow" style="padding: 4rem 1.25rem;">
+    <span class="badge badge-warning" style="margin-bottom: 1rem;">NOSSA HISTÓRIA</span>
+    <h1 style="font-size: 2.8rem; font-weight: 900; color: #FFF; margin-bottom: 1.5rem;">
+        Equipe Morcego: Paixão por Duas Rodas e Lama
+    </h1>
+
+    <div class="card" style="line-height: 1.8; font-size: 1.05rem; color: #E2E8F0;">
+        <p style="margin-bottom: 1.25rem;">
+            Nascida no coração da <strong>Serra da Ibiapaba, em Tianguá - Ceará</strong>, a <strong>Equipe Morcego</strong> consolidou-se como a principal referência na realização de trilhões, passeios e expedições off-road de motociclismo e quadriciclos da região.
+        </p>
+        <p style="margin-bottom: 1.25rem;">
+            Liderada por <strong>Kelvim Muniz</strong>, nossa missão é proporcionar aos pilotos, trilheiros e suas famílias uma experiência incomparável: percursos técnicos e desafiadores, paisagens deslumbrantes da caatinga e serra, gastronomia regional, resgate dedicado e a maior confraternização de pilotos do Nordeste.
+        </p>
+        <p style="margin-bottom: 1.25rem;">
+            Com a evolução contínua dos nossos eventos (como o consagrado <em>Trilhão Tianguá Off Road</em>), este software foi construído especificamente para garantir profissionalismo de ponta a ponta: inscrições transparentes via Mercado Pago (Pix e Cartão), controle rigoroso de estoque de camisetas, credenciamento instantâneo via QR Code e respeito irrestrito à privacidade dos participantes.
+        </p>
+        <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <div style="font-weight: 800; color: #FFF;">Kelvim Muniz</div>
+                <div style="font-size: 0.85rem; color: var(--primary);">Fundador e Coordenador Geral</div>
+            </div>
+            <a href="{% url 'events:list' %}" class="btn btn-primary">Ver Nossos Eventos</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

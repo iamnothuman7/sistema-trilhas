@@ -1,0 +1,79 @@
+{% extends "gestao/base_gestao.html" %}
+
+{% block title %}Editar Evento: {{ event.title }}{% endblock %}
+{% block gestao_header %}Editar Dados e Tema: {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h2 style="font-size: 1.5rem; font-weight: 900; color: #FFF; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+        Editar Configurações da Edição
+    </h2>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="form-label">Nome do Evento *</label>
+            <input type="text" name="title" class="form-control" value="{{ event.title }}" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">Situação do Evento (Ciclo de Vida) *</label>
+                <select name="status" class="form-control">
+                    <option value="DRAFT" {% if event.status == 'DRAFT' %}selected{% endif %}>Rascunho (Privado)</option>
+                    <option value="PUBLISHED" {% if event.status == 'PUBLISHED' %}selected{% endif %}>Publicado (Vendas Abertas)</option>
+                    <option value="SALES_CLOSED" {% if event.status == 'SALES_CLOSED' %}selected{% endif %}>Inscrições Encerradas</option>
+                    <option value="IN_PROGRESS" {% if event.status == 'IN_PROGRESS' %}selected{% endif %}>Em Andamento (Dia do Evento)</option>
+                    <option value="FINISHED" {% if event.status == 'FINISHED' %}selected{% endif %}>Concluído</option>
+                    <option value="ARCHIVED" {% if event.status == 'ARCHIVED' %}selected{% endif %}>Arquivado</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Capacidade Máxima de Pilotos *</label>
+                <input type="number" name="max_attendees" class="form-control" value="{{ event.max_attendees }}" min="1">
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">Local</label>
+                <input type="text" name="venue" class="form-control" value="{{ event.venue }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cidade</label>
+                <input type="text" name="city" class="form-control" value="{{ event.city }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Descrição do Evento</label>
+            <textarea name="description" class="form-control" rows="4">{{ event.description }}</textarea>
+        </div>
+
+        <!-- Seção de Cores do Tema -->
+        <h3 style="color: #FFF; font-size: 1.15rem; font-weight: 800; margin: 1.5rem 0 1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+            Cores da Identidade Visual do Evento
+        </h3>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label class="form-label">Cor Primária (Hex)</label>
+                <input type="color" name="primary_color" class="form-control" style="height: 44px; padding: 0.2rem;" value="{{ event.theme.primary_color|default:'#F59E0B' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cor Secundária (Hex)</label>
+                <input type="color" name="secondary_color" class="form-control" style="height: 44px; padding: 0.2rem;" value="{{ event.theme.secondary_color|default:'#10B981' }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cor de Fundo / Painel (Hex)</label>
+                <input type="color" name="surface_color" class="form-control" style="height: 44px; padding: 0.2rem;" value="{{ event.theme.surface_color|default:'#111827' }}">
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+            <a href="{% url 'gestao:event_detail' event_id=event.id %}" class="btn btn-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary btn-lg">Salvar Modificações</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

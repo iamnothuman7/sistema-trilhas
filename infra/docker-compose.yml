@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: morcego_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-morcego_trilhas}
+      POSTGRES_USER: ${POSTGRES_USER:-morcego}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-morcego_secure_pass_2026}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U morcego -d morcego_trilhas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: morcego_redis
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    container_name: morcego_web
+    restart: always
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --config gunicorn.conf.py config.wsgi:application"
+    volumes:
+      - media_volume:/app/media
+      - static_volume:/app/staticfiles
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-*}
+      DATABASE_URL: postgres://${POSTGRES_USER:-morcego}:${POSTGRES_PASSWORD:-morcego_secure_pass_2026}@db:5432/${POSTGRES_DB:-morcego_trilhas}
+      REDIS_URL: redis://redis:6379/1
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET}
+      MP_ENVIRONMENT: ${MP_ENVIRONMENT:-production}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: morcego_caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - static_volume:/var/www/static:ro
+      - media_volume:/var/www/media:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
+  caddy_data:
+  caddy_config:
