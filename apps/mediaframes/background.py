@@ -16,9 +16,7 @@ PROCESSING_LOCK = Lock()
 @lru_cache(maxsize=1)
 def get_session():
     """Reutiliza uma sessão CPU por worker com cache local do modelo U2Net."""
-    default_models_dir = "/var/www/apps/politica/flaviofolia/shared/models"
-    if not os.path.exists(default_models_dir):
-        default_models_dir = str(Path(settings.BASE_DIR) / ".models")
+    default_models_dir = str(Path(settings.BASE_DIR) / ".models")
     os.environ.setdefault("U2NET_HOME", default_models_dir)
 
     from rembg import new_session

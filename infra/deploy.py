@@ -4,6 +4,7 @@ import tarfile
 import tempfile
 import paramiko
 import time
+from getpass import getpass
 
 # Forçar stdout UTF-8 para evitar erro de console Windows cp1252
 if hasattr(sys.stdout, "reconfigure"):
@@ -11,7 +12,9 @@ if hasattr(sys.stdout, "reconfigure"):
 
 HOST = "31.97.20.100"
 USER = "root"
-PASS = "Porfirio75@projeto"
+PASS = os.environ.get("TRILHAS_SSH_PASSWORD") or getpass("Senha SSH: ")
+PRODUCTION_SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
+PRODUCTION_DATABASE_URL = os.environ["DATABASE_URL"]
 DOMAIN = "equipemorcego.nabio.pro"
 APP_DIR = "/var/www/apps/equipemorcego"
 PORT = 8055
@@ -19,7 +22,7 @@ PORT = 8055
 print(f"=== CONTINUANDO DEPLOY AUTOMÁTICO EM {DOMAIN} ===")
 
 ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.load_system_host_keys()
 ssh.connect(HOST, username=USER, password=PASS, timeout=30)
 
 def run_cmd(cmd, desc=""):
@@ -46,11 +49,11 @@ run_cmd(setup_python_cmd, "Configurando Python Virtualenv e instalando dependên
 
 # 7. Escrever arquivo de ambiente (.env) de produção
 env_content = f"""DJANGO_SETTINGS_MODULE=config.settings.production
-DJANGO_SECRET_KEY=morcego-prod-secret-2026-super-secure-ibiapaba-key-tiangua
+DJANGO_SECRET_KEY={PRODUCTION_SECRET_KEY}
 DJANGO_DEBUG=False
 DJANGO_ALLOWED_HOSTS={DOMAIN},31.97.20.100,127.0.0.1,localhost
 CSRF_TRUSTED_ORIGINS=https://{DOMAIN},http://{DOMAIN}
-DATABASE_URL=postgres://equipemorcego_user:morcego_pass_2026!@127.0.0.1:5432/equipemorcego_db
+DATABASE_URL={PRODUCTION_DATABASE_URL}
 REDIS_URL=redis://127.0.0.1:6379/2
 SITE_URL=https://{DOMAIN}
 TIME_ZONE=America/Fortaleza

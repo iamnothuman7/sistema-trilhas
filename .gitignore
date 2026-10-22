@@ -54,3 +54,4 @@ check_navie_location.py
 flaviofolia_ref/
 .models/
 
+setup_subdomain.py
