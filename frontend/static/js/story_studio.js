@@ -113,7 +113,7 @@
         ? 'Gerando PNG Alta Definição…'
         : state.cutoutError
         ? 'Tentar Recorte Novamente'
-        : '⬇️ Baixar Meu Story 3D';
+        : 'Baixar Meu Story 3D';
     }
     if (zoomInput) {
       zoomInput.disabled = isBusy || !hasPhoto;
@@ -123,8 +123,8 @@
       uploadLabel.textContent = state.busy
         ? 'IA Retirando o Fundo…'
         : hasPhoto
-        ? '📸 Trocar Minha Foto'
-        : '📸 Adicionar Minha Foto';
+        ? 'Trocar Minha Foto'
+        : 'Adicionar Minha Foto';
     }
     if (help) {
       help.textContent = hasPhoto
@@ -158,11 +158,12 @@
     ctx.closePath();
   }
 
-  function text(ctx, value, x, y, size, color, weight = 800, align = 'left') {
+  function text(ctx, value, x, y, size, color, weight = 800, align = 'left', maxWidth = undefined) {
     ctx.fillStyle = color;
     ctx.textAlign = align;
     ctx.font = `${weight} ${size}px ${TYPE}`;
-    ctx.fillText(value, x, y);
+    if (maxWidth) ctx.fillText(value, x, y, maxWidth);
+    else ctx.fillText(value, x, y);
   }
 
   function drawContained(ctx, image, box) {
@@ -314,6 +315,7 @@
     bg.fillRect(0, 0, WIDTH, HEIGHT);
 
     drawFireSparks(bg);
+    text(bg, activeVersion.title, WIDTH / 2, 54, 36, '#ffffff', 800, 'center', 960);
     if (editionReady && editionArtwork) {
       drawContained(bg, editionArtwork, layout.logo);
     }
@@ -386,17 +388,17 @@
     const columns = layout.footer_columns;
     fg.save();
     fg.textBaseline = 'alphabetic';
-    text(fg, activeVersion.weekday, columns.date_x, footerY + 46, 23, COLORS.yellow, 800, 'center');
-    text(fg, activeVersion.date_short, columns.date_x, footerY + 114, 58, '#ffffff', 900, 'center');
-    text(fg, 'CONCENTRAÇÃO', columns.concentration_x, footerY + 46, 23, COLORS.yellow, 800, 'center');
-    text(fg, activeVersion.concentration_time, columns.concentration_x, footerY + 114, 66, '#ffffff', 900, 'center');
-    text(fg, 'LARGADA', columns.departure_x, footerY + 46, 23, COLORS.yellow, 800, 'center');
-    text(fg, activeVersion.departure_time, columns.departure_x, footerY + 114, 66, '#ffffff', 900, 'center');
+    text(fg, activeVersion.weekday, columns.date_x, footerY + 46, 23, COLORS.yellow, 800, 'center', 290);
+    text(fg, activeVersion.date_short, columns.date_x, footerY + 114, 58, '#ffffff', 900, 'center', 290);
+    text(fg, activeVersion.start_label || 'INÍCIO', columns.concentration_x, footerY + 46, 23, COLORS.yellow, 800, 'center', 290);
+    text(fg, activeVersion.concentration_time, columns.concentration_x, footerY + 114, 66, '#ffffff', 900, 'center', 290);
+    text(fg, activeVersion.end_label || 'TÉRMINO', columns.departure_x, footerY + 46, 23, COLORS.yellow, 800, 'center', 290);
+    text(fg, activeVersion.departure_time, columns.departure_x, footerY + 114, 66, '#ffffff', 900, 'center', 290);
 
     fg.fillStyle = 'rgba(255,255,255,0.24)';
     columns.dividers.forEach(x => fg.fillRect(x, footerY + 28, 1.5, 101));
     fg.fillRect(90, footerY + 151, 900, 1.5);
-    text(fg, activeVersion.footer_title + ' · ' + activeVersion.footer_subtitle, WIDTH / 2, footerY + 205, 28, '#ffffff', 800, 'center');
+    text(fg, activeVersion.footer_title + ' · ' + activeVersion.footer_subtitle, WIDTH / 2, footerY + 205, 28, '#ffffff', 800, 'center', 960);
     fg.restore();
   }
 
@@ -673,7 +675,7 @@
       state.busy = false;
       syncControls();
       render();
-      announce('🔥 Pronto! Sua foto saiu da moldura em 3D! Ajuste o zoom e baixe seu Story.');
+      announce('Pronto! Sua foto saiu da moldura em 3D! Ajuste o zoom e baixe seu Story.');
       scheduleGenerated(state.montageId);
     } catch (error) {
       if (request !== state.request) return;
@@ -845,12 +847,12 @@
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = activeVersion.filename || 'story-3-trilhao-tiangua-2027.png';
+      anchor.download = activeVersion.filename || 'story-equipe-morcego.png';
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 60000);
-      announce('✅ Story 3D baixado com sucesso! Poste no Instagram e marque @equipemorcego.');
+      announce('Story 3D baixado com sucesso! Poste no Instagram e marque @equipemorcego.');
     } catch (_) {
       announce('Não foi possível baixar agora. Tente novamente.', true);
     } finally {

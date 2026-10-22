@@ -1,0 +1,102 @@
+/* Module layouts derived from Naviê Hotelaria's B2B spacing and shell contract. */
+.mg-section-gap { margin-bottom: 2.25rem; }
+.mg-page-intro h1 { margin: 0 0 .5rem; font-size: clamp(1.55rem, 2.3vw, 2rem); font-weight: 700; line-height: 1.2; letter-spacing: -.04em; }
+.mg-page-intro p { margin: 0; font-size: .875rem; line-height: 1.6; }
+.mg-element-gap { margin-bottom: 1.5rem; }
+.mg-space-bottom { margin-bottom: 1rem; }
+.mg-space-bottom-sm { margin-bottom: .75rem; }
+.mg-space-top { margin-top: 1.5rem; }
+.mg-space-top-sm { margin-top: .875rem; }
+.mg-stack { display: flex; flex-direction: column; gap: 1.5rem; min-width: 0; }
+.mg-row { display: flex; align-items: center; justify-content: space-between; gap: .875rem; flex-wrap: wrap; }
+.mg-row-divider { border-bottom: 1px solid var(--border); padding-bottom: .875rem; }
+.mg-row-divider:last-child { border-bottom: 0; padding-bottom: 0; }
+.mg-form-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .625rem; margin-top: 1.5rem; }
+.mg-module-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 1.5rem; }
+.mg-data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 1.5rem; }
+.mg-aside-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); align-items: start; gap: 1.5rem; }
+.mg-three-columns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mg-filter-grid { display: grid; grid-template-columns: minmax(180px, 1.5fr) repeat(2, minmax(160px, 1fr)) auto; align-items: end; gap: 1rem; }
+.mg-filter-grid .form-group { margin-bottom: 0; }
+.mg-filter-grid > * { min-width: 0; }
+.mg-full-width { grid-column: 1 / -1; }
+.mg-form-sheet { max-width: 920px; margin-inline: auto; }
+.mg-form-sheet > .section-title { margin-bottom: 1.5rem; }
+.mg-form-sheet .section-title:not(:first-child) { margin-top: 2.25rem; }
+.mg-inset-card { padding: 1.25rem; background: var(--surface-hover); border: 1px solid var(--border); border-radius: var(--radius-md); min-width: 0; }
+.mg-itinerary-stop { position: relative; padding-left: 1.5rem; }
+.mg-itinerary-stop::before { position: absolute; content: ''; top: 1.25rem; bottom: 1.25rem; left: 0; width: 3px; border-radius: 4px; background: var(--primary); }
+.mg-strong { font-weight: 650; }
+.mg-meta { font-size: .8125rem; line-height: 1.6; }
+.mg-code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: .8125rem; overflow-wrap: anywhere; }
+.mg-text-brand { color: var(--primary); }
+.mg-text-danger { color: var(--accent); }
+.mg-align-center { text-align: center; }
+.mg-nowrap { white-space: nowrap; }
+.mg-table-empty { padding: 2.75rem 1.25rem !important; color: var(--text-muted); text-align: center; }
+.mg-color-input { height: 48px; padding: .35rem; cursor: pointer; }
+.mg-module-link { display: flex; flex-direction: column; align-items: flex-start; gap: .875rem; padding: 1.5rem; color: var(--text); text-decoration: none; transition: border-color .18s ease, transform .18s ease, background .18s ease; }
+.mg-module-link:hover { border-color: var(--primary); background: var(--surface-hover); transform: translateY(-2px); }
+.mg-module-link > .mg-module-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); }
+.mg-module-link .mg-module-icon svg { width: 21px; height: 21px; }
+.mg-module-link h2 { margin: 0; font-size: 1rem; font-weight: 650; }
+.mg-module-link p { margin: 0; font-size: .8125rem; line-height: 1.6; color: var(--text-muted); }
+.mg-frame-preview { display: block; max-height: 260px; max-width: 100%; object-fit: contain; margin: 1.25rem auto; }
+.mg-qr-image { display: block; width: 180px; height: 180px; padding: .5rem; margin: 1.25rem auto; border-radius: var(--radius-sm); background: #fff; }
+.mg-dialog { padding: 0; width: min(580px, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: 0 30px 100px rgb(0 0 0 / 35%); overflow: auto; }
+.mg-dialog::backdrop { background: rgb(5 6 8 / 70%); backdrop-filter: blur(5px); }
+.mg-dialog .mg-dialog-card { margin: 0; padding: 1.5rem; border: 0; box-shadow: none; background: transparent; }
+.mg-dialog .card-header { margin-bottom: 1.5rem; }
+.mg-dialog .form-control { width: 100%; }
+.mg-scanner-shell { width: 100%; max-width: 760px; margin-inline: auto; }
+.mg-scanner-shell > .mg-align-center h1 { margin: .875rem 0; }
+.mg-scanner-shell .scanner-viewport { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: var(--radius-lg); background: #090a0c; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+.mg-scanner-video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.mg-scanner-placeholder { position: absolute; inset: 0; display: grid; place-items: center; padding: 1.5rem; text-align: center; pointer-events: none; }
+.mg-scanner-shell .scanner-laser { position: absolute; height: 2px; left: 12%; right: 12%; top: 50%; background: var(--primary); box-shadow: 0 0 18px color-mix(in srgb, var(--primary) 45%, transparent); pointer-events: none; }
+.mg-scanner-search { display: flex; align-items: center; gap: .625rem; }
+.mg-scanner-search .form-control { flex: 1; min-width: 0; }
+.mg-scanner-participant h2 { margin-bottom: .5rem; overflow-wrap: anywhere; }
+.mg-scanner-participant .mg-inset-card > h3 { margin: 0 0 .75rem; }
+.mg-scanner-benefit { padding-block: .875rem; border-bottom: 1px solid var(--border); }
+.mg-scanner-benefit:last-child { border-bottom: 0; padding-bottom: 0; }
+.mg-scanner-benefit strong { overflow-wrap: anywhere; }
+.page-actions > form { margin: 0; }
+.mg-status-list { display: flex; flex-wrap: wrap; gap: .625rem; }
+.mg-field-errors, .mg-field-errors ul { padding: 0; margin: .5rem 0 0; list-style: none; color: var(--accent); font-size: .8125rem; }
+.mg-form-errors { padding: 1rem 1.25rem; border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius: var(--radius-md); background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--text); margin-bottom: 1.5rem; }
+.mg-form-errors strong { display: block; margin-bottom: .35rem; }
+.mg-finance-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem; }
+.mg-finance-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.mg-finance-stats .stat-value { font-size: clamp(1.35rem, 2.1vw, 1.8rem); overflow-wrap: anywhere; }
+.mg-finance-stats .stat-label { display: flex; align-items: center; gap: .625rem; }
+.mg-finance-stats .stat-label svg { width: 17px; height: 17px; color: var(--primary); }
+.mg-finance-filters .form-group { min-width: 180px; flex: 1; margin-bottom: 0; }
+.mg-finance-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.mg-finance-actions form { margin: 0; }
+.mg-pagination { display: flex; justify-content: space-between; align-items: center; gap: .75rem; padding-top: 1.25rem; margin-top: 1.25rem; border-top: 1px solid var(--border); font-size: .8125rem; color: var(--text-muted); }
+.mg-pagination .page-actions { gap: .5rem; }
+.mg-section-description { color: var(--text-muted); font-size: .8125rem; margin: .35rem 0 0; }
+.mg-section-title-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.mg-section-title-row h1 { margin: 0; }
+@media (max-width: 1100px) {
+  .mg-finance-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mg-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mg-aside-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .mg-finance-stats { grid-template-columns: minmax(0, 1fr); }
+  .mg-module-grid, .mg-filter-grid, .mg-data-grid, .mg-three-columns { grid-template-columns: minmax(0, 1fr); }
+  .mg-form-actions { flex-direction: column-reverse; }
+  .mg-form-actions > * { width: 100%; justify-content: center; }
+  .mg-dialog { width: calc(100vw - 1rem); max-height: calc(100dvh - 1rem); }
+  .mg-dialog .mg-dialog-card { padding: 1.25rem; }
+  .mg-scanner-search { flex-direction: column; align-items: stretch; }
+  .mg-scanner-shell .scanner-viewport { aspect-ratio: 4 / 3; }
+  .mg-finance-filters .form-group, .mg-finance-filters > .btn { width: 100%; min-width: 0; }
+  .mg-pagination { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mg-module-link { transition: none; }
+  .mg-module-link:hover { transform: none; }
+}

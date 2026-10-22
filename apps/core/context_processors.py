@@ -25,7 +25,9 @@ def global_context(request):
             revoked_at__isnull=True
         ).select_related("event")
 
+    from apps.core.permissions import management_context
     return {
+        **management_context(request),
         "organization": org,
         "current_year": datetime.now().year,
         "user_memberships": user_memberships,

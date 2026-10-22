@@ -74,6 +74,11 @@ class ExpenseCategory(models.TextChoices):
     TAXAS_LICENCAS = "TAXAS_LICENCAS", "Taxas e Licenças"
     OUTROS = "OUTROS", "Outras Despesas Operacionais"
 
+class ExpenseStatus(models.TextChoices):
+    PENDING = "PENDING", "A pagar"
+    PAID = "PAID", "Paga"
+    CANCELED = "CANCELED", "Cancelada"
+
 class Expense(models.Model):
     """
     Despesa operacional registrada para apuração do resultado líquido real da edição.
@@ -86,7 +91,9 @@ class Expense(models.Model):
     amount_cents = models.PositiveBigIntegerField("Valor da Despesa (centavos)")
     due_at = models.DateField("Data de Vencimento")
     paid_at = models.DateField("Data do Pagamento", blank=True, null=True)
-    status = models.CharField("Situação", max_length=20, default="PAID")  # PENDING, PAID, CANCELED
+    status = models.CharField("Situação", max_length=20, choices=ExpenseStatus.choices, default=ExpenseStatus.PAID)
+    idempotency_key = models.UUIDField("Identificação do lançamento", unique=True, null=True, blank=True, editable=False)
+    submission_hash = models.CharField(max_length=64, blank=True, editable=False)
     proof_asset = models.FileField("Comprovante / Recibo", upload_to="expenses/receipts/", blank=True, null=True)
     notes = models.TextField("Observações", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -98,3 +105,7 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.description} - R$ {cents_to_reais(self.amount_cents)} ({self.get_status_display()})"
+
+    @property
+    def formatted_amount(self):
+        return cents_to_reais(self.amount_cents)

@@ -4,31 +4,31 @@
 {% block gestao_header %}Participantes Cadastrados: {{ event.title }}{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+<div class="page-heading mg-section-gap">
     <div>
-        <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF;">Inscrições da Edição</h1>
-        <p style="color: var(--text-muted); font-size: 0.95rem;">Controle de participantes, status comercial e kits.</p>
+        <h1>Inscrições da Edição</h1>
+        <p class="text-muted">Controle de participantes, status comercial e kits.</p>
     </div>
-    <div style="display: flex; gap: 0.75rem;">
+    <div class="page-actions">
         <a href="{% url 'gestao:credenciamento' event_id=event.id %}" class="btn btn-success">
-            ⚡ Scanner QR Code
+            <i data-lucide="scan-line" aria-hidden="true"></i> Scanner QR Code
         </a>
         <a href="{% url 'gestao:export_participants' event_id=event.id %}" class="btn btn-secondary">
-            📥 Exportar Lista (CSV)
+            <i data-lucide="download" aria-hidden="true"></i> Exportar Lista (CSV)
         </a>
     </div>
 </div>
 
 <!-- Filtros de Busca -->
-<div class="card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
-    <form method="GET" style="display: grid; grid-template-columns: 3fr 2fr 2fr auto; gap: 1rem; align-items: end;">
+<div class="card mg-element-gap">
+    <form method="GET" class="mg-filter-grid">
         <div>
-            <label class="form-label" style="font-size: 0.8rem;">Buscar por Nome, Equipe, Telefone ou Número:</label>
-            <input type="text" name="q" class="form-control" value="{{ q }}" placeholder="Digite para buscar...">
+            <label class="form-label mg-meta" for="field-q">Buscar por Nome, Equipe, Telefone ou Número:</label>
+            <input type="text" name="q" class="form-control" value="{{ q }}" placeholder="Digite para buscar..." id="field-q">
         </div>
         <div>
-            <label class="form-label" style="font-size: 0.8rem;">Status Comercial:</label>
-            <select name="status" class="form-control">
+            <label class="form-label mg-meta" for="field-status">Status Comercial:</label>
+            <select name="status" class="form-control" id="field-status">
                 <option value="">Todos os status</option>
                 <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>Ativo / Confirmado</option>
                 <option value="RESERVED" {% if status_filter == 'RESERVED' %}selected{% endif %}>Reservado (Aguardando Pagamento)</option>
@@ -36,15 +36,15 @@
             </select>
         </div>
         <div>
-            <label class="form-label" style="font-size: 0.8rem;">Status Operacional:</label>
-            <select name="op_status" class="form-control">
+            <label class="form-label mg-meta" for="field-op_status">Status Operacional:</label>
+            <select name="op_status" class="form-control" id="field-op_status">
                 <option value="">Todos</option>
                 <option value="READY" {% if op_filter == 'READY' %}selected{% endif %}>Apto (QR Liberado)</option>
                 <option value="CHECKED_IN" {% if op_filter == 'CHECKED_IN' %}selected{% endif %}>Credenciado (Presente)</option>
                 <option value="NOT_READY" {% if op_filter == 'NOT_READY' %}selected{% endif %}>Pendente Termos</option>
             </select>
         </div>
-        <button type="submit" class="btn btn-primary" style="height: 42px;">Filtrar</button>
+        <button type="submit" class="btn btn-primary">Filtrar</button>
     </form>
 </div>
 
@@ -54,34 +54,34 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>Piloto / Contato</th>
-                    <th>Modalidade</th>
-                    <th>Camisa</th>
-                    <th>Comercial</th>
-                    <th>Credenciamento</th>
-                    <th>Ações</th>
+                    <th scope="col">#</th>
+                    <th scope="col">Piloto / Contato</th>
+                    <th scope="col">Modalidade</th>
+                    <th scope="col">Camisa</th>
+                    <th scope="col">Comercial</th>
+                    <th scope="col">Credenciamento</th>
+                    <th scope="col">Ações</th>
                 </tr>
             </thead>
             <tbody>
                 {% for reg in registrations %}
                     <tr>
-                        <td style="font-weight: 900; color: var(--primary); font-size: 1.1rem;">
+                        <td class="mg-strong mg-text-brand">
                             #{{ reg.registration_number|default:'---' }}
                         </td>
                         <td>
-                            <strong style="color: #FFF; font-size: 1.05rem;">
+                            <strong>
                                 <a href="{% url 'gestao:registration_detail' event_id=event.id reg_id=reg.id %}">
                                     {{ reg.person.full_name }}
                                 </a>
                             </strong>
-                            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                            <div class="text-muted mg-meta">
                                 {{ reg.team_name|default:reg.person.team_name|default:"Sem equipe" }} &bull; {{ reg.person.city }}/{{ reg.person.state }}
                             </div>
                         </td>
                         <td>{{ reg.category_name }}</td>
                         <td>
-                            <span class="badge" style="background: rgba(255,255,255,0.1); color: #FFF;">
+                            <span class="badge">
                                 Tam. {{ reg.shirt_size }}
                             </span>
                         </td>
@@ -103,7 +103,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                        <td colspan="7" class="text-muted mg-align-center mg-table-empty">
                             Nenhuma inscrição localizada com os filtros selecionados.
                         </td>
                     </tr>

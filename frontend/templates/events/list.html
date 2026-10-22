@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load tz %}
 
 {% block title %}Eventos e Trilhões | Equipe Morcego{% endblock %}
 
@@ -20,8 +21,9 @@
     </h2>
 
     {% if active_events %}
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2rem; margin-bottom: 4rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 1fr)); gap: 2rem; margin-bottom: 4rem;">
             {% for event in active_events %}
+                {% timezone event.timezone %}
                 <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -36,13 +38,13 @@
                         </h3>
 
                         <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">
-                            {{ event.description|truncatewords:20 }}
+                            {{ event.description|default:"Consulte a programação, as modalidades e as orientações deste evento."|truncatewords:20 }}
                         </p>
 
                         <div style="background-color: var(--surface-hover); padding: 1rem; border-radius: var(--radius-md); font-size: 0.9rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.5rem;">
-                            <div>🗓️ {{ event.starts_at|date:"d/m/Y \à\s H:i" }}</div>
-                            <div>📍 {{ event.venue }} - {{ event.city }}/{{ event.state }}</div>
-                            <div>👥 Até {{ event.max_attendees }} vagas</div>
+                            <div><i data-lucide="calendar-days" aria-hidden="true"></i> {{ event.starts_at|date:"d/m/Y \à\s H:i" }}</div>
+                            <div><i data-lucide="map-pin" aria-hidden="true"></i> {{ event.venue }} - {{ event.city }}/{{ event.state }}</div>
+                            <div><i data-lucide="users" aria-hidden="true"></i> Até {{ event.max_attendees }} vagas</div>
                         </div>
                     </div>
 
@@ -51,10 +53,11 @@
                             Detalhes & Inscrição
                         </a>
                         <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary" title="Moldura">
-                            📸
+                            <i data-lucide="camera" aria-hidden="true"></i>
                         </a>
                     </div>
                 </div>
+                {% endtimezone %}
             {% endfor %}
         </div>
     {% else %}
@@ -66,8 +69,9 @@
         <h2 style="font-size: 1.6rem; font-weight: 800; color: #FFF; margin-bottom: 1.5rem; border-left: 4px solid var(--border); padding-left: 0.75rem;">
             Histórico de Edições Realizadas
         </h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 1.5rem;">
             {% for event in past_events %}
+                {% timezone event.timezone %}
                 <div class="card" style="opacity: 0.85;">
                     <span class="badge" style="background: rgba(255,255,255,0.1); color: #9CA3AF; margin-bottom: 0.75rem;">CONCLUÍDO</span>
                     <h3 style="color: #FFF; font-size: 1.25rem; font-weight: 700;">{{ event.title }}</h3>
@@ -78,6 +82,7 @@
                         Ver Resumo Histórico
                     </a>
                 </div>
+                {% endtimezone %}
             {% endfor %}
         </div>
     {% endif %}

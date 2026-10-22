@@ -1,66 +1,33 @@
 {% extends "base.html" %}
-
-{% block title %}Inscrição Confirmada! | Pedido #{{ order.merchant_reference }}{% endblock %}
-
+{% block title %}Situação do pedido | Equipe Morcego{% endblock %}
+{% block extra_head %}{% include "checkout/_payment_styles.html" %}{% endblock %}
 {% block content %}
-<div class="container container-narrow" style="padding: 4rem 1.25rem;">
-    <div class="card" style="text-align: center; border-color: var(--secondary);">
-        <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🎉</div>
-        <span class="badge badge-success" style="font-size: 0.9rem; padding: 0.4rem 1rem; margin-bottom: 1rem;">
-            PAGAMENTO CONFIRMADO COM SUCESSO!
-        </span>
-
-        <h1 style="font-size: 2.2rem; font-weight: 900; color: #FFF; margin-bottom: 0.5rem;">
-            Você Está Confirmado no {{ order.event.title }}!
-        </h1>
-
-        <p style="color: var(--text-muted); font-size: 1.05rem; margin-bottom: 2rem;">
-            Pedido <strong>#{{ order.merchant_reference }}</strong> &bull; Guarde seu comprovante abaixo
-        </p>
-
-        <!-- Lista dos Pilotos Inscritos -->
-        <div style="background-color: var(--surface-hover); padding: 1.5rem; border-radius: var(--radius-md); text-align: left; margin-bottom: 2rem;">
-            <div style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem;">
-                Participantes Cadastrados neste Pedido:
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                {% for line in order.lines.all %}
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
-                        <div>
-                            <div style="font-size: 1.15rem; font-weight: 800; color: #FFF;">
-                                #{{ line.registration.registration_number|default:forloop.counter }} - {{ line.intended_person_name }}
-                            </div>
-                            <div style="color: var(--text-muted); font-size: 0.85rem;">
-                                Modalidade: {{ line.item_snapshot_json.product_name }} &bull; Camiseta: Tam. {{ line.intended_variant_code }}
-                            </div>
-                        </div>
-
-                        <div>
-                            {% if line.registration %}
-                                <a href="{% url 'minha_conta:registration_detail' registration_id=line.registration.id %}" class="btn btn-sm btn-primary">
-                                    Ver Credencial / QR
-                                </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <!-- Próximos Passos -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
-            <a href="{% url 'minha_conta:dashboard' %}" class="btn btn-primary btn-lg">
-                📱 Ir para Área do Piloto
-            </a>
-            <a href="{% url 'events:frames' slug=order.event.slug %}" class="btn btn-secondary btn-lg">
-                📸 Criar Minha Moldura Oficial
-            </a>
-        </div>
-
-        <div style="font-size: 0.85rem; color: var(--text-muted);">
-            Um e-mail de confirmação foi encaminhado para <strong>{{ order.purchaser_email }}</strong> com todas as orientações.
-        </div>
+<main class="payment-page">
+  <div class="payment-centered">
+    <div class="payment-status-icon"><i data-lucide="{% if is_paid %}circle-check{% else %}circle-help{% endif %}" aria-hidden="true"></i></div>
+    <h1>{% if is_paid %}Pagamento confirmado{% elif order.status == 'PAID_NEEDS_REVIEW' %}Pagamento em conferência{% elif order.status == 'REFUNDED' %}Pagamento devolvido{% elif order.status == 'PARTIALLY_REFUNDED' %}Devolução parcial registrada{% elif order.status == 'EXPIRED' %}Prazo da reserva encerrado{% elif order.status == 'CANCELED' %}Pedido cancelado{% else %}Pagamento ainda não confirmado{% endif %}</h1>
+    <p class="payment-muted">{{ order.event.title }}</p>
+    <section class="payment-card" style="text-align:left">
+      <span class="payment-kicker">Pedido {{ order.merchant_reference }}</span>
+      <div class="payment-total"><span>Valor do pedido</span><strong>R$ {{ order.formatted_total }}</strong></div>
+      {% if is_paid %}
+        <p>{% if provider_verified %}O Mercado Pago confirmou o pagamento.{% else %}O pedido consta como pago no sistema.{% endif %} Confira abaixo as inscrições vinculadas ao pedido.</p>
+        <ul class="payment-list">{% for line in order.lines.all %}<li><strong>{{ line.intended_person_name }}</strong><small class="payment-muted">{% if line.registration %}{{ line.registration.get_commercial_state_display }} · {{ line.registration.get_operational_state_display }}{% else %}A organização está preparando sua inscrição.{% endif %}</small>{% if line.registration %}<form method="post" action="{% url 'minha_conta:create_claim' line.registration.id %}" style="margin-top:12px">{% csrf_token %}<button type="submit" class="payment-button payment-button-secondary">Vincular ao participante</button></form>{% endif %}</li>{% endfor %}</ul>
+        <p class="payment-help payment-muted">A liberação para credenciamento depende também do aceite dos termos e das exigências do evento.</p>
+      {% elif order.status == 'PAID_NEEDS_REVIEW' %}
+        <p>A organização precisa conferir o pagamento e a disponibilidade da reserva antes de liberar a inscrição. Não faça outro pagamento.</p>
+      {% elif order.status == 'REFUNDED' or order.status == 'PARTIALLY_REFUNDED' %}
+        <p>Recebemos a atualização de devolução ou contestação pelo Mercado Pago. A organização pode orientar sobre as inscrições afetadas e o prazo da operadora.</p>
+      {% elif order.status == 'EXPIRED' %}
+        <p>A reserva não está mais ativa. Se você já pagou, informe este pedido à organização para conferência.</p>
+      {% else %}<p>Este pedido ainda não tem pagamento confirmado. A inscrição será liberada somente depois da confirmação.</p>{% endif %}
+    </section>
+    <div class="payment-actions">
+      {% if is_paid %}<a class="payment-button" href="{% url 'minha_conta:dashboard' %}">Minhas inscrições e termos</a>{% endif %}
+      {% if order.status == 'RESERVED' or order.status == 'AWAITING_PAYMENT' %}<a class="payment-button" href="{% url 'checkout:order_payment' order.id %}">Acompanhar pagamento</a>{% endif %}
+      <a class="payment-button payment-button-secondary" href="{% url 'core:contact' %}">Falar com a organização</a>
+      <a class="payment-button payment-button-secondary" href="{% url 'events:detail' order.event.slug %}">Ver evento</a>
     </div>
-</div>
+  </div>
+</main>
 {% endblock %}

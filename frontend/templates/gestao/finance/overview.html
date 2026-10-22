@@ -1,184 +1,88 @@
 {% extends "gestao/base_gestao.html" %}
+{% load trilhas_ui %}
 
-{% block title %}Financeiro Gerencial: {{ event.title }} | Painel Gestão{% endblock %}
-{% block gestao_header %}Demonstrativo Financeiro & Conciliação: {{ event.title }}{% endblock %}
+{% block title %}Financeiro · {{ event.title }} | Equipe Morcego{% endblock %}
+{% block gestao_header %}Financeiro{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
-    <div>
-        <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF;">Financeiro da Edição</h1>
-        <p style="color: var(--text-muted); font-size: 0.95rem;">Extrato gerencial, conciliação do Mercado Pago e despesas operacionais.</p>
-    </div>
-    <div style="display: flex; gap: 0.75rem;">
-        <button type="button" class="btn btn-primary" onclick="document.getElementById('expenseModal').style.display = 'block'">
-            + Nova Despesa
-        </button>
-        <a href="{% url 'gestao:export_financial' event_id=event.id %}" class="btn btn-secondary">
-            📥 Exportar Extrato (CSV)
-        </a>
+<div class="page-heading">
+    <div><h1>Financeiro da edição</h1><p>Recebimentos, compromissos e resultado de {{ event.title }}.</p></div>
+    <div class="page-actions">
+        <a href="{% url 'gestao:export_financial' event_id=event.id %}?{{ filter_query }}" class="btn btn-secondary"><i data-lucide="download" aria-hidden="true"></i> Exportar extrato</a>
+        <button type="button" class="btn btn-primary" onclick="document.getElementById('expenseModal').showModal()"><i data-lucide="plus" aria-hidden="true"></i> Nova despesa</button>
     </div>
 </div>
 
-<!-- Resumo do Caixa e Resultado -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
-    <div class="card" style="border-top: 4px solid var(--secondary);">
-        <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Receitas Confirmadas (MP)</div>
-        <div style="font-size: 1.8rem; font-weight: 900; color: #FFF; margin-top: 0.25rem;">
-            R$ {{ kpi.total_received_cents|stringformat:"d"|slice:":-2"|default:"0" }},{{ kpi.total_received_cents|stringformat:"d"|slice:"-2:"|default:"00" }}
-        </div>
-    </div>
+<section class="card mg-element-gap" aria-label="Período do financeiro">
+    <form method="get" class="mg-finance-filters">
+        <div class="form-group"><label class="form-label" for="{{ date_form.date_start.id_for_label }}">Data inicial</label>{{ date_form.date_start }}{% if date_form.date_start.errors %}<div class="mg-field-errors">{{ date_form.date_start.errors }}</div>{% endif %}</div>
+        <div class="form-group"><label class="form-label" for="{{ date_form.date_end.id_for_label }}">Data final</label>{{ date_form.date_end }}{% if date_form.date_end.errors %}<div class="mg-field-errors">{{ date_form.date_end.errors }}</div>{% endif %}</div>
+        <button type="submit" class="btn btn-primary"><i data-lucide="list-filter" aria-hidden="true"></i> Aplicar período</button>
+        <a href="{% url 'gestao:finance' event_id=event.id %}" class="btn btn-secondary">Limpar</a>
+    </form>
+    {% if date_form.non_field_errors %}<div class="mg-field-errors" role="alert">{{ date_form.non_field_errors }}</div>{% endif %}
+</section>
 
-    <div class="card" style="border-top: 4px solid var(--accent);">
-        <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Tarifas Mercado Pago</div>
-        <div style="font-size: 1.8rem; font-weight: 900; color: #F87171; margin-top: 0.25rem;">
-            - R$ {{ kpi.total_fees_cents|stringformat:"d"|slice:":-2"|default:"0" }},{{ kpi.total_fees_cents|stringformat:"d"|slice:"-2:"|default:"00" }}
-        </div>
-    </div>
-
-    <div class="card" style="border-top: 4px solid #F59E0B;">
-        <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Despesas Operacionais Pagas</div>
-        <div style="font-size: 1.8rem; font-weight: 900; color: #FBBF24; margin-top: 0.25rem;">
-            - R$ {{ kpi.total_expenses_cents|stringformat:"d"|slice:":-2"|default:"0" }},{{ kpi.total_expenses_cents|stringformat:"d"|slice:"-2:"|default:"00" }}
-        </div>
-    </div>
-
-    <div class="card" style="border-top: 4px solid var(--primary);">
-        <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Resultado Líquido Caixa</div>
-        <div style="font-size: 1.8rem; font-weight: 900; color: var(--primary); margin-top: 0.25rem;">
-            R$ {{ kpi.net_profit_cents|stringformat:"d"|slice:":-2"|default:"0" }},{{ kpi.net_profit_cents|stringformat:"d"|slice:"-2:"|default:"00" }}
-        </div>
-    </div>
+<div class="stat-grid mg-finance-stats mg-section-gap">
+    <article class="stat-card"><div class="stat-label"><i data-lucide="arrow-down-left" aria-hidden="true"></i> Recebimentos</div><div class="stat-value">R$ {{ finance.revenue_formatted }}</div><p class="stat-foot">Pagamentos confirmados no período</p></article>
+    <article class="stat-card"><div class="stat-label"><i data-lucide="undo-2" aria-hidden="true"></i> Estornos</div><div class="stat-value">R$ {{ finance.refunds_formatted }}</div><p class="stat-foot">Valores devolvidos aos participantes</p></article>
+    <article class="stat-card"><div class="stat-label"><i data-lucide="percent" aria-hidden="true"></i> Tarifas</div><div class="stat-value">R$ {{ finance.fees_formatted }}</div><p class="stat-foot">Custos de processamento dos pagamentos</p></article>
+    <article class="stat-card"><div class="stat-label"><i data-lucide="receipt" aria-hidden="true"></i> Despesas pagas</div><div class="stat-value">R$ {{ finance.paid_expenses_formatted }}</div><p class="stat-foot">Saídas operacionais confirmadas</p></article>
+    <article class="stat-card"><div class="stat-label"><i data-lucide="clock-3" aria-hidden="true"></i> Despesas pendentes</div><div class="stat-value">R$ {{ finance.pending_expenses_formatted }}</div><p class="stat-foot">Compromissos ainda não pagos</p></article>
+    <article class="stat-card"><div class="stat-label"><i data-lucide="wallet" aria-hidden="true"></i> Resultado de caixa</div><div class="stat-value {% if finance.net_cents < 0 %}mg-text-danger{% else %}text-success{% endif %}">R$ {{ finance.net_formatted }}</div><p class="stat-foot">Receitas menos estornos, tarifas e despesas pagas</p></article>
 </div>
 
-<!-- Tabela de Despesas Operacionais -->
-<div class="card" style="margin-bottom: 2rem;">
-    <div class="card-header">
-        <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">Despesas Operacionais e Fornecedores</h2>
-    </div>
+{% if finance.expense_reconciliation_delta_cents %}<div class="mg-form-errors" role="status"><strong>Conciliação pendente</strong>Há despesas que precisam de conciliação. O resultado de caixa considera as movimentações registradas no extrato.</div>{% endif %}
 
+<section class="card mg-section-gap" aria-labelledby="expenses-title">
+    <div class="card-header"><div><h2 id="expenses-title" class="section-title">Despesas e fornecedores</h2><p class="mg-section-description">Registre compromissos e acompanhe cada pagamento.</p></div><span class="badge badge-info">{% if expenses_page %}{{ expenses_page.paginator.count }}{% else %}{{ expenses|length }}{% endif %} registros</span></div>
     <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Descrição</th>
-                    <th>Categoria</th>
-                    <th>Fornecedor</th>
-                    <th>Valor</th>
-                    <th>Vencimento</th>
-                    <th>Situação</th>
-                </tr>
-            </thead>
+        <table class="table" aria-label="Despesas da edição">
+            <thead><tr><th scope="col">Descrição</th><th scope="col">Categoria</th><th scope="col">Fornecedor</th><th scope="col">Valor</th><th scope="col">Vencimento</th><th scope="col">Situação</th><th scope="col">Ações</th></tr></thead>
             <tbody>
                 {% for exp in expenses %}
-                    <tr>
-                        <td style="font-weight: 700; color: #FFF;">{{ exp.description }}</td>
-                        <td><span class="badge badge-info">{{ exp.get_category_display }}</span></td>
-                        <td>{{ exp.vendor.name|default:"Geral / Avulso" }}</td>
-                        <td style="font-weight: 800; color: var(--accent);">
-                            R$ {{ exp.amount_cents|stringformat:"d"|slice:":-2" }},{{ exp.amount_cents|stringformat:"d"|slice:"-2:" }}
-                        </td>
-                        <td>{{ exp.due_at|date:"d/m/Y" }}</td>
-                        <td>
-                            <span class="badge {% if exp.status == 'PAID' %}badge-success{% else %}badge-warning{% endif %}">
-                                {{ exp.get_status_display }}
-                            </span>
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                            Nenhuma despesa operacional cadastrada ainda.
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Livro Razão Imutável (Financial Ledger) -->
-<div class="card">
-    <div class="card-header">
-        <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">Livro Razão Gerencial (Lançamentos Imutáveis)</h2>
-    </div>
-
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
                 <tr>
-                    <th>Data / Hora</th>
-                    <th>Tipo de Movimento</th>
-                    <th>Descrição</th>
-                    <th>Valor</th>
-                    <th>Referência</th>
+                    <td class="mg-strong">{{ exp.description }}</td><td>{{ exp.get_category_display }}</td><td>{{ exp.vendor.name|default:"Avulso" }}</td><td class="mg-strong mg-nowrap">R$ {{ exp.amount_cents|money }}</td><td class="mg-nowrap">{{ exp.due_at|date:"d/m/Y" }}</td>
+                    <td><span class="badge {% if exp.status == 'PAID' %}badge-success{% elif exp.status == 'PENDING' %}badge-warning{% else %}badge-info{% endif %}">{{ exp.get_status_display }}</span></td>
+                    <td>{% if exp.status == 'PENDING' %}<div class="mg-finance-actions"><form method="post" action="{% url 'gestao:pay_expense' event_id=event.id expense_id=exp.id %}">{% csrf_token %}<button type="submit" class="btn btn-secondary btn-sm"><i data-lucide="check" aria-hidden="true"></i> Marcar paga</button></form><button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('cancelExpense{{ exp.id }}').showModal()">Cancelar</button></div>{% else %}<span class="text-muted">—</span>{% endif %}</td>
                 </tr>
-            </thead>
-            <tbody>
-                {% for entry in entries %}
-                    <tr>
-                        <td style="font-size: 0.85rem; color: var(--text-muted);">{{ entry.recognized_at|date:"d/m/Y H:i" }}</td>
-                        <td><span class="badge badge-warning">{{ entry.get_kind_display }}</span></td>
-                        <td style="color: #FFF; font-weight: 600;">{{ entry.description }}</td>
-                        <td style="font-weight: 800; font-family: monospace; font-size: 1.05rem; color: {% if entry.amount_cents_signed >= 0 %}#34D399{% else %}#F87171{% endif %};">
-                            {{ entry.formatted_amount }}
-                        </td>
-                        <td style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">{{ entry.source_reference }}</td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                            Nenhum lançamento no livro razão gerencial.
-                        </td>
-                    </tr>
-                {% endfor %}
+                {% empty %}<tr><td colspan="7" class="mg-table-empty"><i data-lucide="receipt" aria-hidden="true"></i><p>Nenhuma despesa encontrada para este período.</p></td></tr>{% endfor %}
             </tbody>
         </table>
     </div>
-</div>
+    {% if expenses_page.paginator.num_pages > 1 %}<nav class="mg-pagination" aria-label="Páginas de despesas"><span>Página {{ expenses_page.number }} de {{ expenses_page.paginator.num_pages }}</span><div class="page-actions">{% if expenses_page.has_previous %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&expenses_page={{ expenses_page.previous_page_number }}&entries_page={{ entries_page.number }}">Anterior</a>{% endif %}{% if expenses_page.has_next %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&expenses_page={{ expenses_page.next_page_number }}&entries_page={{ entries_page.number }}">Próxima</a>{% endif %}</div></nav>{% endif %}
+</section>
 
-<!-- Modal para Nova Despesa -->
-<div id="expenseModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center;">
-    <div class="card" style="max-width: 500px; margin: 10% auto;">
-        <div class="card-header">
-            <h3 style="color: #FFF; font-size: 1.2rem;">Lançar Nova Despesa</h3>
-            <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('expenseModal').style.display = 'none'">&times;</button>
-        </div>
+<section class="card" aria-labelledby="ledger-title">
+    <div class="card-header"><div><h2 id="ledger-title" class="section-title">Extrato de movimentações</h2><p class="mg-section-description">Entradas, taxas e saídas reconhecidas no caixa da edição.</p></div></div>
+    <div class="table-responsive">
+        <table class="table" aria-label="Movimentações financeiras">
+            <thead><tr><th scope="col">Data e hora</th><th scope="col">Movimento</th><th scope="col">Descrição</th><th scope="col">Valor</th><th scope="col">Referência</th></tr></thead>
+            <tbody>{% for entry in entries %}<tr><td class="mg-meta mg-nowrap">{{ entry.recognized_at|date:"d/m/Y H:i" }}</td><td><span class="badge badge-info">{{ entry.get_kind_display }}</span></td><td class="mg-strong">{{ entry.description }}</td><td class="mg-strong mg-nowrap {% if entry.amount_cents_signed >= 0 %}text-success{% else %}mg-text-danger{% endif %}">R$ {{ entry.amount_cents_signed|money }}</td><td class="mg-code text-muted">{{ entry.source_reference|default:"—" }}</td></tr>{% empty %}<tr><td colspan="5" class="mg-table-empty"><i data-lucide="rows-3" aria-hidden="true"></i><p>Nenhuma movimentação encontrada para este período.</p></td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+    {% if entries_page.paginator.num_pages > 1 %}<nav class="mg-pagination" aria-label="Páginas do extrato"><span>Página {{ entries_page.number }} de {{ entries_page.paginator.num_pages }}</span><div class="page-actions">{% if entries_page.has_previous %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.previous_page_number }}&expenses_page={{ expenses_page.number }}">Anterior</a>{% endif %}{% if entries_page.has_next %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.next_page_number }}&expenses_page={{ expenses_page.number }}">Próxima</a>{% endif %}</div></nav>{% endif %}
+</section>
 
-        <form method="POST" action="{% url 'gestao:add_expense' event_id=event.id %}">
-            {% csrf_token %}
-            <div class="form-group">
-                <label class="form-label">Descrição da Despesa *</label>
-                <input type="text" name="description" class="form-control" required placeholder="Ex: Confecção de 200 Camisetas">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Categoria de Custo *</label>
-                <select name="category" class="form-control">
-                    <option value="KITS_CAMISETAS">Kits e Camisetas</option>
-                    <option value="ALIMENTACAO">Alimentação e Bebidas</option>
-                    <option value="ESTRUTURA">Estrutura, Som e Pódio</option>
-                    <option value="PREMIACOES">Troféus e Medalhas</option>
-                    <option value="RESGATE">Combustível e Resgate</option>
-                    <option value="MARKETING">Marketing e Mídia</option>
-                    <option value="OUTROS">Outros</option>
-                </select>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div class="form-group">
-                    <label class="form-label">Valor (R$) *</label>
-                    <input type="text" name="amount" class="form-control" required placeholder="1500,00">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Data de Vencimento *</label>
-                    <input type="date" name="due_at" class="form-control" required>
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
-                Gravar Despesa
-            </button>
+<dialog id="expenseModal" class="mg-dialog" aria-labelledby="expense-dialog-title">
+    <div class="card mg-dialog-card">
+        <div class="card-header"><div><h2 class="section-title" id="expense-dialog-title">Nova despesa</h2><p class="mg-section-description">Informe o compromisso financeiro da edição.</p></div><button type="button" class="btn btn-secondary btn-sm" aria-label="Fechar formulário de despesa" onclick="document.getElementById('expenseModal').close()"><i data-lucide="x" aria-hidden="true"></i></button></div>
+        <form method="post" action="{% url 'gestao:add_expense' event_id=event.id %}">
+            {% csrf_token %}{{ expense_form.idempotency_key }}
+            {% if expense_form.non_field_errors %}<div class="mg-form-errors" role="alert">{{ expense_form.non_field_errors }}</div>{% endif %}
+            {% for field in expense_form.visible_fields %}
+            <div class="form-group"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}{% if field.errors %}<div class="mg-field-errors" role="alert">{{ field.errors }}</div>{% endif %}</div>
+            {% endfor %}
+            <div class="mg-form-actions"><button type="button" class="btn btn-secondary" onclick="document.getElementById('expenseModal').close()">Cancelar</button><button type="submit" class="btn btn-primary"><i data-lucide="check" aria-hidden="true"></i> Salvar despesa</button></div>
         </form>
     </div>
-</div>
+</dialog>
+
+{% for exp in expenses %}{% if exp.status == 'PENDING' %}
+<dialog id="cancelExpense{{ exp.id }}" class="mg-dialog" aria-labelledby="cancel-title-{{ exp.id }}"><div class="card mg-dialog-card"><div class="card-header"><h2 class="section-title" id="cancel-title-{{ exp.id }}">Cancelar despesa</h2><button type="button" class="btn btn-secondary btn-sm" aria-label="Fechar cancelamento" onclick="document.getElementById('cancelExpense{{ exp.id }}').close()"><i data-lucide="x" aria-hidden="true"></i></button></div><p class="mg-space-bottom">{{ exp.description }} · <strong>R$ {{ exp.amount_cents|money }}</strong></p><form method="post" action="{% url 'gestao:cancel_expense' event_id=event.id expense_id=exp.id %}">{% csrf_token %}<div class="form-group"><label class="form-label" for="cancel-reason-{{ exp.id }}">Motivo do cancelamento</label><textarea id="cancel-reason-{{ exp.id }}" name="reason" class="form-control" rows="3" maxlength="500" required placeholder="Informe por que a despesa será cancelada."></textarea><p class="form-help">A justificativa será registrada no histórico de auditoria.</p></div><div class="mg-form-actions"><button type="button" class="btn btn-secondary" onclick="document.getElementById('cancelExpense{{ exp.id }}').close()">Voltar</button><button type="submit" class="btn btn-danger">Cancelar despesa</button></div></form></div></dialog>
+{% endif %}{% endfor %}
+{% endblock %}
+
+{% block extra_js %}
+{% if expense_form.errors %}<script>document.addEventListener('DOMContentLoaded', function () { document.getElementById('expenseModal').showModal(); });</script>{% endif %}
 {% endblock %}

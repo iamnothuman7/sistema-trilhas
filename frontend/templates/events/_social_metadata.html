@@ -1,0 +1,7 @@
+{% if selected_version %}
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ selected_version.title }}">
+<meta property="og:description" content="{{ selected_version.description|striptags|truncatechars:200 }}">
+{% if selected_version.social_image_url %}<meta property="og:image" content="{% if selected_version.social_image_url|slice:':1' == '/' and request %}{{ request.scheme }}://{{ request.get_host }}{% endif %}{{ selected_version.social_image_url }}">
+<meta property="og:image:type" content="{{ selected_version.social_type }}">{% endif %}
+{% endif %}

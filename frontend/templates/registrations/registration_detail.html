@@ -1,142 +1,49 @@
 {% extends "base.html" %}
-
-{% block title %}Detalhes da Inscrição #{{ reg.registration_number|default:'' }} | Equipe Morcego{% endblock %}
-
+{% block title %}Inscrição #{{ reg.registration_number|default:'' }} | Equipe Morcego{% endblock %}
 {% block content %}
-<div class="container container-narrow" style="padding: 3.5rem 1.25rem;">
-    <div style="margin-bottom: 2rem;">
-        <a href="{% url 'minha_conta:dashboard' %}" class="btn btn-sm btn-secondary" style="margin-bottom: 1rem;">
-            &larr; Voltar para Minhas Inscrições
-        </a>
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-            <div>
-                <span class="badge badge-warning">INSCRIÇÃO OFICIAL</span>
-                <h1 style="font-size: 2.2rem; font-weight: 900; color: #FFF; margin-top: 0.25rem;">
-                    #{{ reg.registration_number|default:'Pendente' }} - {{ reg.person.full_name }}
-                </h1>
-                <div style="color: var(--text-muted); font-size: 1rem;">
-                    {{ reg.event.title }} &bull; {{ reg.event.starts_at|date:"d/m/Y \à\s H:i" }}
-                </div>
-            </div>
-            <div>
-                {% if reg.is_eligible_for_qr %}
-                    <a href="{% url 'minha_conta:credential_view' registration_id=reg.id %}" class="btn btn-primary btn-lg">
-                        📱 Ver QR Code de Acesso
-                    </a>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Status da Inscrição -->
-    <div class="card" style="margin-bottom: 2rem;">
-        <div class="card-header">
-            <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">Situação Geral</h2>
-            <div style="display: flex; gap: 0.5rem;">
-                <span class="badge {% if reg.commercial_state == 'ACTIVE' %}badge-success{% else %}badge-warning{% endif %}">
-                    {{ reg.get_commercial_state_display }}
-                </span>
-                <span class="badge {% if reg.operational_state == 'READY' or reg.operational_state == 'CHECKED_IN' %}badge-success{% else %}badge-warning{% endif %}">
-                    {{ reg.get_operational_state_display }}
-                </span>
-            </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; font-size: 0.95rem;">
-            <div>
-                <div style="color: var(--text-muted);">Modalidade</div>
-                <div style="font-weight: 700; color: #FFF;">{{ reg.category_name }}</div>
-            </div>
-            <div>
-                <div style="color: var(--text-muted);">Tamanho da Camiseta</div>
-                <div style="font-weight: 700; color: var(--primary);">Tamanho {{ reg.shirt_size }}</div>
-            </div>
-            <div>
-                <div style="color: var(--text-muted);">Equipe / Moto Clube</div>
-                <div style="font-weight: 700; color: #FFF;">{{ reg.team_name|default:"Sem equipe informada" }}</div>
-            </div>
-            <div>
-                <div style="color: var(--text-muted);">Data da Inscrição</div>
-                <div style="font-weight: 700; color: #FFF;">{{ reg.created_at|date:"d/m/Y H:i" }}</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Aceite de Regulamento e Termos Legais -->
-    <div class="card" style="margin-bottom: 2rem; border-color: {% if all_accepted %}var(--secondary){% else %}var(--primary){% endif %};">
-        <div class="card-header">
-            <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">
-                Termos de Responsabilidade e Regulamento
-            </h2>
-            {% if all_accepted %}
-                <span class="badge badge-success">✅ TERMOS ACEITOS</span>
-            {% else %}
-                <span class="badge badge-warning">⚠️ ACEITE NECESSÁRIO</span>
-            {% endif %}
-        </div>
-
-        {% if all_accepted %}
-            <p style="color: #34D399; font-size: 0.95rem;">
-                Você já aceitou o regulamento e os termos de responsabilidade desta edição. Seu credenciamento está liberado!
-            </p>
-        {% else %}
-            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">
-                Para liberar seu QR Code de credenciamento na secretaria do evento, você deve ler e registrar seu aceite pessoal nos termos abaixo:
-            </p>
-
-            <form method="POST" action="{% url 'minha_conta:accept_terms' registration_id=reg.id %}">
-                {% csrf_token %}
-                <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
-                    {% for doc in required_docs %}
-                        <div style="background-color: var(--surface-hover); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                <strong style="color: #FFF;">{{ doc.get_kind_display }} (v{{ doc.version_number }})</strong>
-                                <span class="badge badge-info">SHA: {{ doc.sha256|slice:":8" }}</span>
-                            </div>
-                            <div style="max-height: 140px; overflow-y: auto; background: #0A0E17; padding: 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; color: #E2E8F0; white-space: pre-line; margin-bottom: 0.75rem;">
-                                {{ doc.content }}
-                            </div>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: #FFF; cursor: pointer;">
-                                <input type="checkbox" name="document_version_id" value="{{ doc.id }}" required style="width: 18px; height: 18px;">
-                                Declaro que li e concordo integralmente com os termos deste documento.
-                            </label>
-                        </div>
-                    {% endfor %}
-                </div>
-
-                <button type="submit" class="btn btn-primary btn-block btn-lg">
-                    Confirmar Aceite e Liberar QR Code
-                </button>
-            </form>
+<main class="container container-narrow" style="padding:3rem 1.25rem">
+    <p><a class="btn btn-secondary btn-sm" href="{% url 'minha_conta:dashboard' %}">Minhas inscrições</a></p>
+    <h1>{{ reg.person.full_name }}</h1>
+    <p class="text-muted">{{ reg.event.title }} · {{ reg.event.starts_at|date:"d/m/Y H:i" }} · Inscrição #{{ reg.registration_number|default:"Pendente" }}</p>
+    {% if credential_available %}<p><a class="btn btn-primary" href="{% url 'minha_conta:credential_view' registration_id=reg.id %}"><i data-lucide="qr-code" aria-hidden="true"></i> Ver credencial</a></p>{% endif %}
+    <section class="card" style="margin-bottom:1.5rem">
+        <h2>Situação da inscrição</h2>
+        <p><span class="badge {% if reg.commercial_state == 'ACTIVE' %}badge-success{% else %}badge-warning{% endif %}">{{ reg.get_commercial_state_display }}</span> <span class="badge badge-info">{{ reg.get_operational_state_display }}</span></p>
+        <p>Modalidade: <strong>{{ reg.category_name }}</strong> · Camiseta: <strong>{{ reg.shirt_size }}</strong></p>
+        <p class="text-muted">Equipe: {{ reg.team_name|default:"Não informada" }}</p>
+        {% if can_share_claim %}
+        <p>Esta inscrição ainda precisa ser vinculada à conta do participante para o aceite pessoal dos termos.</p>
+        <form method="post" action="{% url 'minha_conta:create_claim' registration_id=reg.id %}">{% csrf_token %}<button class="btn btn-secondary" type="submit"><i data-lucide="link" aria-hidden="true"></i> Gerar link para o participante</button></form>
         {% endif %}
-    </div>
-
-    <!-- Benefícios e Kits da Inscrição -->
-    <div class="card">
-        <div class="card-header">
-            <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">Kits e Direitos Inclusos</h2>
-            <span style="font-size: 0.85rem; color: var(--text-muted);">Entrega na concentração do evento</span>
+    </section>
+    <section class="card" style="margin-bottom:1.5rem">
+        <h2>Regulamento e termos do evento</h2>
+        {% if terms_error %}<p class="alert alert-error" role="alert">{{ terms_error }}</p>{% endif %}
+        {% if all_accepted %}
+        <p class="alert alert-success">O titular registrou o aceite dos documentos vigentes. A credencial também depende do pagamento confirmado e da situação da inscrição.</p>
+        {% elif not required_docs %}
+        <p class="alert alert-warning">A organização ainda não disponibilizou os documentos para aceite. Acompanhe esta página.</p>
+        {% elif not is_holder %}
+        <p class="alert alert-warning">O aceite é pessoal. O participante precisa acessar a própria conta e vincular esta inscrição pelo link compartilhado pelo comprador.</p>
+        {% else %}<p>Leia os documentos abaixo e confirme seu aceite pessoal em cada um.</p>{% endif %}
+        {% if is_holder and required_docs and not all_accepted %}<form method="post" action="{% url 'minha_conta:accept_terms' registration_id=reg.id %}">{% csrf_token %}{% endif %}
+        {% for doc in required_docs %}
+        <article style="padding:1rem 0;border-bottom:1px solid var(--border)">
+            <h3>{{ doc.get_kind_display }} · versão {{ doc.version_number }}</h3>
+            <div style="max-height:240px;overflow:auto;white-space:pre-wrap;padding:1rem;background:var(--surface-hover);border-radius:var(--radius-md)">{{ doc.content }}</div>
+            {% if is_holder and not all_accepted %}<label class="form-label" style="display:block;margin-top:1rem"><input type="checkbox" name="document_version_id" value="{{ doc.id }}" required {% if doc.id in accepted_doc_ids %}checked{% endif %}> Li e concordo com este documento.</label>{% endif %}
+        </article>
+        {% endfor %}
+        {% if is_holder and required_docs and not all_accepted %}<p><button class="btn btn-primary" type="submit">Registrar meu aceite</button></p></form>{% endif %}
+    </section>
+    <section class="card">
+        <h2>Kits e benefícios</h2>
+        {% for ent in entitlements %}
+        <div style="display:flex;justify-content:space-between;gap:1rem;padding:1rem 0;border-bottom:1px solid var(--border)">
+            <div><strong>{{ ent.title }}</strong><div class="text-muted">{{ ent.quantity_used }} de {{ ent.quantity_total }} entregues</div></div>
+            <span class="badge {% if ent.state == 'REVOKED' %}badge-danger{% elif ent.quantity_used >= ent.quantity_total %}badge-success{% else %}badge-warning{% endif %}">{{ ent.get_state_display }}</span>
         </div>
-
-        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-            {% for ent in entitlements %}
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
-                    <div>
-                        <div style="font-weight: 700; color: #FFF;">{{ ent.title }}</div>
-                        <div style="font-size: 0.85rem; color: var(--text-muted);">Quantidade: {{ ent.quantity_total }}</div>
-                    </div>
-                    <div>
-                        {% if ent.quantity_used >= ent.quantity_total %}
-                            <span class="badge badge-success">Retirado</span>
-                        {% else %}
-                            <span class="badge badge-warning">Aguardando Retirada</span>
-                        {% endif %}
-                    </div>
-                </div>
-            {% empty %}
-                <p style="color: var(--text-muted);">Nenhum benefício extra configurado.</p>
-            {% endfor %}
-        </div>
-    </div>
-</div>
+        {% empty %}<p class="text-muted">Os benefícios aparecerão após a confirmação da inscrição.</p>{% endfor %}
+    </section>
+</main>
 {% endblock %}

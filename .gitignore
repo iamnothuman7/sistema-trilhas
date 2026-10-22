@@ -55,3 +55,6 @@ flaviofolia_ref/
 .models/
 
 setup_subdomain.py
+
+# External repositories and production reference snapshots
+/references/

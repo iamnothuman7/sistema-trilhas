@@ -1,8 +1,10 @@
 {% extends "base.html" %}
+{% load tz %}
 
 {% block title %}Programação Oficial | {{ event.title }}{% endblock %}
 
 {% block content %}
+{% timezone event.timezone %}
 <div class="container container-narrow" style="padding: 4rem 1.25rem;">
     <div style="text-align: center; margin-bottom: 2.5rem;">
         <span class="badge badge-warning">CRONOGRAMA DO EVENTO</span>
@@ -22,7 +24,7 @@
                     </div>
                     <div>
                         <h3 style="color: #FFF; font-size: 1.25rem; font-weight: 800; margin-bottom: 0.25rem;">{{ item.title }}</h3>
-                        <div style="color: var(--primary); font-size: 0.9rem; margin-bottom: 0.5rem;">📍 {{ item.location }}</div>
+                        <div style="color: var(--primary); font-size: 0.9rem; margin-bottom: 0.5rem;"><i data-lucide="map-pin" aria-hidden="true"></i> {{ item.location }}</div>
                         {% if item.description %}
                             <p style="color: var(--text-muted); font-size: 0.95rem;">{{ item.description }}</p>
                         {% endif %}
@@ -40,4 +42,5 @@
         <a href="{% url 'events:detail' slug=event.slug %}" class="btn btn-secondary">&larr; Voltar ao Evento</a>
     </div>
 </div>
+{% endtimezone %}
 {% endblock %}

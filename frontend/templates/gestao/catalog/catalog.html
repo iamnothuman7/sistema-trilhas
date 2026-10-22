@@ -1,31 +1,32 @@
 {% extends "gestao/base_gestao.html" %}
+{% load trilhas_ui %}
 
 {% block title %}Catálogo, Lotes e Estoque: {{ event.title }} | Painel Gestão{% endblock %}
 {% block gestao_header %}Catálogo e Capacidade: {{ event.title }}{% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 2rem;">
-    <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF;">Catálogo, Lotes e Estoque</h1>
-    <p style="color: var(--text-muted); font-size: 0.95rem;">Controle de lotes, produtos inclusos, cupons de desconto e inventário físico.</p>
+<div class="mg-page-intro mg-section-gap">
+    <h1>Catálogo, Lotes e Estoque</h1>
+    <p class="text-muted">Controle de lotes, produtos inclusos, cupons de desconto e inventário físico.</p>
 </div>
 
 <!-- Produtos e Lotes -->
-<div class="card" style="margin-bottom: 2rem;">
+<div class="card mg-section-gap">
     <div class="card-header">
-        <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">Modalidades e Lotes Vigentes</h2>
+        <h2 class="section-title">Modalidades e Lotes Vigentes</h2>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <div class="mg-stack">
         {% for prod in products %}
-            <div style="background-color: var(--surface-hover); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <div class="mg-inset-card">
+                <div class="mg-row mg-space-bottom-sm">
                     <div>
                         <span class="badge badge-warning">{{ prod.get_kind_display }}</span>
-                        <strong style="color: #FFF; font-size: 1.2rem; margin-left: 0.5rem;">{{ prod.name }}</strong>
+                        <strong>{{ prod.name }}</strong>
                     </div>
                 </div>
 
-                <div style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                <div class="text-muted mg-space-bottom">
                     Camiseta: {% if prod.includes_shirt %}Sim{% else %}Não{% endif %} &bull; 
                     Alimentação: {% if prod.includes_meal %}Sim{% else %}Não{% endif %} &bull; 
                     Kit Oficial: {% if prod.includes_kit %}Sim{% else %}Não{% endif %}
@@ -33,25 +34,25 @@
 
                 <!-- Tabela de Lotes deste produto -->
                 <div class="table-responsive">
-                    <table class="table" style="background-color: #0A0E17; border-radius: var(--radius-sm);">
+                    <table class="table">
                         <thead>
                             <tr>
-                                <th>Lote</th>
-                                <th>Preço</th>
-                                <th>Abertura</th>
-                                <th>Fechamento</th>
-                                <th>Vagas</th>
-                                <th>Vendidos</th>
-                                <th>Status</th>
+                                <th scope="col">Lote</th>
+                                <th scope="col">Preço</th>
+                                <th scope="col">Abertura</th>
+                                <th scope="col">Fechamento</th>
+                                <th scope="col">Vagas</th>
+                                <th scope="col">Vendidos</th>
+                                <th scope="col">Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for lot in prod.lots.all %}
                                 <tr>
-                                    <td style="font-weight: 700; color: #FFF;">{{ lot.title }}</td>
-                                    <td style="font-weight: 800; color: var(--primary);">R$ {{ lot.formatted_price }}</td>
-                                    <td style="font-size: 0.85rem;">{{ lot.opens_at|date:"d/m/Y H:i" }}</td>
-                                    <td style="font-size: 0.85rem;">{{ lot.closes_at|date:"d/m/Y H:i" }}</td>
+                                    <td class="mg-strong">{{ lot.title }}</td>
+                                    <td class="mg-strong mg-text-brand">R$ {{ lot.formatted_price }}</td>
+                                    <td class="mg-meta">{{ lot.opens_at|date:"d/m/Y H:i" }}</td>
+                                    <td class="mg-meta">{{ lot.closes_at|date:"d/m/Y H:i" }}</td>
                                     <td>{{ lot.max_quantity }}</td>
                                     <td><strong>{{ lot.current_sold }}</strong></td>
                                     <td>
@@ -62,13 +63,15 @@
                                 </tr>
                             {% empty %}
                                 <tr>
-                                    <td colspan="7" style="color: var(--text-muted); text-align: center;">Nenhum lote configurado para este produto.</td>
+                                    <td colspan="7" class="text-muted mg-align-center mg-table-empty">Nenhum lote configurado para este produto.</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
+        {% empty %}
+            <div class="empty-state"><span class="empty-icon"><i data-lucide="tags" aria-hidden="true"></i></span><h3>Nenhuma modalidade cadastrada</h3><p>Os produtos e lotes desta edição aparecerão aqui.</p></div>
         {% endfor %}
     </div>
 </div>
@@ -76,35 +79,35 @@
 <!-- Cupons de Desconto -->
 <div class="card">
     <div class="card-header">
-        <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">Cupons de Desconto Configurados</h2>
+        <h2 class="section-title">Cupons de Desconto Configurados</h2>
     </div>
 
     <div class="table-responsive">
         <table class="table">
             <thead>
                 <tr>
-                    <th>Código</th>
-                    <th>Tipo</th>
-                    <th>Valor do Desconto</th>
-                    <th>Utilizados</th>
-                    <th>Limite</th>
-                    <th>Validade</th>
-                    <th>Status</th>
+                    <th scope="col">Código</th>
+                    <th scope="col">Tipo</th>
+                    <th scope="col">Valor do Desconto</th>
+                    <th scope="col">Utilizados</th>
+                    <th scope="col">Limite</th>
+                    <th scope="col">Validade</th>
+                    <th scope="col">Status</th>
                 </tr>
             </thead>
             <tbody>
                 {% for cup in coupons %}
                     <tr>
-                        <td style="font-family: monospace; font-weight: 900; color: var(--primary); font-size: 1.1rem;">
+                        <td class="mg-code mg-strong mg-text-brand">
                             {{ cup.code_upper }}
                         </td>
                         <td>{{ cup.get_kind_display }}</td>
-                        <td style="font-weight: 800; color: #FFF;">
-                            {% if cup.kind == 'PERCENT' %}{{ cup.percent_off }}% OFF{% else %}R$ {{ cup.value_cents|stringformat:"d"|slice:":-2" }},{{ cup.value_cents|stringformat:"d"|slice:"-2:" }}{% endif %}
+                        <td class="mg-strong">
+                            {% if cup.kind == 'PERCENT' %}{{ cup.percent_off }}% OFF{% else %}R$ {{ cup.value_cents|money }}{% endif %}
                         </td>
                         <td><strong>{{ cup.used_count }}</strong></td>
                         <td>{{ cup.max_uses }}</td>
-                        <td style="font-size: 0.85rem;">{{ cup.valid_until|date:"d/m/Y H:i" }}</td>
+                        <td class="mg-meta">{{ cup.valid_until|date:"d/m/Y H:i" }}</td>
                         <td>
                             <span class="badge {% if cup.is_valid %}badge-success{% else %}badge-danger{% endif %}">
                                 {% if cup.is_valid %}Ativo{% else %}Expirado/Esgotado{% endif %}
@@ -113,7 +116,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="7" style="color: var(--text-muted); text-align: center; padding: 2rem;">
+                        <td colspan="7" class="text-muted mg-align-center mg-table-empty">
                             Nenhum cupom de desconto criado para este evento.
                         </td>
                     </tr>

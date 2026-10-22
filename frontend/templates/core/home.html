@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static tz %}
 
 {% block title %}Equipe Morcego | Portal Oficial de Trilhões e Expedições Off-Road{% endblock %}
 
@@ -8,68 +8,80 @@
 <section class="hero">
     <div class="container">
         <span class="badge badge-warning" style="margin-bottom: 1rem; font-size: 0.85rem;">
-            🏔️ SERRA DA IBIAPABA & REGIONAL OFF-ROAD
+            <i data-lucide="mountain" aria-hidden="true"></i> SERRA DA IBIAPABA & REGIONAL OFF-ROAD
         </span>
         <h1 class="hero-title">
             DESBRAVE AS MELHORES TRILHAS COM A EQUIPE MORCEGO
         </h1>
         <p class="hero-subtitle">
-            Inscrições online seguras, credenciamento rápido com QR Code, café da manhã, troféus, kits personalizados e total apoio nas trilhas mais brutas do Ceará e Piauí.
+            Conheça os próximos trilhões e expedições da Equipe Morcego, consulte as modalidades e prepare sua participação com inscrição online e credenciamento por QR Code.
         </p>
         <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
             {% if featured_events %}
                 <a href="{% url 'events:detail' slug=featured_events.0.slug %}" class="btn btn-primary btn-lg">
-                    ⚡ Inscrição: {{ featured_events.0.title }}
+                    <i data-lucide="zap" aria-hidden="true"></i> Conheça {{ featured_events.0.title }}
                 </a>
             {% endif %}
             <a href="{% url 'events:list' %}" class="btn btn-secondary btn-lg">
-                📅 Ver Todos os Eventos
+                <i data-lucide="calendar-days" aria-hidden="true"></i> Ver Todos os Eventos
             </a>
         </div>
 
-        <!-- Destaque Especial: Cartaz Oficial 2027 -->
-        <div class="card" style="margin-top: 3rem; background: linear-gradient(135deg, rgba(23, 30, 46, 0.95), rgba(11, 15, 25, 0.98)); border: 1px solid rgba(245, 158, 11, 0.35); box-shadow: 0 16px 50px rgba(0, 0, 0, 0.7); overflow: hidden; padding: 0; text-align: left;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); align-items: center;">
+        {% if featured_events %}
+        {% with featured=featured_events.0 %}
+        {% timezone featured.timezone %}
+        <div class="card" style="margin-top: 3rem; background: var(--surface); border-color: var(--border); overflow: hidden; padding: 0; text-align: left;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); align-items: center;">
                 <div style="padding: 2.5rem 2rem; display: flex; flex-direction: column; gap: 1rem;">
                     <div>
-                        <span class="badge badge-warning">JÁ TEM DATA MARCADA</span>
-                        <span class="badge badge-info" style="margin-left: 0.4rem;">SAVE THE DATE</span>
+                        <span class="badge badge-warning">EVENTO EM DESTAQUE</span>
+                        <span class="badge badge-info" style="margin-left: 0.4rem;">{{ featured.get_status_display }}</span>
                     </div>
                     <h2 style="font-size: 2.2rem; font-weight: 900; color: #FFF; line-height: 1.2;">
-                        3º Trilhão Tianguá Off Road 2027
+                        {{ featured.title }}
                     </h2>
-                    <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
-                        <span>🗓️</span> 20 e 21 de Março de 2027 &bull; Tianguá - CE
+                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--primary); display: flex; align-items: flex-start; gap: 0.5rem;">
+                        <i data-lucide="calendar-days" aria-hidden="true"></i>
+                        <span>{{ featured.starts_at|date:"d \d\e F \d\e Y" }}{% if featured.ends_at|date:"Y-m-d" != featured.starts_at|date:"Y-m-d" %} a {{ featured.ends_at|date:"d \d\e F \d\e Y" }}{% endif %}</span>
+                    </div>
+                    <div style="color: var(--text-muted); display: flex; align-items: flex-start; gap: 0.5rem;">
+                        <i data-lucide="map-pin" aria-hidden="true"></i>
+                        <span>{{ featured.venue|default:"Local a confirmar" }}{% if featured.city %} &bull; {{ featured.city }}{% if featured.state %}/{{ featured.state }}{% endif %}{% endif %}</span>
                     </div>
                     <p style="color: var(--text-muted); font-size: 0.98rem; line-height: 1.6;">
-                        O maior e mais aguardado encontro off-road do Ceará e Piauí já está confirmado para 2027! Prepare sua máquina e garanta sua presença no 1º lote com direito a kit completo, camisa oficial, café da manhã, troféu e o tradicional churrasco com música ao vivo.
+                        {{ featured.description|default:"Confira a programação, as modalidades disponíveis e as orientações da organização."|truncatewords:50 }}
                     </p>
                     <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;">
-                        {% if featured_events %}
-                            <a href="{% url 'events:detail' slug=featured_events.0.slug %}" class="btn btn-primary btn-lg">
-                                ⚡ Garantir Vaga no 1º Lote
-                            </a>
-                            <a href="{% url 'events:frames' slug=featured_events.0.slug %}" class="btn btn-secondary btn-lg">
-                                📸 Gerar Moldura "Eu Vou"
-                            </a>
-                        {% endif %}
+                        <a href="{% url 'events:detail' slug=featured.slug %}" class="btn btn-primary btn-lg">
+                            <i data-lucide="zap" aria-hidden="true"></i> {% if featured.is_registration_open %}Detalhes e inscrição{% else %}Conhecer evento{% endif %}
+                        </a>
+                        <a href="{% url 'events:frames' slug=featured.slug %}" class="btn btn-secondary btn-lg">
+                            <i data-lucide="camera" aria-hidden="true"></i> Gerar Moldura "Eu Vou"
+                        </a>
                     </div>
                 </div>
-                <div style="text-align: center; padding: 1.75rem; background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);">
-                    {% if featured_events %}
-                        <a href="{% url 'events:detail' slug=featured_events.0.slug %}">
-                            <img src="{% static 'img/cartaz_trilhao_2027.jpg' %}" alt="Cartaz Oficial 3º Trilhão Tianguá Off Road 2027" style="max-height: 420px; width: auto; max-width: 100%; border-radius: var(--radius-md); box-shadow: 0 12px 35px rgba(0,0,0,0.8); border: 2px solid rgba(245, 158, 11, 0.4); transition: transform 0.3s ease;">
-                        </a>
-                    {% endif %}
+                <div style="text-align: center; padding: 1.75rem; background: var(--bg-dark);">
+                    <a href="{% url 'events:detail' slug=featured.slug %}">
+                        {% if featured.theme.hero_banner %}
+                            <img src="{{ featured.theme.hero_banner.url }}" alt="{{ featured.title }}" style="max-height: 420px; width: auto; max-width: 100%; object-fit: contain; border-radius: var(--radius-md);">
+                        {% elif featured.theme.logo_image %}
+                            <img src="{{ featured.theme.logo_image.url }}" alt="{{ featured.title }}" class="logo-emblem" style="max-height: 360px; width: auto; max-width: 100%; margin-inline: auto;">
+                        {% else %}
+                            <img src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" class="logo-emblem" style="max-height: 360px; width: auto; max-width: 100%; margin-inline: auto;">
+                        {% endif %}
+                    </a>
                 </div>
             </div>
         </div>
+        {% endtimezone %}
+        {% endwith %}
+        {% endif %}
     </div>
 </section>
 
 <!-- Próximos Eventos -->
 <section class="container" style="padding: 4rem 1.25rem;">
-    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
         <div>
             <span class="badge badge-warning">CALENDÁRIO OFICIAL</span>
             <h2 style="font-size: 2rem; font-weight: 900; margin-top: 0.5rem; color: #FFF;">
@@ -80,8 +92,9 @@
     </div>
 
     {% if featured_events %}
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.75rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 1.75rem;">
             {% for event in featured_events %}
+                {% timezone event.timezone %}
                 <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
@@ -100,25 +113,26 @@
                         </h3>
 
                         <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">
-                            {{ event.description|truncatewords:22 }}
+                            {{ event.description|default:"Consulte a programação, as modalidades e as orientações deste evento."|truncatewords:22 }}
                         </p>
 
                         <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem; background: var(--surface-hover); padding: 1rem; border-radius: var(--radius-md);">
-                            <div>📍 <strong>Local:</strong> {{ event.venue }} - {{ event.city }}/{{ event.state }}</div>
-                            <div>🗓️ <strong>Data:</strong> {{ event.starts_at|date:"d/m/Y (l) \à\s H:i" }}</div>
-                            <div>👥 <strong>Vagas:</strong> Até {{ event.max_attendees }} pilotos</div>
+                            <div><i data-lucide="map-pin" aria-hidden="true"></i> <strong>Local:</strong> {{ event.venue }} - {{ event.city }}/{{ event.state }}</div>
+                            <div><i data-lucide="calendar-days" aria-hidden="true"></i> <strong>Data:</strong> {{ event.starts_at|date:"d/m/Y (l) \à\s H:i" }}</div>
+                            <div><i data-lucide="users" aria-hidden="true"></i> <strong>Vagas:</strong> Até {{ event.max_attendees }} pilotos</div>
                         </div>
                     </div>
 
                     <div style="display: flex; gap: 0.75rem;">
                         <a href="{% url 'events:detail' slug=event.slug %}" class="btn btn-primary" style="flex: 2;">
-                            Garantir Vaga
+                            {% if event.is_registration_open %}Detalhes e inscrição{% else %}Conhecer evento{% endif %}
                         </a>
                         <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary" style="flex: 1; text-align: center;" title="Gerar Moldura Oficial">
-                            📸 Moldura
+                            <i data-lucide="camera" aria-hidden="true"></i> Moldura
                         </a>
                     </div>
                 </div>
+                {% endtimezone %}
             {% endfor %}
         </div>
     {% else %}
@@ -141,34 +155,34 @@
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.75rem;">
             <div class="card" style="background-color: var(--bg-dark);">
-                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">🛡️</div>
+                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;"><i data-lucide="shield-check" aria-hidden="true"></i></div>
                 <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Segurança e Resgate</h3>
                 <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Pontos de apoio estratégicos, equipe de resgate, carros 4x4 de suporte e mecânicos prontos em todo o trajeto.
+                    Confira os pontos de apoio, os recursos de resgate e as orientações de segurança publicados pela organização de cada edição.
                 </p>
             </div>
 
             <div class="card" style="background-color: var(--bg-dark);">
-                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">⚡</div>
+                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;"><i data-lucide="zap" aria-hidden="true"></i></div>
                 <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Credenciamento Veloz</h3>
                 <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Chegue no evento, apresente seu QR Code no celular e retire seu kit em segundos. Sem filas e sem dor de cabeça.
+                    Acompanhe sua inscrição na Área do Piloto e apresente sua credencial liberada no atendimento do evento.
                 </p>
             </div>
 
             <div class="card" style="background-color: var(--bg-dark);">
-                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">🍖</div>
-                <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Café e Almoço Inclusos</h3>
+                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;"><i data-lucide="utensils" aria-hidden="true"></i></div>
+                <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Alimentação por Modalidade</h3>
                 <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Café da manhã reforçado na concentração e almoço completo com churrasco e música ao vivo na linha de chegada.
+                    Consulte quais refeições estão incluídas na modalidade escolhida e os horários informados pela organização.
                 </p>
             </div>
 
             <div class="card" style="background-color: var(--bg-dark);">
-                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">🏆</div>
-                <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Troféus e Kits Brutos</h3>
+                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;"><i data-lucide="trophy" aria-hidden="true"></i></div>
+                <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Kits e Benefícios</h3>
                 <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Camisetas em tecido tecnológico de alta qualidade, troféus pesados para equipes e pilotos e brindes oficiais.
+                    Veja os itens incluídos em cada pacote e acompanhe a retirada dos benefícios vinculados à sua inscrição.
                 </p>
             </div>
         </div>

@@ -1,193 +1,32 @@
-{% extends "gestao/base_gestao.html" %}
-
-{% block title %}Painel de Gestão | Equipe Morcego{% endblock %}
-{% block gestao_header %}Visão Geral e Indicadores da Edição{% endblock %}
-
+{% extends 'gestao/base_gestao.html' %}
+{% load trilhas_ui %}
+{% block title %}Visão geral | Equipe Morcego{% endblock %}
+{% block gestao_header %}Visão geral{% endblock %}
 {% block content %}
-<div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-    <!-- Seletor de Evento Ativo -->
-    <form method="GET" style="display: flex; align-items: center; gap: 0.75rem;">
-        <label style="font-size: 0.9rem; font-weight: 700; color: var(--text-muted);">Evento Ativo:</label>
-        <select name="event_id" class="form-control" style="width: auto; min-width: 280px;" onchange="this.form.submit()">
-            {% for ev in events %}
-                <option value="{{ ev.id }}" {% if selected_event and selected_event.id == ev.id %}selected{% endif %}>
-                    {{ ev.title }} ({{ ev.get_status_display }})
-                </option>
-            {% endfor %}
-        </select>
-    </form>
-
-    <div style="display: flex; gap: 0.75rem;">
-        {% if selected_event %}
-            <a href="{% url 'gestao:credenciamento' event_id=selected_event.id %}" class="btn btn-success">
-                ⚡ Abrir Scanner de Credenciamento
-            </a>
-            <a href="{% url 'gestao:export_participants' event_id=selected_event.id %}" class="btn btn-secondary">
-                📥 Exportar Inscritos (CSV)
-            </a>
-        {% endif %}
-        <a href="{% url 'gestao:event_create' %}" class="btn btn-primary">
-            + Nova Edição
-        </a>
-    </div>
-</div>
-
+<div class="page-heading"><div><span class="eyebrow">Painel de gestão</span><h1>Visão geral</h1><p>Acompanhe sua edição, da inscrição à chegada na trilha.</p></div><div class="page-actions">{% if selected_event and management_permissions.finance %}<a class="btn btn-secondary" href="{% url 'gestao:reports' event_id=selected_event.id %}"><i data-lucide="chart-no-axes-combined"></i>Relatórios</a>{% endif %}{% if management_can_create_events %}<a class="btn btn-primary" href="{% url 'gestao:event_create' %}"><i data-lucide="plus"></i>Nova edição</a>{% endif %}</div></div>
 {% if selected_event %}
-    <!-- Cards de Indicadores (KPIs) -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
-        <!-- Receita Confirmada -->
-        <div class="card" style="border-top: 4px solid var(--secondary);">
-            <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
-                Receita Confirmada
-            </div>
-            <div style="font-size: 1.8rem; font-weight: 900; color: #FFF; margin-top: 0.25rem;">
-                R$ {{ kpi.total_received_cents|stringformat:"d"|slice:":-2"|default:"0" }},{{ kpi.total_received_cents|stringformat:"d"|slice:"-2:"|default:"00" }}
-            </div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
-                Bruto: R$ {{ kpi.total_gross_cents|stringformat:"d"|slice:":-2"|default:"0" }}
-            </div>
-        </div>
-
-        <!-- Pilotos Confirmados -->
-        <div class="card" style="border-top: 4px solid var(--primary);">
-            <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
-                Pilotos Confirmados
-            </div>
-            <div style="font-size: 1.8rem; font-weight: 900; color: #FFF; margin-top: 0.25rem;">
-                {{ kpi.active_confirmed }} <span style="font-size: 1rem; color: var(--text-muted); font-weight: 500;">/ {{ kpi.max_capacity }} vagas</span>
-            </div>
-            <div style="font-size: 0.8rem; color: var(--secondary); margin-top: 0.25rem; font-weight: 700;">
-                {{ kpi.vacancies_left }} vagas livres
-            </div>
-        </div>
-
-        <!-- Presenças (Check-in) -->
-        <div class="card" style="border-top: 4px solid #3B82F6;">
-            <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
-                Presenças no Evento
-            </div>
-            <div style="font-size: 1.8rem; font-weight: 900; color: #FFF; margin-top: 0.25rem;">
-                {{ kpi.checked_in_count }}
-            </div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
-                Aptos aguardando: {{ kpi.ready_for_checkin }}
-            </div>
-        </div>
-
-        <!-- Kits Entregues -->
-        <div class="card" style="border-top: 4px solid #8B5CF6;">
-            <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
-                Camisetas / Kits Entregues
-            </div>
-            <div style="font-size: 1.8rem; font-weight: 900; color: #FFF; margin-top: 0.25rem;">
-                {{ kpi.shirts_delivered }} <span style="font-size: 1rem; color: var(--text-muted); font-weight: 500;">/ {{ kpi.shirts_total }}</span>
-            </div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
-                Saldo a entregar: {{ kpi.shirts_total|default:0|add:"-kpi.shirts_delivered"|default:0 }}
-            </div>
-        </div>
-
-        <!-- Saldo Líquido Estimado -->
-        <div class="card" style="border-top: 4px solid var(--primary);">
-            <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
-                Resultado Líquido Caixa
-            </div>
-            <div style="font-size: 1.8rem; font-weight: 900; color: var(--primary); margin-top: 0.25rem;">
-                R$ {{ kpi.net_profit_cents|stringformat:"d"|slice:":-2"|default:"0" }},{{ kpi.net_profit_cents|stringformat:"d"|slice:"-2:"|default:"00" }}
-            </div>
-            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
-                Despesas pagas: R$ {{ kpi.total_expenses_cents|stringformat:"d"|slice:":-2"|default:"0" }}
-            </div>
-        </div>
-    </div>
-
-    <!-- Seção Dividida: Últimos Pedidos & Últimos Check-ins -->
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
-        <!-- Pedidos Recentes -->
-        <div class="card">
-            <div class="card-header">
-                <h3 style="font-size: 1.15rem; font-weight: 800; color: #FFF;">Últimos Pedidos / Inscrições</h3>
-                <a href="{% url 'gestao:registration_list' event_id=selected_event.id %}" class="btn btn-sm btn-secondary">Ver Todos</a>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Ref</th>
-                            <th>Comprador</th>
-                            <th>Total</th>
-                            <th>Situação</th>
-                            <th>Data</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for order in recent_orders %}
-                            <tr>
-                                <td style="font-family: monospace; font-weight: 700; color: var(--primary);">
-                                    #{{ order.merchant_reference }}
-                                </td>
-                                <td>
-                                    <div style="font-weight: 700; color: #FFF;">{{ order.purchaser_name }}</div>
-                                    <div style="font-size: 0.8rem; color: var(--text-muted);">{{ order.purchaser_phone }}</div>
-                                </td>
-                                <td style="font-weight: 800; color: #FFF;">
-                                    R$ {{ order.formatted_total }}
-                                </td>
-                                <td>
-                                    <span class="badge {% if order.status == 'PAID' %}badge-success{% elif order.status == 'RESERVED' or order.status == 'AWAITING_PAYMENT' %}badge-warning{% else %}badge-danger{% endif %}">
-                                        {{ order.get_status_display }}
-                                    </span>
-                                </td>
-                                <td style="font-size: 0.85rem; color: var(--text-muted);">
-                                    {{ order.created_at|date:"d/m H:i" }}
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr>
-                                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                                    Nenhum pedido registrado até o momento.
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Últimas Presenças Registradas -->
-        <div class="card">
-            <div class="card-header">
-                <h3 style="font-size: 1.15rem; font-weight: 800; color: #FFF;">Presenças Recentes</h3>
-                <a href="{% url 'gestao:credenciamento' event_id=selected_event.id %}" class="btn btn-sm btn-success">Scanner</a>
-            </div>
-
-            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                {% for checkin in recent_checkins %}
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
-                        <div>
-                            <div style="font-weight: 700; color: #FFF; font-size: 0.95rem;">
-                                #{{ checkin.registration.registration_number }} - {{ checkin.registration.person.full_name }}
-                            </div>
-                            <div style="font-size: 0.8rem; color: var(--text-muted);">
-                                Tam. {{ checkin.registration.shirt_size }} &bull; {{ checkin.occurred_at|date:"H:i" }}
-                            </div>
-                        </div>
-                        <span class="badge badge-success">OK</span>
-                    </div>
-                {% empty %}
-                    <p style="color: var(--text-muted); text-align: center; padding: 2rem;">
-                        Nenhuma presença confirmada ainda.
-                    </p>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
+<section class="event-overview" aria-label="Evento selecionado"><div><div class="event-label"><span class="status-dot"></span>Edição {{ selected_event.edition_number }} <span>·</span> {{ selected_event.get_status_display }}</div><h2>{{ selected_event.title }}</h2><div class="event-meta"><span><i data-lucide="calendar-days"></i>{{ selected_event.starts_at|date:'d/m/Y' }}</span><span><i data-lucide="map-pin"></i>{{ selected_event.city }}{% if selected_event.venue %} · {{ selected_event.venue }}{% endif %}</span></div></div><div class="event-overview-right"><form method="get" class="event-selector"><label for="eventSwitcher">Você está gerenciando</label><select id="eventSwitcher" class="form-control" name="event_id" data-auto-submit>{% for ev in events %}<option value="{{ ev.id }}" {% if selected_event.id == ev.id %}selected{% endif %}>{{ ev.title }}</option>{% endfor %}</select><noscript><button class="btn btn-secondary btn-sm" type="submit">Selecionar evento</button></noscript></form><a class="event-view-link" href="{% url 'events:detail' slug=selected_event.slug %}" target="_blank" rel="noopener">Ver página do evento<i data-lucide="arrow-up-right"></i></a></div></section>
+<section class="stat-grid" aria-label="Indicadores do evento">
+{% if management_permissions.finance %}<article class="stat-card"><div class="stat-top"><span class="stat-label">Receita confirmada</span><span class="stat-icon"><i data-lucide="wallet"></i></span></div><div class="stat-value"><small>R$</small> {{ kpi.total_received_cents|money }}</div><div class="stat-foot"><i data-lucide="circle-check"></i>Pagamentos confirmados</div></article>{% else %}<article class="stat-card"><div class="stat-top"><span class="stat-label">Inscrições recebidas</span><span class="stat-icon"><i data-lucide="ticket"></i></span></div><div class="stat-value">{{ kpi.total_registered }}</div><div class="stat-foot">Total de inscrições da edição</div></article>{% endif %}
+<article class="stat-card"><div class="stat-top"><span class="stat-label">Pilotos confirmados</span><span class="stat-icon"><i data-lucide="users-round"></i></span></div><div class="stat-value">{{ kpi.active_confirmed }} <small>/ {{ kpi.max_capacity }}</small></div><div class="stat-foot">{{ kpi.vacancies_left }} vagas disponíveis</div></article>
+<article class="stat-card"><div class="stat-top"><span class="stat-label">Presenças registradas</span><span class="stat-icon"><i data-lucide="scan-line"></i></span></div><div class="stat-value">{{ kpi.checked_in_count }}</div><div class="stat-foot">{{ kpi.ready_for_checkin }} prontos para entrar</div></article>
+<article class="stat-card"><div class="stat-top"><span class="stat-label">Camisetas entregues</span><span class="stat-icon"><i data-lucide="shirt"></i></span></div><div class="stat-value">{{ kpi.shirts_delivered }} <small>/ {{ kpi.shirts_total }}</small></div><div class="stat-foot">{{ kpi.shirts_total|subtract:kpi.shirts_delivered }} aguardando retirada</div></article>
+</section>
+<div class="dashboard-grid">
+<section class="card"><div class="card-header"><div><h2>Últimos pedidos</h2><p>Movimentações recentes desta edição</p></div>{% if management_permissions.registrations %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:registration_list' event_id=selected_event.id %}">Ver inscrições<i data-lucide="arrow-up-right"></i></a>{% endif %}</div>
+{% if recent_orders %}<div class="table-responsive"><table class="table"><thead><tr><th>Participante</th><th>Pedido</th>{% if management_permissions.finance %}<th>Valor</th>{% endif %}<th>Status</th><th>Data</th></tr></thead><tbody>{% for order in recent_orders %}<tr><td><strong>{{ order.purchaser_name }}</strong></td><td><small>#{{ order.merchant_reference }}</small></td>{% if management_permissions.finance %}<td class="table-number">R$ {{ order.total_cents|money }}</td>{% endif %}<td><span class="badge {% if order.status == 'PAID' %}badge-success{% elif order.status == 'RESERVED' or order.status == 'AWAITING_PAYMENT' %}badge-warning{% else %}badge-danger{% endif %}">{{ order.get_status_display }}</span></td><td class="table-number text-muted">{{ order.created_at|date:'d/m H:i' }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty-state"><span class="empty-icon"><i data-lucide="ticket"></i></span><h3>Aguardando os primeiros pedidos</h3><p>As inscrições desta edição aparecerão aqui assim que forem realizadas.</p></div>{% endif %}</section>
+<div class="dashboard-secondary">
+<section class="card"><div class="card-header"><h2>Acesso rápido</h2><i data-lucide="move-up-right" class="text-muted"></i></div>
+{% if management_permissions.checkin %}<a class="quick-action" href="{% url 'gestao:credenciamento' event_id=selected_event.id %}"><span><i data-lucide="scan-line"></i></span><span>Credenciamento<small>Leia o QR Code e registre a presença</small></span><i data-lucide="chevron-right"></i></a>{% endif %}
+{% if management_permissions.registrations %}<a class="quick-action" href="{% url 'gestao:registration_list' event_id=selected_event.id %}"><span><i data-lucide="users-round"></i></span><span>Gerenciar inscrições<small>Participantes, situações e credenciais</small></span><i data-lucide="chevron-right"></i></a>{% endif %}
+{% if management_permissions.content %}<a class="quick-action" href="{% url 'gestao:frames' event_id=selected_event.id %}"><span><i data-lucide="images"></i></span><span>Molduras do evento<small>Materiais para compartilhar a edição</small></span><i data-lucide="chevron-right"></i></a>{% endif %}
+{% if management_permissions.finance %}<a class="quick-action" href="{% url 'gestao:reports' event_id=selected_event.id %}"><span><i data-lucide="file-chart-column"></i></span><span>Relatórios e exportações<small>Dados da operação em um só lugar</small></span><i data-lucide="chevron-right"></i></a>{% endif %}</section>
+<section class="card"><div class="card-header"><h2>Ocupação do evento</h2><span class="badge badge-warning">{{ kpi.active_confirmed|percentage:kpi.max_capacity }}%</span></div><div class="stat-value">{{ kpi.active_confirmed }} <small>de {{ kpi.max_capacity }} vagas</small></div><progress class="stat-progress" value="{{ kpi.active_confirmed }}" max="{{ kpi.max_capacity|default:1 }}" aria-label="Vagas ocupadas"></progress><div class="stat-foot">{{ kpi.vacancies_left }} vagas disponíveis para esta edição</div></section>
+</div>
+<section class="card"><div class="card-header"><div><h2>Últimas presenças</h2><p>Entradas confirmadas pela equipe</p></div>{% if management_permissions.checkin %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:credenciamento' event_id=selected_event.id %}"><i data-lucide="scan-line"></i>Abrir scanner</a>{% endif %}</div>{% for checkin in recent_checkins %}<div class="list-row"><div><strong>{{ checkin.registration.person.full_name }}</strong><small>Inscrição #{{ checkin.registration.registration_number }} · {{ checkin.occurred_at|date:'d/m H:i' }}</small></div><span class="badge badge-success">Presente</span></div>{% empty %}<div class="empty-state compact"><span class="empty-icon"><i data-lucide="scan-line"></i></span><p>As presenças aparecerão aqui durante o credenciamento.</p></div>{% endfor %}</section>
+{% if management_permissions.finance %}<section class="card"><div class="card-header"><h2>Resumo financeiro</h2><a href="{% url 'gestao:finance' event_id=selected_event.id %}" aria-label="Abrir financeiro"><i data-lucide="arrow-up-right"></i></a></div><div class="finance-summary"><span class="text-muted">Recebimentos</span><strong>R$ {{ kpi.total_received_cents|money }}</strong></div><div class="finance-summary"><span class="text-muted">Taxas registradas</span><span>R$ {{ kpi.total_fees_cents|money }}</span></div><div class="finance-summary"><span class="text-muted">Despesas pagas</span><span>R$ {{ kpi.total_expenses_cents|money }}</span></div><div class="finance-summary"><span>Resultado da edição</span><strong>R$ {{ kpi.net_profit_cents|money }}</strong></div></section>{% endif %}
+</div>
 {% else %}
-    <div class="card" style="text-align: center; padding: 4rem;">
-        <h2 style="color: #FFF; margin-bottom: 0.75rem;">Nenhum Evento Criado no Sistema</h2>
-        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Comece cadastrando sua primeira edição de trilhão ou expedição.</p>
-        <a href="{% url 'gestao:event_create' %}" class="btn btn-primary btn-lg">+ Criar Primeiro Evento</a>
-    </div>
+<section class="card empty-state"><span class="empty-icon"><i data-lucide="calendar-plus"></i></span><h2>Sua próxima edição começa aqui</h2><p>Cadastre um evento para organizar inscrições, financeiro e credenciamento em um só lugar.</p>{% if management_can_create_events %}<a class="btn btn-primary" href="{% url 'gestao:event_create' %}"><i data-lucide="plus"></i>Criar primeira edição</a>{% endif %}</section>
 {% endif %}
 {% endblock %}

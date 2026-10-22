@@ -1,9 +1,11 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static tz %}
 
 {% block title %}{{ event.title }} | Equipe Morcego Oficial{% endblock %}
 
 {% block extra_head %}
+<meta name="description" content="{{ event.description|default:'Consulte a programação, as modalidades e as orientações do evento da Equipe Morcego.'|striptags|truncatechars:160 }}">
+{% include "events/_social_metadata.html" %}
 {% if event.theme %}
 <style>
     :root {
@@ -16,30 +18,30 @@
 {% endblock %}
 
 {% block content %}
-<!-- Header / Hero do Evento com Cartaz Oficial -->
-<section style="background: radial-gradient(circle at 70% 30%, rgba(245, 158, 11, 0.12) 0%, transparent 65%), var(--bg-dark); border-bottom: 1px solid var(--border); padding: 3.5rem 0 3rem;">
+{% timezone event.timezone %}
+<!-- Apresentação e identidade cadastradas para esta edição -->
+<section style="background: var(--bg-dark); border-bottom: 1px solid var(--border); padding: 3.5rem 0 3rem;">
     <div class="container">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 3rem; align-items: center;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 3rem; align-items: center;">
             
-            <!-- Coluna da Esquerda: Cartaz Oficial -->
             <div style="text-align: center;">
-                <div style="display: inline-block; position: relative;">
-                    <img src="{% static 'img/cartaz_trilhao_2027.jpg' %}" alt="Cartaz Oficial {{ event.title }}" style="max-height: 520px; width: auto; max-width: 100%; border-radius: var(--radius-lg); border: 2px solid rgba(245, 158, 11, 0.5); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85); object-fit: cover;">
-                    <div style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.92); border: 1px solid var(--primary); padding: 0.35rem 0.9rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 800; color: #FFF; white-space: nowrap; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-                        🔥 20 E 21 DE MARÇO DE 2027
-                    </div>
-                </div>
+                {% if event.theme.hero_banner %}
+                    <img src="{{ event.theme.hero_banner.url }}" alt="{{ event.title }}" style="max-height: 520px; width: auto; max-width: 100%; border-radius: var(--radius-lg); object-fit: contain;">
+                {% elif event.theme.logo_image %}
+                    <img src="{{ event.theme.logo_image.url }}" alt="{{ event.title }}" class="logo-emblem" style="max-height: 450px; width: auto; max-width: 100%; margin-inline: auto;">
+                {% else %}
+                    <img src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" class="logo-emblem" style="max-height: 450px; width: auto; max-width: 100%; margin-inline: auto;">
+                {% endif %}
             </div>
 
             <!-- Coluna da Direita: Dados, Apresentação e Inscrição -->
             <div>
                 <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
-                    <img src="{% static 'img/logo_3trilhao_2027.png' %}" alt="Logo {{ event.title }}" style="height: 82px; width: auto; filter: drop-shadow(0 6px 18px rgba(234, 88, 12, 0.55));">
+                    {% if event.theme.logo_image %}<img src="{{ event.theme.logo_image.url }}" alt="{{ event.title }}" class="logo-emblem" style="height: 82px; width: auto;">{% endif %}
                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                         <span class="badge badge-warning">{{ event.get_type_display }}</span>
                         <span class="badge badge-success">{{ event.get_status_display }}</span>
                         <span class="badge badge-info">EDIÇÃO #{{ event.edition_number }}</span>
-                        <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid #EF4444;">SAVE THE DATE</span>
                     </div>
                 </div>
 
@@ -47,36 +49,37 @@
                     {{ event.title }}
                 </h1>
 
-                <div style="display: flex; align-items: center; gap: 0.6rem; font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: 1.25rem;">
-                    <span>🗓️</span> 20 e 21 de Março de 2027 &bull; Tianguá - CE
+                <div style="display: flex; align-items: flex-start; gap: 0.6rem; font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: 1.25rem;">
+                    <i data-lucide="calendar-days" aria-hidden="true"></i>
+                    <span>{{ event.starts_at|date:"d \d\e F \d\e Y" }}{% if event.ends_at|date:"Y-m-d" != event.starts_at|date:"Y-m-d" %} a {{ event.ends_at|date:"d \d\e F \d\e Y" }}{% endif %}{% if event.city %} &bull; {{ event.city }}{% if event.state %}/{{ event.state }}{% endif %}{% endif %}</span>
                 </div>
 
                 <p style="font-size: 1.08rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 2rem;">
-                    {{ event.description|default:"O maior e mais aguardado trilhão off-road da região. Prepare sua máquina e garanta sua vaga!" }}
+                    {{ event.description|default:"Confira a programação, as modalidades disponíveis e as orientações da organização." }}
                 </p>
 
                 <!-- Submenu do Evento -->
                 <div style="display: flex; gap: 0.65rem; flex-wrap: wrap; margin-bottom: 2rem;">
-                    <a href="{% url 'events:schedule' slug=event.slug %}" class="btn btn-secondary btn-sm">🗓️ Programação</a>
-                    <a href="{% url 'events:route' slug=event.slug %}" class="btn btn-secondary btn-sm">🗺️ Percurso</a>
-                    <a href="{% url 'events:rules' slug=event.slug %}" class="btn btn-secondary btn-sm">📜 Regulamento</a>
-                    <a href="{% url 'events:sponsors' slug=event.slug %}" class="btn btn-secondary btn-sm">🤝 Patrocinadores</a>
-                    <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary btn-sm" style="border-color: var(--primary); color: #FFF;">📸 Moldura Oficial</a>
+                    <a href="{% url 'events:schedule' slug=event.slug %}" class="btn btn-secondary btn-sm"><i data-lucide="calendar-days" aria-hidden="true"></i> Programação</a>
+                    <a href="{% url 'events:route' slug=event.slug %}" class="btn btn-secondary btn-sm"><i data-lucide="map" aria-hidden="true"></i> Percurso</a>
+                    <a href="{% url 'events:rules' slug=event.slug %}" class="btn btn-secondary btn-sm"><i data-lucide="file-text" aria-hidden="true"></i> Regulamento</a>
+                    <a href="{% url 'events:sponsors' slug=event.slug %}" class="btn btn-secondary btn-sm"><i data-lucide="handshake" aria-hidden="true"></i> Patrocinadores</a>
+                    <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary btn-sm" style="border-color: var(--primary); color: #FFF;"><i data-lucide="camera" aria-hidden="true"></i> Moldura Oficial</a>
                 </div>
 
                 <!-- CTAs -->
                 <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                     {% if event.is_registration_open %}
                         <a href="{% url 'checkout:start_registration' event_slug=event.slug %}" class="btn btn-primary btn-lg" style="font-size: 1.15rem; padding: 0.95rem 2rem;">
-                            ⚡ INSCREVA-SE NO 1º LOTE
+                            <i data-lucide="zap" aria-hidden="true"></i> Fazer inscrição
                         </a>
                     {% else %}
                         <button class="btn btn-secondary btn-lg" disabled>
-                            Inscrições Fechadas / Esgotadas
+                            Inscrições indisponíveis
                         </button>
                     {% endif %}
                     <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary btn-lg">
-                        📸 Gerar Moldura "Eu Vou"
+                        <i data-lucide="camera" aria-hidden="true"></i> Gerar Moldura "Eu Vou"
                     </a>
                 </div>
             </div>
@@ -89,23 +92,23 @@
 <section class="container" style="padding: 3.5rem 1.25rem;">
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 4rem;">
         <div class="card" style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📍</div>
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i data-lucide="map-pin" aria-hidden="true"></i></div>
             <div style="font-weight: 800; color: #FFF; font-size: 1.1rem;">Localização</div>
             <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
-                {{ event.venue }}<br>{{ event.city }} - {{ event.state }}
+                {{ event.venue|default:"Local a confirmar" }}{% if event.city %}<br>{{ event.city }}{% if event.state %}/{{ event.state }}{% endif %}{% endif %}
             </div>
         </div>
 
         <div class="card" style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🗓️</div>
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i data-lucide="calendar-days" aria-hidden="true"></i></div>
             <div style="font-weight: 800; color: #FFF; font-size: 1.1rem;">Data e Horário</div>
             <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
-                {{ event.starts_at|date:"d/m/Y (l)" }}<br>Concentração às {{ event.starts_at|date:"H:i" }}
+                {{ event.starts_at|date:"d/m/Y (l)" }}<br>Início às {{ event.starts_at|date:"H:i" }}
             </div>
         </div>
 
         <div class="card" style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">👥</div>
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i data-lucide="users" aria-hidden="true"></i></div>
             <div style="font-weight: 800; color: #FFF; font-size: 1.1rem;">Vagas Limitadas</div>
             <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
                 Capacidade para até <strong>{{ event.max_attendees }}</strong> pilotos inscritos
@@ -113,10 +116,10 @@
         </div>
 
         <div class="card" style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">💳</div>
-            <div style="font-weight: 800; color: #FFF; font-size: 1.1rem;">Pagamento Seguro</div>
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i data-lucide="credit-card" aria-hidden="true"></i></div>
+            <div style="font-weight: 800; color: #FFF; font-size: 1.1rem;">Opções de pagamento</div>
             <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
-                Pix com confirmação imediata ou Cartão de Crédito
+                Consulte no checkout os meios de pagamento disponíveis.
             </div>
         </div>
     </div>
@@ -130,7 +133,7 @@
             </h2>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 2rem;">
             {% for prod in products %}
                 <div class="card" style="border-top: 4px solid var(--primary); display: flex; flex-direction: column; justify-content: space-between;">
                     <div>
@@ -143,26 +146,27 @@
                         </h3>
 
                         <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
-                            {{ prod.description|default:"Inclui direito total de participação na trilha oficial com pontos de apoio." }}
+                            {{ prod.description|default:"Confira os benefícios desta modalidade antes de concluir sua inscrição." }}
                         </p>
 
+                        {% if prod.includes_shirt or prod.includes_meal or prod.includes_kit %}
                         <div style="background-color: var(--surface-hover); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
                             <div style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.75rem;">
                                 O Que Está Incluso:
                             </div>
                             <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.92rem; color: #FFF;">
                                 {% if prod.includes_shirt %}
-                                    <li>✅ Camiseta Oficial (tamanhos P, M, G, GG, XG)</li>
+                                    <li><i data-lucide="circle-check" aria-hidden="true"></i> Camiseta oficial</li>
                                 {% endif %}
                                 {% if prod.includes_meal %}
-                                    <li>✅ Café da Manhã Reforçado & Almoço com Churrasco</li>
+                                    <li><i data-lucide="circle-check" aria-hidden="true"></i> Alimentação conforme a modalidade</li>
                                 {% endif %}
                                 {% if prod.includes_kit %}
-                                    <li>✅ Kit Piloto com Pulseira e Adesivos Exclusivos</li>
+                                    <li><i data-lucide="circle-check" aria-hidden="true"></i> Kit do participante</li>
                                 {% endif %}
-                                <li>✅ Resgate na Trilha, Caminhão de Apoio e Hidratação</li>
                             </ul>
                         </div>
+                        {% endif %}
                     </div>
 
                     <div>
@@ -175,6 +179,8 @@
                         {% endif %}
                     </div>
                 </div>
+            {% empty %}
+                <div class="card"><p style="color: var(--text-muted);">As modalidades desta edição serão divulgadas pela organização.</p></div>
             {% endfor %}
         </div>
     </div>
@@ -200,4 +206,5 @@
         </div>
     {% endif %}
 </section>
+{% endtimezone %}
 {% endblock %}

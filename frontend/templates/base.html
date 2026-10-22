@@ -7,13 +7,10 @@
     <title>{% block title %}Equipe Morcego | Gestão de Trilhões e Eventos Off-Road{% endblock %}</title>
     
     <!-- Favicon Oficial da Equipe Morcego -->
-    <link rel="icon" type="image/png" sizes="64x64" href="{% static 'img/favicon.png' %}">
-    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}">
+    <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}?v=mor20261022">
 
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=mor20261022">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=mor20261022">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -21,12 +18,12 @@
     <header class="navbar">
         <div class="container nav-container">
             <a href="{% url 'core:home' %}" class="brand-logo" style="display: flex; align-items: center; gap: 0.75rem; padding: 0.25rem 0;">
-                {% if is_event_subdomain or event %}
-                    <img src="{% static 'img/logo_3trilhao_2027.png' %}" alt="3º Trilhão Tianguá Off Road 2027" style="height: 54px; width: auto; max-width: 120px; object-fit: contain; filter: drop-shadow(0 2px 10px rgba(234, 88, 12, 0.55));">
+                {% if event.theme.logo_image %}
+                    <img src="{{ event.theme.logo_image.url }}" alt="{{ event.title }}" class="logo-emblem" style="height: 54px; width: auto; max-width: 120px;">
                     <span style="height: 28px; width: 1px; background: rgba(255,255,255,0.18);"></span>
                     <img src="{% static 'img/logo_horizontal.png' %}" alt="Equipe Morcego" style="height: 36px; width: auto; max-width: 150px; object-fit: contain;">
                 {% else %}
-                    <img src="{% static 'img/logo_horizontal.png' %}" alt="Equipe Morcego - Tianguá CE" style="height: 48px; width: auto; max-width: 250px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));">
+                    <img src="{% static 'img/logo_horizontal.png' %}" alt="Equipe Morcego - Tianguá CE" style="height: 48px; width: auto; max-width: 250px; object-fit: contain;">
                 {% endif %}
             </a>
 
@@ -40,7 +37,7 @@
 
                     {% if request.user.is_authenticated %}
                         {% if request.user.is_staff or user_memberships %}
-                            <li><a href="{% url 'gestao:dashboard' %}" class="btn btn-sm btn-secondary" style="border-color: var(--primary); color: #FFF;">⚡ Painel Gestão</a></li>
+                            <li><a href="{% url 'gestao:dashboard' %}" class="btn btn-sm btn-secondary" style="border-color: var(--primary); color: #FFF;"><i data-lucide="zap" aria-hidden="true"></i> Painel Gestão</a></li>
                         {% endif %}
                         <li><a href="{% url 'minha_conta:dashboard' %}" class="btn btn-sm btn-primary">Área do Piloto</a></li>
                         <li><a href="{% url 'identity:logout' %}" class="nav-link" style="color: var(--accent);">Sair</a></li>
@@ -52,8 +49,8 @@
             </nav>
 
             <!-- Botão Menu Mobile -->
-            <button type="button" id="mobileMenuBtn" style="display: none; background: none; border: 1px solid var(--border); color: #FFF; font-size: 1.4rem; padding: 0.35rem 0.65rem; border-radius: var(--radius-sm); cursor: pointer;" aria-label="Menu">
-                ☰
+            <button type="button" id="mobileMenuBtn" style="display: none; background: none; border: 1px solid var(--border); color: #FFF; font-size: 1.4rem; padding: 0.35rem 0.65rem; border-radius: var(--radius-sm); cursor: pointer;" aria-label="Menu" aria-expanded="false" aria-controls="mobileMenuDrawer">
+                <i data-lucide="menu" aria-hidden="true"></i>
             </button>
         </div>
 
@@ -67,7 +64,7 @@
                 <li style="border-top: 1px solid var(--border); padding-top: 0.75rem;">
                     {% if request.user.is_authenticated %}
                         {% if request.user.is_staff or user_memberships %}
-                            <a href="{% url 'gestao:dashboard' %}" class="btn btn-secondary btn-block" style="margin-bottom: 0.5rem;">⚡ Painel Gestão</a>
+                            <a href="{% url 'gestao:dashboard' %}" class="btn btn-secondary btn-block" style="margin-bottom: 0.5rem;"><i data-lucide="zap" aria-hidden="true"></i> Painel Gestão</a>
                         {% endif %}
                         <a href="{% url 'minha_conta:dashboard' %}" class="btn btn-primary btn-block" style="margin-bottom: 0.5rem;">Área do Piloto</a>
                         <a href="{% url 'identity:logout' %}" class="btn btn-danger btn-block btn-sm">Sair da Conta</a>
@@ -102,7 +99,7 @@
     <footer class="footer">
         <div class="container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
             <div style="display: flex; align-items: center; gap: 1rem;">
-                <img src="{% static 'img/logo_emblem.jpg' %}" alt="Equipe Morcego" style="width: 50px; height: 50px; border-radius: 10px; object-fit: cover; border: 1px solid var(--border);">
+                <img src="{% static 'img/logo_emblem.png' %}?v=mor20261022" alt="Equipe Morcego" class="logo-emblem" width="60" height="50">
                 <div>
                     <div style="font-weight: 800; color: #FFF; font-size: 1.05rem;">
                         EQUIPE MORCEGO &bull; TIANGUÁ - CE
@@ -120,14 +117,18 @@
         </div>
     </footer>
 
-    <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/main.js' %}?v=mor20261022"></script>
+    <script src="{% static 'vendor/lucide/lucide.min.js' %}?v=mor20261022"></script>
+    <script src="{% static 'js/icons.js' %}?v=mor20261022"></script>
     <script>
     document.addEventListener("DOMContentLoaded", function() {
         const btn = document.getElementById("mobileMenuBtn");
         const drawer = document.getElementById("mobileMenuDrawer");
         if (btn && drawer) {
             btn.addEventListener("click", function() {
-                drawer.style.display = drawer.style.display === "none" ? "block" : "none";
+                const open = drawer.style.display === "none";
+                drawer.style.display = open ? "block" : "none";
+                btn.setAttribute("aria-expanded", String(open));
             });
         }
     });

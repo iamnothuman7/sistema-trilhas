@@ -4,6 +4,8 @@
 {% block title %}Crie Seu Story 3D | {{ event.title }} | Equipe Morcego{% endblock %}
 
 {% block extra_head %}
+<meta name="description" content="Crie seu story de {{ event.title }} com a moldura oficial da Equipe Morcego.">
+{% include "events/_social_metadata.html" %}
 <style>
     .studio-grid {
         display: grid;
@@ -146,7 +148,7 @@
         <!-- Coluna da Esquerda: Identidade Visual, Escolha do Modelo e Personalização -->
         <div>
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;">
-                <img src="{% static 'img/logo_3trilhao_2027.png' %}" alt="{{ event.title }}" style="height: 88px; width: auto; filter: drop-shadow(0 6px 20px rgba(234, 88, 12, 0.5));">
+                {% if event.theme.logo_image %}<img src="{{ event.theme.logo_image.url }}" alt="{{ event.title }}" class="logo-emblem" style="height: 88px; width: auto;">{% else %}<img src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" class="logo-emblem" style="height: 88px; width: auto;">{% endif %}
                 <div>
                     <span class="badge badge-warning">GERADOR OFICIAL DE STORIES 3D</span>
                     <h1 style="font-size: 2.35rem; font-weight: 900; color: #FFF; line-height: 1.1; margin-top: 0.35rem;">
@@ -214,9 +216,9 @@
         <div>
             <section class="studio-card" aria-label="Editor do seu story">
                 <div class="studio-header">
-                    <img src="{% static 'img/logo_emblem.jpg' %}" alt="Equipe Morcego" style="width: 38px; height: 38px; border-radius: 10px; object-fit: cover; border: 1px solid var(--primary);">
+                    <img src="{% static 'img/logo_emblem.png' %}?v=mor20261022" alt="Equipe Morcego" class="logo-emblem" width="46" height="38">
                     <div>
-                        <h2 style="font-size: 0.95rem; font-weight: 800; color: #FFF; margin: 0;">3º Trilhão Tianguá 2027</h2>
+                        <h2 style="font-size: 0.95rem; font-weight: 800; color: #FFF; margin: 0;">{{ event.title }}</h2>
                         <p id="studio-edition" style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">{{ selected_version.label }} · {{ selected_version.selector_detail }}</p>
                     </div>
                     <span class="badge badge-warning" style="margin-left: auto;">9:16 STORY</span>
@@ -246,15 +248,15 @@
 
                     <div style="display: flex; flex-direction: column; gap: 0.65rem;">
                         <button class="btn btn-primary btn-block btn-lg" id="upload-button" type="button" style="height: 52px; font-weight: 900;">
-                            <span id="upload-label">📸 Adicionar Minha Foto</span>
+                            <i data-lucide="camera" aria-hidden="true"></i><span id="upload-label">Adicionar Minha Foto</span>
                         </button>
                         <button class="btn btn-success btn-block btn-lg" id="download-button" type="button" disabled style="height: 52px; font-weight: 900;">
-                            <span id="download-label">⬇️ Baixar Meu Story 3D</span>
+                            <i data-lucide="download" aria-hidden="true"></i><span id="download-label">Baixar Meu Story 3D</span>
                         </button>
                     </div>
 
                     <button class="btn btn-secondary btn-sm btn-block" id="retry-cutout-button" type="button" hidden style="margin-top: 0.6rem;">
-                        🔄 Tentar retirar o fundo novamente
+                        <i data-lucide="refresh-cw" aria-hidden="true"></i> Tentar retirar o fundo novamente
                     </button>
 
                     <p id="editor-status" role="status" aria-live="polite" style="font-size: 0.82rem; text-align: center; color: var(--primary); font-weight: 700; margin: 0.85rem 0 0.4rem;">
@@ -276,5 +278,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/story_studio.js' %}"></script>
+<script src="{% static 'js/story_studio.js' %}?v=mor20261022"></script>
 {% endblock %}

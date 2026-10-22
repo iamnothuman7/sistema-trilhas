@@ -1,0 +1,71 @@
+{% extends "gestao/base_gestao.html" %}
+{% load trilhas_ui %}
+
+{% block title %}Relatórios · {{ event.title }} | Equipe Morcego{% endblock %}
+{% block gestao_header %}Relatórios{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div><h1>Relatórios da edição</h1><p>Inscrições, pedidos e movimentações de {{ event.title }}.</p></div>
+    <div class="page-actions"><a class="btn btn-secondary" href="{% url 'gestao:finance' event_id=event.id %}"><i data-lucide="wallet" aria-hidden="true"></i> Abrir financeiro</a></div>
+</div>
+
+<section class="card mg-element-gap" aria-label="Filtros do relatório">
+    <form method="get" class="mg-finance-filters">
+        <div class="form-group"><label class="form-label" for="{{ date_form.date_start.id_for_label }}">Data inicial</label>{{ date_form.date_start }}{% if date_form.date_start.errors %}<div class="mg-field-errors">{{ date_form.date_start.errors }}</div>{% endif %}</div>
+        <div class="form-group"><label class="form-label" for="{{ date_form.date_end.id_for_label }}">Data final</label>{{ date_form.date_end }}{% if date_form.date_end.errors %}<div class="mg-field-errors">{{ date_form.date_end.errors }}</div>{% endif %}</div>
+        <button type="submit" class="btn btn-primary"><i data-lucide="list-filter" aria-hidden="true"></i> Aplicar período</button>
+        <a class="btn btn-secondary" href="{% url 'gestao:reports' event_id=event.id %}">Limpar</a>
+    </form>
+    {% if date_form.non_field_errors %}<div class="mg-field-errors" role="alert">{{ date_form.non_field_errors }}</div>{% endif %}
+    <p class="mg-section-description mg-space-top-sm">Inscrições e pedidos usam a data de criação e mostram sua situação atual. O financeiro usa a data de reconhecimento; contas a pagar usam o vencimento. Sem datas, o relatório considera todo o evento.</p>
+</section>
+
+{% if report %}
+<div class="page-actions mg-element-gap" aria-label="Exportações em CSV">
+    <a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&amp;export=summary"><i data-lucide="download" aria-hidden="true"></i> Resumo CSV</a>
+    <a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&amp;export=participants">Participantes CSV</a>
+    <a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&amp;export=orders">Pedidos CSV</a>
+    <a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&amp;export=financial">Extrato CSV</a>
+</div>
+
+<div class="stat-grid mg-section-gap">
+    <article class="stat-card"><div class="stat-label">Inscrições criadas</div><div class="stat-value">{{ report.registrations.total }}</div><p class="stat-foot">Todas as situações no período</p></article>
+    <article class="stat-card"><div class="stat-label">Inscrições ativas</div><div class="stat-value">{{ report.registrations.active }}</div><p class="stat-foot">{{ report.registrations.awaiting_terms }} aguardando liberação</p></article>
+    <article class="stat-card"><div class="stat-label">Credenciamentos</div><div class="stat-value">{{ report.registrations.checked_in }}</div><p class="stat-foot">Participantes ativos já credenciados</p></article>
+    <article class="stat-card"><div class="stat-label">Pedidos criados</div><div class="stat-value">{{ report.orders_count }}</div><p class="stat-foot">R$ {{ report.orders_total_cents|money }} em todas as situações</p></article>
+</div>
+
+<section class="card mg-section-gap" aria-labelledby="report-finance-title">
+    <div class="card-header"><div><h2 class="section-title" id="report-finance-title">Resultado financeiro</h2><p class="mg-section-description">Movimentações registradas no período. Transferências entre contas não alteram o resultado.</p></div></div>
+    <div class="mg-data-grid mg-element-gap">
+        <div><p class="text-muted mg-meta">Recebimentos</p><p class="mg-strong">R$ {{ report.finance.revenue_cents|money }}</p></div>
+        <div><p class="text-muted mg-meta">Estornos</p><p class="mg-strong">R$ {{ report.finance.refunds_cents|money }}</p></div>
+        <div><p class="text-muted mg-meta">Tarifas</p><p class="mg-strong">R$ {{ report.finance.fees_cents|money }}</p></div>
+        <div><p class="text-muted mg-meta">Despesas pagas</p><p class="mg-strong">R$ {{ report.finance.paid_expenses_cents|money }}</p></div>
+        <div><p class="text-muted mg-meta">Resultado de caixa</p><p class="mg-strong {% if report.finance.net_cents < 0 %}mg-text-danger{% else %}text-success{% endif %}">R$ {{ report.finance.net_cents|money }}</p></div>
+        <div><p class="text-muted mg-meta">Contas a pagar</p><p class="mg-strong">R$ {{ report.finance.pending_expenses_cents|money }}</p><p class="mg-meta text-muted">{{ report.finance.pending_expense_count }} compromissos por vencimento</p></div>
+    </div>
+    {% if report.finance.expense_reconciliation_delta_cents %}<div class="mg-form-errors" role="status"><strong>Conciliação pendente</strong>O cadastro de despesas e o extrato apresentam diferença de R$ {{ report.finance.expense_reconciliation_delta_cents|money }}. Os resultados acima consideram o extrato.</div>{% endif %}
+    <div class="table-responsive"><table class="table" aria-label="Movimentação diária">
+        <thead><tr><th scope="col">Dia</th><th scope="col">Movimentações</th><th scope="col">Recebimentos</th><th scope="col">Resultado</th></tr></thead>
+        <tbody>{% for day in report.daily %}<tr><td>{{ day.day|date:"d/m/Y" }}</td><td>{{ day.count }}</td><td class="mg-nowrap">R$ {{ day.revenue_cents|default:0|money }}</td><td class="mg-strong mg-nowrap">R$ {{ day.net_cents|money }}</td></tr>{% empty %}<tr><td colspan="4" class="mg-table-empty">Nenhuma movimentação financeira no período.</td></tr>{% endfor %}</tbody>
+    </table></div>
+</section>
+
+<div class="mg-module-grid mg-section-gap">
+    <section class="card" aria-labelledby="report-orders-title">
+        <div class="card-header"><div><h2 class="section-title" id="report-orders-title">Situação dos pedidos</h2><p class="mg-section-description">Valor dos pedidos criados no período, incluindo os ainda não pagos.</p></div></div>
+        <div class="table-responsive"><table class="table"><thead><tr><th scope="col">Situação atual</th><th scope="col">Pedidos</th><th scope="col">Valor</th></tr></thead><tbody>{% for item in report.orders_by_status %}<tr><td>{{ item.label }}</td><td>{{ item.count }}</td><td class="mg-nowrap">R$ {{ item.total_cents|money }}</td></tr>{% empty %}<tr><td colspan="3" class="mg-table-empty">Nenhum pedido no período.</td></tr>{% endfor %}</tbody></table></div>
+    </section>
+    <section class="card" aria-labelledby="report-categories-title">
+        <div class="card-header"><div><h2 class="section-title" id="report-categories-title">Inscrições por categoria</h2><p class="mg-section-description">Inscrições criadas no período, em todas as situações.</p></div></div>
+        <div class="table-responsive"><table class="table"><thead><tr><th scope="col">Categoria</th><th scope="col">Inscrições</th></tr></thead><tbody>{% for item in report.categories %}<tr><td>{{ item.category_name|default:"Não informada" }}</td><td>{{ item.count }}</td></tr>{% empty %}<tr><td colspan="2" class="mg-table-empty">Nenhuma inscrição no período.</td></tr>{% endfor %}</tbody></table></div>
+    </section>
+    <section class="card" aria-labelledby="report-shirts-title">
+        <div class="card-header"><div><h2 class="section-title" id="report-shirts-title">Tamanhos informados</h2><p class="mg-section-description">Preferências das inscrições ativas criadas no período. A entrega depende dos benefícios de cada inscrição.</p></div></div>
+        <div class="table-responsive"><table class="table"><thead><tr><th scope="col">Tamanho</th><th scope="col">Participantes</th></tr></thead><tbody>{% for item in report.shirts %}<tr><td>{{ item.shirt_size|default:"Não informado" }}</td><td>{{ item.count }}</td></tr>{% empty %}<tr><td colspan="2" class="mg-table-empty">Nenhuma inscrição ativa no período.</td></tr>{% endfor %}</tbody></table></div>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

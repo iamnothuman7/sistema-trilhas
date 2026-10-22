@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views_gestao
 from apps.reporting import exports
+from apps.reporting import views as reporting_views
 
 app_name = "gestao"
 
@@ -32,6 +33,9 @@ urlpatterns = [
     # Financeiro Gerencial
     path("eventos/<uuid:event_id>/financeiro/", views_gestao.finance_overview, name="finance"),
     path("eventos/<uuid:event_id>/financeiro/despesa/nova/", views_gestao.add_expense, name="add_expense"),
+    path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/pagar/", views_gestao.pay_expense, name="pay_expense"),
+    path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/cancelar/", views_gestao.cancel_expense, name="cancel_expense"),
+    path("eventos/<uuid:event_id>/relatorios/", reporting_views.event_reports, name="reports"),
 
     # Expedição
     path("eventos/<uuid:event_id>/expedicao/", views_gestao.expedition_management, name="expedition"),

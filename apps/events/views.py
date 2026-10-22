@@ -1,17 +1,17 @@
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
+from django.http import Http404
+from apps.core.permissions import can_manage_event
 from .models import Event, EventStatus, EventScheduleItem, Route, Sponsor, LegalDocumentVersion
 from apps.catalog.models import Product, Lot
 from apps.mediaframes.models import FrameTemplate
 from apps.mediaframes.events_config import get_event_versions, select_version
 
-def get_event_resilient(slug):
-    ev = Event.objects.filter(slug=slug).select_related("theme", "organization").first()
-    if not ev:
-        ev = Event.objects.filter(slug__icontains="trilhao").select_related("theme", "organization").first()
-    if not ev:
-        ev = get_object_or_404(Event.objects.select_related("theme", "organization"), slug=slug)
-    return ev
+def get_event_resilient(slug, request):
+    event = get_object_or_404(Event.objects.select_related("theme", "organization"), slug=slug)
+    if event.status == EventStatus.DRAFT and not can_manage_event(request.user, event, "events"):
+        raise Http404("Evento não publicado.")
+    return event
 
 def event_list(request):
     """Catálogo público de todos os eventos da Equipe Morcego."""
@@ -30,7 +30,7 @@ def event_list(request):
 
 def event_detail(request, slug):
     """Página principal e oficial do evento."""
-    event = get_event_resilient(slug)
+    event = get_event_resilient(slug, request)
 
     now = timezone.now()
     products = Product.objects.filter(event=event, active=True).prefetch_related("lots", "variants")
@@ -56,25 +56,25 @@ def event_detail(request, slug):
 
 def event_schedule(request, slug):
     """Cronograma completo do evento."""
-    event = get_event_resilient(slug)
+    event = get_event_resilient(slug, request)
     schedule = event.schedule_items.all().order_by("starts_at")
     return render(request, "events/schedule.html", {"event": event, "schedule": schedule})
 
 def event_route(request, slug):
     """Percurso e detalhes técnicos da trilha."""
-    event = get_event_resilient(slug)
+    event = get_event_resilient(slug, request)
     routes = event.routes.filter(public_flag=True).prefetch_related("checkpoints")
     return render(request, "events/route.html", {"event": event, "routes": routes})
 
 def event_rules(request, slug):
     """Regulamento oficial e termos de responsabilidade."""
-    event = get_event_resilient(slug)
+    event = get_event_resilient(slug, request)
     docs = event.legal_documents.all().order_by("-published_at")
     return render(request, "events/rules.html", {"event": event, "docs": docs})
 
 def event_sponsors(request, slug):
     """Patrocinadores e parceiros oficiais."""
-    event = get_event_resilient(slug)
+    event = get_event_resilient(slug, request)
     sponsors = event.sponsors.all().order_by("tier", "sort_order")
     return render(request, "events/sponsors.html", {"event": event, "sponsors": sponsors})
 
@@ -82,7 +82,7 @@ def event_frames(request, slug):
     """
     Gerador interativo de Molduras Digitais 3D Pop-Out (Estilo Flávio Folia / NaBio).
     """
-    event = get_event_resilient(slug)
+    event = get_event_resilient(slug, request)
     templates = FrameTemplate.objects.filter(event=event, is_active=True).order_by("-created_at")
     versions = get_event_versions(event)
     selected = select_version(request.GET.get("versao"), versions)

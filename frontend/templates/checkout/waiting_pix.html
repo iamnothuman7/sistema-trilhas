@@ -1,88 +1,60 @@
 {% extends "base.html" %}
-{% load static %}
-
-{% block title %}Aguardando Pagamento Pix | Pedido #{{ order.merchant_reference }}{% endblock %}
-
+{% block title %}Acompanhar pagamento | Equipe Morcego{% endblock %}
+{% block extra_head %}{% include "checkout/_payment_styles.html" %}{% endblock %}
 {% block content %}
-<div class="container container-narrow" style="padding: 3.5rem 1.25rem;">
-    <div class="card" style="text-align: center; max-width: 560px; margin: 0 auto;">
-        <span class="badge badge-warning" style="margin-bottom: 1rem;">AGUARDANDO PAGAMENTO</span>
-        <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF; margin-bottom: 0.5rem;">
-            Pague via Pix para Concluir Sua Inscrição
-        </h1>
-        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.75rem;">
-            Abra o aplicativo do seu banco, escolha <strong>Pagar via Pix</strong> e aponte a câmera ou use o código Copia e Cola.
-        </p>
-
-        <!-- QR Code do Pix -->
-        <div style="background-color: #FFFFFF; padding: 1.25rem; border-radius: var(--radius-lg); display: inline-block; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
-            {% if charge.pix_qr_code %}
-                <img src="data:image/png;base64,{{ charge.pix_qr_code }}" alt="QR Code Pix" style="width: 240px; height: 240px; display: block;">
-            {% else %}
-                <div style="width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; color: #000; font-weight: 800;">
-                    QR CODE PIX
-                </div>
-            {% endif %}
-        </div>
-
-        <!-- Valor e Timer -->
-        <div style="margin-bottom: 1.5rem;">
-            <div style="font-size: 0.9rem; color: var(--text-muted);">Valor da Inscrição:</div>
-            <div style="font-size: 2.2rem; font-weight: 900; color: var(--primary);">
-                R$ {{ order.formatted_total }}
-            </div>
-            <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
-                Expiração em: <strong id="pixTimer" style="color: #FFF;">29:59</strong>
-            </div>
-        </div>
-
-        <!-- Código Copia e Cola -->
-        <div class="form-group" style="text-align: left;">
-            <label class="form-label" style="text-align: center;">Código Pix Copia e Cola:</label>
-            <textarea id="pixCodeText" class="form-control" rows="3" readonly style="font-family: monospace; font-size: 0.8rem; word-break: break-all; margin-bottom: 0.75rem;">{{ charge.pix_copy_paste }}</textarea>
-            <button type="button" class="btn btn-secondary btn-block" onclick="copyToClipboard(document.getElementById('pixCodeText').value, this, 'Código Pix Copiado!')">
-                📋 Copiar Código Pix
-            </button>
-        </div>
-
-        <!-- Alerta de Identificação Automática -->
-        <div style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--secondary); padding: 0.85rem; border-radius: var(--radius-md); font-size: 0.88rem; color: #34D399; margin-top: 1.5rem;">
-            ⚡ <strong>Identificação Automática:</strong> Assim que você pagar no seu banco, esta tela atualizará sozinha e seu voucher será liberado!
-        </div>
-    </div>
-</div>
+<main class="payment-page">
+  <div class="payment-centered">
+    <div class="payment-status-icon"><i data-lucide="clock-3" aria-hidden="true"></i></div>
+    <h1>{% if charge.payment_method == 'pix' and charge.pix_copy_paste %}Pague com Pix{% else %}Aguardando confirmação{% endif %}</h1>
+    <p class="payment-muted">Pedido {{ order.merchant_reference }} · {{ order.event.title }}</p>
+    <section class="payment-card">
+      <div class="payment-total" style="margin-top:0;border:0;padding-top:0"><span>Total do pedido</span><strong>R$ {{ order.formatted_total }}</strong></div>
+      {% if charge.payment_method == 'pix' and charge.pix_copy_paste %}
+      <div id="pix-instructions" data-expires="{{ charge.pix_expiration|date:'c' }}">
+        <p>Abra o aplicativo do seu banco e escaneie o código ou use Pix Copia e Cola.</p>
+        {% if charge.pix_qr_code %}<img class="payment-qr" src="data:image/png;base64,{{ charge.pix_qr_code }}" alt="QR Code Pix deste pedido" width="240" height="240">{% endif %}
+        <label for="pix-code" class="payment-muted">Código Pix Copia e Cola</label>
+        <textarea class="payment-copy" id="pix-code" readonly spellcheck="false">{{ charge.pix_copy_paste }}</textarea>
+        <button class="payment-button payment-full" id="copy-pix" type="button">Copiar código Pix</button>
+        <p class="payment-help payment-muted">Válido até {{ charge.pix_expiration|date:"d/m H:i" }}. Confira o recebedor e o valor antes de confirmar no banco.</p>
+      </div>
+      {% else %}
+      <p>A confirmação está sendo consultada. Não faça outro pagamento para este pedido enquanto verificamos.</p>
+      {% endif %}
+      <p id="payment-feedback" class="payment-alert" role="status" aria-live="polite">Aguardando a confirmação do Mercado Pago…</p>
+      <p class="payment-help payment-muted">Sua inscrição só será liberada após a confirmação. O aceite dos termos pode continuar pendente.</p>
+    </section>
+    <p class="payment-help">Se você já pagou e a confirmação não aparecer, fale com a organização e informe <strong>{{ order.merchant_reference }}</strong>.</p>
+    <a class="payment-button payment-button-secondary" href="{% url 'core:contact' %}">Preciso de ajuda</a>
+  </div>
+</main>
 {% endblock %}
-
 {% block extra_js %}
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const statusApiUrl = "{% url 'checkout:status_api' order_id=order.id %}";
-
-    // Polling a cada 3 segundos para confirmar pagamento
-    const pollInterval = setInterval(async () => {
-        try {
-            const res = await fetch(statusApiUrl);
-            const data = await res.json();
-            if (data.is_paid) {
-                clearInterval(pollInterval);
-                window.location.href = data.redirect_url;
-            }
-        } catch (err) {
-            console.error("Polling error:", err);
-        }
-    }, 3000);
-
-    // Timer regressivo de 30 minutos
-    let secondsLeft = 30 * 60;
-    const timerElem = document.getElementById("pixTimer");
-    setInterval(() => {
-        if (secondsLeft > 0) {
-            secondsLeft--;
-            const mins = Math.floor(secondsLeft / 60);
-            const secs = secondsLeft % 60;
-            timerElem.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-        }
-    }, 1000);
-});
+(() => {
+  const feedback = document.getElementById('payment-feedback');
+  const instructions = document.getElementById('pix-instructions');
+  document.getElementById('copy-pix')?.addEventListener('click', async function () {
+    const code = document.getElementById('pix-code');
+    try { await navigator.clipboard.writeText(code.value); this.textContent = 'Código copiado'; }
+    catch (_) { code.focus(); code.select(); feedback.textContent = 'Selecione e copie o código exibido acima.'; }
+  });
+  async function poll() {
+    const expired = instructions && new Date(instructions.dataset.expires).getTime() <= Date.now();
+    if (expired) {
+      instructions.hidden = true; feedback.textContent = 'O prazo do Pix terminou. Se você já pagou, aguarde a confirmação ou fale com a organização.';
+    }
+    let delay = 5000;
+    try {
+      const response = await fetch("{% url 'checkout:status_api' order.id %}", { cache: 'no-store', credentials: 'same-origin' });
+      if (!response.ok) throw new Error('unavailable');
+      const data = await response.json();
+      if (data.redirect_url) { window.location.assign(data.redirect_url); return; }
+      feedback.textContent = expired ? 'O prazo do Pix terminou. Se você já pagou, aguarde a confirmação ou fale com a organização.' : 'Aguardando a confirmação do Mercado Pago…';
+    } catch (_) { delay = 15000; feedback.textContent = 'Sem conexão para atualizar agora. Tentaremos novamente; não pague outra vez.'; }
+    window.setTimeout(poll, document.hidden ? 30000 : delay);
+  }
+  window.setTimeout(poll, 3000);
+})();
 </script>
 {% endblock %}

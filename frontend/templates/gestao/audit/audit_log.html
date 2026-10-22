@@ -1,12 +1,12 @@
 {% extends "gestao/base_gestao.html" %}
 
 {% block title %}Trilha de Auditoria | Painel Gestão{% endblock %}
-{% block gestao_header %}Auditoria do Sistema (Ações Críticas Imutáveis){% endblock %}
+{% block gestao_header %}Auditoria do sistema{% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 2rem;">
-    <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF;">Trilha de Auditoria</h1>
-    <p style="color: var(--text-muted); font-size: 0.95rem;">Registro append-only de todas as operações administrativas sensíveis.</p>
+<div class="mg-page-intro mg-section-gap">
+    <h1>Trilha de Auditoria</h1>
+    <p class="text-muted">Consulte o histórico das operações administrativas e seus responsáveis.</p>
 </div>
 
 <div class="card">
@@ -14,27 +14,27 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Data / Hora</th>
-                    <th>Ator / Responsável</th>
-                    <th>Ação Executada</th>
-                    <th>Entidade</th>
-                    <th>Justificativa / Motivo</th>
-                    <th>IP</th>
+                    <th scope="col">Data / Hora</th>
+                    <th scope="col">Ator / Responsável</th>
+                    <th scope="col">Ação Executada</th>
+                    <th scope="col">Entidade</th>
+                    <th scope="col">Justificativa / Motivo</th>
+                    <th scope="col">IP</th>
                 </tr>
             </thead>
             <tbody>
                 {% for log in logs %}
                     <tr>
-                        <td style="font-size: 0.85rem; color: var(--text-muted);">{{ log.created_at|date:"d/m/Y H:i:s" }}</td>
-                        <td><strong style="color: #FFF;">{{ log.actor_email|default:"Sistema" }}</strong></td>
+                        <td class="text-muted mg-meta">{{ log.created_at|date:"d/m/Y H:i:s" }}</td>
+                        <td><strong>{{ log.actor_email|default:"Sistema" }}</strong></td>
                         <td><span class="badge badge-warning">{{ log.action }}</span></td>
                         <td>{{ log.entity_type }} ({{ log.entity_id|slice:":8" }}...)</td>
-                        <td style="color: #E2E8F0; font-size: 0.9rem;">{{ log.reason|default:"-" }}</td>
-                        <td style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">{{ log.ip_address|default:"-" }}</td>
+                        <td>{{ log.reason|default:"-" }}</td>
+                        <td class="mg-code text-muted mg-meta">{{ log.ip_address|default:"-" }}</td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                        <td colspan="6" class="text-muted mg-align-center mg-table-empty">
                             Nenhum registro de auditoria registrado ainda.
                         </td>
                     </tr>

@@ -4,20 +4,20 @@
 {% block gestao_header %}Ficha do Participante: #{{ reg.registration_number|default:'---' }} - {{ reg.person.full_name }}{% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 2rem;">
-    <a href="{% url 'gestao:registration_list' event_id=event.id %}" class="btn btn-sm btn-secondary" style="margin-bottom: 1rem;">
-        &larr; Voltar para Lista de Inscrições
+<div class="mg-section-gap">
+    <a href="{% url 'gestao:registration_list' event_id=event.id %}" class="btn btn-sm btn-secondary mg-space-bottom">
+        <i data-lucide="arrow-left" aria-hidden="true"></i> Voltar para Lista de Inscrições
     </a>
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: gap; gap: 1rem;">
+    <div class="mg-row">
         <div>
-            <h1 style="font-size: 2rem; font-weight: 900; color: #FFF;">
+            <h1>
                 #{{ reg.registration_number|default:'---' }} - {{ reg.person.full_name }}
             </h1>
-            <div style="color: var(--text-muted); font-size: 0.95rem;">
+            <div class="text-muted">
                 {{ event.title }} &bull; Criada em {{ reg.created_at|date:"d/m/Y H:i" }}
             </div>
         </div>
-        <div style="display: flex; gap: 0.75rem;">
+        <div class="page-actions">
             <span class="badge {% if reg.commercial_state == 'ACTIVE' %}badge-success{% else %}badge-warning{% endif %}">
                 {{ reg.get_commercial_state_display }}
             </span>
@@ -28,35 +28,35 @@
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+<div class="mg-aside-grid">
     <!-- Coluna Esquerda: Dados e Benefícios -->
-    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <div class="mg-stack">
         <!-- Dados do Piloto -->
         <div class="card">
-            <h3 style="font-size: 1.15rem; font-weight: 800; color: #FFF; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+            <h3 class="section-title">
                 Dados Pessoais
             </h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.95rem;">
-                <div><span style="color: var(--text-muted);">E-mail:</span> <strong style="color: #FFF;">{{ reg.person.email|default:"Não informado" }}</strong></div>
-                <div><span style="color: var(--text-muted);">WhatsApp:</span> <strong style="color: #FFF;">{{ reg.person.phone|default:"Não informado" }}</strong></div>
-                <div><span style="color: var(--text-muted);">Cidade/UF:</span> <strong style="color: #FFF;">{{ reg.person.city }}/{{ reg.person.state }}</strong></div>
-                <div><span style="color: var(--text-muted);">Equipe:</span> <strong style="color: #FFF;">{{ reg.team_name|default:reg.person.team_name|default:"Sem equipe" }}</strong></div>
-                <div><span style="color: var(--text-muted);">Camiseta:</span> <strong style="color: var(--primary);">Tamanho {{ reg.shirt_size }}</strong></div>
-                <div><span style="color: var(--text-muted);">Modalidade:</span> <strong style="color: #FFF;">{{ reg.category_name }}</strong></div>
+            <div class="form-grid">
+                <div><span class="text-muted">E-mail:</span> <strong>{{ reg.person.email|default:"Não informado" }}</strong></div>
+                <div><span class="text-muted">WhatsApp:</span> <strong>{{ reg.person.phone|default:"Não informado" }}</strong></div>
+                <div><span class="text-muted">Cidade/UF:</span> <strong>{{ reg.person.city }}/{{ reg.person.state }}</strong></div>
+                <div><span class="text-muted">Equipe:</span> <strong>{{ reg.team_name|default:reg.person.team_name|default:"Sem equipe" }}</strong></div>
+                <div><span class="text-muted">Camiseta:</span> <strong class="mg-text-brand">Tamanho {{ reg.shirt_size }}</strong></div>
+                <div><span class="text-muted">Modalidade:</span> <strong>{{ reg.category_name }}</strong></div>
             </div>
         </div>
 
         <!-- Benefícios e Entregas -->
         <div class="card">
-            <h3 style="font-size: 1.15rem; font-weight: 800; color: #FFF; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+            <h3 class="section-title">
                 Kits e Benefícios da Inscrição
             </h3>
-            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <div class="mg-stack">
                 {% for ent in entitlements %}
-                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+                    <div class="mg-row mg-row-divider">
                         <div>
-                            <div style="font-weight: 700; color: #FFF;">{{ ent.title }}</div>
-                            <div style="font-size: 0.8rem; color: var(--text-muted);">Entregue: {{ ent.quantity_used }} de {{ ent.quantity_total }}</div>
+                            <div class="mg-strong">{{ ent.title }}</div>
+                            <div class="text-muted mg-meta">Entregue: {{ ent.quantity_used }} de {{ ent.quantity_total }}</div>
                         </div>
                         <span class="badge {% if ent.quantity_used >= ent.quantity_total %}badge-success{% else %}badge-warning{% endif %}">
                             {{ ent.get_state_display }}
@@ -68,57 +68,57 @@
 
         <!-- Histórico de Entregas Realizadas -->
         <div class="card">
-            <h3 style="font-size: 1.15rem; font-weight: 800; color: #FFF; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+            <h3 class="section-title">
                 Histórico de Entregas e Operações
             </h3>
-            <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+            <div class="mg-stack">
                 {% for c in consumptions %}
-                    <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); padding: 0.4rem 0;">
+                    <div class="mg-row mg-row-divider">
                         <div>
-                            <strong style="color: #FFF;">{{ c.entitlement.title }}</strong> entregue por {{ c.operator.full_name }}
+                            <strong>{{ c.entitlement.title }}</strong> entregue por {{ c.operator.full_name }}
                         </div>
-                        <div style="color: var(--text-muted);">{{ c.occurred_at|date:"d/m H:i" }}</div>
+                        <div class="text-muted">{{ c.occurred_at|date:"d/m H:i" }}</div>
                     </div>
                 {% empty %}
-                    <p style="color: var(--text-muted);">Nenhum kit retirado até agora.</p>
+                    <p class="text-muted">Nenhum kit retirado até agora.</p>
                 {% endfor %}
             </div>
         </div>
     </div>
 
     <!-- Coluna Direita: Ações Administrativas e QR Code -->
-    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+    <div class="mg-stack">
         <!-- Credencial QR Code -->
-        <div class="card" style="text-align: center;">
-            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.75rem;">
+        <div class="card mg-align-center">
+            <div class="mg-strong text-muted mg-meta stat-label mg-space-bottom-sm">
                 QR Code de Acesso
             </div>
             {% if reg.credential and reg.credential.qr_code_image %}
-                <img src="data:image/png;base64={{ reg.credential.qr_code_image }}" alt="QR Code" style="width: 180px; height: 180px; margin: 0 auto; display: block; border-radius: var(--radius-sm); background: #FFF; padding: 0.5rem;">
-                <div style="font-family: monospace; font-size: 0.85rem; color: var(--primary); margin-top: 0.5rem; font-weight: 700;">
+                <img src="data:image/png;base64,{{ reg.credential.qr_code_image }}" alt="QR Code de acesso do participante" class="mg-qr-image">
+                <div class="mg-code mg-strong mg-text-brand mg-meta">
                     {{ reg.credential.raw_token }}
                 </div>
             {% else %}
-                <p style="color: var(--text-muted); padding: 1.5rem 0;">QR Code ainda não emitido (aguardando quitação/aceite).</p>
+                <p class="text-muted">QR Code ainda não emitido (aguardando quitação/aceite).</p>
             {% endif %}
         </div>
 
         <!-- Alteração de Situação (Ação Auditada) -->
         <div class="card">
-            <h3 style="font-size: 1.05rem; font-weight: 800; color: #FFF; margin-bottom: 1rem;">Alterar Status Comercial</h3>
+            <h3 class="section-title">Alterar Status Comercial</h3>
             <form method="POST" action="{% url 'gestao:registration_change_status' event_id=event.id reg_id=reg.id %}">
                 {% csrf_token %}
                 <div class="form-group">
-                    <label class="form-label">Nova Situação</label>
-                    <select name="commercial_state" class="form-control">
+                    <label class="form-label" for="field-commercial_state">Nova Situação</label>
+                    <select name="commercial_state" class="form-control" id="field-commercial_state">
                         <option value="ACTIVE" {% if reg.commercial_state == 'ACTIVE' %}selected{% endif %}>Ativo / Confirmado</option>
                         <option value="RESERVED" {% if reg.commercial_state == 'RESERVED' %}selected{% endif %}>Reservado</option>
                         <option value="CANCELED" {% if reg.commercial_state == 'CANCELED' %}selected{% endif %}>Cancelado</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Motivo da Alteração (Obrigatório para Auditoria)</label>
-                    <input type="text" name="reason" class="form-control" required placeholder="Ex: Cancelamento a pedido do titular">
+                    <label class="form-label" for="field-reason">Motivo da Alteração (Obrigatório para Auditoria)</label>
+                    <input type="text" name="reason" class="form-control" required placeholder="Ex: Cancelamento a pedido do titular" id="field-reason">
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">Salvar Alteração</button>
             </form>

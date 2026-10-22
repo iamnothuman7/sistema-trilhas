@@ -169,7 +169,7 @@ class SistemaTrilhasTests(TestCase):
     def test_event_duplication_does_not_leak_registrations(self):
         """Testa que ao duplicar uma edição, nenhuma inscrição ou dado pessoal é transferido."""
         self.client.force_login(self.user)
-        resp = self.client.get(f"/gestao/eventos/{self.event.id}/duplicar/")
+        resp = self.client.post(f"/gestao/eventos/{self.event.id}/duplicar/")
         self.assertEqual(resp.status_code, 302)
 
         # Verifica se o novo evento foi criado em rascunho com 0 inscrições

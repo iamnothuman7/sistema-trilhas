@@ -1,62 +1,89 @@
-{% extends "base.html" %}
+{% extends "identity/auth_base.html" %}
 
-{% block title %}Criar Conta de Piloto | Equipe Morcego{% endblock %}
+{% block title %}Criar conta de piloto | Equipe Morcego{% endblock %}
+{% block auth_mode %}auth-register{% endblock %}
+{% block auth_eyebrow %}Faça parte da equipe{% endblock %}
+{% block auth_heading %}Sua próxima trilha começa aqui.{% endblock %}
+{% block auth_description %}Crie sua conta para acompanhar inscrições, credenciais e termos de participação.{% endblock %}
 
-{% block content %}
-<div class="container" style="max-width: 520px; padding: 4rem 1.25rem;">
-    <div class="card">
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <span style="font-size: 2.5rem;">🏍️</span>
-            <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">Cadastro de Piloto</h1>
-            <p style="color: var(--text-muted); font-size: 0.95rem;">Crie sua conta para gerenciar suas inscrições e termos</p>
-        </div>
+{% block auth_form %}
+<form method="post" action="{% url 'identity:register' %}" class="auth-form" id="registerForm" data-auth-form>
+    {% csrf_token %}
+    {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
 
-        <form method="POST">
-            {% csrf_token %}
-            <div class="form-group">
-                <label class="form-label">Nome Completo</label>
-                <input type="text" name="full_name" class="form-control" required placeholder="Ex: Kelvim Muniz">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">E-mail</label>
-                <input type="email" name="email" class="form-control" required placeholder="seu@email.com">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">WhatsApp / Telefone</label>
-                <input type="text" name="phone" class="form-control" required placeholder="(88) 99999-9999">
-            </div>
-
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
-                <div class="form-group">
-                    <label class="form-label">Cidade</label>
-                    <input type="text" name="city" class="form-control" value="Tianguá">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">UF</label>
-                    <input type="text" name="state" class="form-control" value="CE" maxlength="2">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Senha (mínimo 8 caracteres)</label>
-                <input type="password" name="password" class="form-control" required placeholder="••••••••" minlength="8">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Confirmar Senha</label>
-                <input type="password" name="confirm_password" class="form-control" required placeholder="••••••••" minlength="8">
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1.5rem;">
-                Concluir Cadastro
-            </button>
-        </form>
-
-        <div style="text-align: center; margin-top: 1.75rem; border-top: 1px solid var(--border); padding-top: 1.25rem; font-size: 0.9rem; color: var(--text-muted);">
-            Já possui cadastro? <a href="{% url 'identity:login' %}" style="font-weight: 700;">Fazer Login</a>
+    <div class="auth-field">
+        <label for="fullNameInput">Nome completo</label>
+        <div class="auth-input-wrap">
+            <i data-lucide="user-round" class="auth-input-icon" aria-hidden="true"></i>
+            <input type="text" name="full_name" id="fullNameInput" value="{{ request.POST.full_name|default:'' }}" placeholder="Como consta no seu documento" autocomplete="name" required>
         </div>
     </div>
+
+    <div class="auth-field">
+        <label for="emailInput">E-mail</label>
+        <div class="auth-input-wrap">
+            <i data-lucide="mail" class="auth-input-icon" aria-hidden="true"></i>
+            <input type="email" name="email" id="emailInput" value="{{ request.POST.email|default:'' }}" placeholder="seu@email.com" autocomplete="email" autocapitalize="none" spellcheck="false" required>
+        </div>
+    </div>
+
+    <div class="auth-field">
+        <label for="phoneInput">WhatsApp ou telefone</label>
+        <div class="auth-input-wrap">
+            <i data-lucide="phone" class="auth-input-icon" aria-hidden="true"></i>
+            <input type="tel" name="phone" id="phoneInput" value="{{ request.POST.phone|default:'' }}" placeholder="(88) 99999-9999" autocomplete="tel" inputmode="tel" required>
+        </div>
+    </div>
+
+    <div class="auth-location-grid">
+        <div class="auth-field">
+            <label for="cityInput">Cidade</label>
+            <div class="auth-input-wrap">
+                <i data-lucide="map-pin" class="auth-input-icon" aria-hidden="true"></i>
+                <input type="text" name="city" id="cityInput" value="{{ request.POST.city|default:'Tianguá' }}" autocomplete="address-level2">
+            </div>
+        </div>
+        <div class="auth-field">
+            <label for="stateInput">Estado (UF)</label>
+            <div class="auth-input-wrap auth-input-wrap-plain">
+                <input type="text" name="state" id="stateInput" value="{{ request.POST.state|default:'CE' }}" maxlength="2" autocomplete="address-level1" autocapitalize="characters" class="auth-state-input">
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-field">
+        <label for="passwordInput">Crie uma senha</label>
+        <div class="auth-input-wrap auth-input-wrap-password">
+            <i data-lucide="lock-keyhole" class="auth-input-icon" aria-hidden="true"></i>
+            <input type="password" name="password" id="passwordInput" placeholder="Pelo menos 8 caracteres" minlength="8" autocomplete="new-password" aria-describedby="passwordHint" required>
+            <button type="button" class="auth-password-toggle" data-password-toggle aria-controls="passwordInput" aria-pressed="false" aria-label="Mostrar senha">
+                <span data-password-show><i data-lucide="eye" aria-hidden="true"></i></span>
+                <span data-password-hide hidden><i data-lucide="eye-off" aria-hidden="true"></i></span>
+            </button>
+        </div>
+        <p class="auth-field-hint" id="passwordHint">Use pelo menos 8 caracteres.</p>
+    </div>
+
+    <div class="auth-field">
+        <label for="confirmPasswordInput">Confirme sua senha</label>
+        <div class="auth-input-wrap auth-input-wrap-password">
+            <i data-lucide="lock-keyhole" class="auth-input-icon" aria-hidden="true"></i>
+            <input type="password" name="confirm_password" id="confirmPasswordInput" placeholder="Digite a senha novamente" minlength="8" autocomplete="new-password" required>
+            <button type="button" class="auth-password-toggle" data-password-toggle aria-controls="confirmPasswordInput" aria-pressed="false" aria-label="Mostrar confirmação da senha">
+                <span data-password-show><i data-lucide="eye" aria-hidden="true"></i></span>
+                <span data-password-hide hidden><i data-lucide="eye-off" aria-hidden="true"></i></span>
+            </button>
+        </div>
+    </div>
+
+    <button type="submit" class="auth-submit" data-submit-button>
+        <span data-submit-label>Criar minha conta</span>
+        <i data-lucide="arrow-right" aria-hidden="true"></i>
+    </button>
+</form>
+
+<div class="auth-switch">
+    <span>Já tem uma conta?</span>
+    <a href="{% url 'identity:login' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}">Entrar na minha conta <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
 </div>
 {% endblock %}

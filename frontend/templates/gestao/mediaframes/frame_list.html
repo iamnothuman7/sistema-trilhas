@@ -4,35 +4,35 @@
 {% block gestao_header %}Templates de Molduras Digitais: {{ event.title }}{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+<div class="page-heading mg-section-gap">
     <div>
-        <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF;">Molduras Digitais Oficiais</h1>
-        <p style="color: var(--text-muted); font-size: 0.95rem;">Envie novas artes em PNG transparente para Feed e Stories.</p>
+        <h1>Molduras Digitais Oficiais</h1>
+        <p class="text-muted">Envie novas artes em PNG transparente para Feed e Stories.</p>
     </div>
-    <button type="button" class="btn btn-primary" onclick="document.getElementById('frameModal').style.display = 'block'">
-        + Adicionar Modelo de Moldura
+    <button type="button" class="btn btn-primary" onclick="document.getElementById('frameModal').showModal()">
+        <i data-lucide="plus" aria-hidden="true"></i> Adicionar Modelo de Moldura
     </button>
 </div>
 
 <!-- Lista de Molduras Ativas -->
 <div class="card">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+    <div class="mg-module-grid">
         {% for t in templates %}
-            <div style="background-color: var(--surface-hover); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border); text-align: center;">
-                <span class="badge badge-warning" style="margin-bottom: 0.75rem;">{{ t.get_format_display }}</span>
-                <h3 style="font-size: 1.15rem; font-weight: 800; color: #FFF; margin-bottom: 0.5rem;">{{ t.title }}</h3>
-                <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+            <div class="mg-align-center mg-inset-card">
+                <span class="badge badge-warning mg-space-bottom-sm">{{ t.get_format_display }}</span>
+                <h3 class="section-title">{{ t.title }}</h3>
+                <div class="text-muted mg-meta mg-space-bottom">
                     Dimensões: {{ t.width }}x{{ t.height }} px &bull; Acesso: {{ t.get_access_policy_display }}
                 </div>
                 {% if t.overlay_asset %}
-                    <img src="{{ t.overlay_asset.url }}" alt="{{ t.title }}" style="max-height: 220px; max-width: 100%; object-fit: contain; background: #05070B; border-radius: var(--radius-sm); margin-bottom: 1rem; border: 1px dashed var(--border);">
+                    <img src="{{ t.overlay_asset.url }}" alt="{{ t.title }}" class="mg-space-bottom mg-frame-preview">
                 {% endif %}
-                <a href="{% url 'events:frames' slug=event.slug %}" target="_blank" class="btn btn-secondary btn-sm btn-block">
-                    Testar no Gerador &rarr;
+                <a href="{% url 'events:frames' slug=event.slug %}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-block">
+                    Testar no Gerador <i data-lucide="arrow-right" aria-hidden="true"></i>
                 </a>
             </div>
         {% empty %}
-            <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem;">
+            <div class="text-muted mg-align-center mg-full-width">
                 <p>Nenhuma moldura cadastrada para este evento. O gerador público utilizará o layout padrão.</p>
             </div>
         {% endfor %}
@@ -40,45 +40,45 @@
 </div>
 
 <!-- Modal para Adicionar Moldura -->
-<div id="frameModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center;">
-    <div class="card" style="max-width: 500px; margin: 10% auto;">
+<dialog id="frameModal" class="mg-dialog" aria-labelledby="frame-dialog-title">
+    <div class="card mg-dialog-card">
         <div class="card-header">
-            <h3 style="color: #FFF; font-size: 1.2rem;">Cadastrar Nova Moldura</h3>
-            <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('frameModal').style.display = 'none'">&times;</button>
+            <h3 class="section-title" id="frame-dialog-title">Cadastrar Nova Moldura</h3>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('frameModal').close()" aria-label="Fechar formulário"><i data-lucide="x" aria-hidden="true"></i></button>
         </div>
 
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="form-group">
-                <label class="form-label">Título da Moldura *</label>
-                <input type="text" name="title" class="form-control" required placeholder="Ex: Moldura Oficial Feed 2026">
+                <label class="form-label" for="field-title">Título da Moldura *</label>
+                <input type="text" name="title" class="form-control" required placeholder="Ex: Moldura Oficial Feed 2026" id="field-title">
             </div>
 
             <div class="form-group">
-                <label class="form-label">Formato *</label>
-                <select name="format" class="form-control">
+                <label class="form-label" for="field-format">Formato *</label>
+                <select name="format" class="form-control" id="field-format">
                     <option value="FEED_1080x1350">Instagram Feed (1080 x 1350 px)</option>
                     <option value="STORY_1080x1920">Instagram Story / Reels (1080 x 1920 px)</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label class="form-label">Arquivo PNG Transparente *</label>
-                <input type="file" name="overlay_asset" accept="image/png" class="form-control" required>
+                <label class="form-label" for="field-overlay_asset">Arquivo PNG Transparente *</label>
+                <input type="file" name="overlay_asset" accept="image/png" class="form-control" required id="field-overlay_asset">
             </div>
 
             <div class="form-group">
-                <label class="form-label">Regra de Acesso *</label>
-                <select name="access_policy" class="form-control">
+                <label class="form-label" for="field-access_policy">Regra de Acesso *</label>
+                <select name="access_policy" class="form-control" id="field-access_policy">
                     <option value="PUBLIC">Público (Qualquer pessoa pode gerar)</option>
                     <option value="REGISTERED_READY">Exclusivo para Inscritos Confirmados</option>
                 </select>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary btn-block btn-lg mg-space-top">
                 Salvar Modelo
             </button>
         </form>
     </div>
-</div>
+</dialog>
 {% endblock %}

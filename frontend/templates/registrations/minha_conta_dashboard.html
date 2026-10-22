@@ -52,11 +52,11 @@
                         <!-- Status Operacional -->
                         <div style="background-color: var(--surface-hover); padding: 0.75rem 1rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; font-size: 0.85rem;">
                             {% if reg.operational_state == 'CHECKED_IN' %}
-                                <span style="color: #34D399; font-weight: 700;">✅ Presença Confirmada no Evento</span>
+                                <span style="color: #34D399; font-weight: 700;"><i data-lucide="circle-check" aria-hidden="true"></i> Presença Confirmada no Evento</span>
                             {% elif reg.operational_state == 'READY' %}
-                                <span style="color: #34D399; font-weight: 700;">🟢 Apto para Credenciamento (QR Liberado)</span>
+                                <span style="color: #34D399; font-weight: 700;"><i data-lucide="circle-check" aria-hidden="true"></i> Apto para Credenciamento (QR Liberado)</span>
                             {% else %}
-                                <span style="color: #FBBF24; font-weight: 700;">⚠️ Pendente de Aceite do Regulamento</span>
+                                <span style="color: #FBBF24; font-weight: 700;"><i data-lucide="triangle-alert" aria-hidden="true"></i> Pendente de Aceite do Regulamento</span>
                             {% endif %}
                         </div>
                     </div>
@@ -65,9 +65,9 @@
                         <a href="{% url 'minha_conta:registration_detail' registration_id=reg.id %}" class="btn btn-secondary" style="flex: 1;">
                             Ver Detalhes
                         </a>
-                        {% if reg.is_eligible_for_qr %}
+                        {% if reg.is_eligible_for_qr and reg.credential.is_valid %}
                             <a href="{% url 'minha_conta:credential_view' registration_id=reg.id %}" class="btn btn-primary" style="flex: 1;">
-                                📱 Ver QR Code
+                                <i data-lucide="smartphone" aria-hidden="true"></i> Ver QR Code
                             </a>
                         {% endif %}
                     </div>
@@ -76,7 +76,7 @@
         </div>
     {% else %}
         <div class="card" style="text-align: center; padding: 3.5rem;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🏍️</div>
+            <div style="font-size: 3rem; margin-bottom: 1rem;"><i data-lucide="bike" aria-hidden="true"></i></div>
             <h3 style="color: #FFF; font-size: 1.4rem; margin-bottom: 0.5rem;">Você ainda não possui inscrições</h3>
             <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto 1.5rem;">
                 Escolha um dos trilhões ou expedições da Equipe Morcego e garanta sua vaga agora mesmo!

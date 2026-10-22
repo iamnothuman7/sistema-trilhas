@@ -1,8 +1,16 @@
 """
-Configuração das edições e versões de molduras 3D Pop-Out (padrão Flávio Folia / NaBio).
+Modelos visuais de molduras 3D. Os dados públicos vêm sempre da edição atual.
 Compartilhado entre o backend Django e o renderizador Canvas 2D.
 """
 from copy import deepcopy
+from mimetypes import guess_type
+from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from django.conf import settings
+from django.templatetags.static import static
+from django.utils import timezone
+from django.utils.text import slugify
 
 DEFAULT_VERSION = "trilhao-fogo"
 
@@ -22,156 +30,150 @@ BASE_LAYOUT = {
     },
 }
 
+# Estes modelos contêm somente estilo: nenhuma data, cidade ou edição fixa.
 EVENT_VERSIONS = [
     {
         "id": "trilhao-fogo",
         "label": "Fogo & Terra (Oficial)",
-        "title": "3º Trilhão Tianguá Off Road 2027",
-        "selector_detail": "20 E 21 MAR · OFICIAL",
-        "day": "20 E 21",
-        "month": "MARÇO",
-        "date_short": "20-21 MAR",
-        "weekday": "MARÇO 2027",
-        "time_label": "ÀS 06H00",
-        "concentration_time": "06H00",
-        "departure_time": "08H00",
-        "header_time": "2027",
-        "description": "O maior encontro off-road da Serra da Ibiapaba já tem data marcada: 20 e 21 de março de 2027.",
-        "ticket_title": "Concentração 06h00 · Largada 08h00",
-        "ticket_subtitle": "Polo de Lazer · Tianguá / CE",
-        "footer_label": "CONCENTRAÇÃO",
-        "footer_title": "EQUIPE MORCEGO",
-        "footer_subtitle": "TIANGUÁ · CEARÁ",
-        "reference_artwork": False,
-        "top_label": "3º TRILHÃO",
-        "attendance": "EU VOU!",
-        "logo": "/static/img/logo_3trilhao_2027.png",
-        "social_image": "img/cartaz_trilhao_2027.jpg",
-        "social_width": 819,
-        "social_height": 1024,
-        "social_type": "image/jpeg",
-        "filename": "eu-vou-3-trilhao-tiangua-2027-fogo.png",
         "layout": deepcopy(BASE_LAYOUT),
-        "palette": {
-            "yellow": "#ff9d00",
-            "blue": "#1a0602",
-            "green": "#ea580c",
-            "navy": "#140502",
-        },
+        "palette": {"yellow": "#ff9d00", "blue": "#1a0602", "green": "#ea580c", "navy": "#140502"},
         "background_colors": ["#c22506", "#5e0c02", "#160401"],
         "decorations": {
-            "kind": "party",
-            "crowd": "/static/assets/party-crowd-silhouette-v1.webp",
-            "flag": None,
-            "tone": "#3d0802",
+            "kind": "party", "crowd": "/static/assets/party-crowd-silhouette-v1.webp",
+            "flag": None, "tone": "#3d0802",
         },
     },
     {
         "id": "trilhao-carbon",
         "label": "Dark Carbon",
-        "title": "3º Trilhão Tianguá Off Road 2027 · Dark Carbon",
-        "selector_detail": "20 E 21 MAR · NOTURNO",
-        "day": "20 E 21",
-        "month": "MARÇO",
-        "date_short": "20-21 MAR",
-        "weekday": "MARÇO 2027",
-        "time_label": "ÀS 06H00",
-        "concentration_time": "06H00",
-        "departure_time": "08H00",
-        "header_time": "2027",
-        "description": "Edição Dark Carbon da Equipe Morcego para o 3º Trilhão Tianguá Off Road 2027.",
-        "ticket_title": "Concentração 06h00 · Largada 08h00",
-        "ticket_subtitle": "Polo de Lazer · Tianguá / CE",
-        "footer_label": "CONCENTRAÇÃO",
-        "footer_title": "EQUIPE MORCEGO",
-        "footer_subtitle": "TIANGUÁ · CEARÁ",
-        "reference_artwork": False,
-        "top_label": "3º TRILHÃO",
-        "attendance": "EU VOU!",
-        "logo": "/static/img/logo_3trilhao_2027.png",
-        "social_image": "img/cartaz_trilhao_2027.jpg",
-        "social_width": 819,
-        "social_height": 1024,
-        "social_type": "image/jpeg",
-        "filename": "eu-vou-3-trilhao-tiangua-2027-carbon.png",
         "layout": deepcopy(BASE_LAYOUT),
-        "palette": {
-            "yellow": "#f59e0b",
-            "blue": "#090d16",
-            "green": "#10b981",
-            "navy": "#070b12",
-        },
+        "palette": {"yellow": "#f59e0b", "blue": "#090d16", "green": "#10b981", "navy": "#070b12"},
         "background_colors": ["#1e293b", "#0f172a", "#05070c"],
         "decorations": {
-            "kind": "party",
-            "crowd": "/static/assets/party-crowd-silhouette-v1.webp",
-            "flag": None,
-            "tone": "#09101d",
+            "kind": "party", "crowd": "/static/assets/party-crowd-silhouette-v1.webp",
+            "flag": None, "tone": "#09101d",
         },
     },
     {
         "id": "trilhao-amber",
         "label": "Laranja Racing",
-        "title": "3º Trilhão Tianguá Off Road 2027 · Laranja Racing",
-        "selector_detail": "20 E 21 MAR · RACING",
-        "day": "20 E 21",
-        "month": "MARÇO",
-        "date_short": "20-21 MAR",
-        "weekday": "MARÇO 2027",
-        "time_label": "ÀS 06H00",
-        "concentration_time": "06H00",
-        "departure_time": "08H00",
-        "header_time": "2027",
-        "description": "Edição Laranja Racing do 3º Trilhão Tianguá Off Road 2027.",
-        "ticket_title": "Concentração 06h00 · Largada 08h00",
-        "ticket_subtitle": "Polo de Lazer · Tianguá / CE",
-        "footer_label": "CONCENTRAÇÃO",
-        "footer_title": "EQUIPE MORCEGO",
-        "footer_subtitle": "TIANGUÁ · CEARÁ",
-        "reference_artwork": False,
-        "top_label": "3º TRILHÃO",
-        "attendance": "EU VOU!",
-        "logo": "/static/img/logo_3trilhao_2027.png",
-        "social_image": "img/cartaz_trilhao_2027.jpg",
-        "social_width": 819,
-        "social_height": 1024,
-        "social_type": "image/jpeg",
-        "filename": "eu-vou-3-trilhao-tiangua-2027-racing.png",
         "layout": deepcopy(BASE_LAYOUT),
-        "palette": {
-            "yellow": "#ffdd12",
-            "blue": "#1c0902",
-            "green": "#ea580c",
-            "navy": "#260b02",
-        },
+        "palette": {"yellow": "#ffdd12", "blue": "#1c0902", "green": "#ea580c", "navy": "#260b02"},
         "background_colors": ["#f97316", "#c2410c", "#431407"],
         "decorations": {
-            "kind": "party",
-            "crowd": "/static/assets/party-crowd-silhouette-v1.webp",
-            "flag": None,
-            "tone": "#7c2d12",
+            "kind": "party", "crowd": "/static/assets/party-crowd-silhouette-v1.webp",
+            "flag": None, "tone": "#7c2d12",
         },
     },
 ]
 
+MONTHS = ("JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO",
+          "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO")
+WEEKDAYS = ("SEGUNDA-FEIRA", "TERÇA-FEIRA", "QUARTA-FEIRA", "QUINTA-FEIRA",
+            "SEXTA-FEIRA", "SÁBADO", "DOMINGO")
+
+
+def _local_datetime(value, event):
+    if value is None:
+        return None
+    try:
+        event_zone = ZoneInfo(getattr(event, "timezone", None) or settings.TIME_ZONE)
+    except (ZoneInfoNotFoundError, ValueError):
+        event_zone = timezone.get_default_timezone()
+    if timezone.is_naive(value):
+        return timezone.make_aware(value, event_zone)
+    return timezone.localtime(value, event_zone)
+
+
+def _asset_url(asset):
+    if not asset:
+        return None
+    try:
+        return asset.url
+    except (ValueError, AttributeError):
+        return None
+
 
 def get_event_versions(event=None):
     versions = deepcopy(EVENT_VERSIONS)
-    if event:
-        logo_url = "/static/img/logo_3trilhao_2027.png"
-        if hasattr(event, "theme") and event.theme and event.theme.logo_image:
-            try:
-                logo_url = event.theme.logo_image.url
-            except Exception:
-                pass
-        for v in versions:
-            v["logo"] = logo_url
-            v["footer_subtitle"] = f"{event.city.upper()} · {event.state.upper()}"
+    title = getattr(event, "title", None) or "Evento Equipe Morcego"
+    city = getattr(event, "city", None) or ""
+    state = getattr(event, "state", None) or ""
+    city_state = " / ".join(part for part in (city, state) if part)
+    venue = getattr(event, "venue", None) or ""
+    location = " · ".join(part for part in (venue, city_state) if part) or "Local a confirmar"
+    theme = getattr(event, "theme", None)
+    logo_url = _asset_url(getattr(theme, "logo_image", None)) or static("img/logo_emblem.png")
+    social_url = _asset_url(getattr(theme, "hero_banner", None)) or logo_url
+    start = _local_datetime(getattr(event, "starts_at", None), event)
+    end = _local_datetime(getattr(event, "ends_at", None), event)
+
+    date_short, date_long, day, month, weekday, year = ("A DEFINIR", "Data a confirmar", "—", "", "DATA", "")
+    if start:
+        day = f"{start.day:02d}"
+        month = MONTHS[start.month - 1]
+        year = str(start.year)
+        weekday = WEEKDAYS[start.weekday()]
+        date_short = f"{day} {month[:3]}"
+        date_long = f"{start.day} de {month.lower()} de {start.year}"
+        if end and end.date() != start.date():
+            end_month = MONTHS[end.month - 1]
+            if (start.year, start.month) == (end.year, end.month):
+                day = f"{start.day:02d}–{end.day:02d}"
+                date_short = f"{day} {month[:3]}"
+                date_long = f"{start.day} a {end.day} de {month.lower()} de {start.year}"
+            else:
+                date_short = f"{start:%d/%m}–{end:%d/%m}"
+                date_long += f" a {end.day} de {end_month.lower()} de {end.year}"
+            if start.year != end.year:
+                year = f"{start.year}–{end.year}"
+            weekday = year
+        else:
+            weekday = f"{weekday} · {year}"
+
+    start_time = start.strftime("%HH%M") if start else "—"
+    end_time = end.strftime("%HH%M") if end else "—"
+    edition = getattr(event, "edition_number", None)
+    description = getattr(event, "description", None) or f"{title}. {date_long}. {location}."
+    event_slug = getattr(event, "slug", None) or slugify(title) or "equipe-morcego"
+    details = {
+        "title": title,
+        "selector_detail": f"{date_short} · {year}".strip(" ·"),
+        "day": day,
+        "month": month,
+        "date_short": date_short,
+        "weekday": weekday,
+        "time_label": f"ÀS {start_time}" if start else "Horário a confirmar",
+        # As chaves antigas são mantidas para compatibilidade com o renderizador.
+        "concentration_time": start_time,
+        "departure_time": end_time,
+        "start_label": "INÍCIO",
+        "end_label": "TÉRMINO",
+        "header_time": year,
+        "description": description,
+        "ticket_title": f"{date_long} · Início {start_time} · Término {end_time}",
+        "ticket_subtitle": location,
+        "footer_label": "INÍCIO",
+        "footer_title": "EQUIPE MORCEGO",
+        "footer_subtitle": city_state.upper() or "LOCAL A CONFIRMAR",
+        "reference_artwork": False,
+        "top_label": f"EDIÇÃO {edition}" if edition else "EQUIPE MORCEGO",
+        "attendance": "EU VOU!",
+        "logo": logo_url,
+        "social_image": social_url,
+        "social_image_url": social_url,
+        "social_width": None,
+        "social_height": None,
+        "social_type": guess_type(urlsplit(social_url).path)[0] or "image/png",
+    }
+    for version in versions:
+        version.update(details)
+        version["filename"] = f"eu-vou-{event_slug}-{version['id']}.png"
     return versions
 
 
 def select_version(identifier, versions):
     return next(
-        (v for v in versions if v["id"] == identifier),
+        (version for version in versions if version["id"] == identifier),
         versions[0],
     )

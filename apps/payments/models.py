@@ -19,7 +19,7 @@ class PaymentMethod(models.TextChoices):
 
 class ChargeAttempt(models.Model):
     """
-    Tentativa individual de cobrança executada junto ao Mercado Pago (Orders API).
+    Tentativa individual de cobrança executada junto ao Mercado Pago (Payments API).
     Idempotência garantida pela chave única.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -66,6 +66,7 @@ class ProviderEvent(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     provider = models.CharField("Provedor", max_length=50, default="mercadopago")
     provider_event_id = models.CharField("ID do Evento no Provedor", max_length=150, blank=True, null=True, db_index=True)
+    deduplication_key = models.CharField(max_length=64, unique=True, null=True, blank=True)
     resource_id = models.CharField("ID do Recurso", max_length=150, blank=True, null=True, db_index=True)
     event_type = models.CharField("Tipo do Evento", max_length=100)
     signature_valid = models.BooleanField("Assinatura Válida", default=False)
@@ -78,6 +79,20 @@ class ProviderEvent(models.Model):
         verbose_name = "Evento de Webhook Recebido"
         verbose_name_plural = "Eventos de Webhook Recebidos"
         ordering = ["-observed_at"]
+
+
+class PaymentTransaction(models.Model):
+    """Validated provider snapshot. Locks prevent repeated ledger/fulfilment effects."""
+    provider_payment_id = models.CharField(max_length=100, unique=True)
+    charge_attempt = models.ForeignKey(ChargeAttempt, on_delete=models.PROTECT, related_name="transactions")
+    provider_status = models.CharField(max_length=40)
+    provider_updated_at = models.DateTimeField()
+    amount_cents = models.PositiveBigIntegerField()
+    posted_revenue_cents = models.PositiveBigIntegerField(default=0)
+    posted_refund_cents = models.PositiveBigIntegerField(default=0)
+    posted_fee_cents = models.PositiveBigIntegerField(default=0)
+    fulfilled_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class PaymentAllocation(models.Model):

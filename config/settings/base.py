@@ -157,11 +157,14 @@ REST_FRAMEWORK = {
 }
 
 # Mercado Pago Configuration
-MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN", "TEST-0000000000000000-000000-00000000000000000000000000000000-000000000")
-MP_PUBLIC_KEY = os.getenv("MP_PUBLIC_KEY", "TEST-00000000-0000-0000-0000-000000000000")
-MP_WEBHOOK_SECRET = os.getenv("MP_WEBHOOK_SECRET", "test_webhook_secret_morcego")
+MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN", "")
+MP_PUBLIC_KEY = os.getenv("MP_PUBLIC_KEY", "")
+MP_WEBHOOK_SECRET = os.getenv("MP_WEBHOOK_SECRET", "")
 MP_ENVIRONMENT = os.getenv("MP_ENVIRONMENT", "sandbox")
 MP_API_BASE = os.getenv("MP_API_BASE", "https://api.mercadopago.com")
+MP_COLLECTOR_ID = os.getenv("MP_COLLECTOR_ID", "")
+MP_WEBHOOK_URL = os.getenv("MP_WEBHOOK_URL", "")
+MP_WEBHOOK_MAX_AGE_SECONDS = int(os.getenv("MP_WEBHOOK_MAX_AGE_SECONDS", "900"))
 
 # Business Rule Timing Defaults (in minutes/hours)
 QUOTE_TTL_MINUTES = int(os.getenv("QUOTE_TTL_MINUTES", "5"))

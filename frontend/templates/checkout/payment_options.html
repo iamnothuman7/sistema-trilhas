@@ -1,122 +1,122 @@
 {% extends "base.html" %}
-
-{% block title %}Pagamento do Pedido #{{ order.merchant_reference }} | Equipe Morcego{% endblock %}
-
+{% block title %}Pagamento | Equipe Morcego{% endblock %}
+{% block extra_head %}{% include "checkout/_payment_styles.html" %}{% endblock %}
 {% block content %}
-<div class="container container-narrow" style="padding: 3.5rem 1.25rem;">
-    <div style="text-align: center; margin-bottom: 2rem;">
-        <span class="badge badge-warning">ETAPA FINAL: PAGAMENTO</span>
-        <h1 style="font-size: 2.2rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
-            Revise Seu Pedido e Escolha Como Pagar
-        </h1>
-        <p style="color: var(--text-muted); font-size: 0.95rem;">
-            Referência: <strong>#{{ order.merchant_reference }}</strong> &bull; Vagas reservadas temporariamente
-        </p>
+<main class="payment-page">
+  <span class="payment-kicker">Sua inscrição · Pagamento</span>
+  <h1>Escolha como pagar</h1>
+  <p class="payment-muted">{{ order.event.title }} · Pedido <span class="payment-reference">{{ order.merchant_reference }}</span></p>
+  <div class="payment-layout">
+    <div>
+      {% if payments_available %}
+      <section class="payment-card">
+        <h2><i data-lucide="qr-code" aria-hidden="true"></i> Pix</h2>
+        <p class="payment-muted">Gere um código para pagar no aplicativo do seu banco. A inscrição será confirmada após a aprovação do Mercado Pago.</p>
+        <form method="post" action="{% url 'checkout:process_payment' order.id %}" id="pix-payment-form">
+          {% csrf_token %}<input type="hidden" name="payment_method" value="pix"><input type="hidden" name="attempt_key" value="{{ attempt_key }}">
+          <button type="submit" class="payment-button payment-full">Gerar Pix de R$ {{ order.formatted_total }}</button>
+        </form>
+      </section>
+      {% if card_available %}
+      <section class="payment-card">
+        <h2><i data-lucide="credit-card" aria-hidden="true"></i> Cartão de crédito</h2>
+        <p class="payment-muted">Preencha o formulário seguro do Mercado Pago. As parcelas disponíveis são informadas pela operadora.</p>
+        <p id="card-feedback" class="payment-alert" role="status" aria-live="polite">Carregando o formulário seguro…</p>
+        <form id="form-checkout" class="payment-form" method="post" action="{% url 'checkout:process_payment' order.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="payment_method" value="credit_card"><input type="hidden" name="attempt_key" value="{{ attempt_key }}">
+          <input type="hidden" name="card_token"><input type="hidden" name="payment_method_id"><input type="hidden" name="issuer_id"><input type="hidden" name="installments"><input type="hidden" name="identification_type"><input type="hidden" name="identification_number">
+          <div class="payment-field"><label id="card-number-label">Número do cartão</label><div id="form-checkout__cardNumber" class="payment-secure-field" aria-labelledby="card-number-label"></div></div>
+          <div class="payment-form-row">
+            <div class="payment-field"><label id="card-expiration-label">Validade</label><div id="form-checkout__expirationDate" class="payment-secure-field" aria-labelledby="card-expiration-label"></div></div>
+            <div class="payment-field"><label id="card-security-label">Código de segurança</label><div id="form-checkout__securityCode" class="payment-secure-field" aria-labelledby="card-security-label"></div></div>
+          </div>
+          <div class="payment-field"><label for="form-checkout__cardholderName">Nome no cartão</label><input id="form-checkout__cardholderName" autocomplete="cc-name"></div>
+          <div class="payment-field"><label for="form-checkout__cardholderEmail">E-mail do comprador</label><input id="form-checkout__cardholderEmail" type="email" value="{{ order.purchaser_email }}" autocomplete="email" readonly></div>
+          <div class="payment-form-row">
+            <div class="payment-field"><label for="form-checkout__identificationType">Documento</label><select id="form-checkout__identificationType"></select></div>
+            <div class="payment-field"><label for="form-checkout__identificationNumber">Número do documento</label><input id="form-checkout__identificationNumber" inputmode="numeric" autocomplete="off"></div>
+          </div>
+          <div class="payment-field"><label for="form-checkout__issuer">Banco emissor</label><select id="form-checkout__issuer"></select></div>
+          <div class="payment-field"><label for="form-checkout__installments">Parcelas</label><select id="form-checkout__installments"></select></div>
+          <button type="submit" class="payment-button payment-full" id="form-checkout__submit" disabled>Pagar R$ {{ order.formatted_total }}</button>
+        </form>
+        <p class="payment-help payment-muted"><i data-lucide="lock-keyhole" aria-hidden="true"></i> Número e código de segurança são enviados diretamente ao Mercado Pago.</p>
+      </section>
+      {% endif %}
+      {% else %}
+      <section class="payment-card">
+        {% if zero_total %}
+        <h2><i data-lucide="circle-help" aria-hidden="true"></i> Pedido sem cobrança</h2>
+        <p>O total deste pedido é zero. A organização precisa confirmar a inscrição sem pagamento online.</p>
+        <p class="payment-muted">Informe o número do pedido para solicitar a confirmação.</p>
+        {% else %}
+        <h2><i data-lucide="circle-help" aria-hidden="true"></i> Pagamento online indisponível</h2>
+        <p>A organização ainda precisa ativar a conta de recebimento. Nenhuma cobrança foi criada.</p>
+        <p class="payment-muted">Entre em contato e informe o número do pedido para receber orientação.</p>
+        {% endif %}
+        <a class="payment-button payment-button-secondary" href="{% url 'core:contact' %}">Falar com a organização</a>
+      </section>
+      {% endif %}
     </div>
-
-    <!-- Resumo dos Itens e Valores -->
-    <div class="card" style="margin-bottom: 2rem;">
-        <div class="card-header">
-            <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">Resumo da Inscrição</h2>
-            <span class="badge badge-warning">Reserva Ativa</span>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
-            {% for line in order.lines.all %}
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
-                    <div>
-                        <div style="font-weight: 800; color: #FFF; font-size: 1.05rem;">
-                            {{ line.intended_person_name }}
-                        </div>
-                        <div style="color: var(--text-muted); font-size: 0.85rem;">
-                            {{ line.item_snapshot_json.product_name }} &bull; Camiseta Tam. {{ line.intended_variant_code }}
-                        </div>
-                    </div>
-                    <div style="font-weight: 800; color: var(--primary); font-size: 1.1rem;">
-                        R$ {{ line.net_cents|stringformat:"d"|slice:":-2" }},{{ line.net_cents|stringformat:"d"|slice:"-2:" }}
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-
-        <!-- Totais -->
-        <div style="background-color: var(--surface-hover); padding: 1.25rem; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 0.5rem;">
-            <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.95rem;">
-                <span>Subtotal Bruto:</span>
-                <span>R$ {{ order.formatted_gross }}</span>
-            </div>
-            {% if order.discount_cents > 0 %}
-                <div style="display: flex; justify-content: space-between; color: var(--secondary); font-size: 0.95rem;">
-                    <span>Desconto do Cupom:</span>
-                    <span>- R$ {{ order.formatted_discount }}</span>
-                </div>
-            {% endif %}
-            <div style="display: flex; justify-content: space-between; font-size: 1.35rem; font-weight: 900; color: #FFF; border-top: 1px solid var(--border); padding-top: 0.75rem; margin-top: 0.25rem;">
-                <span>Total a Pagar:</span>
-                <span style="color: var(--primary);">R$ {{ order.formatted_total }}</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Meios de Pagamento Mercado Pago -->
-    <div class="card">
-        <h2 style="font-size: 1.3rem; font-weight: 800; color: #FFF; margin-bottom: 1.5rem; text-align: center;">
-            Selecione o Meio de Pagamento
-        </h2>
-
-        <!-- Opção 1: Pix Instantâneo -->
-        <div style="border: 2px solid var(--primary); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; background: rgba(245, 158, 11, 0.05);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <span style="font-size: 2rem;">⚡</span>
-                    <div>
-                        <div style="font-size: 1.2rem; font-weight: 800; color: #FFF;">Pix Instantâneo</div>
-                        <div style="color: #10B981; font-size: 0.85rem; font-weight: 700;">Confirmação Imediata &bull; Sem taxa extra</div>
-                    </div>
-                </div>
-                <span class="badge badge-success">RECOMENDADO</span>
-            </div>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
-                Você receberá o QR Code e o código Copia-e-Cola do Mercado Pago. O sistema identifica seu pagamento em tempo real.
-            </p>
-            <form method="POST" action="{% url 'checkout:process_payment' order_id=order.id %}">
-                {% csrf_token %}
-                <input type="hidden" name="payment_method" value="pix">
-                <button type="submit" class="btn btn-primary btn-block btn-lg" style="font-size: 1.15rem;">
-                    Pagar R$ {{ order.formatted_total }} via Pix
-                </button>
-            </form>
-        </div>
-
-        <!-- Opção 2: Cartão de Crédito -->
-        <div style="border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; background: var(--surface-hover);">
-            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
-                <span style="font-size: 2rem;">💳</span>
-                <div>
-                    <div style="font-size: 1.2rem; font-weight: 800; color: #FFF;">Cartão de Crédito</div>
-                    <div style="color: var(--text-muted); font-size: 0.85rem;">Parcelamento disponível via Mercado Pago</div>
-                </div>
-            </div>
-
-            <form method="POST" action="{% url 'checkout:process_payment' order_id=order.id %}">
-                {% csrf_token %}
-                <input type="hidden" name="payment_method" value="credit_card">
-                <input type="hidden" name="card_token" value="MOCK_TOKEN_DEMO">
-
-                <div class="form-group">
-                    <label class="form-label">Parcelamento</label>
-                    <select name="installments" class="form-control">
-                        <option value="1">1x de R$ {{ order.formatted_total }} (À vista)</option>
-                        <option value="2">2x no Cartão</option>
-                        <option value="3">3x no Cartão</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn btn-secondary btn-block btn-lg">
-                    Prosseguir com Cartão de Crédito
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
+    <aside class="payment-card payment-summary" aria-label="Resumo do pedido">
+      <h2>Seu pedido</h2>
+      <ul class="payment-list">{% for line in order.lines.all %}<li><strong>{{ line.intended_person_name }}</strong><small class="payment-muted">{{ line.item_snapshot_json.product_name }}</small></li>{% endfor %}</ul>
+      {% if order.discount_cents %}<p class="payment-muted">Desconto aplicado: R$ {{ order.formatted_discount }}</p>{% endif %}
+      <div class="payment-total"><span>Total</span><strong>R$ {{ order.formatted_total }}</strong></div>
+      <p class="payment-help payment-muted">Reserva até {{ order.expires_at|date:"d/m H:i" }}. O pagamento está vinculado a este pedido.</p>
+    </aside>
+  </div>
+</main>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById('pix-payment-form')?.addEventListener('submit', function () {
+  const button = this.querySelector('button'); button.disabled = true; button.textContent = 'Gerando seu Pix…';
+});
+</script>
+{% if payments_available and card_available %}
+{{ mp_config|json_script:"mp-checkout-config" }}
+<script src="https://sdk.mercadopago.com/js/v2"></script>
+<script>
+(() => {
+  const config = JSON.parse(document.getElementById('mp-checkout-config').textContent);
+  const form = document.getElementById('form-checkout');
+  const button = document.getElementById('form-checkout__submit');
+  const feedback = document.getElementById('card-feedback');
+  const fail = () => { feedback.hidden = false; feedback.textContent = 'Não foi possível validar o cartão. Confira os campos ou recarregue a página.'; button.disabled = false; };
+  if (!window.MercadoPago) { feedback.textContent = 'O formulário seguro está indisponível. Recarregue a página ou escolha Pix.'; return; }
+  try {
+    const mp = new MercadoPago(config.publicKey, { locale: 'pt-BR' });
+    const cardForm = mp.cardForm({ amount: config.amount, iframe: true,
+      form: { id: 'form-checkout',
+        cardNumber: { id: 'form-checkout__cardNumber', placeholder: 'Número do cartão' },
+        expirationDate: { id: 'form-checkout__expirationDate', placeholder: 'MM/AA' },
+        securityCode: { id: 'form-checkout__securityCode', placeholder: 'CVV' },
+        cardholderName: { id: 'form-checkout__cardholderName', placeholder: 'Como aparece no cartão' },
+        cardholderEmail: { id: 'form-checkout__cardholderEmail' },
+        issuer: { id: 'form-checkout__issuer', placeholder: 'Selecione o banco' },
+        installments: { id: 'form-checkout__installments', placeholder: 'Selecione as parcelas' },
+        identificationType: { id: 'form-checkout__identificationType' },
+        identificationNumber: { id: 'form-checkout__identificationNumber' }
+      },
+      callbacks: {
+        onFormMounted(error) { if (error) { fail(); button.disabled = true; return; } feedback.hidden = true; button.disabled = false; },
+        onError() { fail(); },
+        onSubmit(event) {
+          event.preventDefault();
+          const data = cardForm.getCardFormData();
+          if (!data.token || !data.paymentMethodId) { fail(); return; }
+          const fields = { card_token: data.token, payment_method_id: data.paymentMethodId, issuer_id: data.issuerId || '',
+            installments: data.installments, identification_type: data.identificationType, identification_number: data.identificationNumber };
+          Object.entries(fields).forEach(([name, value]) => { form.elements.namedItem(name).value = value || ''; });
+          button.disabled = true; button.textContent = 'Confirmando pagamento…';
+          HTMLFormElement.prototype.submit.call(form);
+        }
+      }
+    });
+  } catch (_) { feedback.hidden = false; feedback.textContent = 'O formulário seguro está indisponível. Recarregue a página ou escolha Pix.'; button.disabled = true; }
+})();
+</script>
+{% endif %}
 {% endblock %}

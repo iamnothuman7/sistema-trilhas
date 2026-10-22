@@ -20,28 +20,39 @@ from apps.core.models import AuditLog
 from apps.core.utils import log_audit, cents_to_reais
 from apps.reporting.selectors import get_event_kpi_summary
 from apps.reporting.exports import export_participants_csv, export_financial_csv
+from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
+from django.views.decorators.http import require_POST
+from apps.finance.forms import ExpenseForm
+from apps.finance.models import ExpenseStatus
+from apps.finance.services import create_expense, settle_expense, cancel_pending_expense
+from apps.reporting.forms import DateRangeForm
+from apps.reporting.selectors import financial_entries, get_financial_summary, in_period
+from urllib.parse import urlencode
+from django.db.models import Q
+from django.http import HttpResponseNotAllowed
+from apps.core.permissions import management_required, accessible_events, can_manage_event, can_create_events, is_administrator
 
 def staff_required_custom(view_func):
-    """Verifica se o usuário tem permissão de acesso à gestão."""
-    def wrapper(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect(f"/login/?next={request.path}")
-        if not (request.user.is_staff or request.user.is_superuser or request.user.event_memberships.filter(revoked_at__isnull=True).exists()):
-            messages.error(request, "Acesso restrito à equipe gestora da Equipe Morcego.")
-            return redirect("core:home")
-        return view_func(request, *args, **kwargs)
-    return wrapper
+    """Authorise each action and event before resolving management data."""
+    return management_required(view_func)
 
 @staff_required_custom
 def dashboard(request):
-    events = Event.objects.all().order_by("-starts_at")
+    events = accessible_events(request.user).order_by("-starts_at")
     selected_event_id = request.GET.get("event_id")
     event = None
     if selected_event_id:
-        event = Event.objects.filter(id=selected_event_id).first()
+        try:
+            event = events.filter(id=uuid.UUID(selected_event_id)).first()
+        except (ValueError, TypeError):
+            event = None
     if not event:
         event = events.first()
 
+    if event:
+        request.session["management_event_id"] = str(event.id)
+        request.management_event = event
     kpi = get_event_kpi_summary(event) if event else {}
     recent_orders = Order.objects.filter(event=event).order_by("-created_at")[:8] if event else []
     recent_checkins = CheckinRecord.objects.filter(event=event).select_related("registration", "registration__person").order_by("-occurred_at")[:6] if event else []
@@ -57,7 +68,7 @@ def dashboard(request):
 
 @staff_required_custom
 def event_list(request):
-    events = Event.objects.all().order_by("-starts_at")
+    events = accessible_events(request.user, "events").order_by("-starts_at")
     return render(request, "gestao/events/event_list.html", {"events": events})
 
 
@@ -142,11 +153,14 @@ def event_edit(request, event_id):
 
 
 @staff_required_custom
+@require_POST
 def event_duplicate(request, event_id):
     """
     Duplica um evento com estrutura, produtos, temas e páginas em rascunho.
     NUNCA duplica inscrições, pagamentos ou dados pessoais (Invariante do Sistema).
     """
+    if not can_create_events(request.user):
+        return HttpResponseForbidden("A duplicação de eventos exige acesso de administração geral.")
     source = get_object_or_404(Event, id=event_id)
 
     with transaction.atomic():
@@ -221,13 +235,9 @@ def registration_list(request, event_id):
 
     if q:
         regs = regs.filter(
-            models_q := (
-                Registration.objects.filter(person__full_name__icontains=q) |
-                Registration.objects.filter(person__phone__icontains=q) |
-                Registration.objects.filter(team_name__icontains=q) |
-                Registration.objects.filter(person__city__icontains=q) |
-                Registration.objects.filter(registration_number__icontains=q)
-            )
+            Q(person__full_name__icontains=q) | Q(person__phone__icontains=q)
+            | Q(team_name__icontains=q) | Q(person__city__icontains=q)
+            | Q(registration_number__icontains=q)
         )
     if status_filter:
         regs = regs.filter(commercial_state=status_filter)
@@ -265,9 +275,10 @@ def registration_detail(request, event_id, reg_id):
 
 
 @staff_required_custom
+@transaction.atomic
 def registration_change_status(request, event_id, reg_id):
     event = get_object_or_404(Event, id=event_id)
-    reg = get_object_or_404(Registration, id=reg_id, event=event)
+    reg = get_object_or_404(Registration.objects.select_for_update(), id=reg_id, event=event)
 
     if request.method == "POST":
         new_status = request.POST.get("commercial_state")
@@ -276,7 +287,7 @@ def registration_change_status(request, event_id, reg_id):
 
         if new_status in CommercialState.values:
             reg.commercial_state = new_status
-            reg.save()
+            reg.save(update_fields=["commercial_state", "updated_at"])
             log_audit(actor=request.user, event_id=event.id, action="REGISTRATION_STATUS_CHANGED", entity_type="Registration", entity_id=reg.id, diff={"old": old_status, "new": new_status}, reason=reason, request=request)
             messages.success(request, f"Situação da inscrição atualizada para {reg.get_commercial_state_display()}.")
 
@@ -326,16 +337,16 @@ def credenciamento_lookup_api(request, event_id):
         reg = Registration.objects.filter(
             event_id=event_id
         ).filter(
-            models_q := (
-                Registration.objects.filter(registration_number__iexact=token) |
-                Registration.objects.filter(person__full_name__icontains=token)
-            )
+            Q(registration_number__iexact=token) | Q(person__full_name__icontains=token)
         ).select_related("person", "credential").first()
     else:
         reg = cred.registration
 
     if not reg:
         return JsonResponse({"found": False, "error": "Participante não localizado neste evento."})
+
+    if hasattr(reg, "credential") and not reg.credential.is_valid:
+        return JsonResponse({"found": False, "error": "Credencial revogada ou expirada."})
 
     has_checked_in = hasattr(reg, "checkin_record")
     entitlements_data = []
@@ -348,6 +359,7 @@ def credenciamento_lookup_api(request, event_id):
             "quantity_used": ent.quantity_used,
             "remaining": ent.remaining,
             "is_consumed": ent.quantity_used >= ent.quantity_total,
+            "state": ent.state,
         })
 
     return JsonResponse({
@@ -368,16 +380,24 @@ def credenciamento_lookup_api(request, event_id):
 
 
 @staff_required_custom
+@transaction.atomic
 def credenciamento_confirm_api(request, event_id):
     """
     Confirma presença (Check-in) com trava atômica.
     Idempotente: cliques repetidos não geram duplicatas.
     """
     if request.method != "POST":
-        return HttpResponseBadRequest()
+        return HttpResponseNotAllowed(["POST"])
 
-    reg_id = request.POST.get("registration_id")
-    reg = get_object_or_404(Registration, id=reg_id, event_id=event_id)
+    try:
+        reg_id = uuid.UUID(request.POST.get("registration_id", ""))
+    except (ValueError, TypeError):
+        return JsonResponse({"success": False, "error": "Inscrição inválida."}, status=400)
+    reg = get_object_or_404(Registration.objects.select_for_update(), id=reg_id, event_id=event_id)
+    if reg.commercial_state != CommercialState.ACTIVE or reg.operational_state not in (OperationalState.READY, OperationalState.CHECKED_IN):
+        return JsonResponse({"success": False, "error": "Inscrição sem pagamento confirmado ou aceite dos termos."}, status=409)
+    if hasattr(reg, "credential") and not reg.credential.is_valid:
+        return JsonResponse({"success": False, "error": "Credencial revogada ou expirada."}, status=409)
 
     source_key = f"CHECKIN-{event_id}-{reg.id}"
     checkin, created = CheckinRecord.objects.get_or_create(
@@ -407,13 +427,35 @@ def deliver_benefit_api(request, event_id):
     Entrega benefício (Kit, Camiseta, Refeição) atômica com lock contra entrega duplicada.
     """
     if request.method != "POST":
-        return HttpResponseBadRequest()
+        return HttpResponseNotAllowed(["POST"])
 
-    ent_id = request.POST.get("entitlement_id")
+    try:
+        ent_id = uuid.UUID(request.POST.get("entitlement_id", ""))
+        idempotency_key = uuid.UUID(request.POST.get("idempotency_key", ""))
+    except (ValueError, TypeError):
+        return JsonResponse({"success": False, "error": "Benefício ou identificação da entrega inválidos."}, status=400)
+    registration_id = Entitlement.objects.filter(id=ent_id, registration__event_id=event_id).values_list("registration_id", flat=True).first()
+    if not registration_id:
+        return JsonResponse({"success": False, "error": "Benefício não encontrado."}, status=404)
     with transaction.atomic():
-        ent = Entitlement.objects.select_for_update().filter(id=ent_id, registration__event_id=event_id).first()
+        # Payment/refund operations also lock registration before its benefits.
+        reg = get_object_or_404(Registration.objects.select_for_update(), id=registration_id, event_id=event_id)
+        ent = Entitlement.objects.select_for_update().filter(id=ent_id, registration_id=reg.pk).first()
         if not ent:
-            return JsonResponse({"success": False, "error": "Benefício não encontrado."})
+            return JsonResponse({"success": False, "error": "Benefício não encontrado."}, status=404)
+
+        source_key = f"DELIVER-{ent.id}-{idempotency_key}"
+        if Consumption.objects.filter(entitlement=ent, source_key=source_key, action="DELIVERED").exists():
+            return JsonResponse({
+                "success": True, "already_delivered": True,
+                "remaining": ent.remaining, "quantity_used": ent.quantity_used,
+                "is_consumed": ent.quantity_used >= ent.quantity_total,
+            })
+
+        if ent.state == EntitlementState.REVOKED or reg.commercial_state != CommercialState.ACTIVE or reg.operational_state not in (OperationalState.READY, OperationalState.CHECKED_IN):
+            return JsonResponse({"success": False, "error": "Benefício indisponível ou inscrição não apta para retirada."}, status=409)
+        if hasattr(reg, "credential") and not reg.credential.is_valid:
+            return JsonResponse({"success": False, "error": "Credencial revogada ou expirada."}, status=409)
 
         if ent.remaining <= 0:
             return JsonResponse({
@@ -422,7 +464,6 @@ def deliver_benefit_api(request, event_id):
                 "already_consumed": True
             })
 
-        source_key = f"DELIVER-{ent.id}-{ent.quantity_used + 1}"
         Consumption.objects.create(
             entitlement=ent,
             quantity=1,
@@ -441,6 +482,7 @@ def deliver_benefit_api(request, event_id):
 
     return JsonResponse({
         "success": True,
+        "already_delivered": False,
         "remaining": ent.remaining,
         "quantity_used": ent.quantity_used,
         "is_consumed": ent.quantity_used >= ent.quantity_total,
@@ -464,59 +506,84 @@ def catalog_management(request, event_id):
 
 @staff_required_custom
 def finance_overview(request, event_id):
-    event = get_object_or_404(Event, id=event_id)
-    kpi = get_event_kpi_summary(event)
-    entries = FinancialEntry.objects.filter(event=event).order_by("-recognized_at")[:50]
-    expenses = Expense.objects.filter(event=event).order_by("-due_at")
-    vendors = Vendor.objects.filter(organization=event.organization)
+    from apps.core.permissions import require_event_access
+    event = require_event_access(request, event_id, action="finance")
+    context = _finance_context(request, event)
+    response = render(request, "gestao/finance/overview.html", context, status=400 if context["date_form"].errors else 200)
+    response["Cache-Control"] = "private, no-store"
+    return response
 
-    return render(request, "gestao/finance/overview.html", {
-        "event": event,
-        "kpi": kpi,
-        "entries": entries,
-        "expenses": expenses,
-        "vendors": vendors,
-    })
+
+def _finance_context(request, event, expense_form=None):
+    date_form = DateRangeForm(request.GET)
+    valid = date_form.is_valid()
+    start = date_form.cleaned_data.get("date_start") if valid else None
+    end = date_form.cleaned_data.get("date_end") if valid else None
+    entries = financial_entries(event, start, end).order_by("-recognized_at", "-pk") if valid else FinancialEntry.objects.none()
+    expenses = in_period(Expense.objects.filter(event=event).select_related("vendor"), "due_at", start, end, date_field=True).order_by("-due_at", "-pk") if valid else Expense.objects.none()
+    form = expense_form if expense_form is not None else ExpenseForm(event=event)
+    entries_page = Paginator(entries, 30).get_page(request.GET.get("entries_page"))
+    expenses_page = Paginator(expenses, 20).get_page(request.GET.get("expenses_page"))
+    return {
+        "event": event, "kpi": get_event_kpi_summary(event),
+        "finance": get_financial_summary(event, start, end) if valid else {},
+        "entries": entries_page.object_list, "expenses": expenses_page.object_list,
+        "entries_page": entries_page,
+        "expenses_page": expenses_page,
+        "vendors": Vendor.objects.filter(organization=event.organization).order_by("name"),
+        "date_form": date_form, "expense_form": form, "expense_form_errors": form.errors,
+        "today": timezone.localdate().isoformat(),
+        "filter_query": urlencode({key: value.isoformat() for key, value in date_form.cleaned_data.items() if value}) if valid else "",
+    }
 
 
 @staff_required_custom
+@require_POST
 def add_expense(request, event_id):
-    event = get_object_or_404(Event, id=event_id)
-    if request.method == "POST":
-        desc = request.POST.get("description")
-        vendor_id = request.POST.get("vendor_id")
-        cat = request.POST.get("category")
-        amount_reais = float(request.POST.get("amount", 0).replace(",", "."))
-        amount_cents = int(amount_reais * 100)
-        due_at = request.POST.get("due_at")
+    from apps.core.permissions import require_event_access
+    event = require_event_access(request, event_id, action="finance")
+    form = ExpenseForm(request.POST, event=event)
+    if form.is_valid():
+        try:
+            expense, created = create_expense(event=event, data=form.cleaned_data, actor=request.user, request=request)
+        except ValidationError as error:
+            form.add_error(None, error)
+        else:
+            messages.success(request, "Despesa registrada com sucesso." if created else "Esta despesa já estava registrada; nenhum lançamento foi duplicado.")
+            return redirect("gestao:finance", event_id=event.pk)
+    return render(request, "gestao/finance/overview.html", _finance_context(request, event, form), status=400)
 
-        vendor = Vendor.objects.filter(id=vendor_id).first() if vendor_id else None
 
-        Expense.objects.create(
-            event=event,
-            vendor=vendor,
-            category=cat,
-            description=desc,
-            amount_cents=amount_cents,
-            due_at=due_at,
-            paid_at=timezone.now().date(),
-            status="PAID"
-        )
+@staff_required_custom
+@require_POST
+def pay_expense(request, event_id, expense_id):
+    from django import forms
+    from apps.core.permissions import require_event_access
+    event = require_event_access(request, event_id, action="finance")
+    get_object_or_404(Expense, pk=expense_id, event=event)
+    try:
+        paid_at = forms.DateField(input_formats=["%Y-%m-%d"]).clean(request.POST.get("paid_at") or timezone.localdate().isoformat())
+        _, changed = settle_expense(event=event, expense_id=expense_id, actor=request.user, paid_at=paid_at, request=request)
+    except ValidationError as error:
+        messages.error(request, " ".join(error.messages))
+    else:
+        messages.success(request, "Pagamento registrado no extrato." if changed else "Esta despesa já está paga.")
+    return redirect("gestao:finance", event_id=event.pk)
 
-        FinancialEntry.objects.create(
-            event=event,
-            source_reference=f"EXPENSE-{uuid.uuid4().hex[:8]}",
-            kind="DESPESA",
-            amount_cents_signed=-amount_cents,
-            description=f"Despesa: {desc}",
-            posted_by=request.user,
-            recognized_at=timezone.now(),
-        )
 
-        messages.success(request, "Despesa registrada com sucesso!")
-        return redirect("gestao:finance", event_id=event.id)
-
-    return redirect("gestao:finance", event_id=event.id)
+@staff_required_custom
+@require_POST
+def cancel_expense(request, event_id, expense_id):
+    from apps.core.permissions import require_event_access
+    event = require_event_access(request, event_id, action="finance")
+    get_object_or_404(Expense, pk=expense_id, event=event)
+    try:
+        _, changed = cancel_pending_expense(event=event, expense_id=expense_id, actor=request.user, reason=request.POST.get("reason"), request=request)
+    except ValidationError as error:
+        messages.error(request, " ".join(error.messages))
+    else:
+        messages.success(request, "Despesa cancelada. O histórico foi preservado." if changed else "Esta despesa já está cancelada.")
+    return redirect("gestao:finance", event_id=event.pk)
 
 
 @staff_required_custom
@@ -576,12 +643,20 @@ def export_participants(request, event_id):
 
 @staff_required_custom
 def export_financial(request, event_id):
-    event = get_object_or_404(Event, id=event_id)
+    from apps.core.permissions import require_event_access
+    from django.http import HttpResponseBadRequest
+    event = require_event_access(request, event_id, action="finance")
+    form = DateRangeForm(request.GET)
+    if not form.is_valid():
+        return HttpResponseBadRequest("Período inválido. Confira as datas do relatório.")
     log_audit(actor=request.user, event_id=event.id, action="EXPORT_FINANCIAL_CSV", entity_type="Event", entity_id=event.id, request=request)
-    return export_financial_csv(event)
+    return export_financial_csv(event, form.cleaned_data["date_start"], form.cleaned_data["date_end"])
 
 
 @staff_required_custom
 def audit_log_view(request):
-    logs = AuditLog.objects.all().order_by("-created_at")[:100]
+    logs = AuditLog.objects.all()
+    if not is_administrator(request.user):
+        logs = logs.filter(event_id__in=accessible_events(request.user, "audit").values("id"))
+    logs = logs.order_by("-created_at")[:100]
     return render(request, "gestao/audit/audit_log.html", {"logs": logs})

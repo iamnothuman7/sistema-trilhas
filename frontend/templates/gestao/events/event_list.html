@@ -4,14 +4,14 @@
 {% block gestao_header %}Gerenciamento de Eventos e Trilhões{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+<div class="page-heading mg-section-gap">
     <div>
-        <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF;">Edições Cadastradas</h1>
-        <p style="color: var(--text-muted); font-size: 0.95rem;">Crie novos eventos, duplique edições passadas e altere status.</p>
+        <h1>Edições Cadastradas</h1>
+        <p class="text-muted">Crie novos eventos, duplique edições passadas e altere status.</p>
     </div>
-    <a href="{% url 'gestao:event_create' %}" class="btn btn-primary">
-        + Nova Edição de Evento
-    </a>
+    {% if management_can_create_events %}<a href="{% url 'gestao:event_create' %}" class="btn btn-primary">
+        <i data-lucide="plus" aria-hidden="true"></i> Nova Edição de Evento
+    </a>{% endif %}
 </div>
 
 <div class="card">
@@ -19,23 +19,23 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Edição</th>
-                    <th>Tipo</th>
-                    <th>Cidade / Local</th>
-                    <th>Data do Evento</th>
-                    <th>Inscrições</th>
-                    <th>Situação</th>
-                    <th>Ações</th>
+                    <th scope="col">Edição</th>
+                    <th scope="col">Tipo</th>
+                    <th scope="col">Cidade / Local</th>
+                    <th scope="col">Data do Evento</th>
+                    <th scope="col">Inscrições</th>
+                    <th scope="col">Situação</th>
+                    <th scope="col">Ações</th>
                 </tr>
             </thead>
             <tbody>
                 {% for ev in events %}
                     <tr>
                         <td>
-                            <strong style="color: #FFF; font-size: 1.05rem;">
+                            <strong>
                                 <a href="{% url 'gestao:event_detail' event_id=ev.id %}">{{ ev.title }}</a>
                             </strong>
-                            <div style="font-size: 0.8rem; color: var(--text-muted);">Slug: /eventos/{{ ev.slug }}/</div>
+                            <div class="text-muted mg-meta">Slug: /eventos/{{ ev.slug }}/</div>
                         </td>
                         <td><span class="badge badge-info">{{ ev.get_type_display }}</span></td>
                         <td>{{ ev.venue }} - {{ ev.city }}/{{ ev.state }}</td>
@@ -49,15 +49,18 @@
                             </span>
                         </td>
                         <td>
-                            <div style="display: flex; gap: 0.5rem;">
+                            <div class="page-actions">
                                 <a href="{% url 'gestao:event_detail' event_id=ev.id %}" class="btn btn-sm btn-secondary">Gerenciar</a>
-                                <a href="{% url 'gestao:event_duplicate' event_id=ev.id %}" class="btn btn-sm btn-secondary" onclick="return confirm('Deseja duplicar este evento para uma nova edição em rascunho? Nenhuma inscrição ou dado financeiro será copiado.')">Duplicar</a>
+                                {% if management_can_create_events %}<form method="post" action="{% url 'gestao:event_duplicate' event_id=ev.id %}" onsubmit="return confirm('Duplicar este evento para uma nova edição em rascunho? As inscrições e os dados financeiros ficam na edição original.')">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-secondary"><i data-lucide="copy" aria-hidden="true"></i> Duplicar</button>
+                                </form>{% endif %}
                             </div>
                         </td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                        <td colspan="7" class="text-muted mg-align-center mg-table-empty">
                             Nenhum evento cadastrado.
                         </td>
                     </tr>

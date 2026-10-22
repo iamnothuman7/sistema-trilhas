@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ChargeAttempt, ProviderEvent, PaymentAllocation, Refund, ManualPaymentEvidence, FeeStatement
+from .models import ChargeAttempt, ProviderEvent, PaymentAllocation, Refund, ManualPaymentEvidence, FeeStatement, PaymentTransaction
 
 @admin.register(ChargeAttempt)
 class ChargeAttemptAdmin(admin.ModelAdmin):
@@ -32,3 +32,17 @@ class ManualPaymentEvidenceAdmin(admin.ModelAdmin):
 @admin.register(FeeStatement)
 class FeeStatementAdmin(admin.ModelAdmin):
     list_display = ("provider_order_id", "expected_cents", "actual_cents", "reconciled_at")
+
+
+@admin.register(PaymentTransaction)
+class PaymentTransactionAdmin(admin.ModelAdmin):
+    list_display = ("provider_payment_id", "charge_attempt", "provider_status", "amount_cents", "posted_fee_cents", "posted_refund_cents", "provider_updated_at")
+    list_filter = ("provider_status",)
+    search_fields = ("provider_payment_id", "charge_attempt__order__merchant_reference")
+    readonly_fields = [field.name for field in PaymentTransaction._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

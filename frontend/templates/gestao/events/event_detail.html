@@ -1,109 +1,61 @@
 {% extends "gestao/base_gestao.html" %}
 
-{% block title %}Gerenciar Evento: {{ event.title }}{% endblock %}
-{% block gestao_header %}Configurações da Edição: {{ event.title }}{% endblock %}
+{% block title %}{{ event.title }} | Gestão Equipe Morcego{% endblock %}
+{% block gestao_header %}Visão do evento{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+<div class="page-heading">
     <div>
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <h1 style="font-size: 1.8rem; font-weight: 900; color: #FFF;">{{ event.title }}</h1>
-            <span class="badge {% if event.status == 'PUBLISHED' %}badge-success{% else %}badge-warning{% endif %}">
-                {{ event.get_status_display }}
-            </span>
+        <div class="mg-section-title-row">
+            <h1>{{ event.title }}</h1>
+            <span class="badge {% if event.status == 'PUBLISHED' %}badge-success{% else %}badge-warning{% endif %}">{{ event.get_status_display }}</span>
         </div>
-        <div style="color: var(--text-muted); font-size: 0.95rem;">
-            Data: {{ event.starts_at|date:"d/m/Y H:i" }} &bull; Local: {{ event.venue }} ({{ event.city }}/{{ event.state }})
-        </div>
+        <p>{{ event.starts_at|date:"d/m/Y · H:i" }} · {{ event.venue }} · {{ event.city }}/{{ event.state }}</p>
     </div>
-
-    <div style="display: flex; gap: 0.75rem;">
-        <a href="{% url 'events:detail' slug=event.slug %}" target="_blank" class="btn btn-secondary">
-            🌐 Ver Página Pública
-        </a>
-        <a href="{% url 'gestao:event_edit' event_id=event.id %}" class="btn btn-primary">
-            ✏️ Editar Informações e Tema
-        </a>
-        <a href="{% url 'gestao:event_duplicate' event_id=event.id %}" class="btn btn-secondary" onclick="return confirm('Duplicar esta edição para um novo rascunho?')">
-            📑 Duplicar Edição
-        </a>
+    <div class="page-actions">
+        <a href="{% url 'events:detail' slug=event.slug %}" target="_blank" rel="noopener" class="btn btn-secondary"><i data-lucide="external-link" aria-hidden="true"></i> Ver evento</a>
+        <a href="{% url 'gestao:event_edit' event_id=event.id %}" class="btn btn-primary"><i data-lucide="pencil" aria-hidden="true"></i> Editar evento</a>
+        {% if management_can_create_events %}<form method="post" action="{% url 'gestao:event_duplicate' event_id=event.id %}" onsubmit="return confirm('Duplicar esta edição para um novo rascunho?')">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary"><i data-lucide="copy" aria-hidden="true"></i> Duplicar</button>
+        </form>{% endif %}
     </div>
 </div>
 
-<!-- Acesso Rápido aos Módulos -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
-    <a href="{% url 'gestao:registration_list' event_id=event.id %}" class="card" style="text-decoration: none;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">👥</div>
-        <div style="font-size: 1.15rem; font-weight: 800; color: #FFF;">Inscrições</div>
-        <div style="color: var(--text-muted); font-size: 0.9rem;">
-            {{ kpi.active_confirmed }} confirmados &bull; Ver tabela completa
-        </div>
+<div class="mg-module-grid mg-section-gap">
+    <a href="{% url 'gestao:registration_list' event_id=event.id %}" class="card mg-module-link">
+        <span class="mg-module-icon"><i data-lucide="users" aria-hidden="true"></i></span>
+        <h2>Inscrições</h2><p>{{ kpi.active_confirmed }} confirmados. Consulte participantes, categorias e status.</p>
     </a>
-
-    <a href="{% url 'gestao:credenciamento' event_id=event.id %}" class="card" style="text-decoration: none; border-color: var(--secondary);">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚡</div>
-        <div style="font-size: 1.15rem; font-weight: 800; color: #34D399;">Credenciamento & QR</div>
-        <div style="color: var(--text-muted); font-size: 0.9rem;">
-            {{ kpi.checked_in_count }} presenças &bull; Scanner móvel
-        </div>
+    <a href="{% url 'gestao:credenciamento' event_id=event.id %}" class="card mg-module-link">
+        <span class="mg-module-icon"><i data-lucide="scan-line" aria-hidden="true"></i></span>
+        <h2>Credenciamento</h2><p>{{ kpi.checked_in_count }} presenças registradas. Leia o QR Code e entregue os kits.</p>
     </a>
-
-    <a href="{% url 'gestao:catalog' event_id=event.id %}" class="card" style="text-decoration: none;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏷️</div>
-        <div style="font-size: 1.15rem; font-weight: 800; color: #FFF;">Catálogo & Lotes</div>
-        <div style="color: var(--text-muted); font-size: 0.9rem;">
-            Modalidades, preços, estoque e cupons
-        </div>
+    <a href="{% url 'gestao:catalog' event_id=event.id %}" class="card mg-module-link">
+        <span class="mg-module-icon"><i data-lucide="tags" aria-hidden="true"></i></span>
+        <h2>Catálogo e lotes</h2><p>Modalidades, preços, disponibilidade e cupons da edição.</p>
     </a>
-
-    <a href="{% url 'gestao:finance' event_id=event.id %}" class="card" style="text-decoration: none;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">💰</div>
-        <div style="font-size: 1.15rem; font-weight: 800; color: #FFF;">Financeiro & Despesas</div>
-        <div style="color: var(--text-muted); font-size: 0.9rem;">
-            Conciliação Mercado Pago e extratos
-        </div>
+    <a href="{% url 'gestao:finance' event_id=event.id %}" class="card mg-module-link">
+        <span class="mg-module-icon"><i data-lucide="wallet" aria-hidden="true"></i></span>
+        <h2>Financeiro</h2><p>Acompanhe recebimentos, taxas, despesas e resultado.</p>
     </a>
-
-    <a href="{% url 'gestao:expedition' event_id=event.id %}" class="card" style="text-decoration: none;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏨</div>
-        <div style="font-size: 1.15rem; font-weight: 800; color: #FFF;">Expedição & Quartos</div>
-        <div style="color: var(--text-muted); font-size: 0.9rem;">
-            Roteiros diários e alocações de hotéis
-        </div>
+    <a href="{% url 'gestao:expedition' event_id=event.id %}" class="card mg-module-link">
+        <span class="mg-module-icon"><i data-lucide="route" aria-hidden="true"></i></span>
+        <h2>Logística da expedição</h2><p>Roteiro diário, hospedagem e distribuição de quartos.</p>
     </a>
-
-    <a href="{% url 'gestao:frames' event_id=event.id %}" class="card" style="text-decoration: none;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📸</div>
-        <div style="font-size: 1.15rem; font-weight: 800; color: #FFF;">Molduras Digitais</div>
-        <div style="color: var(--text-muted); font-size: 0.9rem;">
-            Templates Feed e Story do evento
-        </div>
+    <a href="{% url 'gestao:frames' event_id=event.id %}" class="card mg-module-link">
+        <span class="mg-module-icon"><i data-lucide="image" aria-hidden="true"></i></span>
+        <h2>Molduras digitais</h2><p>Artes oficiais e modelos para feed e stories dos participantes.</p>
     </a>
 </div>
 
-<!-- Resumo dos Dados do Evento -->
-<div class="card">
-    <h3 style="font-size: 1.25rem; font-weight: 800; color: #FFF; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
-        Dados Operacionais Cadastrados
-    </h3>
-
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; font-size: 0.95rem;">
-        <div>
-            <div style="color: var(--text-muted);">Abertura das Inscrições:</div>
-            <div style="font-weight: 700; color: #FFF;">{{ event.registration_opens_at|date:"d/m/Y H:i" }}</div>
-        </div>
-        <div>
-            <div style="color: var(--text-muted);">Encerramento das Inscrições:</div>
-            <div style="font-weight: 700; color: #FFF;">{{ event.registration_closes_at|date:"d/m/Y H:i" }}</div>
-        </div>
-        <div>
-            <div style="color: var(--text-muted);">Capacidade Geral Máxima:</div>
-            <div style="font-weight: 700; color: #FFF;">{{ event.max_attendees }} pilotos</div>
-        </div>
-        <div>
-            <div style="color: var(--text-muted);">Fuso Horário Oficial:</div>
-            <div style="font-weight: 700; color: #FFF;">{{ event.timezone }}</div>
-        </div>
+<section class="card" aria-labelledby="event-data-title">
+    <div class="card-header"><h2 class="section-title" id="event-data-title">Informações da edição</h2></div>
+    <div class="mg-data-grid">
+        <div><p class="stat-label">Abertura das inscrições</p><strong>{{ event.registration_opens_at|date:"d/m/Y · H:i" }}</strong></div>
+        <div><p class="stat-label">Encerramento das inscrições</p><strong>{{ event.registration_closes_at|date:"d/m/Y · H:i" }}</strong></div>
+        <div><p class="stat-label">Capacidade</p><strong>{{ event.max_attendees }} pilotos</strong></div>
+        <div><p class="stat-label">Fuso horário</p><strong>{{ event.timezone }}</strong></div>
     </div>
-</div>
+</section>
 {% endblock %}
