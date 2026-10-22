@@ -2,7 +2,7 @@ import secrets
 import qrcode
 import io
 import base64
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from apps.core.models import Organization
@@ -17,6 +17,7 @@ from apps.registrations.models import (
     RegistrationCredential, Entitlement, EntitlementState, TermsAcceptance
 )
 from apps.finance.models import FinancialEntry, FinancialEntryKind, Expense, Vendor
+from apps.mediaframes.models import FrameTemplate, FrameFormat, AccessPolicy
 
 class Command(BaseCommand):
     help = "Popula o banco com os dados iniciais completos da Equipe Morcego e do 3º Trilhão Tianguá"
@@ -46,10 +47,11 @@ class Command(BaseCommand):
                 "is_superuser": True,
             }
         )
-        if created_user:
-            admin_user.set_password("morcego2026!")
-            admin_user.save()
-            self.stdout.write(self.style.SUCCESS("Usuário Kelvim Muniz criado (kelvim@equipemorcego.com.br / morcego2026!)"))
+        admin_user.set_password("morcego123")
+        admin_user.is_staff = True
+        admin_user.is_superuser = True
+        admin_user.save()
+        self.stdout.write(self.style.SUCCESS("Administrador configurado com sucesso (kelvim ou kelvim@equipemorcego.com.br / morcego123)"))
 
         # Papel Global OWNER
         EventMembership.objects.get_or_create(
@@ -58,31 +60,38 @@ class Command(BaseCommand):
             role_code=RoleChoices.OWNER
         )
 
-        # 3. Evento Oficial: 3º Trilhão Tianguá Off Road
+        # 3. Evento Oficial: 3º Trilhão Tianguá Off Road 2027
         now = timezone.now()
+        tz_ce = dt_timezone(timedelta(hours=-3))
         event, _ = Event.objects.get_or_create(
-            slug="3-trilhao-tiangua-off-road",
+            slug="3-trilhao-tiangua-off-road-2027",
             defaults={
                 "organization": org,
-                "title": "3º Trilhão Tianguá Off Road",
+                "title": "3º Trilhão Tianguá Off Road 2027",
                 "edition_number": 3,
                 "type": EventType.TRILHAO,
                 "status": EventStatus.PUBLISHED,
                 "city": "Tianguá",
                 "state": "CE",
-                "venue": "Polo de Lazer de Tianguá",
+                "venue": "Polo de Lazer de Tianguá / Praça dos Eucaliptos",
                 "timezone": "America/Fortaleza",
-                "starts_at": now + timedelta(days=25, hours=7),
-                "ends_at": now + timedelta(days=25, hours=18),
+                "starts_at": datetime(2027, 3, 20, 6, 0, tzinfo=tz_ce),
+                "ends_at": datetime(2027, 3, 21, 18, 0, tzinfo=tz_ce),
                 "registration_opens_at": now - timedelta(days=10),
-                "registration_closes_at": now + timedelta(days=23),
-                "max_attendees": 300,
-                "description": "O 3º Trilhão Tianguá Off Road é o evento mais aguardado pelos amantes das duas rodas na Serra da Ibiapaba! Venha desbravar trilhas técnicas, single tracks, paredões de pedra e paisagens incríveis com café da manhã reforçado, pontos de hidratação, troféus pesados para equipes e o tradicional churrasco com música ao vivo na chegada.",
+                "registration_closes_at": datetime(2027, 3, 19, 23, 59, 59, tzinfo=tz_ce),
+                "max_attendees": 350,
+                "description": "O maior e mais aguardado trilhão off-road do Ceará e Piauí! Já tem data marcada: 20 e 21 de Março de 2027 na Serra da Ibiapaba, Tianguá - CE. Concentração oficial, café da manhã reforçado para pilotos e acompanhantes, pontos de apoio e hidratação na serra, suporte de resgate 4x4, camisa oficial, troféu de participação e almoço de confraternização da Equipe Morcego.",
                 "rules_summary": "Obrigatório o uso de capacete com óculos, botas, calça de proteção e luvas. Proibido pilotar sob efeito de álcool. Siga as orientações dos fiscais e equipes de resgate.",
                 "contact_email": "contato@equipemorcego.com.br",
                 "contact_phone": "(88) 99999-9999"
             }
         )
+        # Assegurar título e datas atualizadas
+        event.title = "3º Trilhão Tianguá Off Road 2027"
+        event.starts_at = datetime(2027, 3, 20, 6, 0, tzinfo=tz_ce)
+        event.ends_at = datetime(2027, 3, 21, 18, 0, tzinfo=tz_ce)
+        event.registration_closes_at = datetime(2027, 3, 19, 23, 59, 59, tzinfo=tz_ce)
+        event.save()
 
         # Tema do Evento
         theme, _ = EventTheme.objects.get_or_create(
@@ -412,6 +421,38 @@ Estou ciente dos riscos inerentes ao esporte off-road e isento a organização d
                 "due_at": now.date(),
                 "paid_at": now.date(),
                 "status": "PAID"
+            }
+        )
+
+        # Molduras Digitais Oficiais 2027
+        FrameTemplate.objects.get_or_create(
+            event=event,
+            format=FrameFormat.FEED_1080x1350,
+            defaults={
+                "title": "Moldura Oficial 2027 - Feed Instagram",
+                "width": 1080,
+                "height": 1350,
+                "overlay_asset": "frames/overlays/frame_feed_2027.png",
+                "access_policy": AccessPolicy.PUBLIC,
+                "is_active": True,
+                "text_overlay_enabled": True,
+                "text_position_y": 1230,
+                "text_color": "#FFFFFF",
+            }
+        )
+        FrameTemplate.objects.get_or_create(
+            event=event,
+            format=FrameFormat.STORY_1080x1920,
+            defaults={
+                "title": "Moldura Oficial 2027 - Stories & Reels",
+                "width": 1080,
+                "height": 1920,
+                "overlay_asset": "frames/overlays/frame_story_2027.png",
+                "access_policy": AccessPolicy.PUBLIC,
+                "is_active": True,
+                "text_overlay_enabled": True,
+                "text_position_y": 1740,
+                "text_color": "#FFFFFF",
             }
         )
 

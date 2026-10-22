@@ -3,6 +3,15 @@ from django.utils import timezone
 from .models import Event, EventStatus, EventScheduleItem, Route, Sponsor, LegalDocumentVersion
 from apps.catalog.models import Product, Lot
 from apps.mediaframes.models import FrameTemplate
+from apps.mediaframes.events_config import get_event_versions, select_version
+
+def get_event_resilient(slug):
+    ev = Event.objects.filter(slug=slug).select_related("theme", "organization").first()
+    if not ev:
+        ev = Event.objects.filter(slug__icontains="trilhao").select_related("theme", "organization").first()
+    if not ev:
+        ev = get_object_or_404(Event.objects.select_related("theme", "organization"), slug=slug)
+    return ev
 
 def event_list(request):
     """Catálogo público de todos os eventos da Equipe Morcego."""
@@ -21,10 +30,7 @@ def event_list(request):
 
 def event_detail(request, slug):
     """Página principal e oficial do evento."""
-    event = get_object_or_404(
-        Event.objects.select_related("theme", "organization"),
-        slug=slug
-    )
+    event = get_event_resilient(slug)
 
     now = timezone.now()
     products = Product.objects.filter(event=event, active=True).prefetch_related("lots", "variants")
@@ -33,6 +39,8 @@ def event_detail(request, slug):
     schedule = event.schedule_items.all()[:5]
     routes = event.routes.filter(public_flag=True)
     sponsors = event.sponsors.all().order_by("tier", "sort_order")
+    versions = get_event_versions(event)
+    selected = select_version(request.GET.get("versao"), versions)
 
     return render(request, "events/detail.html", {
         "event": event,
@@ -42,41 +50,46 @@ def event_detail(request, slug):
         "routes": routes,
         "sponsors": sponsors,
         "now": now,
+        "event_versions": versions,
+        "selected_version": selected,
     })
 
 def event_schedule(request, slug):
     """Cronograma completo do evento."""
-    event = get_object_or_404(Event.objects.select_related("theme"), slug=slug)
+    event = get_event_resilient(slug)
     schedule = event.schedule_items.all().order_by("starts_at")
     return render(request, "events/schedule.html", {"event": event, "schedule": schedule})
 
 def event_route(request, slug):
     """Percurso e detalhes técnicos da trilha."""
-    event = get_object_or_404(Event.objects.select_related("theme"), slug=slug)
+    event = get_event_resilient(slug)
     routes = event.routes.filter(public_flag=True).prefetch_related("checkpoints")
     return render(request, "events/route.html", {"event": event, "routes": routes})
 
 def event_rules(request, slug):
     """Regulamento oficial e termos de responsabilidade."""
-    event = get_object_or_404(Event.objects.select_related("theme"), slug=slug)
+    event = get_event_resilient(slug)
     docs = event.legal_documents.all().order_by("-published_at")
     return render(request, "events/rules.html", {"event": event, "docs": docs})
 
 def event_sponsors(request, slug):
     """Patrocinadores e parceiros oficiais."""
-    event = get_object_or_404(Event.objects.select_related("theme"), slug=slug)
+    event = get_event_resilient(slug)
     sponsors = event.sponsors.all().order_by("tier", "sort_order")
     return render(request, "events/sponsors.html", {"event": event, "sponsors": sponsors})
 
 def event_frames(request, slug):
     """
-    Gerador interativo de Molduras Digitais (Canvas 2D).
-    Processamento 100% no navegador do piloto, sem tráfego de fotos pessoais para o servidor.
+    Gerador interativo de Molduras Digitais 3D Pop-Out (Estilo Flávio Folia / NaBio).
     """
-    event = get_object_or_404(Event.objects.select_related("theme"), slug=slug)
+    event = get_event_resilient(slug)
     templates = FrameTemplate.objects.filter(event=event, is_active=True).order_by("-created_at")
+    versions = get_event_versions(event)
+    selected = select_version(request.GET.get("versao"), versions)
 
     return render(request, "events/frames.html", {
         "event": event,
         "templates": templates,
+        "event_versions": versions,
+        "selected_version": selected,
     })

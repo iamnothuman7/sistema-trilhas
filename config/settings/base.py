@@ -8,12 +8,28 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-morcego-trilhas-2026-super-secret-key-prod-dev")
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "*").split(",") if h.strip()]
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.getenv(
+        "DJANGO_ALLOWED_HOSTS",
+        "*,equipemorcego.nabio.pro,.equipemorcego.nabio.pro,3trilhaotiangua.equipemorcego.nabio.pro,.nabio.pro,localhost,127.0.0.1",
+    ).split(",")
+    if h.strip()
+]
+if ".equipemorcego.nabio.pro" not in ALLOWED_HOSTS and "*" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.extend([".equipemorcego.nabio.pro", "3trilhaotiangua.equipemorcego.nabio.pro"])
+
 CSRF_TRUSTED_ORIGINS = [
     o.strip()
-    for o in os.getenv("CSRF_TRUSTED_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000").split(",")
+    for o in os.getenv(
+        "CSRF_TRUSTED_ORIGINS",
+        "https://equipemorcego.nabio.pro,https://*.equipemorcego.nabio.pro,https://3trilhaotiangua.equipemorcego.nabio.pro,http://localhost:8000,http://127.0.0.1:8000",
+    ).split(",")
     if o.strip()
 ]
+for origin in ("https://equipemorcego.nabio.pro", "https://*.equipemorcego.nabio.pro", "https://3trilhaotiangua.equipemorcego.nabio.pro"):
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -47,6 +63,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.core.middleware.EventSubdomainMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]

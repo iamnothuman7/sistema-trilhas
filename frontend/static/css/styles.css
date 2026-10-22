@@ -437,9 +437,28 @@ a:hover {
    ========================================================================== */
 @media (max-width: 768px) {
   .hero-title {
-    font-size: 2.1rem;
+    font-size: 2rem;
+    line-height: 1.2;
   }
   .nav-links {
-    display: none; /* Em mobile usaremos menu toggle */
+    display: none;
+  }
+  #mobileMenuBtn {
+    display: block !important;
+  }
+  .brand-logo img {
+    max-height: 38px !important;
+    max-width: 175px !important;
+  }
+  .container {
+    padding: 0 1rem;
+  }
+  .card {
+    padding: 1.15rem;
+  }
+  .btn-lg {
+    padding: 0.85rem 1.25rem;
+    font-size: 1rem;
   }
 }
+

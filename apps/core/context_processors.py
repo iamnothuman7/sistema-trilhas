@@ -29,4 +29,6 @@ def global_context(request):
         "organization": org,
         "current_year": datetime.now().year,
         "user_memberships": user_memberships,
+        "current_event": getattr(request, "current_event", None),
+        "is_event_subdomain": getattr(request, "is_event_subdomain", False),
     }

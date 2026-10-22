@@ -1,11 +1,18 @@
 from django.shortcuts import render
 from django.utils import timezone
 from apps.events.models import Event, EventStatus
+from apps.events.views import event_detail
 from apps.core.models import Organization
 
 def home(request):
-    """Página inicial do Portal da Equipe Morcego."""
-    now = timezone.now()
+    """
+    Se acessado via subdomínio de um evento (ex: 3trilhaotiangua.equipemorcego.nabio.pro),
+    renderiza diretamente o Microsite Oficial Exclusivo do Evento na raiz (/).
+    Caso contrário, exibe o Portal Institucional da Equipe Morcego.
+    """
+    if getattr(request, "is_event_subdomain", False) and getattr(request, "current_event", None):
+        return event_detail(request, slug=request.current_event.slug)
+
     org = Organization.objects.first()
 
     # Eventos em destaque com inscrições abertas ou próximos

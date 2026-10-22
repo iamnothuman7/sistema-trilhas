@@ -26,6 +26,15 @@ class Event(models.Model):
     organization = models.ForeignKey("core.Organization", on_delete=models.PROTECT, related_name="events")
     title = models.CharField("Nome do Evento", max_length=200)
     slug = models.SlugField("Identificador na URL (Slug)", max_length=200, unique=True, db_index=True)
+    subdomain = models.SlugField(
+        "Subdomínio Exclusivo",
+        max_length=100,
+        unique=True,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="Ex: 3trilhaotiangua (acessível em 3trilhaotiangua.equipemorcego.nabio.pro)"
+    )
     edition_number = models.PositiveIntegerField("Número da Edição", default=1)
     type = models.CharField("Tipo do Evento", max_length=30, choices=EventType.choices, default=EventType.TRILHAO)
     status = models.CharField("Status", max_length=30, choices=EventStatus.choices, default=EventStatus.DRAFT, db_index=True)
@@ -60,7 +69,15 @@ class Event(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.title)
+        if not self.subdomain and self.slug:
+            clean_sub = self.slug.replace("-", "").replace("offroad2027", "").replace("offroad", "")
+            self.subdomain = clean_sub[:40] or self.slug.replace("-", "")[:40]
         super().save(*args, **kwargs)
+
+    @property
+    def microsite_url(self):
+        sub = self.subdomain or self.slug.replace("-", "")[:30]
+        return f"https://{sub}.equipemorcego.nabio.pro"
 
     @property
     def is_registration_open(self):

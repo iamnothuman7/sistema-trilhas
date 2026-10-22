@@ -4,18 +4,30 @@ from django.contrib import messages
 from .models import User, Person, UserPersonLink
 
 def user_login(request):
+    """
+    Login rápido, responsivo e seguro no padrão NaBio.
+    Permite entrar com e-mail completo ou apenas o nome de usuário (ex: 'kelvim' ou 'admin').
+    """
     if request.user.is_authenticated:
         if request.user.is_staff or request.user.event_memberships.filter(revoked_at__isnull=True).exists():
             return redirect("gestao:dashboard")
         return redirect("minha_conta:dashboard")
 
     if request.method == "POST":
-        email = request.POST.get("email", "").strip().lower()
+        login_input = request.POST.get("email", "").strip().lower()
         password = request.POST.get("password", "")
-        user = authenticate(request, email=email, password=password)
+
+        # Suporte a atalhos rápidos de login para o administrador (Kelvim)
+        email_to_auth = login_input
+        if login_input in ["kelvim", "admin", "morcego"]:
+            admin_user = User.objects.filter(is_superuser=True).first()
+            if admin_user:
+                email_to_auth = admin_user.email
+
+        user = authenticate(request, email=email_to_auth, password=password)
         if user is not None:
             login(request, user)
-            messages.success(request, f"Bem-vindo(a), {user.full_name}!")
+            messages.success(request, f"Bem-vindo de volta, {user.full_name}!")
             next_url = request.GET.get("next")
             if next_url:
                 return redirect(next_url)
@@ -23,7 +35,7 @@ def user_login(request):
                 return redirect("gestao:dashboard")
             return redirect("minha_conta:dashboard")
         else:
-            messages.error(request, "E-mail ou senha incorretos.")
+            messages.error(request, "Credenciais não conferem. Verifique seu login e senha.")
 
     return render(request, "identity/login.html")
 
@@ -49,8 +61,8 @@ def user_register(request):
             messages.error(request, "Por favor, preencha todos os campos obrigatórios.")
         elif password != confirm_password:
             messages.error(request, "As senhas digitadas não coincidem.")
-        elif len(password) < 8:
-            messages.error(request, "A senha deve conter no mínimo 8 caracteres.")
+        elif len(password) < 6:
+            messages.error(request, "A senha deve conter no mínimo 6 caracteres.")
         elif User.objects.filter(email=email).exists():
             messages.error(request, "Já existe uma conta cadastrada com este e-mail.")
         else:

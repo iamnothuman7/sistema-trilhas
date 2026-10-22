@@ -45,3 +45,12 @@ secrets/
 *.swo
 .DS_Store
 Thumbs.db
+
+# Local ops / credentials / references
+sync_production.py
+inspect_navie_*.py
+read_navie_core.py
+check_navie_location.py
+flaviofolia_ref/
+.models/
+

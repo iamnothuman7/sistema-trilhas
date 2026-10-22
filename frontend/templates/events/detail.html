@@ -16,42 +16,71 @@
 {% endblock %}
 
 {% block content %}
-<!-- Header / Hero do Evento -->
-<section style="background: radial-gradient(circle at center, rgba(245, 158, 11, 0.15) 0%, transparent 75%), var(--bg-dark); border-bottom: 1px solid var(--border); padding: 4.5rem 0 3.5rem;">
-    <div class="container text-center" style="text-align: center;">
-        <div style="display: flex; justify-content: center; gap: 0.75rem; margin-bottom: 1.25rem;">
-            <span class="badge badge-warning">{{ event.get_type_display }}</span>
-            <span class="badge badge-success">{{ event.get_status_display }}</span>
-            <span class="badge badge-info">EDIÇÃO #{{ event.edition_number }}</span>
-        </div>
+<!-- Header / Hero do Evento com Cartaz Oficial -->
+<section style="background: radial-gradient(circle at 70% 30%, rgba(245, 158, 11, 0.12) 0%, transparent 65%), var(--bg-dark); border-bottom: 1px solid var(--border); padding: 3.5rem 0 3rem;">
+    <div class="container">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 3rem; align-items: center;">
+            
+            <!-- Coluna da Esquerda: Cartaz Oficial -->
+            <div style="text-align: center;">
+                <div style="display: inline-block; position: relative;">
+                    <img src="{% static 'img/cartaz_trilhao_2027.jpg' %}" alt="Cartaz Oficial {{ event.title }}" style="max-height: 520px; width: auto; max-width: 100%; border-radius: var(--radius-lg); border: 2px solid rgba(245, 158, 11, 0.5); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85); object-fit: cover;">
+                    <div style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.92); border: 1px solid var(--primary); padding: 0.35rem 0.9rem; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 800; color: #FFF; white-space: nowrap; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                        🔥 20 E 21 DE MARÇO DE 2027
+                    </div>
+                </div>
+            </div>
 
-        <h1 style="font-size: 3.2rem; font-weight: 900; color: #FFF; line-height: 1.15; max-width: 900px; margin: 0 auto 1.25rem;">
-            {{ event.title }}
-        </h1>
+            <!-- Coluna da Direita: Dados, Apresentação e Inscrição -->
+            <div>
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+                    <img src="{% static 'img/logo_3trilhao_2027.png' %}" alt="Logo {{ event.title }}" style="height: 82px; width: auto; filter: drop-shadow(0 6px 18px rgba(234, 88, 12, 0.55));">
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <span class="badge badge-warning">{{ event.get_type_display }}</span>
+                        <span class="badge badge-success">{{ event.get_status_display }}</span>
+                        <span class="badge badge-info">EDIÇÃO #{{ event.edition_number }}</span>
+                        <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #EF4444; border: 1px solid #EF4444;">SAVE THE DATE</span>
+                    </div>
+                </div>
 
-        <p style="font-size: 1.25rem; color: var(--text-muted); max-width: 720px; margin: 0 auto 2rem;">
-            {{ event.description|default:"O maior e mais aguardado trilhão off-road da região. Prepare sua máquina e garanta sua vaga!" }}
-        </p>
+                <h1 style="font-size: 2.8rem; font-weight: 900; color: #FFF; line-height: 1.15; margin-bottom: 1rem;">
+                    {{ event.title }}
+                </h1>
 
-        <!-- Submenu do Evento -->
-        <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
-            <a href="{% url 'events:schedule' slug=event.slug %}" class="btn btn-secondary btn-sm">🗓️ Programação</a>
-            <a href="{% url 'events:route' slug=event.slug %}" class="btn btn-secondary btn-sm">🗺️ Percurso</a>
-            <a href="{% url 'events:rules' slug=event.slug %}" class="btn btn-secondary btn-sm">📜 Regulamento</a>
-            <a href="{% url 'events:sponsors' slug=event.slug %}" class="btn btn-secondary btn-sm">🤝 Patrocinadores</a>
-            <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary btn-sm">📸 Moldura Digital</a>
-        </div>
+                <div style="display: flex; align-items: center; gap: 0.6rem; font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: 1.25rem;">
+                    <span>🗓️</span> 20 e 21 de Março de 2027 &bull; Tianguá - CE
+                </div>
 
-        <div>
-            {% if event.is_registration_open %}
-                <a href="{% url 'checkout:start_registration' event_slug=event.slug %}" class="btn btn-primary btn-lg" style="font-size: 1.25rem; padding: 1rem 2.5rem;">
-                    ⚡ INSCREVA-SE AGORA
-                </a>
-            {% else %}
-                <button class="btn btn-secondary btn-lg" disabled>
-                    Inscrições Fechadas / Esgotadas
-                </button>
-            {% endif %}
+                <p style="font-size: 1.08rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 2rem;">
+                    {{ event.description|default:"O maior e mais aguardado trilhão off-road da região. Prepare sua máquina e garanta sua vaga!" }}
+                </p>
+
+                <!-- Submenu do Evento -->
+                <div style="display: flex; gap: 0.65rem; flex-wrap: wrap; margin-bottom: 2rem;">
+                    <a href="{% url 'events:schedule' slug=event.slug %}" class="btn btn-secondary btn-sm">🗓️ Programação</a>
+                    <a href="{% url 'events:route' slug=event.slug %}" class="btn btn-secondary btn-sm">🗺️ Percurso</a>
+                    <a href="{% url 'events:rules' slug=event.slug %}" class="btn btn-secondary btn-sm">📜 Regulamento</a>
+                    <a href="{% url 'events:sponsors' slug=event.slug %}" class="btn btn-secondary btn-sm">🤝 Patrocinadores</a>
+                    <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary btn-sm" style="border-color: var(--primary); color: #FFF;">📸 Moldura Oficial</a>
+                </div>
+
+                <!-- CTAs -->
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    {% if event.is_registration_open %}
+                        <a href="{% url 'checkout:start_registration' event_slug=event.slug %}" class="btn btn-primary btn-lg" style="font-size: 1.15rem; padding: 0.95rem 2rem;">
+                            ⚡ INSCREVA-SE NO 1º LOTE
+                        </a>
+                    {% else %}
+                        <button class="btn btn-secondary btn-lg" disabled>
+                            Inscrições Fechadas / Esgotadas
+                        </button>
+                    {% endif %}
+                    <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary btn-lg">
+                        📸 Gerar Moldura "Eu Vou"
+                    </a>
+                </div>
+            </div>
+
         </div>
     </div>
 </section>

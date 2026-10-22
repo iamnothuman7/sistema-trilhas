@@ -26,6 +26,44 @@
                 📅 Ver Todos os Eventos
             </a>
         </div>
+
+        <!-- Destaque Especial: Cartaz Oficial 2027 -->
+        <div class="card" style="margin-top: 3rem; background: linear-gradient(135deg, rgba(23, 30, 46, 0.95), rgba(11, 15, 25, 0.98)); border: 1px solid rgba(245, 158, 11, 0.35); box-shadow: 0 16px 50px rgba(0, 0, 0, 0.7); overflow: hidden; padding: 0; text-align: left;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); align-items: center;">
+                <div style="padding: 2.5rem 2rem; display: flex; flex-direction: column; gap: 1rem;">
+                    <div>
+                        <span class="badge badge-warning">JÁ TEM DATA MARCADA</span>
+                        <span class="badge badge-info" style="margin-left: 0.4rem;">SAVE THE DATE</span>
+                    </div>
+                    <h2 style="font-size: 2.2rem; font-weight: 900; color: #FFF; line-height: 1.2;">
+                        3º Trilhão Tianguá Off Road 2027
+                    </h2>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🗓️</span> 20 e 21 de Março de 2027 &bull; Tianguá - CE
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.98rem; line-height: 1.6;">
+                        O maior e mais aguardado encontro off-road do Ceará e Piauí já está confirmado para 2027! Prepare sua máquina e garanta sua presença no 1º lote com direito a kit completo, camisa oficial, café da manhã, troféu e o tradicional churrasco com música ao vivo.
+                    </p>
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                        {% if featured_events %}
+                            <a href="{% url 'events:detail' slug=featured_events.0.slug %}" class="btn btn-primary btn-lg">
+                                ⚡ Garantir Vaga no 1º Lote
+                            </a>
+                            <a href="{% url 'events:frames' slug=featured_events.0.slug %}" class="btn btn-secondary btn-lg">
+                                📸 Gerar Moldura "Eu Vou"
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div style="text-align: center; padding: 1.75rem; background: radial-gradient(circle, rgba(245, 158, 11, 0.12) 0%, transparent 70%);">
+                    {% if featured_events %}
+                        <a href="{% url 'events:detail' slug=featured_events.0.slug %}">
+                            <img src="{% static 'img/cartaz_trilhao_2027.jpg' %}" alt="Cartaz Oficial 3º Trilhão Tianguá Off Road 2027" style="max-height: 420px; width: auto; max-width: 100%; border-radius: var(--radius-md); box-shadow: 0 12px 35px rgba(0,0,0,0.8); border: 2px solid rgba(245, 158, 11, 0.4); transition: transform 0.3s ease;">
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 

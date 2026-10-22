@@ -41,3 +41,30 @@ class FrameTemplate(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.get_format_display()}) - {self.event.title}"
+
+
+class GeneratedMontage(models.Model):
+    """
+    Registro de montagem 3D Pop-Out (estilo Flávio Folia / NaBio) e backup da arte final gerada.
+    A foto original do usuário nunca é salva em disco — apenas o recorte em memória e o story final.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    event = models.ForeignKey("events.Event", on_delete=models.CASCADE, related_name="generated_montages", null=True, blank=True)
+    version = models.CharField("Versão do Modelo", max_length=60, default="trilhao-fogo")
+    pilot_name = models.CharField("Nome do Piloto", max_length=120, blank=True, default="")
+    team_name = models.CharField("Equipe / Moto Clube", max_length=120, blank=True, default="")
+    generated_image = models.ImageField("Story Gerado (PNG)", upload_to="frames/generated/", blank=True, null=True)
+    sha256 = models.CharField("Hash SHA-256", max_length=64, blank=True, default="")
+    file_size = models.PositiveIntegerField("Tamanho (Bytes)", default=0)
+    downloads_count = models.PositiveIntegerField("Downloads Realizados", default=0)
+    ip_address = models.GenericIPAddressField("IP", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Story / Moldura Gerada"
+        verbose_name_plural = "Stories / Molduras Geradas"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        label = self.pilot_name or str(self.id)[:8]
+        return f"Story {self.version} - {label} ({self.created_at:%d/%m/%Y %H:%M})"

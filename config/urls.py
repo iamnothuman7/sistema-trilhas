@@ -22,6 +22,9 @@ urlpatterns = [
     # Checkout e Inscrições
     path("checkout/", include("apps.checkout.urls")),
 
+    # API de Molduras 3D Pop-Out (Estilo Flávio Folia / NaBio)
+    path("", include("apps.mediaframes.urls")),
+
     # Portal Público e Microsites dos Eventos
     path("", include("apps.events.urls")),
     path("", include("apps.core.urls_public")),
