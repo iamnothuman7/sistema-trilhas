@@ -1,46 +1,6 @@
 {% extends "base.html" %}
-
-{% block title %}Patrocinadores Oficiais | {{ event.title }}{% endblock %}
-
+{% block title %}Patrocinadores | {{ event.title }}{% endblock %}
 {% block content %}
-<div class="container container-narrow" style="padding: 4rem 1.25rem;">
-    <div style="text-align: center; margin-bottom: 2.5rem;">
-        <span class="badge badge-warning">PARCEIROS DO OFF-ROAD</span>
-        <h1 style="font-size: 2.5rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
-            Patrocinadores Oficiais
-        </h1>
-        <p style="color: var(--text-muted); font-size: 1.05rem;">Marcas e empresas que apoiam a Equipe Morcego e o esporte</p>
-    </div>
-
-    {% if sponsors %}
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem;">
-            {% for sp in sponsors %}
-                <div class="card" style="text-align: center; display: flex; flex-direction: column; justify-content: space-between; align-items: center;">
-                    <span class="badge badge-warning" style="margin-bottom: 1rem;">{{ sp.get_tier_display }}</span>
-                    <div style="margin: 1.5rem 0;">
-                        {% if sp.logo_image %}
-                            <img src="{{ sp.logo_image.url }}" alt="{{ sp.name }}" style="max-height: 80px; max-width: 180px; object-fit: contain;">
-                        {% else %}
-                            <div style="font-size: 1.4rem; font-weight: 800; color: #FFF;">{{ sp.name }}</div>
-                        {% endif %}
-                    </div>
-                    {% if sp.website %}
-                        <a href="{{ sp.website }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-block">
-                            Visitar Site Oficial
-                        </a>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="card" style="text-align: center; padding: 3rem;">
-            <p style="color: var(--text-muted);">As cotas de patrocínio estão abertas. Entre em contato para divulgar sua marca com a Equipe Morcego!</p>
-            <a href="{% url 'core:contact' %}" class="btn btn-primary" style="margin-top: 1rem;">Seja um Patrocinador</a>
-        </div>
-    {% endif %}
-
-    <div style="text-align: center; margin-top: 2rem;">
-        <a href="{% url 'events:detail' slug=event.slug %}" class="btn btn-secondary">&larr; Voltar ao Evento</a>
-    </div>
-</div>
-{% endblock %}
+<section class="section-space"><div class="container"><a href="{% url 'events:detail' slug=event.slug %}" class="back-link"><i data-lucide="arrow-left" aria-hidden="true"></i> {{ event.title }}</a><header class="section-heading section-heading-center sponsor-heading"><span class="eyebrow">Juntos pelo off-road</span><h1>Quem apoia<br>esse encontro.</h1><p>Marcas que caminham com a Equipe Morcego.</p></header>
+{% if sponsors %}{% include 'events/_sponsor_grid.html' %}{% else %}<div class="sponsor-invitation"><span class="icon-tile"><i data-lucide="handshake" aria-hidden="true"></i></span><h2>Sua marca pode estar aqui.</h2><p>Converse com a equipe e conheça as possibilidades de apoio a esta edição.</p><a href="{% url 'core:contact' %}" class="btn btn-primary">Quero apoiar <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>{% endif %}
+</div></section>{% endblock %}

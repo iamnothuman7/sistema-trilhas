@@ -1,16 +1,16 @@
 {% extends "gestao/base_gestao.html" %}
 
 {% block title %}Molduras Digitais: {{ event.title }} | Painel Gestão{% endblock %}
-{% block gestao_header %}Templates de Molduras Digitais: {{ event.title }}{% endblock %}
+{% block gestao_header %}Molduras digitais: {{ event.title }}{% endblock %}
 
 {% block content %}
 <div class="page-heading mg-section-gap">
     <div>
-        <h1>Molduras Digitais Oficiais</h1>
-        <p class="text-muted">Envie novas artes em PNG transparente para Feed e Stories.</p>
+        <h1>Molduras digitais</h1>
+        <p class="text-muted">Disponibilize artes do evento para os participantes compartilharem.</p>
     </div>
     <button type="button" class="btn btn-primary" onclick="document.getElementById('frameModal').showModal()">
-        <i data-lucide="plus" aria-hidden="true"></i> Adicionar Modelo de Moldura
+        <i data-lucide="plus" aria-hidden="true"></i> Adicionar moldura
     </button>
 </div>
 

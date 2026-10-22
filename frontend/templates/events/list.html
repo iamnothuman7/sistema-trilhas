@@ -1,90 +1,49 @@
 {% extends "base.html" %}
 {% load tz %}
-
 {% block title %}Eventos e Trilhões | Equipe Morcego{% endblock %}
-
 {% block content %}
-<div class="container" style="padding: 4rem 1.25rem;">
-    <div style="margin-bottom: 3rem; text-align: center;">
-        <span class="badge badge-warning">CALENDÁRIO OFICIAL</span>
-        <h1 style="font-size: 2.8rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
-            Trilhões, Expedições e Passeios Off-Road
-        </h1>
-        <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 650px; margin: 0.5rem auto 0;">
-            Escolha seu desafio, consulte os lotes e garanta sua vaga com segurança antes que os lotes esgotem.
-        </p>
-    </div>
-
-    <!-- Eventos Ativos -->
-    <h2 style="font-size: 1.6rem; font-weight: 800; color: #FFF; margin-bottom: 1.5rem; border-left: 4px solid var(--primary); padding-left: 0.75rem;">
-        Inscrições Abertas e Próximas Edições
-    </h2>
-
+<div class="public-page">
+  <header class="public-intro">
+    <span class="public-eyebrow">Calendário da equipe</span>
+    <h1>Encontre sua próxima trilha</h1>
+    <p>Conheça as edições da Equipe Morcego e consulte a programação, as modalidades e as informações de inscrição.</p>
+  </header>
+  <section class="public-section" aria-labelledby="upcoming-title">
+    <div class="public-section-heading"><h2 id="upcoming-title">Próximos eventos</h2></div>
     {% if active_events %}
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 350px), 1fr)); gap: 2rem; margin-bottom: 4rem;">
-            {% for event in active_events %}
-                {% timezone event.timezone %}
-                <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <span class="badge badge-success">{{ event.get_status_display }}</span>
-                            <span style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">{{ event.get_type_display }}</span>
-                        </div>
-
-                        <h3 style="font-size: 1.5rem; font-weight: 800; color: #FFF; margin-bottom: 0.75rem;">
-                            <a href="{% url 'events:detail' slug=event.slug %}" style="color: inherit;">
-                                {{ event.title }}
-                            </a>
-                        </h3>
-
-                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">
-                            {{ event.description|default:"Consulte a programação, as modalidades e as orientações deste evento."|truncatewords:20 }}
-                        </p>
-
-                        <div style="background-color: var(--surface-hover); padding: 1rem; border-radius: var(--radius-md); font-size: 0.9rem; color: var(--text-muted); display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.5rem;">
-                            <div><i data-lucide="calendar-days" aria-hidden="true"></i> {{ event.starts_at|date:"d/m/Y \à\s H:i" }}</div>
-                            <div><i data-lucide="map-pin" aria-hidden="true"></i> {{ event.venue }} - {{ event.city }}/{{ event.state }}</div>
-                            <div><i data-lucide="users" aria-hidden="true"></i> Até {{ event.max_attendees }} vagas</div>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 0.75rem;">
-                        <a href="{% url 'events:detail' slug=event.slug %}" class="btn btn-primary" style="flex: 1;">
-                            Detalhes & Inscrição
-                        </a>
-                        <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary" title="Moldura">
-                            <i data-lucide="camera" aria-hidden="true"></i>
-                        </a>
-                    </div>
-                </div>
-                {% endtimezone %}
-            {% endfor %}
+    <div class="public-grid public-grid--three">
+      {% for event in active_events %}{% timezone event.timezone %}
+      <article class="public-event-card">
+        {% if event.theme.hero_banner %}<a class="public-event-media" href="{% url 'events:detail' slug=event.slug %}" tabindex="-1" aria-hidden="true"><img src="{{ event.theme.hero_banner.url }}" alt="" loading="lazy" width="640" height="400"></a>{% else %}<div class="public-event-media public-event-media--empty" aria-hidden="true"><i data-lucide="mountain" aria-hidden="true"></i></div>{% endif %}
+        <div class="public-event-body">
+          <div class="public-event-topline"><span class="public-tag">{{ event.get_status_display }}</span><span>{{ event.get_type_display }}</span></div>
+          <h3><a href="{% url 'events:detail' slug=event.slug %}">{{ event.title }}</a></h3>
+          <p class="public-event-description">{{ event.description|default:"Consulte a programação, as modalidades e as orientações deste evento."|truncatewords:20 }}</p>
+          <ul class="public-meta-list">
+            <li><i data-lucide="calendar-days" aria-hidden="true"></i><span>{{ event.starts_at|date:"d/m/Y \à\s H:i" }}</span></li>
+            <li><i data-lucide="map-pin" aria-hidden="true"></i><span>{{ event.venue }} · {{ event.city }}/{{ event.state }}</span></li>
+          </ul>
+          <div class="public-actions"><a class="public-button public-button--primary" href="{% url 'events:detail' slug=event.slug %}">Ver evento <i data-lucide="arrow-up-right" aria-hidden="true"></i></a><a class="public-button public-button--secondary public-button--icon" href="{% url 'events:frames' slug=event.slug %}" aria-label="Moldura de {{ event.title }}"><i data-lucide="camera" aria-hidden="true"></i></a></div>
         </div>
-    {% else %}
-        <p style="color: var(--text-muted); margin-bottom: 3rem;">Nenhum evento com inscrições ativas no momento.</p>
-    {% endif %}
-
-    <!-- Eventos Passados -->
-    {% if past_events %}
-        <h2 style="font-size: 1.6rem; font-weight: 800; color: #FFF; margin-bottom: 1.5rem; border-left: 4px solid var(--border); padding-left: 0.75rem;">
-            Histórico de Edições Realizadas
-        </h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 1.5rem;">
-            {% for event in past_events %}
-                {% timezone event.timezone %}
-                <div class="card" style="opacity: 0.85;">
-                    <span class="badge" style="background: rgba(255,255,255,0.1); color: #9CA3AF; margin-bottom: 0.75rem;">CONCLUÍDO</span>
-                    <h3 style="color: #FFF; font-size: 1.25rem; font-weight: 700;">{{ event.title }}</h3>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
-                        Realizado em {{ event.ends_at|date:"d/m/Y" }} em {{ event.city }}/{{ event.state }}
-                    </p>
-                    <a href="{% url 'events:detail' slug=event.slug %}" class="btn btn-secondary btn-sm" style="margin-top: 1rem;">
-                        Ver Resumo Histórico
-                    </a>
-                </div>
-                {% endtimezone %}
-            {% endfor %}
-        </div>
-    {% endif %}
+      </article>
+      {% endtimezone %}{% endfor %}
+    </div>
+    {% else %}<div class="public-empty"><span class="public-icon"><i data-lucide="calendar-days" aria-hidden="true"></i></span><h3>Novas trilhas vêm por aí</h3><p>Nenhum evento com inscrições ativas no momento.</p></div>{% endif %}
+  </section>
+  {% if past_events %}
+  <section class="public-section" aria-labelledby="past-title">
+    <div class="public-section-heading"><h2 id="past-title">Edições anteriores</h2></div>
+    <div class="public-grid public-grid--three">
+      {% for event in past_events %}{% timezone event.timezone %}
+      <article class="public-card">
+        <span class="public-eyebrow">{{ event.ends_at|date:"Y" }} · {{ event.city }}</span>
+        <h3>{{ event.title }}</h3>
+        <p class="public-muted public-small">Realizado em {{ event.ends_at|date:"d/m/Y" }} em {{ event.city }}/{{ event.state }}</p>
+        <div class="public-actions"><a href="{% url 'events:detail' slug=event.slug %}" class="public-button public-button--secondary">Rever edição <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
+      </article>
+      {% endtimezone %}{% endfor %}
+    </div>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}

@@ -2,7 +2,7 @@
 {% block title %}Situação do pedido | Equipe Morcego{% endblock %}
 {% block extra_head %}{% include "checkout/_payment_styles.html" %}{% endblock %}
 {% block content %}
-<main class="payment-page">
+<div class="payment-page">
   <div class="payment-centered">
     <div class="payment-status-icon"><i data-lucide="{% if is_paid %}circle-check{% else %}circle-help{% endif %}" aria-hidden="true"></i></div>
     <h1>{% if is_paid %}Pagamento confirmado{% elif order.status == 'PAID_NEEDS_REVIEW' %}Pagamento em conferência{% elif order.status == 'REFUNDED' %}Pagamento devolvido{% elif order.status == 'PARTIALLY_REFUNDED' %}Devolução parcial registrada{% elif order.status == 'EXPIRED' %}Prazo da reserva encerrado{% elif order.status == 'CANCELED' %}Pedido cancelado{% else %}Pagamento ainda não confirmado{% endif %}</h1>
@@ -29,5 +29,5 @@
       <a class="payment-button payment-button-secondary" href="{% url 'events:detail' order.event.slug %}">Ver evento</a>
     </div>
   </div>
-</main>
+</div>
 {% endblock %}

@@ -44,9 +44,11 @@
     if (mobile.matches) sidebar.setAttribute('inert', '');
     const pin = document.getElementById('sidebarPin');
     try { if (localStorage.getItem('morcego-sidebar-pinned') === 'true') sidebar.classList.add('is-expanded'); } catch (_) {}
+    document.body.classList.toggle('sidebar-pinned', sidebar.classList.contains('is-expanded'));
     pin.setAttribute('aria-pressed', String(sidebar.classList.contains('is-expanded')));
     pin.addEventListener('click', () => {
         const expanded = sidebar.classList.toggle('is-expanded');
+        document.body.classList.toggle('sidebar-pinned', expanded);
         pin.setAttribute('aria-pressed', String(expanded));
         try { localStorage.setItem('morcego-sidebar-pinned', String(expanded)); } catch (_) {}
     });

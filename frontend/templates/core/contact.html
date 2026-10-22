@@ -1,39 +1,26 @@
 {% extends "base.html" %}
-
 {% block title %}Contato e Suporte | Equipe Morcego{% endblock %}
-
 {% block content %}
-<div class="container container-narrow" style="padding: 4rem 1.25rem;">
-    <span class="badge badge-warning" style="margin-bottom: 1rem;">FALE CONOSCO</span>
-    <h1 style="font-size: 2.5rem; font-weight: 900; color: #FFF; margin-bottom: 1rem;">
-        Atendimento aos Pilotos e Patrocinadores
-    </h1>
-    <p style="color: var(--text-muted); margin-bottom: 2rem;">
-        Dúvidas sobre sua inscrição, compras em grupo, cotas de patrocínio ou percursos? Fale diretamente com a coordenação.
-    </p>
-
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2.5rem;">
-        <div class="card">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i data-lucide="message-circle" aria-hidden="true"></i></div>
-            <h3 style="color: #FFF; margin-bottom: 0.5rem;">WhatsApp Oficial</h3>
-            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
-                Atendimento rápido para dúvidas de pagamento e inscrições.
-            </p>
-            <a href="https://wa.me/5588999999999?text=Ol%C3%A1%2C%20gostaria%20de%20informa%C3%A7%C3%B5es%20sobre%20os%20eventos%20da%20Equipe%20Morcego" target="_blank" class="btn btn-success btn-block">
-                Conversar no WhatsApp
-            </a>
-        </div>
-
-        <div class="card">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i data-lucide="mail" aria-hidden="true"></i></div>
-            <h3 style="color: #FFF; margin-bottom: 0.5rem;">E-mail de Suporte</h3>
-            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
-                contato@equipemorcego.com.br
-            </p>
-            <a href="mailto:contato@equipemorcego.com.br" class="btn btn-secondary btn-block">
-                Enviar E-mail
-            </a>
-        </div>
-    </div>
+<div class="public-page public-page--narrow">
+  <header class="public-intro">
+    <span class="public-eyebrow">Fale conosco</span>
+    <h1>Como podemos ajudar?</h1>
+    <p>Dúvidas sobre inscrições, compras em grupo, patrocínio ou o evento? Consulte os canais e as informações da organização.</p>
+  </header>
+  <div class="public-grid">
+    <section class="public-card">
+      <span class="public-icon"><i data-lucide="mail" aria-hidden="true"></i></span>
+      <h2>E-mail de suporte</h2>
+      <p class="public-muted">Para facilitar o atendimento, informe o nome do evento e, se houver, o número do pedido.</p>
+      {% if organization.support_email %}<p>{{ organization.support_email }}</p><div class="public-actions"><a href="mailto:{{ organization.support_email }}" class="public-button public-button--primary">Enviar e-mail <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>{% else %}<p class="public-note">O canal de atendimento será informado pela organização na página do evento.</p>{% endif %}
+    </section>
+    <section class="public-card">
+      <span class="public-icon"><i data-lucide="circle-help" aria-hidden="true"></i></span>
+      <h2>Informações do evento</h2>
+      <p class="public-muted">Consulte a página da edição para ver a programação, o percurso, o regulamento e as orientações publicadas pela equipe.</p>
+      <div class="public-actions"><a href="{% url 'events:list' %}" class="public-button public-button--secondary">Encontrar meu evento</a></div>
+    </section>
+  </div>
+  <div class="public-actions"><a href="{% url 'minha_conta:dashboard' %}" class="public-back"><i data-lucide="user-round" aria-hidden="true"></i> Acessar minhas inscrições</a></div>
 </div>
 {% endblock %}

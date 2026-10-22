@@ -1,191 +1,33 @@
 {% extends "base.html" %}
 {% load static tz %}
-
-{% block title %}Equipe Morcego | Portal Oficial de Trilhões e Expedições Off-Road{% endblock %}
-
+{% block title %}Equipe Morcego | Seu próximo encontro na trilha{% endblock %}
 {% block content %}
-<!-- Hero Section -->
-<section class="hero">
-    <div class="container">
-        <span class="badge badge-warning" style="margin-bottom: 1rem; font-size: 0.85rem;">
-            <i data-lucide="mountain" aria-hidden="true"></i> SERRA DA IBIAPABA & REGIONAL OFF-ROAD
-        </span>
-        <h1 class="hero-title">
-            DESBRAVE AS MELHORES TRILHAS COM A EQUIPE MORCEGO
-        </h1>
-        <p class="hero-subtitle">
-            Conheça os próximos trilhões e expedições da Equipe Morcego, consulte as modalidades e prepare sua participação com inscrição online e credenciamento por QR Code.
-        </p>
-        <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-            {% if featured_events %}
-                <a href="{% url 'events:detail' slug=featured_events.0.slug %}" class="btn btn-primary btn-lg">
-                    <i data-lucide="zap" aria-hidden="true"></i> Conheça {{ featured_events.0.title }}
-                </a>
-            {% endif %}
-            <a href="{% url 'events:list' %}" class="btn btn-secondary btn-lg">
-                <i data-lucide="calendar-days" aria-hidden="true"></i> Ver Todos os Eventos
-            </a>
-        </div>
-
-        {% if featured_events %}
-        {% with featured=featured_events.0 %}
-        {% timezone featured.timezone %}
-        <div class="card" style="margin-top: 3rem; background: var(--surface); border-color: var(--border); overflow: hidden; padding: 0; text-align: left;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); align-items: center;">
-                <div style="padding: 2.5rem 2rem; display: flex; flex-direction: column; gap: 1rem;">
-                    <div>
-                        <span class="badge badge-warning">EVENTO EM DESTAQUE</span>
-                        <span class="badge badge-info" style="margin-left: 0.4rem;">{{ featured.get_status_display }}</span>
-                    </div>
-                    <h2 style="font-size: 2.2rem; font-weight: 900; color: #FFF; line-height: 1.2;">
-                        {{ featured.title }}
-                    </h2>
-                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--primary); display: flex; align-items: flex-start; gap: 0.5rem;">
-                        <i data-lucide="calendar-days" aria-hidden="true"></i>
-                        <span>{{ featured.starts_at|date:"d \d\e F \d\e Y" }}{% if featured.ends_at|date:"Y-m-d" != featured.starts_at|date:"Y-m-d" %} a {{ featured.ends_at|date:"d \d\e F \d\e Y" }}{% endif %}</span>
-                    </div>
-                    <div style="color: var(--text-muted); display: flex; align-items: flex-start; gap: 0.5rem;">
-                        <i data-lucide="map-pin" aria-hidden="true"></i>
-                        <span>{{ featured.venue|default:"Local a confirmar" }}{% if featured.city %} &bull; {{ featured.city }}{% if featured.state %}/{{ featured.state }}{% endif %}{% endif %}</span>
-                    </div>
-                    <p style="color: var(--text-muted); font-size: 0.98rem; line-height: 1.6;">
-                        {{ featured.description|default:"Confira a programação, as modalidades disponíveis e as orientações da organização."|truncatewords:50 }}
-                    </p>
-                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 0.5rem;">
-                        <a href="{% url 'events:detail' slug=featured.slug %}" class="btn btn-primary btn-lg">
-                            <i data-lucide="zap" aria-hidden="true"></i> {% if featured.is_registration_open %}Detalhes e inscrição{% else %}Conhecer evento{% endif %}
-                        </a>
-                        <a href="{% url 'events:frames' slug=featured.slug %}" class="btn btn-secondary btn-lg">
-                            <i data-lucide="camera" aria-hidden="true"></i> Gerar Moldura "Eu Vou"
-                        </a>
-                    </div>
-                </div>
-                <div style="text-align: center; padding: 1.75rem; background: var(--bg-dark);">
-                    <a href="{% url 'events:detail' slug=featured.slug %}">
-                        {% if featured.theme.hero_banner %}
-                            <img src="{{ featured.theme.hero_banner.url }}" alt="{{ featured.title }}" style="max-height: 420px; width: auto; max-width: 100%; object-fit: contain; border-radius: var(--radius-md);">
-                        {% elif featured.theme.logo_image %}
-                            <img src="{{ featured.theme.logo_image.url }}" alt="{{ featured.title }}" class="logo-emblem" style="max-height: 360px; width: auto; max-width: 100%; margin-inline: auto;">
-                        {% else %}
-                            <img src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" class="logo-emblem" style="max-height: 360px; width: auto; max-width: 100%; margin-inline: auto;">
-                        {% endif %}
-                    </a>
-                </div>
-            </div>
-        </div>
-        {% endtimezone %}
-        {% endwith %}
-        {% endif %}
-    </div>
+{% if featured_events %}
+{% with featured=featured_events.0 %}{% timezone featured.timezone %}
+<section class="home-hero section-space"><div class="container spotlight-layout"><div class="spotlight-copy">
+<span class="eyebrow"><span class="eyebrow-line"></span> Equipe Morcego · Próximo encontro</span>
+<h1>{{ featured.title }}</h1>
+<p class="lead">{{ featured.description|default:"Confira a programação, as modalidades disponíveis e prepare-se para o nosso próximo encontro na trilha."|striptags|truncatewords:28 }}</p>
+<div class="event-facts"><div><i data-lucide="calendar-days" aria-hidden="true"></i><span>{{ featured.starts_at|date:"d \d\e F \d\e Y" }}{% if featured.ends_at|date:"Y-m-d" != featured.starts_at|date:"Y-m-d" %} a {{ featured.ends_at|date:"d \d\e F \d\e Y" }}{% endif %}</span></div><div><i data-lucide="map-pin" aria-hidden="true"></i><span>{{ featured.venue|default:"Local a confirmar" }}{% if featured.city %} · {{ featured.city }}{% if featured.state %}, {{ featured.state }}{% endif %}{% endif %}</span></div></div>
+<div class="action-row"><a href="{% url 'events:detail' slug=featured.slug %}" class="btn btn-primary">Conhecer o evento <i data-lucide="arrow-up-right" aria-hidden="true"></i></a><a href="{% url 'events:frames' slug=featured.slug %}" class="text-link"><i data-lucide="camera" aria-hidden="true"></i> Criar meu story</a></div>
+<div class="hero-signature"><span>Trilha boa é trilha compartilhada.</span><span>Tianguá · Serra da Ibiapaba</span></div></div>
+<a class="spotlight-media{% if not featured.theme.hero_banner %} spotlight-emblem{% endif %}" href="{% url 'events:detail' slug=featured.slug %}" aria-label="Conhecer {{ featured.title }}">
+{% if featured.theme.hero_banner %}<img src="{{ featured.theme.hero_banner.url }}" alt="{{ featured.title }}" fetchpriority="high">{% elif featured.theme.logo_image %}<img src="{{ featured.theme.logo_image.url }}" alt="{{ featured.title }}" class="logo-emblem" fetchpriority="high">{% else %}<img src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" class="logo-emblem" fetchpriority="high">{% endif %}
+<span class="media-caption"><span><small>Calendário oficial</small><strong>{{ featured.starts_at|date:"d.m.Y" }}</strong></span><span class="circle-arrow"><i data-lucide="arrow-up-right" aria-hidden="true"></i></span></span></a></div></section>
+<section class="container shortcut-section" aria-label="Explore o evento">
+<a href="{% url 'events:schedule' slug=featured.slug %}" class="shortcut"><span class="icon-tile"><i data-lucide="calendar-clock" aria-hidden="true"></i></span><span><strong>Programação</strong><small>Confira os horários do encontro</small></span><i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
+<a href="{% url 'events:route' slug=featured.slug %}" class="shortcut"><span class="icon-tile"><i data-lucide="route" aria-hidden="true"></i></span><span><strong>Percurso</strong><small>Conheça a trilha e as orientações</small></span><i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
+<a href="{% url 'events:sponsors' slug=featured.slug %}" class="shortcut"><span class="icon-tile"><i data-lucide="handshake" aria-hidden="true"></i></span><span><strong>Patrocinadores</strong><small>Quem faz parte dessa história</small></span><i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
 </section>
-
-<!-- Próximos Eventos -->
-<section class="container" style="padding: 4rem 1.25rem;">
-    <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
-        <div>
-            <span class="badge badge-warning">CALENDÁRIO OFICIAL</span>
-            <h2 style="font-size: 2rem; font-weight: 900; margin-top: 0.5rem; color: #FFF;">
-                Próximos Trilhões e Expedições
-            </h2>
-        </div>
-        <a href="{% url 'events:list' %}" class="btn btn-secondary btn-sm">Ver todos &rarr;</a>
-    </div>
-
-    {% if featured_events %}
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 1.75rem;">
-            {% for event in featured_events %}
-                {% timezone event.timezone %}
-                <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-                            <span class="badge {% if event.status == 'PUBLISHED' %}badge-success{% else %}badge-info{% endif %}">
-                                {{ event.get_status_display }}
-                            </span>
-                            <span style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">
-                                Edição #{{ event.edition_number }}
-                            </span>
-                        </div>
-
-                        <h3 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 0.75rem; color: #FFF;">
-                            <a href="{% url 'events:detail' slug=event.slug %}" style="color: inherit;">
-                                {{ event.title }}
-                            </a>
-                        </h3>
-
-                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.25rem;">
-                            {{ event.description|default:"Consulte a programação, as modalidades e as orientações deste evento."|truncatewords:22 }}
-                        </p>
-
-                        <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem; background: var(--surface-hover); padding: 1rem; border-radius: var(--radius-md);">
-                            <div><i data-lucide="map-pin" aria-hidden="true"></i> <strong>Local:</strong> {{ event.venue }} - {{ event.city }}/{{ event.state }}</div>
-                            <div><i data-lucide="calendar-days" aria-hidden="true"></i> <strong>Data:</strong> {{ event.starts_at|date:"d/m/Y (l) \à\s H:i" }}</div>
-                            <div><i data-lucide="users" aria-hidden="true"></i> <strong>Vagas:</strong> Até {{ event.max_attendees }} pilotos</div>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 0.75rem;">
-                        <a href="{% url 'events:detail' slug=event.slug %}" class="btn btn-primary" style="flex: 2;">
-                            {% if event.is_registration_open %}Detalhes e inscrição{% else %}Conhecer evento{% endif %}
-                        </a>
-                        <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary" style="flex: 1; text-align: center;" title="Gerar Moldura Oficial">
-                            <i data-lucide="camera" aria-hidden="true"></i> Moldura
-                        </a>
-                    </div>
-                </div>
-                {% endtimezone %}
-            {% endfor %}
-        </div>
-    {% else %}
-        <div class="card" style="text-align: center; padding: 3rem;">
-            <h3 style="color: #FFF; margin-bottom: 0.5rem;">Nenhum evento com inscrições abertas no momento</h3>
-            <p style="color: var(--text-muted);">Fique atento às redes sociais da Equipe Morcego para os próximos lançamentos!</p>
-        </div>
-    {% endif %}
-</section>
-
-<!-- Benefícios e Estrutura -->
-<section style="background-color: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 4.5rem 0;">
-    <div class="container">
-        <div style="text-align: center; max-width: 650px; margin: 0 auto 3rem;">
-            <span class="badge badge-warning">PADRÃO EQUIPE MORCEGO</span>
-            <h2 style="font-size: 2.2rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
-                Por Que Pilotos de Todo o Brasil Escolhem Nossos Eventos?
-            </h2>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.75rem;">
-            <div class="card" style="background-color: var(--bg-dark);">
-                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;"><i data-lucide="shield-check" aria-hidden="true"></i></div>
-                <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Segurança e Resgate</h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Confira os pontos de apoio, os recursos de resgate e as orientações de segurança publicados pela organização de cada edição.
-                </p>
-            </div>
-
-            <div class="card" style="background-color: var(--bg-dark);">
-                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;"><i data-lucide="zap" aria-hidden="true"></i></div>
-                <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Credenciamento Veloz</h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Acompanhe sua inscrição na Área do Piloto e apresente sua credencial liberada no atendimento do evento.
-                </p>
-            </div>
-
-            <div class="card" style="background-color: var(--bg-dark);">
-                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;"><i data-lucide="utensils" aria-hidden="true"></i></div>
-                <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Alimentação por Modalidade</h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Consulte quais refeições estão incluídas na modalidade escolhida e os horários informados pela organização.
-                </p>
-            </div>
-
-            <div class="card" style="background-color: var(--bg-dark);">
-                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;"><i data-lucide="trophy" aria-hidden="true"></i></div>
-                <h3 style="color: #FFF; font-size: 1.2rem; margin-bottom: 0.5rem;">Kits e Benefícios</h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem;">
-                    Veja os itens incluídos em cada pacote e acompanhe a retirada dos benefícios vinculados à sua inscrição.
-                </p>
-            </div>
-        </div>
-    </div>
-</section>
+{% if featured_sponsors %}<section class="section-space sponsor-section"><div class="container"><header class="section-heading section-heading-center"><span class="eyebrow">Juntos pelo off-road</span><h2>Quem apoia esse encontro</h2></header>{% include 'events/_sponsor_grid.html' with sponsors=featured_sponsors %}</div></section>{% endif %}
+{% endtimezone %}{% endwith %}
+{% else %}
+<section class="section-space"><div class="container empty-hero"><img src="{% static 'img/logo_emblem.png' %}" class="logo-emblem" alt="Equipe Morcego" width="240" height="199"><span class="eyebrow">Equipe Morcego · Tianguá</span><h1>O próximo encontro<br>começa por aqui.</h1><p class="lead">Estamos preparando novas trilhas. Acompanhe por aqui as próximas edições.</p><a href="{% url 'core:about' %}" class="btn btn-primary">Conheça a equipe <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div></section>
+{% endif %}
+{% if featured_events|length > 1 %}
+<section class="section-space"><div class="container"><header class="section-heading"><div><span class="eyebrow">No calendário</span><h2>Mais encontros pela frente</h2></div><a href="{% url 'events:list' %}" class="text-link">Todos os eventos <i data-lucide="arrow-right" aria-hidden="true"></i></a></header><div class="event-card-grid">
+{% for event in featured_events|slice:"1:" %}{% timezone event.timezone %}<article class="event-preview"><a href="{% url 'events:detail' slug=event.slug %}" class="event-preview-media">{% if event.theme.hero_banner %}<img src="{{ event.theme.hero_banner.url }}" alt="{{ event.title }}" loading="lazy">{% else %}<img src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" class="logo-emblem" loading="lazy">{% endif %}</a><div class="event-preview-copy"><span class="eyebrow">{{ event.starts_at|date:"d \d\e F" }} · {{ event.city }}</span><h3><a href="{% url 'events:detail' slug=event.slug %}">{{ event.title }}</a></h3><p>{{ event.description|default:"Consulte a programação e as modalidades deste encontro."|striptags|truncatewords:20 }}</p><a href="{% url 'events:detail' slug=event.slug %}" class="text-link">Ver detalhes <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div></article>{% endtimezone %}{% endfor %}
+</div></div></section>{% endif %}
+<section class="section-space how-section"><div class="container"><header class="section-heading"><div><span class="eyebrow">Do começo à largada</span><h2>Mais trilha.<br>Menos complicação.</h2></div><p>As informações do evento e da sua participação, em um só lugar.</p></header><div class="how-grid"><article><span class="step-number">01</span><h3>Escolha seu encontro</h3><p>Veja a programação, o percurso e as modalidades disponíveis.</p></article><article><span class="step-number">02</span><h3>Faça sua inscrição</h3><p>Preencha os dados dos participantes e acompanhe o pagamento.</p></article><article><span class="step-number">03</span><h3>Prepare-se para a trilha</h3><p>Acesse sua conta para consultar a inscrição, os termos e a credencial.</p></article></div></div></section>
+<section class="section-space"><div class="container"><div class="community-callout"><div><span class="eyebrow">Equipe Morcego</span><h2>Quem vive a trilha<br>tem muita história.</h2><p>Conheça a equipe por trás dos nossos encontros.</p></div><a href="{% url 'core:about' %}" class="btn btn-light">A nossa equipe <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div></div></section>
 {% endblock %}

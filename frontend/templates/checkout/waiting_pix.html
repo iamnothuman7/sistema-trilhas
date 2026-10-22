@@ -2,7 +2,7 @@
 {% block title %}Acompanhar pagamento | Equipe Morcego{% endblock %}
 {% block extra_head %}{% include "checkout/_payment_styles.html" %}{% endblock %}
 {% block content %}
-<main class="payment-page">
+<div class="payment-page">
   <div class="payment-centered">
     <div class="payment-status-icon"><i data-lucide="clock-3" aria-hidden="true"></i></div>
     <h1>{% if charge.payment_method == 'pix' and charge.pix_copy_paste %}Pague com Pix{% else %}Aguardando confirmação{% endif %}</h1>
@@ -27,7 +27,7 @@
     <p class="payment-help">Se você já pagou e a confirmação não aparecer, fale com a organização e informe <strong>{{ order.merchant_reference }}</strong>.</p>
     <a class="payment-button payment-button-secondary" href="{% url 'core:contact' %}">Preciso de ajuda</a>
   </div>
-</main>
+</div>
 {% endblock %}
 {% block extra_js %}
 <script>

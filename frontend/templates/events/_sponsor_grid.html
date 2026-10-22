@@ -1,0 +1,7 @@
+<div class="sponsor-grid">
+{% for sp in sponsors %}<article class="sponsor-card">
+<div class="sponsor-art">{% if sp.logo_image %}<img src="{{ sp.logo_image.url }}" alt="{{ sp.name }}" loading="lazy" decoding="async">{% else %}<div class="sponsor-placeholder"><i data-lucide="image" aria-hidden="true"></i><span>Logo do patrocinador</span></div>{% endif %}</div>
+<div class="sponsor-caption"><strong>{{ sp.name }}</strong><span>{{ sp.get_tier_display }}</span></div>
+{% if sp.instagram_url %}<a class="btn btn-secondary sponsor-instagram" href="{{ sp.instagram_url }}" target="_blank" rel="noopener noreferrer"><i data-lucide="camera" aria-hidden="true"></i> Ver Instagram <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>{% endif %}
+</article>{% endfor %}
+</div>

@@ -2,8 +2,8 @@
 
 {% block title %}Entrar | Equipe Morcego{% endblock %}
 {% block auth_eyebrow %}Sua conta Morcego{% endblock %}
-{% block auth_heading %}Bem-vindo de volta.{% endblock %}
-{% block auth_description %}Acesse suas inscrições ou o painel da equipe.{% endblock %}
+{% block auth_heading %}Entrar no sistema{% endblock %}
+{% block auth_description %}Acesse sua conta para acompanhar inscrições ou gerenciar os eventos da equipe.{% endblock %}
 
 {% block auth_form %}
 <form method="post" action="{% url 'identity:login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}" class="auth-form" id="loginForm" data-auth-form>
@@ -31,13 +31,13 @@
     </div>
 
     <button type="submit" class="auth-submit" data-submit-button>
-        <span data-submit-label>Entrar na minha conta</span>
+        <span data-submit-label>Acessar sistema</span>
         <i data-lucide="arrow-right" aria-hidden="true"></i>
     </button>
 </form>
 
 <div class="auth-switch">
     <span>Ainda não tem conta?</span>
-    <a href="{% url 'identity:register' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}">Criar conta de piloto <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
+    <a href="{% url 'identity:register' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}">Criar minha conta <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
 </div>
 {% endblock %}

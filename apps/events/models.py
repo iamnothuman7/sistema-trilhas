@@ -2,6 +2,7 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+from .validators import validate_instagram_profile, validate_sponsor_logo_size
 
 class EventType(models.TextChoices):
     TRILHAO = "TRILHAO", "Trilhão Off-Road"
@@ -209,7 +210,8 @@ class Sponsor(models.Model):
     name = models.CharField("Nome do Patrocinador / Marca", max_length=150)
     tier = models.CharField("Cota de Patrocínio", max_length=30, choices=SponsorTier.choices, default=SponsorTier.OURO)
     website = models.URLField("Site / Instagram", blank=True, null=True)
-    logo_image = models.ImageField("Logotipo", upload_to="events/sponsors/")
+    logo_image = models.ImageField("Logotipo", upload_to="events/sponsors/", blank=True, validators=[validate_sponsor_logo_size])
+    instagram_url = models.URLField("Instagram", blank=True, validators=[validate_instagram_profile])
     sort_order = models.PositiveIntegerField("Ordem de Exibição", default=0)
     approved_at = models.DateTimeField("Aprovado em", default=timezone.now)
 

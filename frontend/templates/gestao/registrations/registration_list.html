@@ -1,20 +1,20 @@
 {% extends "gestao/base_gestao.html" %}
 
 {% block title %}Inscrições: {{ event.title }} | Painel Gestão{% endblock %}
-{% block gestao_header %}Participantes Cadastrados: {{ event.title }}{% endblock %}
+{% block gestao_header %}Inscrições: {{ event.title }}{% endblock %}
 
 {% block content %}
 <div class="page-heading mg-section-gap">
     <div>
-        <h1>Inscrições da Edição</h1>
-        <p class="text-muted">Controle de participantes, status comercial e kits.</p>
+        <h1>Inscrições</h1>
+        <p class="text-muted">Consulte participantes, pagamentos e entregas desta edição.</p>
     </div>
     <div class="page-actions">
         <a href="{% url 'gestao:credenciamento' event_id=event.id %}" class="btn btn-success">
-            <i data-lucide="scan-line" aria-hidden="true"></i> Scanner QR Code
+            <i data-lucide="scan-line" aria-hidden="true"></i> Abrir credenciamento
         </a>
         <a href="{% url 'gestao:export_participants' event_id=event.id %}" class="btn btn-secondary">
-            <i data-lucide="download" aria-hidden="true"></i> Exportar Lista (CSV)
+            <i data-lucide="download" aria-hidden="true"></i> Exportar lista
         </a>
     </div>
 </div>
@@ -23,11 +23,11 @@
 <div class="card mg-element-gap">
     <form method="GET" class="mg-filter-grid">
         <div>
-            <label class="form-label mg-meta" for="field-q">Buscar por Nome, Equipe, Telefone ou Número:</label>
+            <label class="form-label mg-meta" for="field-q">Buscar participante</label>
             <input type="text" name="q" class="form-control" value="{{ q }}" placeholder="Digite para buscar..." id="field-q">
         </div>
         <div>
-            <label class="form-label mg-meta" for="field-status">Status Comercial:</label>
+            <label class="form-label mg-meta" for="field-status">Situação da inscrição</label>
             <select name="status" class="form-control" id="field-status">
                 <option value="">Todos os status</option>
                 <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>Ativo / Confirmado</option>

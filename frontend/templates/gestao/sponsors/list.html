@@ -1,0 +1,26 @@
+{% extends 'gestao/base_gestao.html' %}
+{% block title %}Patrocinadores | {{ event.title }}{% endblock %}
+{% block gestao_header %}Patrocinadores{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div><h1>Patrocinadores</h1><p>Marcas que apoiam {{ event.title }}.</p></div>
+    <a href="{% url 'gestao:sponsor_create' event_id=event.id %}" class="btn btn-primary"><i data-lucide="plus" aria-hidden="true"></i>Adicionar patrocinador</a>
+</div>
+{% if sponsors %}
+<div class="mg-sponsor-grid">
+    {% for sponsor in sponsors %}
+    <article class="card mg-sponsor-card">
+        <div class="mg-sponsor-art">
+            {% if sponsor.logo_image %}<img src="{{ sponsor.logo_image.url }}" alt="{{ sponsor.name }}" loading="lazy">
+            {% else %}<div class="mg-sponsor-placeholder"><i data-lucide="image-plus" aria-hidden="true"></i><span>Espaço reservado para a imagem</span></div>{% endif %}
+        </div>
+        <div class="mg-sponsor-copy"><span class="badge badge-info">{{ sponsor.get_tier_display }}</span><h2>{{ sponsor.name }}</h2><p class="text-muted">Ordem de exibição: {{ sponsor.sort_order }}</p></div>
+        {% if sponsor.instagram_url %}<a href="{{ sponsor.instagram_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-block"><i data-lucide="camera" aria-hidden="true"></i>Ver Instagram</a>{% endif %}
+        <a href="{% url 'gestao:sponsor_edit' event_id=event.id sponsor_id=sponsor.id %}" class="btn btn-secondary btn-block"><i data-lucide="pencil" aria-hidden="true"></i>Editar patrocinador</a>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<section class="card empty-state"><span class="empty-icon"><i data-lucide="handshake" aria-hidden="true"></i></span><h2>Adicione os parceiros desta edição</h2><p>Cadastre a marca e o Instagram. Você pode reservar o espaço agora e enviar a logo ou foto depois.</p><a href="{% url 'gestao:sponsor_create' event_id=event.id %}" class="btn btn-primary">Adicionar primeiro patrocinador</a></section>
+{% endif %}
+{% endblock %}

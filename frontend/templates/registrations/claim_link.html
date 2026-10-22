@@ -1,18 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Compartilhar inscrição | Equipe Morcego{% endblock %}
 {% block content %}
-<main class="container container-narrow" style="padding:3rem 1.25rem">
-    <section class="card">
-        <h1>Vincular inscrição ao participante</h1>
-        <p>{{ reg.person.full_name }} · {{ reg.event.title }}</p>
-        {% if claim_error %}<p class="alert alert-warning" role="alert">{{ claim_error }}</p>{% else %}
-        <p>Envie este link ao participante para ele entrar na própria conta, vincular a inscrição e aceitar os termos do evento. Nenhuma mensagem foi enviada automaticamente.</p>
-        <label class="form-label" for="claim-link">Link para compartilhar</label>
-        <textarea id="claim-link" class="form-control" rows="3" readonly onclick="this.select()">{{ claim_url }}</textarea>
-        <p class="text-muted">Válido até {{ claim_expires_at|date:"d/m/Y H:i" }}. O link pode ser usado uma vez; gerar outro substitui o anterior.</p>
-        <p><a class="btn btn-primary" href="{{ claim_url }}">Eu sou este participante</a></p>
-        {% endif %}
-        <a class="btn btn-secondary" href="{% url 'checkout:order_result' order_id=order.id %}">Voltar ao pedido</a>
-    </section>
-</main>
+<div class="public-page public-page--compact">
+  <a class="public-back" href="{% url 'checkout:order_result' order_id=order.id %}"><i data-lucide="arrow-left" aria-hidden="true"></i> Voltar ao pedido</a>
+  <header class="public-intro"><span class="public-eyebrow">Compartilhar inscrição</span><h1>Vincular inscrição ao participante</h1><p>{{ reg.person.full_name }} · {{ reg.event.title }}</p></header>
+  <section class="public-card">
+    {% if claim_error %}<p class="public-note public-note--warning" role="alert">{{ claim_error }}</p>{% else %}
+    <p class="public-muted">Envie este link ao participante para ele entrar na própria conta, vincular a inscrição e aceitar os termos do evento. Nenhuma mensagem foi enviada automaticamente.</p>
+    <label class="public-field-label" for="claim-link">Link para compartilhar</label><textarea id="claim-link" class="public-textarea" rows="3" readonly onclick="this.select()">{{ claim_url }}</textarea>
+    <p class="public-muted public-small">Válido até {{ claim_expires_at|date:"d/m/Y H:i" }}. O link pode ser usado uma vez; gerar outro substitui o anterior.</p>
+    <div class="public-actions"><a class="public-button public-button--primary" href="{{ claim_url }}">Eu sou este participante <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
+    {% endif %}
+  </section>
+</div>
 {% endblock %}

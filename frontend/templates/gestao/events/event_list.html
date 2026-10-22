@@ -1,16 +1,16 @@
 {% extends "gestao/base_gestao.html" %}
 
 {% block title %}Edições e Eventos | Painel Gestão{% endblock %}
-{% block gestao_header %}Gerenciamento de Eventos e Trilhões{% endblock %}
+{% block gestao_header %}Eventos e edições{% endblock %}
 
 {% block content %}
 <div class="page-heading mg-section-gap">
     <div>
-        <h1>Edições Cadastradas</h1>
-        <p class="text-muted">Crie novos eventos, duplique edições passadas e altere status.</p>
+        <h1>Eventos e edições</h1>
+        <p class="text-muted">Organize as edições e acompanhe a situação de cada evento.</p>
     </div>
     {% if management_can_create_events %}<a href="{% url 'gestao:event_create' %}" class="btn btn-primary">
-        <i data-lucide="plus" aria-hidden="true"></i> Nova Edição de Evento
+        <i data-lucide="plus" aria-hidden="true"></i> Nova edição
     </a>{% endif %}
 </div>
 
@@ -21,8 +21,8 @@
                 <tr>
                     <th scope="col">Edição</th>
                     <th scope="col">Tipo</th>
-                    <th scope="col">Cidade / Local</th>
-                    <th scope="col">Data do Evento</th>
+                    <th scope="col">Local</th>
+                    <th scope="col">Data do evento</th>
                     <th scope="col">Inscrições</th>
                     <th scope="col">Situação</th>
                     <th scope="col">Ações</th>

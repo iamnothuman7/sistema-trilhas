@@ -32,7 +32,7 @@ O arquivo-base de Hotelaria também contém comportamento próprio de reservas, 
 
 ## Contrato visual do Trilhas
 
-- Carvão e preto formam o fundo, branco e prata organizam conteúdo e o laranja `#f97316` destaca ações. Verde, vermelho e âmbar ficam reservados a estados semânticos.
+- A paleta é a da logo Morcego: carvão, preto, branco, prata e laranja `#f97316`. O site público usa superfícies claras e trechos de destaque em carvão; o painel oferece temas claro e escuro. Verde, vermelho e âmbar ficam reservados a estados semânticos.
 - O emblema é o PNG original fornecido pelo proprietário, com transparência. A imagem compacta usa `object-fit: contain`, sem recorte, fundo artificial, borda, sombra ou arredondamento. O favicon deriva dessa mesma imagem e recebe versão na URL para renovar o cache.
 - `frontend/static/css/management.css` concentra tokens, shell e componentes comuns. `management-children.css` contém apenas a composição dos módulos, responsividade e estados específicos.
 - Classes comuns: `page-heading`, `page-actions`, `card`, `section-title`, `stat-grid`, `stat-card`, `table`, `table-responsive`, `form-grid`, `form-group`, `form-label`, `form-control`, `btn`, `badge` e `empty-state`.
@@ -49,4 +49,10 @@ Novas telas devem começar pelos componentes compartilhados e pelo contexto real
 
 O arquivo `frontend/static/vendor/lucide/lucide.min.js` preserva o cabeçalho original `lucide v1.8.0 - ISC`. O texto completo da [licença oficial da versão 1.8.0](https://github.com/lucide-icons/lucide/blob/1.8.0/LICENSE) está em `frontend/static/vendor/lucide/LICENSE`. Ele inclui a licença ISC de Lucide Icons and Contributors e o aviso MIT de Cole Bemis para os ícones derivados de Feather. Ambos os avisos acompanham a distribuição local.
 
-O arquivo `frontend/static/css/fonts.css` declara Inter por `local(...)`, com alternativas locais de Segoe UI; não contém `url(...)`, não baixa fontes e não distribui um arquivo binário Inter. Quando a fonte procurada não está instalada, o navegador utiliza as alternativas locais e a pilha de fontes do sistema definida no CSS. Servir esse CSS localmente não significa fornecer a fonte Inter em todos os dispositivos.
+O arquivo `frontend/static/css/fonts.css` agora fornece arquivos WOFF2 reais de Inter, Poppins e Quicksand, obtidos do Google Fonts e servidos localmente em `frontend/static/fonts/`. As licenças SIL Open Font License acompanham cada família. A área pública usa Poppins no corpo e Quicksand nos títulos, conforme a filosofia pública Navie; o painel e a autenticação usam Inter, conforme o painel atual. Nenhuma requisição ao Google Fonts é necessária no navegador.
+
+## Revisão visual e patrocinadores — 22/10/2026
+
+A composição pública foi refeita com referência nos blocos de `hoteis/partials/public_sections_styles.html` e `home_eventos_showcase.html`: seções de 44–80 px, mídia grande, raio de 24 px, texto curto, navegação simples e títulos sem caixa alta extensa. A escala interna foi corrigida para menus/tabelas de 14 px, campos de 48–54 px, espaçamentos de 36/24/10 px e sidebar de 70 px expandida para 264 px.
+
+Patrocinadores são geridos por evento em **Patrocinadores → Adicionar patrocinador**. A foto/logo é opcional (PNG/JPG/WebP, até 5 MB); sua ausência produz um espaço reservado, como solicitado pelo proprietário. O campo Instagram aceita endereço HTTPS de perfil instagram.com. Quando preenchido, o cartão público mostra um botão abaixo da imagem. Nome, cota, site e ordem permanecem editáveis. Não foram fabricadas logos ou associações comerciais.

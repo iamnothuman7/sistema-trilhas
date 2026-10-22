@@ -8,8 +8,8 @@
     <meta name="robots" content="noindex, nofollow">
     <title>{% block title %}Sua conta | Equipe Morcego{% endblock %}</title>
     <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}?v=mor20261022">
-    <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
-    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+    <link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=navie20261022">
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}?v=navie20261022">
     <script src="{% static 'vendor/lucide/lucide.min.js' %}" defer></script>
     <script src="{% static 'js/icons.js' %}" defer></script>
     <script src="{% static 'js/auth.js' %}" defer></script>
@@ -20,40 +20,28 @@
         <aside class="auth-brand" aria-label="Equipe Morcego">
             <a class="auth-brand-link" href="{% url 'core:home' %}" aria-label="Equipe Morcego, página inicial">
                 <img class="auth-logo" src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" width="1377" height="1142" fetchpriority="high">
+                <span class="auth-brand-name">Equipe Morcego<small>Sistema Trilhas</small></span>
             </a>
 
             <div class="auth-brand-content">
-                <p class="auth-eyebrow"><span class="auth-brand-rule" aria-hidden="true"></span>Tradição e respeito</p>
-                <h2>Juntos, a próxima<br>trilha vai mais longe.</h2>
-                <p class="auth-brand-description">Da inscrição à largada, sua experiência com a Equipe Morcego em um só lugar.</p>
-                <div class="auth-brand-features">
-                    <div class="auth-brand-feature">
-                        <i data-lucide="ticket-check" aria-hidden="true"></i>
-                        <div><strong>Seu lugar na próxima aventura</strong><span>Inscrições, credenciais e informações do evento.</span></div>
-                    </div>
-                    <div class="auth-brand-feature">
-                        <i data-lucide="panels-top-left" aria-hidden="true"></i>
-                        <div><strong>Uma equipe, tudo organizado</strong><span>Gestão e operação conectadas em cada edição.</span></div>
-                    </div>
-                </div>
+                <p class="auth-eyebrow"><span class="auth-brand-rule" aria-hidden="true"></span>Equipe Morcego · Tianguá, CE</p>
+                <h2>Da inscrição<br>à largada.</h2>
+                <p class="auth-brand-description">Inscrições, credenciais e organização dos eventos da Equipe Morcego em um só lugar.</p>
             </div>
 
             <div class="auth-brand-footer">
-                <span>Equipe Morcego Off-Road</span>
-                <span>Tianguá, Ceará</span>
+                <span><i data-lucide="shield-check" aria-hidden="true"></i> Acesso para participantes e equipe</span>
             </div>
         </aside>
 
         <div class="auth-form-side">
             <div class="auth-form-topbar">
                 <a class="auth-return" href="{% url 'core:home' %}"><i data-lucide="arrow-left" aria-hidden="true"></i> Voltar ao site</a>
-                <span class="auth-platform-name">Sistema Trilhas</span>
             </div>
 
             <main class="auth-form-panel" id="auth-content" tabindex="-1">
                 <header class="auth-form-header">
-                    <p class="auth-eyebrow">{% block auth_eyebrow %}Sua conta Morcego{% endblock %}</p>
-                    <h1>{% block auth_heading %}Bem-vindo de volta.{% endblock %}</h1>
+                    <h1>{% block auth_heading %}Entrar no sistema{% endblock %}</h1>
                     <p class="auth-description">{% block auth_description %}{% endblock %}</p>
                 </header>
 
@@ -71,7 +59,7 @@
                 {% block auth_form %}{% endblock %}
             </main>
 
-            <footer class="auth-form-footer">&copy; {% now "Y" %} Equipe Morcego. Feito para quem vive a trilha.</footer>
+            <footer class="auth-form-footer">&copy; {% now "Y" %} Equipe Morcego · Tianguá, Ceará</footer>
         </div>
     </div>
 </body>

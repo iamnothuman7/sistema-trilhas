@@ -1,279 +1,107 @@
 {% extends "base.html" %}
 {% load static %}
-
 {% block title %}Crie Seu Story 3D | {{ event.title }} | Equipe Morcego{% endblock %}
-
 {% block extra_head %}
 <meta name="description" content="Crie seu story de {{ event.title }} com a moldura oficial da Equipe Morcego.">
 {% include "events/_social_metadata.html" %}
 <style>
-    .studio-grid {
-        display: grid;
-        grid-template-columns: 1fr 440px;
-        gap: 3rem;
-        align-items: start;
-        max-width: 1120px;
-        margin: 0 auto;
-    }
-    .version-options {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 0.65rem;
-        margin-bottom: 1.5rem;
-    }
-    .version-option {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: center;
-        gap: 0.35rem;
-        padding: 0.85rem 0.9rem;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        border-radius: 12px;
-        background: rgba(17, 24, 39, 0.85);
-        color: #FFF;
-        text-align: left;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    .version-option strong {
-        font-size: 0.92rem;
-        font-weight: 800;
-    }
-    .version-option span {
-        font-size: 0.72rem;
-        color: var(--text-muted);
-        font-weight: 700;
-    }
-    .version-option[aria-pressed="true"], .version-option.active-version {
-        background: linear-gradient(135deg, #EA580C, #C2410C);
-        border-color: #F59E0B;
-        box-shadow: 0 6px 20px rgba(234, 88, 12, 0.4);
-    }
-    .version-option[aria-pressed="true"] span, .version-option.active-version span {
-        color: #FFEDD5;
-    }
-    .studio-card {
-        background: rgba(17, 24, 39, 0.92);
-        border: 1px solid rgba(245, 158, 11, 0.35);
-        border-radius: 20px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
-        overflow: hidden;
-    }
-    .studio-header {
-        display: flex;
-        align-items: center;
-        gap: 0.85rem;
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(10, 14, 23, 0.6);
-    }
-    .canvas-stage {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: radial-gradient(circle at center, rgba(234, 88, 12, 0.18) 0%, #080B12 75%);
-        padding: 1.5rem 1.25rem 1rem;
-        position: relative;
-    }
-    .story-frame {
-        position: relative;
-        border: 4px solid rgba(245, 158, 11, 0.85);
-        border-radius: 14px;
-        background: #1a0602;
-        width: 270px;
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.85);
-        transform: rotate(-1.5deg);
-        overflow: hidden;
-        transition: transform 0.3s ease;
-        line-height: 0;
-    }
-    .has-photo .story-frame {
-        transform: rotate(0deg);
-    }
-    #story-canvas {
-        display: block;
-        width: 100%;
-        height: auto;
-        aspect-ratio: 9 / 16;
-        touch-action: pan-y;
-        cursor: grab;
-    }
-    #story-canvas:active {
-        cursor: grabbing;
-    }
-    .preview-tag {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        top: 8px;
-        background: rgba(15, 23, 42, 0.9);
-        color: #F59E0B;
-        font-size: 0.62rem;
-        letter-spacing: 1px;
-        font-weight: 800;
-        border-radius: 4px;
-        padding: 4px 8px;
-        white-space: nowrap;
-        pointer-events: none;
-        border: 1px solid rgba(245, 158, 11, 0.4);
-    }
-    .studio-actions {
-        padding: 1.25rem;
-    }
-    .visually-hidden {
-        position: absolute !important;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-    }
-    @media (max-width: 860px) {
-        .studio-grid {
-            grid-template-columns: 1fr;
-            gap: 2rem;
-        }
-        .version-options {
-            grid-template-columns: 1fr;
-        }
-    }
+.story-studio{max-width:1200px;margin:0 auto;padding:clamp(40px,6vw,72px) 24px 80px;font-family:'Poppins',sans-serif;color:var(--text-main,#202221);font-size:16px;line-height:1.7}
+.story-studio *, .story-studio *::before, .story-studio *::after{box-sizing:border-box;min-width:0}
+.story-studio :focus-visible{outline:3px solid var(--primary,#f97316);outline-offset:4px}
+.story-studio .studio-grid{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:40px;align-items:start}
+.story-studio .studio-intro{display:flex;align-items:center;gap:24px;margin-bottom:24px}
+.story-studio .studio-intro>.logo-emblem{width:96px;height:auto;flex-shrink:0}
+.story-studio .studio-eyebrow{display:block;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#b3480b}
+.story-studio h1{font-family:'Quicksand','Poppins',sans-serif;font-size:clamp(32px,4vw,46px);line-height:1.15;font-weight:700;letter-spacing:-.04em;margin:12px 0 0;color:var(--text-main,#202221)}
+.story-studio h1 span{color:#bd4b0a}.story-studio .studio-description{font-size:17px;line-height:1.8;color:var(--text-muted,#68716c);margin:0 0 32px}
+.story-studio .studio-section{margin-bottom:24px}.story-studio .studio-section-title{display:block;font-size:16px;line-height:1.5;font-weight:600;margin:0 0 20px;color:var(--text-main,#202221)}
+.story-studio .version-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.story-studio .version-option{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:8px;padding:20px 16px;min-height:96px;border:1px solid var(--border,#e4e6e1);border-radius:16px;background:var(--surface,#fff);color:var(--text-main,#202221);text-align:left;cursor:pointer;font:inherit;transition:background .2s,border-color .2s}
+.story-studio .version-option strong{font-size:15px;font-weight:600;line-height:1.4}.story-studio .version-option span{font-size:13px;line-height:1.5;color:var(--text-muted,#68716c)}
+.story-studio .version-option:hover{background:var(--surface-hover,#f4f3ef)}
+.story-studio .version-option[aria-pressed="true"],.story-studio .version-option.active-version{background:#fff3e8;border-color:var(--primary,#f97316);box-shadow:inset 0 0 0 1px var(--primary,#f97316)}
+.story-studio .version-option[aria-pressed="true"] span,.story-studio .version-option.active-version span{color:#9b450f}
+.story-studio .studio-panel{background:var(--surface,#fff);border:1px solid var(--border,#e4e6e1);border-radius:24px;padding:28px;margin-bottom:24px}
+.story-studio .studio-field-grid,.story-studio .studio-tips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+.story-studio .form-group{margin:0}.story-studio .form-label{display:block;margin-bottom:9px;font-size:14px;font-weight:600;color:var(--text-main,#202221)}
+.story-studio .form-control{width:100%;min-height:52px;padding:14px 16px;border:1px solid var(--border,#e4e6e1);border-radius:12px;background:var(--surface,#fff);color:var(--text-main,#202221);font:inherit;font-size:16px;box-shadow:none}
+.story-studio .studio-tips strong{font-size:14px;color:var(--text-main,#202221);font-weight:600}.story-studio .studio-tips p{font-size:14px;color:var(--text-muted,#68716c);margin:8px 0 0;line-height:1.8}
+.story-studio .studio-card{background:var(--surface,#fff);border:1px solid var(--border,#e4e6e1);border-radius:24px;box-shadow:0 10px 32px rgb(32 34 33 / 4%);overflow:hidden}
+.story-studio .studio-header{display:flex;align-items:center;gap:16px;padding:24px;border-bottom:1px solid var(--border,#e4e6e1);background:var(--surface,#fff)}
+.story-studio .studio-header>.logo-emblem{flex-shrink:0}.story-studio .studio-header h2{font-size:16px;line-height:1.5;font-weight:600;margin:0 0 4px;color:var(--text-main,#202221)}
+.story-studio #studio-edition{font-size:13px;line-height:1.5;color:var(--text-muted,#68716c);margin:0}
+.story-studio .studio-format{margin-left:auto;flex-shrink:0;background:var(--surface-hover,#f4f3ef);color:var(--text-muted,#68716c);border-radius:8px;padding:6px 8px;font-size:12px;font-weight:600}
+.story-studio .canvas-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#171a18;padding:28px 24px;position:relative}
+.story-studio .story-frame{position:relative;border:1px solid #3c413e;border-radius:14px;background:#101210;width:min(270px,100%);box-shadow:0 12px 32px rgb(0 0 0 / 28%);overflow:hidden;line-height:0}
+.story-studio #story-canvas{display:block;width:100%;height:auto;aspect-ratio:9/16;touch-action:pan-y;cursor:grab}.story-studio #story-canvas:active{cursor:grabbing}
+.story-studio .preview-tag{position:absolute;left:50%;transform:translateX(-50%);top:10px;background:rgb(17 20 18 / 90%);color:#f6f6f1;font-size:10px;line-height:1.4;letter-spacing:.08em;font-weight:600;border-radius:6px;padding:6px 10px;white-space:nowrap;pointer-events:none}
+.story-studio .studio-actions{padding:28px}.story-studio .studio-upload-actions{display:flex;flex-direction:column;gap:16px}
+.story-studio .studio-actions .btn{min-height:52px;font-size:15px;font-weight:600;white-space:normal;line-height:1.45;border-radius:999px}
+.story-studio #photo-controls{margin-bottom:24px;background:var(--surface-hover,#f4f3ef);padding:20px;border-radius:16px}
+.story-studio #photo-help{font-size:14px;color:var(--text-muted,#68716c);text-align:center;margin:0 0 12px}
+.story-studio .studio-zoom{display:flex;align-items:center;gap:16px;color:#b3480b;font-weight:600}.story-studio #zoom-input{width:100%;min-height:32px;accent-color:var(--primary,#f97316);cursor:pointer}
+.story-studio #retry-cutout-button{margin-top:16px}.story-studio #editor-status{font-size:14px;line-height:1.6;text-align:center;color:var(--text-muted,#68716c);margin:24px 0}
+.story-studio #editor-status[data-state="error"]{color:#a13131}.story-studio #editor-status[data-state="success"]{color:#23613c}
+.story-studio .studio-footer{border-top:1px solid var(--border,#e4e6e1);padding-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-muted,#68716c)}
+.story-studio .studio-footer-actions{display:flex;gap:16px}.story-studio .studio-text-button{background:none;border:0;padding:6px 0;min-height:36px;color:#b3480b;cursor:pointer;font:inherit;font-size:13px;font-weight:600}
+.story-studio .visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.story-studio [hidden]{display:none!important}
+@media(max-width:1000px){.story-studio .studio-grid{grid-template-columns:minmax(0,1fr) minmax(340px,400px);gap:24px}.story-studio .version-options{grid-template-columns:1fr}.story-studio .version-option{min-height:76px;padding:16px 20px}.story-studio .studio-intro{align-items:flex-start;gap:16px}.story-studio .studio-intro>.logo-emblem{width:72px}}
+@media(max-width:800px){.story-studio .studio-grid{grid-template-columns:1fr}.story-studio .version-options{grid-template-columns:repeat(3,minmax(0,1fr))}.story-studio .studio-card{max-width:560px;margin:8px auto 0}.story-studio .studio-grid>div{width:100%}}
+@media(max-width:560px){.story-studio{padding:36px 16px 56px}.story-studio .version-options,.story-studio .studio-field-grid,.story-studio .studio-tips{grid-template-columns:1fr}.story-studio .studio-panel,.story-studio .studio-actions{padding:28px 20px}.story-studio .studio-header{padding:20px;gap:12px}.story-studio .studio-format{display:none}.story-studio .studio-intro{display:block}.story-studio .studio-intro>.logo-emblem{margin-bottom:24px}}
 </style>
 {% endblock %}
-
 {% block content %}
 {{ event_versions|json_script:"event-versions" }}
-<div class="container" style="padding: 3rem 1.25rem 4.5rem;" data-version="{{ selected_version.id }}">
-    <div class="studio-grid">
-        <!-- Coluna da Esquerda: Identidade Visual, Escolha do Modelo e Personalização -->
-        <div>
-            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;">
-                {% if event.theme.logo_image %}<img src="{{ event.theme.logo_image.url }}" alt="{{ event.title }}" class="logo-emblem" style="height: 88px; width: auto;">{% else %}<img src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" class="logo-emblem" style="height: 88px; width: auto;">{% endif %}
-                <div>
-                    <span class="badge badge-warning">GERADOR OFICIAL DE STORIES 3D</span>
-                    <h1 style="font-size: 2.35rem; font-weight: 900; color: #FFF; line-height: 1.1; margin-top: 0.35rem;">
-                        A trilha começa com <span style="color: var(--primary);">você.</span>
-                    </h1>
-                </div>
-            </div>
-
-            <p style="color: var(--text-muted); font-size: 1.05rem; margin-bottom: 1.75rem;">
-                Envie sua foto: nossa Inteligência Artificial recorta o fundo automaticamente e faz você <strong>saltar para fora da moldura em 3D</strong> no padrão oficial do <strong>{{ event.title }}</strong>!
-            </p>
-
-            <!-- Seletor de Versão do Story -->
-            <div style="margin-bottom: 1.5rem;">
-                <label class="form-label" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">
-                    1. Escolha o Estilo do Seu Story 3D
-                </label>
-                <div class="version-options">
-                    {% for version in event_versions %}
-                        <button type="button" class="version-option {% if version.id == selected_version.id %}active-version{% endif %}" data-event-version="{{ version.id }}" aria-pressed="{% if version.id == selected_version.id %}true{% else %}false{% endif %}">
-                            <strong>{{ version.label }}</strong>
-                            <span>{{ version.selector_detail }}</span>
-                        </button>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- Nome do Piloto e Equipe (Opcional) -->
-            <div class="card" style="background: rgba(17, 24, 39, 0.75); margin-bottom: 1.5rem;">
-                <div style="font-size: 0.85rem; font-weight: 800; color: #FFF; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem;">
-                    2. Estampar Seu Nome e Equipe (Opcional)
-                </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-size: 0.8rem;">Seu Nome / Apelido</label>
-                        <input type="text" id="pilot-name-input" class="form-control" placeholder="Ex: KELVIM MUNIZ" maxlength="32">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label class="form-label" style="font-size: 0.8rem;">Sua Equipe / Cidade</label>
-                        <input type="text" id="team-name-input" class="form-control" placeholder="Ex: EQUIPE MORCEGO" maxlength="32">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Como funciona -->
-            <div class="card" style="background: rgba(17, 24, 39, 0.5); border-left: 4px solid var(--primary);">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div>
-                        <strong style="color: var(--primary); font-size: 0.85rem;">01. ESCOLHA SUA FOTO</strong>
-                        <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">
-                            A IA remove o fundo automaticamente e posiciona você saindo da moldura em 3D.
-                        </p>
-                    </div>
-                    <div>
-                        <strong style="color: var(--secondary); font-size: 0.85rem;">02. BAIXE E COMPARTILHE</strong>
-                        <p style="font-size: 0.88rem; color: var(--text-muted); margin-top: 0.25rem;">
-                            Salve em alta definição (1080×1920) e publique nos seus Stories!
-                        </p>
-                    </div>
-                </div>
-            </div>
+<div class="story-studio" data-version="{{ selected_version.id }}">
+  <div class="studio-grid">
+    <div>
+      <header class="studio-intro">
+        {% if event.theme.logo_image %}<img src="{{ event.theme.logo_image.url }}" alt="{{ event.title }}" class="logo-emblem">{% else %}<img src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" class="logo-emblem">{% endif %}
+        <div><span class="studio-eyebrow">Moldura oficial do evento</span><h1>A trilha começa com <span>você.</span></h1></div>
+      </header>
+      <p class="studio-description">Personalize seu story de <strong>{{ event.title }}</strong>. Escolha uma foto, ajuste o enquadramento e compartilhe sua participação.</p>
+      <section class="studio-section" aria-label="Estilo do story">
+        <h2 class="studio-section-title">1. Escolha seu estilo</h2>
+        <div class="version-options">
+          {% for version in event_versions %}
+          <button type="button" class="version-option {% if version.id == selected_version.id %}active-version{% endif %}" data-event-version="{{ version.id }}" aria-pressed="{% if version.id == selected_version.id %}true{% else %}false{% endif %}"><strong>{{ version.label }}</strong><span>{{ version.selector_detail }}</span></button>
+          {% endfor %}
         </div>
-
-        <!-- Coluna da Direita: Estúdio Interativo 3D -->
-        <div>
-            <section class="studio-card" aria-label="Editor do seu story">
-                <div class="studio-header">
-                    <img src="{% static 'img/logo_emblem.png' %}?v=mor20261022" alt="Equipe Morcego" class="logo-emblem" width="46" height="38">
-                    <div>
-                        <h2 style="font-size: 0.95rem; font-weight: 800; color: #FFF; margin: 0;">{{ event.title }}</h2>
-                        <p id="studio-edition" style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">{{ selected_version.label }} · {{ selected_version.selector_detail }}</p>
-                    </div>
-                    <span class="badge badge-warning" style="margin-left: auto;">9:16 STORY</span>
-                </div>
-
-                <div class="canvas-stage">
-                    <div class="story-frame">
-                        <canvas id="story-canvas" width="1080" height="1920" tabindex="0"></canvas>
-                        <span class="preview-tag">PRÉVIA DO SEU STORY 3D</span>
-                    </div>
-                </div>
-
-                <div class="studio-actions">
-                    {% csrf_token %}
-                    <input id="photo-input" class="visually-hidden" type="file" tabindex="-1" accept="image/jpeg,image/png,image/webp">
-
-                    <div id="photo-controls" hidden style="margin-bottom: 1rem; background: rgba(255,255,255,0.04); padding: 0.75rem 1rem; border-radius: 10px;">
-                        <p id="photo-help" style="font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-bottom: 0.4rem;">
-                            Arraste a foto para ajustar o enquadramento.
-                        </p>
-                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <span style="color: var(--primary); font-weight: 800;">−</span>
-                            <input id="zoom-input" type="range" min="1" max="2.5" step="0.01" value="1" style="width: 100%; accent-color: var(--primary); cursor: pointer;">
-                            <span style="color: var(--primary); font-weight: 800;">+</span>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; gap: 0.65rem;">
-                        <button class="btn btn-primary btn-block btn-lg" id="upload-button" type="button" style="height: 52px; font-weight: 900;">
-                            <i data-lucide="camera" aria-hidden="true"></i><span id="upload-label">Adicionar Minha Foto</span>
-                        </button>
-                        <button class="btn btn-success btn-block btn-lg" id="download-button" type="button" disabled style="height: 52px; font-weight: 900;">
-                            <i data-lucide="download" aria-hidden="true"></i><span id="download-label">Baixar Meu Story 3D</span>
-                        </button>
-                    </div>
-
-                    <button class="btn btn-secondary btn-sm btn-block" id="retry-cutout-button" type="button" hidden style="margin-top: 0.6rem;">
-                        <i data-lucide="refresh-cw" aria-hidden="true"></i> Tentar retirar o fundo novamente
-                    </button>
-
-                    <p id="editor-status" role="status" aria-live="polite" style="font-size: 0.82rem; text-align: center; color: var(--primary); font-weight: 700; margin: 0.85rem 0 0.4rem;">
-                        Escolha uma foto sua para criar o efeito 3D fora da moldura.
-                    </p>
-
-                    <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.75rem; margin-top: 0.75rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted);">
-                        <span id="export-note">PNG Alta Qualidade · 1080 × 1920</span>
-                        <div style="display: flex; gap: 0.75rem;">
-                            <button type="button" id="change-photo-button" hidden style="background: none; border: none; color: var(--primary); font-weight: 700; cursor: pointer; font-size: 0.75rem;">Trocar foto</button>
-                            <button type="button" id="reset-button" hidden style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.75rem;">Recomeçar</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
+      </section>
+      <section class="studio-panel">
+        <h2 class="studio-section-title">2. Deixe com a sua cara</h2>
+        <div class="studio-field-grid">
+          <div class="form-group"><label class="form-label" for="pilot-name-input">Nome ou apelido (opcional)</label><input type="text" id="pilot-name-input" class="form-control" placeholder="Seu nome" maxlength="32"></div>
+          <div class="form-group"><label class="form-label" for="team-name-input">Equipe ou cidade (opcional)</label><input type="text" id="team-name-input" class="form-control" placeholder="Sua equipe" maxlength="32"></div>
         </div>
+      </section>
+      <div class="studio-panel studio-tips">
+        <div><strong>Escolha sua foto</strong><p>O recorte automático destaca você na moldura. Depois, ajuste a posição e o tamanho na prévia.</p></div>
+        <div><strong>Baixe e compartilhe</strong><p>Salve sua imagem em alta definição (1080 × 1920) e publique nos Stories.</p></div>
+      </div>
     </div>
+    <div>
+      <section class="studio-card" aria-label="Editor do seu story">
+        <div class="studio-header">
+          <img src="{% static 'img/logo_emblem.png' %}?v=mor20261022" alt="Equipe Morcego" class="logo-emblem" width="46" height="38">
+          <div><h2>{{ event.title }}</h2><p id="studio-edition">{{ selected_version.label }} · {{ selected_version.selector_detail }}</p></div><span class="studio-format">9:16</span>
+        </div>
+        <div class="canvas-stage"><div class="story-frame"><canvas id="story-canvas" width="1080" height="1920" tabindex="0"></canvas><span class="preview-tag">PRÉVIA DO SEU STORY</span></div></div>
+        <div class="studio-actions">
+          {% csrf_token %}
+          <input id="photo-input" class="visually-hidden" type="file" tabindex="-1" accept="image/jpeg,image/png,image/webp">
+          <div id="photo-controls" hidden><p id="photo-help">Arraste a foto para ajustar o enquadramento.</p><div class="studio-zoom"><span>−</span><input id="zoom-input" type="range" min="1" max="2.5" step="0.01" value="1" aria-label="Ampliar a foto"><span>+</span></div></div>
+          <div class="studio-upload-actions">
+            <button class="btn btn-primary btn-block btn-lg" id="upload-button" type="button"><i data-lucide="camera" aria-hidden="true"></i><span id="upload-label">Adicionar minha foto</span></button>
+            <button class="btn btn-success btn-block btn-lg" id="download-button" type="button" disabled><i data-lucide="download" aria-hidden="true"></i><span id="download-label">Baixar meu story</span></button>
+          </div>
+          <button class="btn btn-secondary btn-sm btn-block" id="retry-cutout-button" type="button" hidden><i data-lucide="refresh-cw" aria-hidden="true"></i> Tentar retirar o fundo novamente</button>
+          <p id="editor-status" role="status" aria-live="polite">Escolha uma foto sua para criar o efeito 3D fora da moldura.</p>
+          <div class="studio-footer"><span id="export-note">PNG Alta Qualidade · 1080 × 1920</span><div class="studio-footer-actions"><button type="button" id="change-photo-button" class="studio-text-button" hidden>Trocar foto</button><button type="button" id="reset-button" class="studio-text-button" hidden>Recomeçar</button></div></div>
+        </div>
+      </section>
+    </div>
+  </div>
 </div>
 {% endblock %}
 

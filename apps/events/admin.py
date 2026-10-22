@@ -1,4 +1,5 @@
 from django.contrib import admin
+from .forms import SponsorAdminForm, SponsorForm
 from .models import (
     Event, EventTheme, EventPageBlock, EventScheduleItem,
     Route, RouteCheckpoint, Sponsor, LegalDocumentVersion
@@ -18,6 +19,7 @@ class RouteCheckpointInline(admin.TabularInline):
 
 class SponsorInline(admin.TabularInline):
     model = Sponsor
+    form = SponsorForm
     extra = 1
 
 class LegalDocumentVersionInline(admin.StackedInline):
@@ -40,8 +42,10 @@ class RouteAdmin(admin.ModelAdmin):
 
 @admin.register(Sponsor)
 class SponsorAdmin(admin.ModelAdmin):
+    form = SponsorAdminForm
     list_display = ("name", "event", "tier", "sort_order")
     list_filter = ("tier", "event")
+    search_fields = ("name", "event__title")
 
 @admin.register(LegalDocumentVersion)
 class LegalDocumentVersionAdmin(admin.ModelAdmin):

@@ -49,7 +49,7 @@ class PublicEventTemplateTests(SimpleTestCase):
         html = render_to_string("core/home.html", {"featured_events": [self.event()]})
         self.assert_current_event(html)
         self.assertIn("Confira a programação, as modalidades disponíveis", html)
-        self.assertIn("minmax(min(100%, 340px), 1fr)", html)
+        self.assertIn("spotlight-layout", html)
 
     def test_home_without_event_does_not_show_a_fictional_highlight(self):
         html = render_to_string("core/home.html", {"featured_events": []})
@@ -107,7 +107,8 @@ class PublicEventTemplateTests(SimpleTestCase):
         listing = render_to_string("events/list.html", {"active_events": [event], "past_events": []})
         self.assertNotIn("None", listing)
         self.assertIn("Consulte a programação", listing)
-        self.assertIn("minmax(min(100%, 350px), 1fr)", listing)
+        self.assertIn(reverse("events:detail", kwargs={"slug": event.slug}), listing)
+        self.assertIn("Praça da Serra", listing)
         frames = render_to_string("events/frames.html", {"event": event, "event_versions": [], "selected_version": {}})
         self.assertIn(event.title, frames)
         self.assertNotIn("Trilhão Tianguá 2027", frames)

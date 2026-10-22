@@ -1,62 +1,16 @@
 {% extends "base.html" %}
-
 {% block title %}Percurso da Trilha | {{ event.title }}{% endblock %}
-
 {% block content %}
-<div class="container container-narrow" style="padding: 4rem 1.25rem;">
-    <div style="text-align: center; margin-bottom: 2.5rem;">
-        <span class="badge badge-warning">ALTIMETRIA E TERRENO</span>
-        <h1 style="font-size: 2.5rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
-            Percurso e Pontos de Apoio
-        </h1>
-        <p style="color: var(--text-muted); font-size: 1.05rem;">{{ event.title }}</p>
-    </div>
-
-    {% if routes %}
-        {% for route in routes %}
-            <div class="card" style="margin-bottom: 2rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <h2 style="color: #FFF; font-size: 1.5rem; font-weight: 800;">{{ route.title }}</h2>
-                    <span class="badge badge-warning">{{ route.difficulty }}</span>
-                </div>
-
-                <div style="display: flex; gap: 2rem; margin-bottom: 1.5rem; background: var(--surface-hover); padding: 1rem 1.25rem; border-radius: var(--radius-md);">
-                    <div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Distância Total</div>
-                        <div style="font-size: 1.3rem; font-weight: 900; color: var(--primary);">{{ route.distance_km }} km</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Nível Técnico</div>
-                        <div style="font-size: 1.3rem; font-weight: 900; color: #FFF;">{{ route.difficulty }}</div>
-                    </div>
-                </div>
-
-                {% if route.description %}
-                    <p style="color: #E2E8F0; font-size: 1rem; line-height: 1.7; margin-bottom: 1.5rem;">{{ route.description }}</p>
-                {% endif %}
-
-                <!-- Checkpoints / Apoios -->
-                {% if route.checkpoints.all %}
-                    <h3 style="color: #FFF; font-size: 1.15rem; font-weight: 800; margin-bottom: 0.75rem;">Pontos de Passagem e Suporte:</h3>
-                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        {% for cp in route.checkpoints.all %}
-                            <div style="display: flex; align-items: center; gap: 0.75rem; background: #0A0E17; padding: 0.75rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border);">
-                                <span class="badge badge-info">{{ cp.code }}</span>
-                                <span style="font-weight: 700; color: #FFF;">{{ cp.label }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-        {% endfor %}
-    {% else %}
-        <div class="card" style="text-align: center; padding: 3rem;">
-            <p style="color: var(--text-muted);">O levantamento técnico da trilha está em fase de fechamento pela coordenação de percurso.</p>
-        </div>
-    {% endif %}
-
-    <div style="text-align: center; margin-top: 2rem;">
-        <a href="{% url 'events:detail' slug=event.slug %}" class="btn btn-secondary">&larr; Voltar ao Evento</a>
-    </div>
+<div class="public-page public-page--narrow">
+  <a href="{% url 'events:detail' slug=event.slug %}" class="public-back"><i data-lucide="arrow-left" aria-hidden="true"></i> Voltar ao evento</a>
+  <header class="public-intro"><span class="public-eyebrow">{{ event.title }}</span><h1>Conheça o percurso</h1><p>Distâncias, nível técnico e pontos de apoio para planejar sua participação.</p></header>
+  {% for route in routes %}
+  <section class="public-card">
+    <div class="public-card-head"><h2>{{ route.title }}</h2>{% if route.difficulty %}<span class="public-tag">{{ route.difficulty }}</span>{% endif %}</div>
+    <dl class="public-stats"><div><dt>Distância total</dt><dd>{{ route.distance_km }} km</dd></div><div><dt>Nível técnico</dt><dd>{{ route.difficulty|default:"A informar" }}</dd></div></dl>
+    {% if route.description %}<p class="public-document">{{ route.description }}</p>{% endif %}
+    {% if route.checkpoints.all %}<h3>Pontos de passagem e suporte</h3><ol class="public-checkpoints">{% for cp in route.checkpoints.all %}<li><span class="public-tag">{{ cp.code }}</span><strong>{{ cp.label }}</strong></li>{% endfor %}</ol>{% endif %}
+  </section>
+  {% empty %}<div class="public-empty"><span class="public-icon"><i data-lucide="route" aria-hidden="true"></i></span><h2>Percurso em preparação</h2><p>O levantamento técnico da trilha está em fase de fechamento pela coordenação de percurso.</p></div>{% endfor %}
 </div>
 {% endblock %}

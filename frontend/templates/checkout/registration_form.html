@@ -2,47 +2,49 @@
 
 {% block title %}Inscrição Oficial | {{ event.title }}{% endblock %}
 
+{% block extra_head %}{% include "checkout/_payment_styles.html" %}{% endblock %}
+
 {% block content %}
-<div class="container container-narrow" style="padding: 3.5rem 1.25rem;">
-    <div style="text-align: center; margin-bottom: 2rem;">
-        <span class="badge badge-warning">CHECKOUT TRANSPARENTE OFICIAL</span>
-        <h1 style="font-size: 2.3rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
+<div class="payment-page registration-page">
+    <header class="registration-intro">
+        <span class="payment-kicker">Sua inscrição · Dados dos participantes</span>
+        <h1>
             Inscrição: {{ event.title }}
         </h1>
-        <p style="color: var(--text-muted); font-size: 1rem;">
+        <p class="payment-muted">
             Preencha seus dados para reservar sua vaga com segurança.
         </p>
-    </div>
+    </header>
 
     <form method="POST" id="registrationForm">
         {% csrf_token %}
 
         <!-- Seção 1: Dados do Comprador / Responsável pelo Pagamento -->
-        <div class="card" style="margin-bottom: 2rem;">
+        <div class="payment-card">
             <div class="card-header">
-                <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">
-                    1. Dados do Pagador / Comprador
+                <h2>
+                    1. Seus dados
                 </h2>
-                <span style="font-size: 0.8rem; color: var(--text-muted);">Quem receberá o comprovante</span>
+                <span class="registration-caption">Quem receberá o comprovante</span>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
-                <div class="form-group" style="grid-column: span 2;">
-                    <label class="form-label">Nome Completo do Comprador *</label>
-                    <input type="text" name="purchaser_name" class="form-control" required placeholder="Ex: Kelvim Muniz" value="{% if request.user.is_authenticated %}{{ request.user.full_name }}{% endif %}">
+            <div class="registration-grid">
+                <div class="form-group registration-wide">
+                    <label class="form-label">Nome completo *</label>
+                    <input type="text" name="purchaser_name" class="form-control" required placeholder="Seu nome completo" value="{% if request.user.is_authenticated %}{{ request.user.full_name|default:"" }}{% endif %}">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">E-mail para Receber o Ingresso *</label>
+                    <label class="form-label">E-mail *</label>
                     <input type="email" name="purchaser_email" class="form-control" required placeholder="seu@email.com" value="{% if request.user.is_authenticated %}{{ request.user.email }}{% endif %}">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">WhatsApp com DDD *</label>
-                    <input type="text" name="purchaser_phone" class="form-control" required placeholder="(88) 99999-9999" value="{% if request.user.is_authenticated %}{{ request.user.phone }}{% endif %}">
+                    <input type="text" name="purchaser_phone" class="form-control" required placeholder="(88) 99999-9999" value="{% if request.user.is_authenticated %}{{ request.user.phone|default:"" }}{% endif %}">
                 </div>
 
-                <div class="form-group" style="grid-column: span 2;">
+                <div class="form-group registration-wide">
                     <label class="form-label">CPF do Titular do Pagamento (Exigido pelo Mercado Pago) *</label>
                     <input type="text" name="purchaser_document" class="form-control" required placeholder="000.000.000-00">
                 </div>
@@ -50,31 +52,31 @@
         </div>
 
         <!-- Seção 2: Participantes / Pilotos -->
-        <div class="card" style="margin-bottom: 2rem;">
+        <div class="payment-card">
             <div class="card-header">
                 <div>
-                    <h2 style="font-size: 1.25rem; font-weight: 800; color: #FFF;">
-                        2. Identificação dos Pilotos / Participantes
+                    <h2>
+                        2. Participantes
                     </h2>
-                    <div style="font-size: 0.8rem; color: var(--text-muted);">
+                    <div class="registration-caption">
                         Você pode inscrever a si mesmo ou comprar para sua equipe/amigos em uma única transação
                     </div>
                 </div>
-                <button type="button" id="btnAddParticipant" class="btn btn-sm btn-secondary">
-                    + Adicionar Outro Piloto
+                <button type="button" id="btnAddParticipant" class="payment-button payment-button-secondary">
+                    <i data-lucide="plus" aria-hidden="true"></i> Adicionar piloto
                 </button>
             </div>
 
             <div id="participantsContainer">
                 <!-- Card do Piloto 1 -->
-                <div class="participant-item card" style="background-color: var(--surface-hover); margin-bottom: 1.25rem; border: 1px solid var(--border);">
+                <div class="participant-item card">
                     <div style="font-weight: 800; color: var(--primary); margin-bottom: 1rem; font-size: 1rem;">
                         PILOTO #1
                     </div>
 
                     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
                         <div class="form-group">
-                            <label class="form-label">Nome Completo do Piloto *</label>
+                            <label class="form-label">Nome do participante *</label>
                             <input type="text" name="participant_name[]" class="form-control" required placeholder="Nome do Piloto">
                         </div>
 
@@ -86,7 +88,7 @@
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                         <div class="form-group">
-                            <label class="form-label">Modalidade / Pacote *</label>
+                            <label class="form-label">Modalidade *</label>
                             <select name="participant_product[]" class="form-control" required>
                                 {% for prod in products %}
                                     <option value="{{ prod.id }}">{{ prod.name }}</option>
@@ -134,18 +136,18 @@
         </div>
 
         <!-- Seção 3: Cupom de Desconto -->
-        <div class="card" style="margin-bottom: 2rem;">
-            <div class="form-group" style="margin-bottom: 0;">
+        <div class="payment-card">
+            <div class="form-group">
                 <label class="form-label">Possui Cupom de Desconto?</label>
-                <div style="display: flex; gap: 0.75rem;">
-                    <input type="text" name="coupon_code" class="form-control" placeholder="CÓDIGO DO CUPOM" style="text-transform: uppercase;">
+                <div>
+                    <input type="text" name="coupon_code" class="form-control registration-coupon" placeholder="CÓDIGO DO CUPOM">
                 </div>
             </div>
         </div>
 
         <!-- Botão Final de Submissão -->
-        <button type="submit" class="btn btn-primary btn-block btn-lg" style="font-size: 1.25rem;">
-            Avançar para Pagamento com Segurança &rarr;
+        <button type="submit" class="payment-button registration-submit">
+            Avançar para pagamento <i data-lucide="arrow-right" aria-hidden="true"></i>
         </button>
     </form>
 </div>
@@ -176,7 +178,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
                 <div class="form-group">
-                    <label class="form-label">Nome Completo do Piloto *</label>
+                    <label class="form-label">Nome do participante *</label>
                     <input type="text" name="participant_name[]" class="form-control" required placeholder="Nome do Piloto">
                 </div>
 
@@ -188,7 +190,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
                 <div class="form-group">
-                    <label class="form-label">Modalidade / Pacote *</label>
+                    <label class="form-label">Modalidade *</label>
                     <select name="participant_product[]" class="form-control" required>
                         {% for prod in products %}
                             <option value="{{ prod.id }}">{{ prod.name }}</option>

@@ -1,210 +1,29 @@
 {% extends "base.html" %}
-{% load static tz %}
-
+{% load static tz trilhas_ui %}
 {% block title %}{{ event.title }} | Equipe Morcego Oficial{% endblock %}
-
-{% block extra_head %}
-<meta name="description" content="{{ event.description|default:'Consulte a programação, as modalidades e as orientações do evento da Equipe Morcego.'|striptags|truncatechars:160 }}">
-{% include "events/_social_metadata.html" %}
-{% if event.theme %}
-<style>
-    :root {
-        --primary: {{ event.theme.primary_color }};
-        --secondary: {{ event.theme.secondary_color }};
-        --surface: {{ event.theme.surface_color }};
-    }
-</style>
-{% endif %}
-{% endblock %}
-
-{% block content %}
-{% timezone event.timezone %}
-<!-- Apresentação e identidade cadastradas para esta edição -->
-<section style="background: var(--bg-dark); border-bottom: 1px solid var(--border); padding: 3.5rem 0 3rem;">
-    <div class="container">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 3rem; align-items: center;">
-            
-            <div style="text-align: center;">
-                {% if event.theme.hero_banner %}
-                    <img src="{{ event.theme.hero_banner.url }}" alt="{{ event.title }}" style="max-height: 520px; width: auto; max-width: 100%; border-radius: var(--radius-lg); object-fit: contain;">
-                {% elif event.theme.logo_image %}
-                    <img src="{{ event.theme.logo_image.url }}" alt="{{ event.title }}" class="logo-emblem" style="max-height: 450px; width: auto; max-width: 100%; margin-inline: auto;">
-                {% else %}
-                    <img src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" class="logo-emblem" style="max-height: 450px; width: auto; max-width: 100%; margin-inline: auto;">
-                {% endif %}
-            </div>
-
-            <!-- Coluna da Direita: Dados, Apresentação e Inscrição -->
-            <div>
-                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
-                    {% if event.theme.logo_image %}<img src="{{ event.theme.logo_image.url }}" alt="{{ event.title }}" class="logo-emblem" style="height: 82px; width: auto;">{% endif %}
-                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <span class="badge badge-warning">{{ event.get_type_display }}</span>
-                        <span class="badge badge-success">{{ event.get_status_display }}</span>
-                        <span class="badge badge-info">EDIÇÃO #{{ event.edition_number }}</span>
-                    </div>
-                </div>
-
-                <h1 style="font-size: 2.8rem; font-weight: 900; color: #FFF; line-height: 1.15; margin-bottom: 1rem;">
-                    {{ event.title }}
-                </h1>
-
-                <div style="display: flex; align-items: flex-start; gap: 0.6rem; font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: 1.25rem;">
-                    <i data-lucide="calendar-days" aria-hidden="true"></i>
-                    <span>{{ event.starts_at|date:"d \d\e F \d\e Y" }}{% if event.ends_at|date:"Y-m-d" != event.starts_at|date:"Y-m-d" %} a {{ event.ends_at|date:"d \d\e F \d\e Y" }}{% endif %}{% if event.city %} &bull; {{ event.city }}{% if event.state %}/{{ event.state }}{% endif %}{% endif %}</span>
-                </div>
-
-                <p style="font-size: 1.08rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 2rem;">
-                    {{ event.description|default:"Confira a programação, as modalidades disponíveis e as orientações da organização." }}
-                </p>
-
-                <!-- Submenu do Evento -->
-                <div style="display: flex; gap: 0.65rem; flex-wrap: wrap; margin-bottom: 2rem;">
-                    <a href="{% url 'events:schedule' slug=event.slug %}" class="btn btn-secondary btn-sm"><i data-lucide="calendar-days" aria-hidden="true"></i> Programação</a>
-                    <a href="{% url 'events:route' slug=event.slug %}" class="btn btn-secondary btn-sm"><i data-lucide="map" aria-hidden="true"></i> Percurso</a>
-                    <a href="{% url 'events:rules' slug=event.slug %}" class="btn btn-secondary btn-sm"><i data-lucide="file-text" aria-hidden="true"></i> Regulamento</a>
-                    <a href="{% url 'events:sponsors' slug=event.slug %}" class="btn btn-secondary btn-sm"><i data-lucide="handshake" aria-hidden="true"></i> Patrocinadores</a>
-                    <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary btn-sm" style="border-color: var(--primary); color: #FFF;"><i data-lucide="camera" aria-hidden="true"></i> Moldura Oficial</a>
-                </div>
-
-                <!-- CTAs -->
-                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                    {% if event.is_registration_open %}
-                        <a href="{% url 'checkout:start_registration' event_slug=event.slug %}" class="btn btn-primary btn-lg" style="font-size: 1.15rem; padding: 0.95rem 2rem;">
-                            <i data-lucide="zap" aria-hidden="true"></i> Fazer inscrição
-                        </a>
-                    {% else %}
-                        <button class="btn btn-secondary btn-lg" disabled>
-                            Inscrições indisponíveis
-                        </button>
-                    {% endif %}
-                    <a href="{% url 'events:frames' slug=event.slug %}" class="btn btn-secondary btn-lg">
-                        <i data-lucide="camera" aria-hidden="true"></i> Gerar Moldura "Eu Vou"
-                    </a>
-                </div>
-            </div>
-
-        </div>
-    </div>
-</section>
-
-<!-- Informações Rápidas e Dados do Evento -->
-<section class="container" style="padding: 3.5rem 1.25rem;">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 4rem;">
-        <div class="card" style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i data-lucide="map-pin" aria-hidden="true"></i></div>
-            <div style="font-weight: 800; color: #FFF; font-size: 1.1rem;">Localização</div>
-            <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
-                {{ event.venue|default:"Local a confirmar" }}{% if event.city %}<br>{{ event.city }}{% if event.state %}/{{ event.state }}{% endif %}{% endif %}
-            </div>
-        </div>
-
-        <div class="card" style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i data-lucide="calendar-days" aria-hidden="true"></i></div>
-            <div style="font-weight: 800; color: #FFF; font-size: 1.1rem;">Data e Horário</div>
-            <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
-                {{ event.starts_at|date:"d/m/Y (l)" }}<br>Início às {{ event.starts_at|date:"H:i" }}
-            </div>
-        </div>
-
-        <div class="card" style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i data-lucide="users" aria-hidden="true"></i></div>
-            <div style="font-weight: 800; color: #FFF; font-size: 1.1rem;">Vagas Limitadas</div>
-            <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
-                Capacidade para até <strong>{{ event.max_attendees }}</strong> pilotos inscritos
-            </div>
-        </div>
-
-        <div class="card" style="text-align: center;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;"><i data-lucide="credit-card" aria-hidden="true"></i></div>
-            <div style="font-weight: 800; color: #FFF; font-size: 1.1rem;">Opções de pagamento</div>
-            <div style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
-                Consulte no checkout os meios de pagamento disponíveis.
-            </div>
-        </div>
-    </div>
-
-    <!-- Modalidades e Lotes Disponíveis -->
-    <div style="margin-bottom: 4rem;">
-        <div style="text-align: center; margin-bottom: 2.5rem;">
-            <span class="badge badge-warning">VALORES E BENEFÍCIOS</span>
-            <h2 style="font-size: 2.2rem; font-weight: 900; color: #FFF; margin-top: 0.5rem;">
-                Escolha Sua Modalidade
-            </h2>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 2rem;">
-            {% for prod in products %}
-                <div class="card" style="border-top: 4px solid var(--primary); display: flex; flex-direction: column; justify-content: space-between;">
-                    <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <span class="badge badge-warning">{{ prod.get_kind_display }}</span>
-                        </div>
-
-                        <h3 style="font-size: 1.6rem; font-weight: 800; color: #FFF; margin-bottom: 0.5rem;">
-                            {{ prod.name }}
-                        </h3>
-
-                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">
-                            {{ prod.description|default:"Confira os benefícios desta modalidade antes de concluir sua inscrição." }}
-                        </p>
-
-                        {% if prod.includes_shirt or prod.includes_meal or prod.includes_kit %}
-                        <div style="background-color: var(--surface-hover); padding: 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
-                            <div style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.75rem;">
-                                O Que Está Incluso:
-                            </div>
-                            <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.92rem; color: #FFF;">
-                                {% if prod.includes_shirt %}
-                                    <li><i data-lucide="circle-check" aria-hidden="true"></i> Camiseta oficial</li>
-                                {% endif %}
-                                {% if prod.includes_meal %}
-                                    <li><i data-lucide="circle-check" aria-hidden="true"></i> Alimentação conforme a modalidade</li>
-                                {% endif %}
-                                {% if prod.includes_kit %}
-                                    <li><i data-lucide="circle-check" aria-hidden="true"></i> Kit do participante</li>
-                                {% endif %}
-                            </ul>
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <div>
-                        {% if event.is_registration_open %}
-                            <a href="{% url 'checkout:start_registration' event_slug=event.slug %}" class="btn btn-primary btn-block btn-lg">
-                                Garantir Esta Inscrição
-                            </a>
-                        {% else %}
-                            <button class="btn btn-secondary btn-block" disabled>Encerrado</button>
-                        {% endif %}
-                    </div>
-                </div>
-            {% empty %}
-                <div class="card"><p style="color: var(--text-muted);">As modalidades desta edição serão divulgadas pela organização.</p></div>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- Patrocinadores Oficiais -->
-    {% if sponsors %}
-        <div style="border-top: 1px solid var(--border); padding-top: 3.5rem; text-align: center;">
-            <span class="badge badge-warning">APOIO OFICIAL</span>
-            <h3 style="font-size: 1.8rem; font-weight: 900; color: #FFF; margin-top: 0.5rem; margin-bottom: 2rem;">
-                Patrocinadores que Fortalecem o Nosso Esporte
-            </h3>
-            <div style="display: flex; justify-content: center; align-items: center; gap: 2.5rem; flex-wrap: wrap;">
-                {% for sp in sponsors %}
-                    <div style="background: var(--surface-hover); padding: 1rem 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border);">
-                        {% if sp.logo_image %}
-                            <img src="{{ sp.logo_image.url }}" alt="{{ sp.name }}" style="max-height: 50px; max-width: 140px; object-fit: contain;">
-                        {% else %}
-                            <span style="font-weight: 800; color: #FFF;">{{ sp.name }}</span>
-                        {% endif %}
-                    </div>
-                {% endfor %}
-            </div>
-        </div>
-    {% endif %}
-</section>
-{% endtimezone %}
-{% endblock %}
+{% block extra_head %}<meta name="description" content="{{ event.description|default:'Confira a programação e as modalidades desta edição da Equipe Morcego.'|striptags|truncatewords:28 }}">{% include "events/_social_metadata.html" %}{% endblock %}
+{% block content %}{% timezone event.timezone %}
+<section class="section-space event-hero"><div class="container">
+<a href="{% url 'events:list' %}" class="back-link"><i data-lucide="arrow-left" aria-hidden="true"></i> Todos os eventos</a>
+<div class="spotlight-layout"><div class="spotlight-copy"><span class="eyebrow"><span class="eyebrow-line"></span> {{ event.get_type_display }} · Equipe Morcego</span><h1>{{ event.title }}</h1>
+<p class="lead">{{ event.description|default:"Confira a programação, as modalidades disponíveis e as orientações da organização."|striptags|truncatewords:30 }}</p>
+<div class="event-facts"><div><i data-lucide="calendar-days" aria-hidden="true"></i><span>{{ event.starts_at|date:"d \d\e F \d\e Y" }}{% if event.ends_at|date:"Y-m-d" != event.starts_at|date:"Y-m-d" %} a {{ event.ends_at|date:"d \d\e F \d\e Y" }}{% endif %}</span></div><div><i data-lucide="map-pin" aria-hidden="true"></i><span>{{ event.venue|default:"Local a confirmar" }}{% if event.city %} · {{ event.city }}{% if event.state %}, {{ event.state }}{% endif %}{% endif %}</span></div></div>
+<div class="action-row">{% if event.is_registration_open %}<a href="{% url 'checkout:start_registration' event_slug=event.slug %}" class="btn btn-primary">Fazer inscrição <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>{% else %}<span class="badge badge-info">Inscrições indisponíveis</span>{% endif %}<a href="{% url 'events:frames' slug=event.slug %}" class="text-link"><i data-lucide="camera" aria-hidden="true"></i> Criar meu story</a></div></div>
+<div class="spotlight-media{% if not event.theme.hero_banner %} spotlight-emblem{% endif %}">{% if event.theme.hero_banner %}<img src="{{ event.theme.hero_banner.url }}" alt="{{ event.title }}" fetchpriority="high">{% elif event.theme.logo_image %}<img src="{{ event.theme.logo_image.url }}" alt="{{ event.title }}" class="logo-emblem" fetchpriority="high">{% else %}<img src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" class="logo-emblem" fetchpriority="high">{% endif %}<div class="media-caption"><span><small>Calendário oficial</small><strong>{{ event.starts_at|date:"d.m.Y" }}</strong></span><span class="badge badge-warning">{{ event.get_status_display }}</span></div></div>
+</div></div></section>
+<div class="container"><nav class="event-subnav" aria-label="Informações do evento"><a href="#sobre">O encontro</a><a href="#modalidades">Modalidades</a><a href="{% url 'events:schedule' slug=event.slug %}">Programação</a><a href="{% url 'events:route' slug=event.slug %}">Percurso</a><a href="{% url 'events:sponsors' slug=event.slug %}">Patrocinadores</a><a href="{% url 'events:rules' slug=event.slug %}">Regulamento</a></nav></div>
+<section id="sobre" class="section-space"><div class="container event-overview"><div><span class="eyebrow">Antes de acelerar</span><h2>Tudo pronto para<br>o nosso encontro.</h2><p class="lead">Confira os horários, o ponto de encontro e as orientações desta edição. Na sua conta, você acompanha a inscrição e a liberação da credencial.</p><a href="{% url 'events:rules' slug=event.slug %}" class="text-link action-row">Ler o regulamento <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div><div class="event-details-grid">
+<div class="event-detail-item"><i data-lucide="calendar-clock" aria-hidden="true"></i><small>Início do evento</small><strong>{{ event.starts_at|date:"d/m/Y" }} · {{ event.starts_at|date:"H:i" }}</strong></div>
+<div class="event-detail-item"><i data-lucide="map-pin" aria-hidden="true"></i><small>Ponto de encontro</small><strong>{{ event.venue|default:"Local a confirmar" }}</strong></div>
+<div class="event-detail-item"><i data-lucide="users-round" aria-hidden="true"></i><small>Participantes</small><strong>Até {{ event.max_attendees }} pilotos</strong></div>
+<div class="event-detail-item"><i data-lucide="flag" aria-hidden="true"></i><small>Encerramento previsto</small><strong>{{ event.ends_at|date:"d/m/Y" }} · {{ event.ends_at|date:"H:i" }}</strong></div>
+</div></div></section>
+<section id="modalidades" class="section-space how-section"><div class="container"><header class="section-heading"><div><span class="eyebrow">Seu jeito de participar</span><h2>Escolha sua modalidade</h2></div><p>Veja os benefícios de cada opção antes de fazer a inscrição.</p></header><div class="product-grid">
+{% for prod in products %}<article class="product-card"><span class="badge badge-warning">{{ prod.get_kind_display }}</span><h3>{{ prod.name }}</h3><p>{{ prod.description|default:"Confira os benefícios desta modalidade antes de concluir sua inscrição." }}</p>
+{% for lot in active_lots %}{% if lot.product_id == prod.id and lot.is_open %}<div class="product-price"><small>{{ lot.title }}</small><strong>R$ {{ lot.price_cents|money }}</strong></div>{% endif %}{% endfor %}
+{% if prod.includes_shirt or prod.includes_meal or prod.includes_kit %}<ul class="benefit-list">{% if prod.includes_shirt %}<li><i data-lucide="check" aria-hidden="true"></i> Camiseta oficial</li>{% endif %}{% if prod.includes_meal %}<li><i data-lucide="check" aria-hidden="true"></i> Alimentação conforme a modalidade</li>{% endif %}{% if prod.includes_kit %}<li><i data-lucide="check" aria-hidden="true"></i> Kit do participante</li>{% endif %}</ul>{% endif %}
+{% if event.is_registration_open %}<a href="{% url 'checkout:start_registration' event_slug=event.slug %}" class="btn btn-dark btn-block">Escolher modalidade <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>{% else %}<span class="badge badge-info">Inscrições indisponíveis</span>{% endif %}
+</article>{% empty %}<div class="card"><p>As modalidades desta edição serão divulgadas pela organização.</p></div>{% endfor %}</div><p class="event-note">A disponibilidade dos lotes e os meios de pagamento são confirmados no checkout.</p></div></section>
+{% if sponsors %}<section class="section-space sponsor-section"><div class="container"><header class="section-heading section-heading-center"><span class="eyebrow">Juntos pelo off-road</span><h2>Quem apoia esse encontro</h2><p>Patrocinadores e parceiros desta edição.</p></header>{% include "events/_sponsor_grid.html" %}</div></section>{% endif %}
+<section class="section-space"><div class="container"><div class="event-links-grid"><a href="{% url 'events:schedule' slug=event.slug %}" class="shortcut"><span class="icon-tile"><i data-lucide="calendar-days" aria-hidden="true"></i></span><span><strong>Programação</strong><small>Organize seu dia</small></span><i data-lucide="arrow-up-right" aria-hidden="true"></i></a><a href="{% url 'events:route' slug=event.slug %}" class="shortcut"><span class="icon-tile"><i data-lucide="route" aria-hidden="true"></i></span><span><strong>Percurso</strong><small>Conheça os detalhes da trilha</small></span><i data-lucide="arrow-up-right" aria-hidden="true"></i></a><a href="{% url 'core:contact' %}" class="shortcut"><span class="icon-tile"><i data-lucide="messages-square" aria-hidden="true"></i></span><span><strong>Precisa de ajuda?</strong><small>Fale com a equipe</small></span><i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div></div></section>
+{% endtimezone %}{% endblock %}

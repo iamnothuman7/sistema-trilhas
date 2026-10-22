@@ -2,7 +2,7 @@
 {% block title %}Pagamento | Equipe Morcego{% endblock %}
 {% block extra_head %}{% include "checkout/_payment_styles.html" %}{% endblock %}
 {% block content %}
-<main class="payment-page">
+<div class="payment-page">
   <span class="payment-kicker">Sua inscrição · Pagamento</span>
   <h1>Escolha como pagar</h1>
   <p class="payment-muted">{{ order.event.title }} · Pedido <span class="payment-reference">{{ order.merchant_reference }}</span></p>
@@ -67,7 +67,7 @@
       <p class="payment-help payment-muted">Reserva até {{ order.expires_at|date:"d/m H:i" }}. O pagamento está vinculado a este pedido.</p>
     </aside>
   </div>
-</main>
+</div>
 {% endblock %}
 {% block extra_js %}
 <script>

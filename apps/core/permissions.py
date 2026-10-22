@@ -31,6 +31,7 @@ VIEW_ACTIONS = {
     "pay_expense": "finance", "cancel_expense": "finance", "export_financial": "finance",
     "event_reports": "finance", "expedition_management": "logistics", "frame_management": "content",
     "audit_log_view": "audit",
+    "sponsor_list": "content", "sponsor_create": "content", "sponsor_edit": "content",
 }
 
 

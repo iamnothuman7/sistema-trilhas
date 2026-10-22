@@ -1,34 +1,24 @@
 {% extends "base.html" %}
-
 {% block title %}Privacidade e LGPD | Equipe Morcego{% endblock %}
-
 {% block content %}
-<div class="container container-narrow" style="padding: 4rem 1.25rem;">
-    <span class="badge badge-info" style="margin-bottom: 1rem;">LGPD & SEGURANÇA</span>
-    <h1 style="font-size: 2.5rem; font-weight: 900; color: #FFF; margin-bottom: 1.5rem;">
-        Aviso de Privacidade e Tratamento de Dados
-    </h1>
-
-    <div class="card" style="line-height: 1.8; color: #E2E8F0;">
-        <h3 style="color: #FFF; margin-bottom: 0.5rem;">1. Controlador dos Dados</h3>
-        <p style="margin-bottom: 1.25rem;">
-            A <strong>Equipe Morcego</strong>, coordenada por Kelvim Muniz em Tianguá - CE, é a controladora dos dados cadastrais coletados exclusivamente para a organização, credenciamento, seguro e segurança dos participantes nos eventos off-road.
-        </p>
-
-        <h3 style="color: #FFF; margin-bottom: 0.5rem;">2. Minimização de Dados</h3>
-        <p style="margin-bottom: 1.25rem;">
-            Coletamos apenas os dados indispensáveis para a identificação do piloto (Nome, E-mail, Telefone, Cidade/UF, Equipe e Tamanho de Camiseta). Dados sensíveis de saúde não são armazenados.
-        </p>
-
-        <h3 style="color: #FFF; margin-bottom: 0.5rem;">3. Processamento de Pagamento Seguro</h3>
-        <p style="margin-bottom: 1.25rem;">
-            Todos os pagamentos são processados pelo <strong>Mercado Pago</strong>. Dados de cartão de crédito não trafegam nem são armazenados em nossos servidores.
-        </p>
-
-        <h3 style="color: #FFF; margin-bottom: 0.5rem;">4. Molduras Digitais e Imagens Pessoais</h3>
-        <p style="margin-bottom: 1.25rem;">
-            O gerador de molduras digitais processa as fotos diretamente no navegador do participante através da tecnologia HTML5 Canvas 2D. <strong>Nenhuma foto pessoal é enviada ou salva em nossos servidores</strong>.
-        </p>
-    </div>
+<div class="public-page public-page--narrow">
+  <header class="public-intro">
+    <span class="public-eyebrow">Privacidade</span>
+    <h1>Seus dados na Equipe Morcego</h1>
+    <p>Informações sobre os dados utilizados na inscrição e no atendimento aos participantes.</p>
+  </header>
+  <article class="public-card public-prose">
+    <h2>1. Organização responsável</h2>
+    <p>A Equipe Morcego, coordenada por Kelvim Muniz em Tianguá, Ceará, utiliza os dados cadastrais para organizar as inscrições, o atendimento e o credenciamento dos participantes.</p>
+    <h2>2. Dados da inscrição</h2>
+    <p>Os formulários solicitam dados de identificação e contato do comprador e dos participantes, como nome, e-mail, telefone, cidade, equipe e tamanho de camiseta. O documento do comprador pode ser solicitado para o pagamento.</p>
+    <h2>3. Pagamento online</h2>
+    <p>Quando disponível, o pagamento online utiliza o Mercado Pago. O formulário seguro envia o número e o código de segurança do cartão diretamente ao provedor; esses campos não são armazenados pelo sistema da Equipe Morcego.</p>
+    <h2>4. Molduras digitais</h2>
+    <p>O gerador de molduras processa a foto escolhida no navegador do participante. A composição pode ser baixada para o próprio dispositivo.</p>
+    <h2>5. Dúvidas e solicitações</h2>
+    <p>Para tratar de seus dados cadastrais ou solicitar atendimento, entre em contato com a organização e informe a inscrição relacionada.</p>
+    <div class="public-actions"><a class="public-button public-button--secondary" href="{% url 'core:contact' %}">Falar com a organização <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
+  </article>
 </div>
 {% endblock %}

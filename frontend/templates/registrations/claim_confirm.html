@@ -1,19 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Vincular minha inscrição | Equipe Morcego{% endblock %}
 {% block content %}
-<main class="container container-narrow" style="padding:3rem 1.25rem">
-    <section class="card">
-        <h1>Vincular minha inscrição</h1>
-        {% if reg %}<p>{{ reg.person.full_name }} · {{ reg.event.title }}</p>{% endif %}
-        {% if claim_error %}<p class="alert alert-warning" role="alert">{{ claim_error }}</p>{% else %}
-        <p>Você está conectado como <strong>{{ request.user.full_name }}</strong>. Confirme a titularidade para acessar a inscrição e registrar seu aceite pessoal.</p>
-        <form method="post">
-            {% csrf_token %}
-            <label class="form-label"><input type="checkbox" name="confirm_holder" value="yes" required> Confirmo que sou {{ reg.person.full_name }}, participante desta inscrição.</label>
-            <p><button type="submit" class="btn btn-primary"><i data-lucide="user-check" aria-hidden="true"></i> Vincular à minha conta</button></p>
-        </form>
-        {% endif %}
-        <a class="btn btn-secondary" href="{% url 'minha_conta:dashboard' %}">Minhas inscrições</a>
-    </section>
+<main class="public-page public-page--compact">
+  <a class="public-back" href="{% url 'minha_conta:dashboard' %}"><i data-lucide="arrow-left" aria-hidden="true"></i> Minhas inscrições</a>
+  <header class="public-intro"><span class="public-eyebrow">Área do participante</span><h1>Vincular minha inscrição</h1>{% if reg %}<p>{{ reg.person.full_name }} · {{ reg.event.title }}</p>{% endif %}</header>
+  <section class="public-card">
+    {% if claim_error %}<p class="public-note public-note--warning" role="alert">{{ claim_error }}</p>{% else %}
+    <p class="public-muted">Você está conectado como <strong>{{ request.user.full_name }}</strong>. Confirme a titularidade para acessar a inscrição e registrar seu aceite pessoal.</p>
+    <form method="post">{% csrf_token %}<label class="public-checkbox"><input type="checkbox" name="confirm_holder" value="yes" required><span>Confirmo que sou {{ reg.person.full_name }}, participante desta inscrição.</span></label><div class="public-actions"><button type="submit" class="public-button public-button--primary"><i data-lucide="user-check" aria-hidden="true"></i> Vincular à minha conta</button></div></form>
+    {% endif %}
+  </section>
 </main>
 {% endblock %}

@@ -1,19 +1,19 @@
 {% extends "gestao/base_gestao.html" %}
 {% load trilhas_ui %}
 
-{% block title %}Catálogo, Lotes e Estoque: {{ event.title }} | Painel Gestão{% endblock %}
-{% block gestao_header %}Catálogo e Capacidade: {{ event.title }}{% endblock %}
+{% block title %}Catálogo e lotes: {{ event.title }} | Painel Gestão{% endblock %}
+{% block gestao_header %}Catálogo e lotes: {{ event.title }}{% endblock %}
 
 {% block content %}
 <div class="mg-page-intro mg-section-gap">
-    <h1>Catálogo, Lotes e Estoque</h1>
-    <p class="text-muted">Controle de lotes, produtos inclusos, cupons de desconto e inventário físico.</p>
+    <h1>Catálogo e lotes</h1>
+    <p class="text-muted">Consulte modalidades, preços, cupons e itens disponíveis para o evento.</p>
 </div>
 
 <!-- Produtos e Lotes -->
 <div class="card mg-section-gap">
     <div class="card-header">
-        <h2 class="section-title">Modalidades e Lotes Vigentes</h2>
+        <h2 class="section-title">Modalidades e lotes</h2>
     </div>
 
     <div class="mg-stack">
@@ -29,7 +29,7 @@
                 <div class="text-muted mg-space-bottom">
                     Camiseta: {% if prod.includes_shirt %}Sim{% else %}Não{% endif %} &bull; 
                     Alimentação: {% if prod.includes_meal %}Sim{% else %}Não{% endif %} &bull; 
-                    Kit Oficial: {% if prod.includes_kit %}Sim{% else %}Não{% endif %}
+                    Kit: {% if prod.includes_kit %}Sim{% else %}Não{% endif %}
                 </div>
 
                 <!-- Tabela de Lotes deste produto -->
