@@ -11,7 +11,7 @@
     {% for sponsor in sponsors %}
     <article class="card mg-sponsor-card">
         <div class="mg-sponsor-art">
-            {% if sponsor.logo_image %}<img src="{{ sponsor.logo_image.url }}" alt="{{ sponsor.name }}" loading="lazy">
+            {% if sponsor.logo_image %}<img src="{{ sponsor.display_logo_url }}" alt="{{ sponsor.name }}" loading="lazy">
             {% else %}<div class="mg-sponsor-placeholder"><i data-lucide="image-plus" aria-hidden="true"></i><span>Espaço reservado para a imagem</span></div>{% endif %}
         </div>
         <div class="mg-sponsor-copy"><span class="badge badge-info">{{ sponsor.get_tier_display }}</span><h2>{{ sponsor.name }}</h2><p class="text-muted">Ordem de exibição: {{ sponsor.sort_order }}</p></div>

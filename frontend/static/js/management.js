@@ -52,21 +52,6 @@
         pin.setAttribute('aria-pressed', String(expanded));
         try { localStorage.setItem('morcego-sidebar-pinned', String(expanded)); } catch (_) {}
     });
-    const theme = document.getElementById('themeToggle');
-    function themeLabel() {
-        const dark = document.documentElement.dataset.theme === 'dark';
-        theme.setAttribute('aria-label', dark ? 'Ativar tema claro' : 'Ativar tema escuro');
-        theme.setAttribute('aria-pressed', String(dark));
-        theme.innerHTML = '<i data-lucide="' + (dark ? 'sun' : 'moon') + '"></i>';
-        window.renderTrilhasIcons(theme);
-    }
-    theme.addEventListener('click', () => {
-        const value = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-        document.documentElement.dataset.theme = value;
-        try { localStorage.setItem('morcego-theme', value); } catch (_) {}
-        themeLabel();
-    });
-    themeLabel();
     document.addEventListener('click', event => document.querySelectorAll('.user-menu[open]').forEach(menu => { if (!menu.contains(event.target)) menu.removeAttribute('open'); }));
     document.querySelectorAll('[data-auto-submit]').forEach(select => select.addEventListener('change', () => select.form.requestSubmit()));
 })();

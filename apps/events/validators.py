@@ -5,6 +5,14 @@ from urllib.parse import urlsplit
 from django.core.exceptions import ValidationError
 
 
+SPONSOR_MAX_IMAGE_PIXELS = 24_000_000
+
+
+def validate_sponsor_logo_dimensions(width, height):
+    if width * height > SPONSOR_MAX_IMAGE_PIXELS:
+        raise ValidationError("A imagem deve ter no máximo 24 megapixels. Reduza a resolução e tente novamente.")
+
+
 def validate_instagram_profile(value):
     if not value:
         return
@@ -28,5 +36,5 @@ def validate_sponsor_logo_size(value):
     # Existing files are not uploads; preserve legacy records without opening storage.
     if getattr(value, "_committed", False):
         return
-    if value and value.size > 5 * 1024 * 1024:
-        raise ValidationError("A imagem deve ter até 5 MB.")
+    if value and value.size > 15 * 1024 * 1024:
+        raise ValidationError("A imagem deve ter até 15 MB.")

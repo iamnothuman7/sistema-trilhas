@@ -23,7 +23,7 @@
 .mg-form-sheet { max-width: 1040px; margin-inline: auto; }
 .mg-form-sheet > .section-title { margin-bottom: 1.5rem; }
 .mg-form-sheet .section-title:not(:first-child) { margin-top: 2.25rem; }
-.mg-inset-card { padding: 1.25rem; background: var(--surface-hover); border: 1px solid var(--border); border-radius: var(--radius-md); min-width: 0; }
+.mg-inset-card { padding: 1.25rem; background: var(--glass-reflection), var(--surface-hover); border: 1px solid var(--glass-border); border-radius: var(--radius-md); min-width: 0; box-shadow: inset 0 1px 0 var(--glass-highlight); }
 .mg-itinerary-stop { position: relative; padding-left: 1.5rem; }
 .mg-itinerary-stop::before { position: absolute; content: ''; top: 1.25rem; bottom: 1.25rem; left: 0; width: 3px; border-radius: 4px; background: var(--primary); }
 .mg-strong { font-weight: 650; }
@@ -36,16 +36,16 @@
 .mg-table-empty { padding: 2.75rem 1.25rem !important; color: var(--text-muted); text-align: center; }
 .mg-color-input { height: 48px; padding: .35rem; cursor: pointer; }
 .mg-module-link { display: flex; flex-direction: column; align-items: flex-start; gap: .875rem; padding: 1.5rem; color: var(--text); text-decoration: none; transition: border-color .18s ease, transform .18s ease, background .18s ease; }
-.mg-module-link:hover { border-color: var(--primary); background: var(--surface-hover); transform: translateY(-2px); }
+.mg-module-link:hover { border-color: var(--primary); background: var(--glass-reflection), var(--surface-hover); box-shadow: var(--glass-overlay-shadow); transform: translateY(-2px); }
 .mg-module-link > .mg-module-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 12px; background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); }
 .mg-module-link .mg-module-icon svg { width: 21px; height: 21px; }
 .mg-module-link h2 { margin: 0; font-size: 1rem; font-weight: 650; }
 .mg-module-link p { margin: 0; font-size: .875rem; line-height: 1.6; color: var(--text-muted); }
 .mg-frame-preview { display: block; max-height: 260px; max-width: 100%; object-fit: contain; margin: 1.25rem auto; }
 .mg-qr-image { display: block; width: 180px; height: 180px; padding: .5rem; margin: 1.25rem auto; border-radius: var(--radius-sm); background: #fff; }
-.mg-dialog { padding: 0; width: min(580px, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: 0 30px 100px rgb(0 0 0 / 35%); overflow: auto; }
-.mg-dialog::backdrop { background: rgb(5 6 8 / 70%); backdrop-filter: blur(5px); }
-.mg-dialog .mg-dialog-card { margin: 0; padding: 1.5rem; border: 0; box-shadow: none; background: transparent; }
+.mg-dialog { padding: 0; width: min(580px, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; color: var(--text); background: var(--glass-reflection), var(--glass-strong); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); box-shadow: var(--glass-overlay-shadow); overflow: auto; }
+.mg-dialog::backdrop { background: rgb(5 6 8 / 62%); }
+.mg-dialog .mg-dialog-card { margin: 0; padding: 1.5rem; border: 0; box-shadow: none; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
 .mg-dialog .card-header { margin-bottom: 1.5rem; }
 .mg-dialog .form-control { width: 100%; }
 .mg-scanner-shell { width: 100%; max-width: 760px; margin-inline: auto; }
@@ -109,4 +109,7 @@
 @media (prefers-reduced-motion: reduce) {
   .mg-module-link { transition: none; }
   .mg-module-link:hover { transform: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .mg-dialog::backdrop { -webkit-backdrop-filter: none; backdrop-filter: none; }
 }

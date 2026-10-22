@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load trilhas_ui tz %}
+{% block title %}Sorteio de moto | {{ event.title }}{% endblock %}
+{% block content %}
+{% timezone event.timezone %}
+<div class="public-page public-page--narrow">
+    <a href="{% url 'events:detail' slug=event.slug %}" class="public-back"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar ao evento</a>
+    <header class="public-intro"><span class="public-eyebrow">{{ event.title }}</span><h1>{% if raffle %}{{ raffle.title }}{% else %}Sorteio de moto{% endif %}</h1><p>{% if raffle %}Uma ação separada da inscrição no evento. Os detalhes serão publicados aqui pela organização.{% else %}Nenhum sorteio divulgado para esta edição.{% endif %}</p></header>
+    {% if raffle_preview %}<div class="alert alert-warning" role="status">Prévia da organização. Este rascunho ainda não está público.</div>{% endif %}
+    {% if raffle %}
+    <section class="public-card">
+        <span class="public-icon"><i data-lucide="gift" aria-hidden="true"></i></span>
+        <h2>{% if raffle.motorcycle_model %}{{ raffle.motorcycle_model }}{% else %}A moto será apresentada em breve{% endif %}</h2>
+        <p class="public-document">{{ raffle.description|default:'A organização está preparando a apresentação da moto, as regras e os detalhes das cotas.' }}</p>
+        <dl class="public-stats">
+            <div><dt>Valor previsto por cota</dt><dd>{% if raffle.quota_price_cents %}R$ {{ raffle.quota_price_cents|money }}{% else %}Em breve{% endif %}</dd></div>
+            <div><dt>Quantidade prevista de cotas</dt><dd>{{ raffle.quota_quantity|default:'Em breve' }}</dd></div>
+            <div><dt>Data prevista</dt><dd>{% if raffle.draw_at %}{{ raffle.draw_at|date:'d/m/Y · H:i' }}{% else %}Em breve{% endif %}</dd></div>
+        </dl>
+        <p class="public-muted">A compra de cotas ainda não está disponível. Nenhum pagamento ou reserva de número pode ser feito nesta página.</p>
+        <div class="public-actions"><button type="button" class="public-button public-button--secondary" disabled aria-disabled="true"><i data-lucide="lock-keyhole" aria-hidden="true"></i>Compra de cotas indisponível</button></div>
+    </section>
+    <section class="public-card"><h2>Regras do sorteio</h2><p class="public-document">{{ raffle.rules_text|default:'As regras ainda não foram divulgadas. Elas serão publicadas aqui antes de qualquer abertura de cotas.' }}</p></section>
+    {% if interest_registered %}
+    <section class="public-card"><h2>Seu interesse está registrado</h2><p>Esse registro não compra nem reserva uma cota. A inscrição no evento continua sendo um processo separado.</p></section>
+    {% elif interest_open %}
+    <section class="public-card">
+        <h2>Tenho interesse</h2><p>Deixe seu interesse registrado para a organização. Esse registro não garante participação no sorteio.</p>
+        {% if request.user.is_authenticated %}
+        <form method="post" action="{% url 'events:raffle_interest' slug=event.slug %}">
+            {% csrf_token %}
+            {% if interest_form.errors %}<div class="alert alert-error" role="alert">Confirme o aceite abaixo para registrar seu interesse.</div>{% endif %}
+            <label class="public-checkbox" for="{{ interest_form.consent.id_for_label }}">{{ interest_form.consent }}<span>{{ interest_form.consent.label }}</span></label>
+            <div class="public-actions"><button type="submit" class="public-button public-button--primary">Registrar meu interesse<i data-lucide="arrow-right" aria-hidden="true"></i></button></div>
+        </form>
+        {% else %}<a class="public-button public-button--primary" href="{% url 'identity:login' %}?next={{ request.path|urlencode }}">Entrar para registrar interesse<i data-lucide="arrow-right" aria-hidden="true"></i></a>{% endif %}
+    </section>
+    {% endif %}
+    {% else %}<section class="public-card"><span class="public-icon"><i data-lucide="gift" aria-hidden="true"></i></span><h2>Acompanhe as novidades do evento</h2><p>Quando houver um sorteio anunciado pela organização, a moto, o modelo, as regras e as cotas serão apresentados nesta área.</p><p class="public-muted">Não há compra de cotas disponível para esta edição.</p></section>{% endif %}
+    <div class="public-actions"><a href="{% url 'events:detail' slug=event.slug %}" class="public-button public-button--secondary">Ver evento</a><a href="{% url 'core:contact' %}" class="public-button public-button--secondary">Falar com a organização</a></div>
+</div>
+{% endtimezone %}
+{% endblock %}

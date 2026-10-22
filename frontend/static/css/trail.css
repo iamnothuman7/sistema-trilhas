@@ -1,0 +1,217 @@
+/* Equipe Morcego: dark earth, racing typography and small compositor-only motion.
+   Glass is deliberately limited to the header; cards use translucent paint. */
+:root {
+  color-scheme: dark;
+  --primary: #ff7a28; --primary-hover: #ff9652; --accent: #ef5237;
+  --bg-dark: #11100f; --surface: #1d1b19; --bg-card: #1d1b19;
+  --surface-hover: #29241f; --surface-active: #382c23;
+  --border: rgba(231, 206, 187, .15); --text-main: #f5f0e9; --text-muted: #b8b0a8;
+  --font-heading: 'Inter', system-ui, sans-serif;
+  --glass-fill: linear-gradient(135deg, rgba(255, 230, 210, .065), rgba(255, 255, 255, .012)), rgba(27, 24, 22, .88);
+}
+html { background: var(--bg-dark); scroll-padding-top: 130px; }
+body { background: radial-gradient(ellipse at 85% 35%, #44201435, transparent 46%), #11100f; }
+h1, h2, h3, h4 { font-weight: 800; letter-spacing: -.045em; }
+h2 { font-size: clamp(32px, 4vw, 54px); line-height: 1.13; }
+h2 em { font-style: normal; color: #ff8c43; }
+a:hover, .text-link:hover { color: #ffab72; }
+::selection { color: #130e0a; background: #ff9451; }
+.section-space { padding-block: clamp(64px, 7vw, 108px); }
+.section-heading { margin-bottom: 44px; }
+.eyebrow, .event-facts svg, .event-detail-item svg, .benefit-list svg { color: #ff9c5d; }
+.eyebrow { font-size: 11px; letter-spacing: .16em; }
+.btn { font-family: 'Inter', sans-serif; font-weight: 700; }
+.btn-primary { box-shadow: 0 8px 28px #d94b1826, inset 0 1px #ffc89e80; }
+.btn-primary:hover { box-shadow: 0 10px 32px #d94b183d; }
+.btn-dark, .btn-secondary, .btn-light { background: #ffffff09; color: #f5f0e9; border-color: var(--border); }
+.btn-dark:hover, .btn-secondary:hover, .btn-light:hover { background: #ffffff12; color: #fff; border-color: #ff9b5650; }
+.navbar { width: min(1280px, calc(100% - 64px)); margin: 16px auto 0; top: 16px; background: transparent; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.nav-container { width: 100%; height: 94px; padding: 9px 28px; border: 1px solid #ffffff26; border-radius: 999px; background: linear-gradient(120deg, #ffffff0a, #ffffff02), #181614bd; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: inset 0 1px #ffffff0b, 0 10px 40px #00000030; }
+.brand-logo img { width: 100px; height: 78px; }
+.desktop-navigation { gap: 28px; }
+.nav-link { color: #cfc7bf; position: relative; font-family: Inter, sans-serif; font-weight: 500; }
+.nav-link.active { color: #ff9956; }
+.nav-link.active::after { content: ''; position: absolute; bottom: 4px; left: 40%; width: 5px; height: 5px; border-radius: 50%; background: #ff8a43; }
+.header-actions .btn { background: #ffffff0c; border-color: #ffffff24; }
+.mobile-menu { position: absolute; top: 104px; left: 0; right: 0; border: 1px solid var(--border); border-radius: 24px; background: #1c1917; box-shadow: 0 20px 45px #0006; }
+.trail-hero { position: relative; isolation: isolate; overflow: hidden; margin-top: -110px; padding: 174px 0 24px; min-height: 790px; background: #17130f; }
+.trail-hero-art, .trail-hero-shade { position: absolute; z-index: -3; inset: 0; pointer-events: none; }
+.trail-hero-art picture { display: contents; }
+.trail-hero-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 48%; }
+.trail-hero-shade { z-index: -2; background: linear-gradient(90deg, #100f0fe8 0%, #100f0fa6 31%, #100f0f15 66%), linear-gradient(0deg, #11100f 0%, #11100f08 30%, #11100f16 75%, #11100f77); }
+.trail-hero-content.spotlight-layout { display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; min-height: 515px; }
+.trail-hero-copy { max-width: 660px; }
+.trail-eyebrow { color: #e4d3c3; margin-bottom: 26px; }
+.live-dot { display: inline-block; width: 7px; height: 7px; background: #ff8740; border-radius: 50%; box-shadow: 0 0 0 5px #ff87401c; }
+.trail-hero h1 { font-family: Inter, sans-serif; font-size: clamp(68px, 7.6vw, 112px); line-height: .95; font-weight: 800; letter-spacing: -.07em; margin: 0 0 28px; }
+.trail-hero h1 em { display: inline-block; color: #ff8438; font-style: italic; padding-right: .08em; }
+.trail-hero-lead { color: #d1c7bd; font-size: 16px; line-height: 1.8; }
+.trail-hero .action-row { margin-top: 28px; gap: 26px; }
+.trail-secondary-link { display: inline-flex; align-items: center; gap: 10px; color: #eee4d8; font: 500 13px/1.5 Inter, sans-serif; min-height: 44px; }
+.trail-secondary-link svg { width: 16px; }
+.trail-location-stamp { margin: 0 0 6px; text-align: right; color: #f6e8db; text-shadow: 0 2px 15px #000; }
+.trail-location-stamp > span { font: 700 10px/1.6 Inter, sans-serif; letter-spacing: .26em; border-top: 2px solid #ff8c43; padding-top: 14px; }
+.trail-location-stamp strong { display: block; font: 800 24px/1.1 Inter, sans-serif; margin: 8px 0; letter-spacing: -.04em; }
+.trail-location-stamp small { font-size: 9px; letter-spacing: .18em; }
+.trail-hero-foot { display: flex; justify-content: space-between; align-items: center; gap: 24px; color: #c5b8a9; font: 500 11px/1.5 Inter, sans-serif; margin-top: 44px; padding-top: 18px; border-top: 1px solid #ffffff1a; }
+.trail-hero-foot > span { display: flex; align-items: center; gap: 9px; }
+.trail-hero-foot small { color: #b8aaa0; font-size: 10px; }
+.trail-hero-foot svg { width: 17px; color: #ff9b57; }
+.tire-track { position: absolute; width: 162px; height: 900px; background: url('../img/trail-tread.svg') repeat-y center / 162px 81px; opacity: .13; transform: rotate(-25deg); pointer-events: none; }
+.tire-track--hero { z-index: -1; top: 60px; left: -110px; opacity: .12; animation: tread-arrive 1.3s cubic-bezier(.2,.6,.2,1) both; }
+.trail-dust { position: absolute; inset: 30% 5% 10% 50%; pointer-events: none; z-index: -1; }
+.trail-dust span { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #ffbc80; opacity: 0; animation: dust-lift 4s ease-out infinite; }
+.trail-dust span:nth-child(1) { left: 15%; top: 80%; }
+.trail-dust span:nth-child(2) { left: 40%; top: 63%; animation-delay: .7s; width: 3px; height: 3px; }
+.trail-dust span:nth-child(3) { left: 63%; top: 75%; animation-delay: 1.4s; }
+.trail-dust span:nth-child(4) { left: 83%; top: 50%; animation-delay: 2.1s; width: 2px; height: 2px; }
+.trail-dust span:nth-child(5) { left: 28%; top: 44%; animation-delay: 2.8s; width: 3px; height: 3px; }
+.trail-dust span:nth-child(6) { left: 70%; top: 90%; animation-delay: 3.4s; width: 2px; height: 2px; }
+.trail-band { overflow: hidden; padding: 16px 0; background: #ef7029; color: #1b100b; border-block: 1px solid #ffb479; }
+.trail-band-track { display: flex; width: max-content; transform: translateX(-80px); animation: trail-band-enter 3.5s ease-out both; }
+.trail-band span { font: 800 17px/1.5 Inter, sans-serif; letter-spacing: .055em; white-space: nowrap; padding-right: 28px; }
+.trail-band b { font-size: 21px; padding-inline: 28px; }
+.trail-event-card { display: grid; grid-template-columns: 118px minmax(0, 1fr) auto; gap: 34px; align-items: center; background: var(--glass-fill); border: 1px solid var(--border); border-top-color: #e8c5a846; border-radius: 26px; padding: 36px; box-shadow: 0 20px 50px #0002; }
+.trail-date { display: flex; flex-direction: column; align-items: center; justify-content: center; align-self: stretch; padding: 20px 0; border-right: 1px solid var(--border); padding-right: 30px; }
+.trail-date span { color: #ff9c61; text-transform: uppercase; font-size: 12px; letter-spacing: .1em; }
+.trail-date strong { font: 800 64px/1.2 Inter, sans-serif; letter-spacing: -.07em; }
+.trail-date small { font-size: 12px; color: var(--text-muted); }
+.trail-event-info .eyebrow { margin-bottom: 8px; }
+.trail-event-info h3 { font-size: clamp(24px, 2.5vw, 34px); margin-bottom: 16px; }
+.trail-event-info p { font-size: 13px; line-height: 1.8; color: var(--text-muted); margin-bottom: 20px; max-width: 63ch; }
+.trail-event-info .event-facts { font-size: 12px; gap: 8px; }
+.trail-shortcuts { padding: 24px 0 0; }
+.shortcut, .card, .product-card, .event-preview, .sponsor-card { background: var(--glass-fill); border-color: var(--border); box-shadow: inset 0 1px #ffffff05; }
+.shortcut:hover { border-color: #ff8c435c; background-color: #302018; }
+.icon-tile { color: #ff9d64; background: #ff8b4010; border: 1px solid #ff8b4029; }
+.how-section { position: relative; background: radial-gradient(ellipse at 10% 100%, #642b152d, transparent 60%), #161311; border-block: 1px solid var(--border); }
+.how-grid article { border-color: #75524150; padding-top: 30px; }
+.step-number { color: #ff8a47; font-size: 42px; font-family: Inter, sans-serif; font-style: italic; }
+.how-grid h3 { font-size: 22px; }
+.community-callout { position: relative; overflow: hidden; background: radial-gradient(ellipse at 100% 50%, #6f281759, transparent 65%), linear-gradient(120deg, #2b211a, #1b1613); border: 1px solid #a8663e40; padding: 64px; }
+.community-callout > :not(.tire-track) { position: relative; z-index: 1; }
+.community-callout .tire-track { top: -200px; right: 24%; opacity: .14; }
+.community-callout p { color: var(--text-muted); }
+.sponsor-section { background: radial-gradient(ellipse at 85% 0%, #6b2b1926, transparent 55%), #151210; border-block-color: var(--border); }
+.sponsor-card { border-top-color: #e7c7b12b; border-radius: 22px; }
+.sponsor-art { height: 170px; }
+.sponsor-placeholder { background: #ffffff04; border: 1px dashed #e0c7b62b; color: #a99a8d; }
+.sponsor-invitation { background: var(--surface); border-color: var(--border); }
+.sponsor-instagram { color: #e8dace; border-color: #e7c7b125; }
+.event-subnav a { color: #ddd0c5; background: #ffffff05; }
+.event-subnav a:hover { border-color: #ff8a4366; color: #ffad77; }
+.event-subnav .event-raffle-link { color: #ffab72; border-color: #fc8a414a; }
+.event-detail-item { background: var(--glass-fill); border: 1px solid var(--border); }
+.event-preview-media { background: #211b17; }
+.trail-hero--event { min-height: 700px; padding-bottom: 36px; }
+.trail-hero--event .trail-hero-content { min-height: 420px; align-items: center; }
+.trail-hero--event .trail-hero-copy { max-width: 690px; }
+.trail-hero--event h1 { font-size: clamp(44px, 5.9vw, 82px); line-height: 1.04; letter-spacing: -.055em; text-wrap: balance; }
+.trail-hero--event .lead { color: #d3c4b7; max-width: 570px; font-size: 15px; margin-bottom: 24px; }
+.trail-hero--event .back-link { color: #d5c3b3; margin-bottom: 24px; }
+.trail-hero--event .event-facts { font-size: 13px; color: #e1d7cd; }
+.trail-hero--event .event-emblem { width: 250px; align-self: flex-end; margin-bottom: 28px; }
+.raffle-teaser-section { padding-top: 0; }
+.raffle-teaser { position: relative; overflow: hidden; display: grid; grid-template-columns: .8fr 1.2fr; align-items: center; gap: 60px; padding: 60px; border: 1px solid #b16d414d; border-radius: 28px; background: radial-gradient(ellipse at 12% 50%, #ad4b2140, transparent 60%), linear-gradient(115deg, #302015, #181410); }
+.raffle-teaser-copy { z-index: 1; }
+.raffle-teaser-copy p { font-size: 14px; color: #c3b2a3; margin: 24px 0 28px; max-width: 54ch; }
+.raffle-art { display: flex; flex-direction: column; align-items: center; position: relative; z-index: 1; color: #ff9452; }
+.raffle-art svg { width: 180px; height: 180px; stroke-width: .75; transform: rotate(-9deg); }
+.raffle-art span { color: #e0a981; font: 800 32px/1 Inter, sans-serif; letter-spacing: -.04em; margin-top: 18px; }
+.raffle-teaser .tire-track { left: 50px; top: -290px; opacity: .11; }
+.form-control { background: #171411; }
+.footer { background: #0d0c0b; border-color: var(--border); }
+.footer-brand strong { font-size: 24px; }
+.badge-success, .alert-success, .public-tag--positive, .public-note--success { background: #173025; color: #a9dfba; border-color: #a9dfba25; }
+.badge-warning, .alert-warning, .public-tag--warning, .public-note--warning { background: #372519; color: #ffc091; border-color: #ffc09125; }
+.badge-info, .alert-info { background: #262422; color: #ded2c6; border-color: #ded2c625; }
+.badge-danger, .alert-error, .alert-danger, .public-tag--negative, .public-note--error { background: #3a1c18; color: #ffb5a9; border-color: #ffb5a925; }
+.public-page { --page-accent: #ff9c5d; }
+.public-card, .public-empty, .public-event-card, .public-timeline-item { background: var(--glass-fill); box-shadow: inset 0 1px #ffffff05; }
+.public-icon { color: #ffa566; background: #ff8b4012; border: 1px solid #ff8b4025; }
+.public-button { background: #33302b; color: #f7eee6; }
+.public-button:hover { background: #494035; }
+.public-button--primary { background: #ff7a28; color: #211208; }
+.public-button--primary:hover { background: #ff9451; color: #211208; }
+.public-button--secondary { background: #ffffff07; color: #f7eee6; }
+.public-tag { background: #332a23; color: #d8c2b1; }
+.public-tag--positive { background: #173025; color: #a9dfba; }
+.public-tag--warning { background: #372519; color: #ffc091; }
+.public-tag--negative { background: #3a1c18; color: #ffb5a9; }
+.public-prose p, .public-document, .public-note, .public-meta-list { color: #c2b8ae; }
+.public-note--warning { color: #ffc091; }.public-note--success { color: #a9dfba; }.public-note--error { color: #ffb5a9; }
+.payment-card { background: var(--glass-fill); box-shadow: inset 0 1px #ffffff05; }
+.payment-page h1, .story-studio h1 { font-family: var(--font-heading); font-weight: 800; }
+.payment-kicker { color: #ff9c5d; }
+.payment-alert[role=alert] { background: #352217; border-color: #ffb67c44; color: #ffd1ab; }
+.payment-status-icon { background: #ff8b4015; color: #ffaa71; }
+/* Hosted card fields have their own foreground color; retain a readable neutral canvas. */
+.payment-secure-field { background: #fff; color-scheme: light; }
+.story-studio .studio-eyebrow, .story-studio h1 span, .story-studio .studio-zoom { color: #ffa364; }
+.story-studio .version-option[aria-pressed="true"], .story-studio .version-option.active-version { background: #3a2518; }
+.story-studio .version-option[aria-pressed="true"] span, .story-studio .version-option.active-version span { color: #ffbe8e; }
+.story-studio .studio-panel, .story-studio .studio-card { background: var(--glass-fill); }
+.trail-revealed { animation: trail-arrive .65s cubic-bezier(.2,.7,.2,1) both; }
+.motion-paused *, .motion-paused *::before, .motion-paused *::after { animation: none !important; scroll-behavior: auto !important; }
+.page-inactive *, .page-inactive *::before, .page-inactive *::after, .hero-offscreen .trail-dust span { animation-play-state: paused !important; }
+@keyframes dust-lift { 0% { opacity: 0; transform: translate(0, 0); } 20% { opacity: .7; } 100% { opacity: 0; transform: translate(-90px, -110px); } }
+@keyframes tread-arrive { from { opacity: 0; transform: translateY(-150px) rotate(-25deg); } to { opacity: .12; transform: translateY(0) rotate(-25deg); } }
+@keyframes trail-band-enter { from { transform: translateX(0); } to { transform: translateX(-80px); } }
+@keyframes trail-arrive { from { opacity: .3; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@media (min-width: 1600px) { .trail-hero { min-height: 880px; padding-top: 210px; } .trail-hero-content.spotlight-layout { min-height: 530px; } }
+@media (max-width: 1100px) { .navbar { width: calc(100% - 40px); } .trail-event-card { grid-template-columns: 88px minmax(0, 1fr); gap: 26px; } .trail-event-card > .btn { grid-column: 2; justify-self: start; } .trail-date { grid-row: span 2; padding-right: 24px; } .trail-location-stamp { display: none; } .raffle-teaser { gap: 36px; padding: 44px; } }
+@media (max-width: 700px) {
+  html { scroll-padding-top: 104px; }
+  .navbar { width: calc(100% - 28px); top: 10px; margin-top: 10px; }
+  .nav-container { height: 76px; padding: 5px 16px; gap: 12px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .brand-logo img { width: 78px; height: 62px; }
+  .header-actions .btn { width: auto; font-size: 12px; min-width: 64px; }
+  .header-actions .btn .lucide { display: none; }
+  .mobile-menu { top: 86px; }
+  .trail-hero { margin-top: -86px; padding: 284px 0 24px; min-height: 810px; }
+  .trail-hero-art { height: 500px; }
+  .trail-hero-art img { object-position: 72% 0%; }
+  .trail-hero-shade { background: linear-gradient(0deg, #11100f 0%, #11100f 10%, #11100fe6 40%, #11100f15 75%, #11100f55); }
+  .trail-hero-content.spotlight-layout { display: block; min-height: 0; }
+  .trail-hero h1 { font-size: clamp(59px, 14.7vw, 98px); line-height: .98; letter-spacing: -.065em; margin-bottom: 22px; }
+  .trail-eyebrow { font-size: 9px; margin-bottom: 22px; letter-spacing: .12em; }
+  .trail-hero-lead { font-size: 14px; }
+  .trail-hero .action-row { gap: 16px; margin-top: 24px; }
+  .trail-hero .btn { font-size: 13px; padding-inline: 22px; }
+  .trail-secondary-link { font-size: 12px; }
+  .trail-hero-foot { margin-top: 32px; font-size: 10px; gap: 14px; }
+  .trail-hero-foot small { font-size: 9px; }
+  .trail-dust { inset: 15% 0 50% 30%; }
+  .tire-track--hero { left: -130px; top: 180px; }
+  .trail-band { padding-block: 12px; }.trail-band span { font-size: 13px; }.trail-band b { padding-inline: 20px; }
+  .section-space { padding-block: 60px; }
+  .section-heading { margin-bottom: 30px; }
+  h2 { font-size: clamp(30px, 8vw, 42px); }
+  .trail-event-card { grid-template-columns: 60px minmax(0, 1fr); gap: 20px; padding: 24px 20px; border-radius: 22px; align-items: start; }
+  .trail-date { grid-row: 1; padding: 0 16px 0 0; align-self: start; }
+  .trail-date strong { font-size: 42px; }.trail-date span { font-size: 10px; }.trail-date small { font-size: 10px; }
+  .trail-event-info .eyebrow { font-size: 9px; letter-spacing: .1em; }
+  .trail-event-info h3 { font-size: 24px; }.trail-event-info p { font-size: 12px; }
+  .trail-event-info .event-facts { font-size: 11px; }
+  .trail-event-card > .btn { grid-column: 1/-1; width: 100%; }
+  .trail-shortcuts { padding-top: 20px; }
+  .shortcut { padding: 20px; }
+  .sponsor-art { height: 112px; }.sponsor-card { padding: 18px; }
+  .how-grid article { padding-top: 24px; }.step-number { font-size: 28px; }
+  .community-callout { padding: 34px 26px; }.community-callout h2 { font-size: 34px; }.community-callout .tire-track { right: -40px; }
+  .trail-hero--event { padding-top: 230px; min-height: 0; padding-bottom: 32px; }
+  .trail-hero--event .trail-hero-content { min-height: 0; }
+  .trail-hero--event h1 { font-size: clamp(38px, 10.8vw, 64px); }
+  .trail-hero--event .lead { font-size: 14px; }
+  .trail-hero--event .back-link { margin-bottom: 20px; }
+  .trail-hero--event .event-emblem { display: none; }
+  .trail-hero--event .event-facts { font-size: 12px; }
+  .event-subnav { margin-top: 0; }
+  .raffle-teaser-section { padding-top: 0; }
+  .raffle-teaser { grid-template-columns: 1fr; gap: 28px; padding: 32px 26px; }
+  .raffle-art { flex-direction: row; gap: 26px; justify-content: flex-start; }.raffle-art svg { width: 110px; height: 90px; }.raffle-art span { font-size: 28px; margin-top: 0; }
+  .raffle-teaser-copy p { font-size: 13px; }.raffle-teaser .tire-track { left: auto; right: -70px; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
+@media (prefers-reduced-transparency: reduce) { .nav-container, .mobile-menu { background: #1c1917; backdrop-filter: none; -webkit-backdrop-filter: none; } }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .nav-container { background: #1c1917; } }

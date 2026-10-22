@@ -1,12 +1,11 @@
 {% load static %}
 <!doctype html>
-<html lang="pt-BR" data-theme="light">
+<html lang="pt-BR" data-theme="dark">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#151617">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#191512">
 <title>{% block title %}Gestão | Equipe Morcego{% endblock %}</title>
-<link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}?v=navie20261022"><link rel="apple-touch-icon" href="{% static 'img/logo_emblem.png' %}">
-<script>try{document.documentElement.dataset.theme=localStorage.getItem('morcego-theme')==='dark'?'dark':'light'}catch(e){}</script>
-<link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=navie20261022"><link rel="stylesheet" href="{% static 'css/management.css' %}?v=navie20261022"><link rel="stylesheet" href="{% static 'css/management-children.css' %}?v=navie20261022">
+<link rel="icon" type="image/png" href="{% static 'img/favicon-64.png' %}?v=glass20261022"><link rel="apple-touch-icon" href="{% static 'img/favicon-64.png' %}">
+<link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=glass20261022"><link rel="stylesheet" href="{% static 'css/management.css' %}?v=glass20261022"><link rel="stylesheet" href="{% static 'css/management-children.css' %}?v=glass20261022">
 {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -14,7 +13,7 @@
 <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Fechar menu" tabindex="-1"></button>
 {% with current=request.resolver_match.url_name ev=management_event %}
 <aside class="management-sidebar" id="managementSidebar" aria-label="Navegação de gestão">
-<a class="sidebar-brand" href="{% url 'gestao:dashboard' %}" aria-label="Equipe Morcego — início da gestão"><img class="brand-emblem" src="{% static 'img/logo_emblem.png' %}" width="50" height="57" alt="Emblema Equipe Morcego"><span class="sidebar-brand-copy sidebar-label"><strong>Equipe Morcego</strong><small>Gestão de eventos</small></span></a>
+<a class="sidebar-brand" href="{% url 'gestao:dashboard' %}" aria-label="Equipe Morcego — início da gestão"><img class="brand-emblem" src="{% static 'img/logo-nav.webp' %}" width="50" height="57" alt="Emblema Equipe Morcego"><span class="sidebar-brand-copy sidebar-label"><strong>Equipe Morcego</strong><small>Gestão de eventos</small></span></a>
 <nav class="sidebar-nav">
 <div class="sidebar-section-label">Principal</div>
 <a class="sidebar-link {% if current == 'dashboard' %}is-active{% endif %}" href="{% url 'gestao:dashboard' %}{% if ev %}?event_id={{ ev.id }}{% endif %}" title="Visão geral"><i data-lucide="layout-dashboard"></i><span class="sidebar-label">Visão geral</span></a>
@@ -29,6 +28,8 @@
 {% if management_permissions.content %}<a class="sidebar-link {% if current == 'frames' %}is-active{% endif %}" href="{% url 'gestao:frames' event_id=ev.id %}" title="Molduras digitais"><i data-lucide="images"></i><span class="sidebar-label">Molduras digitais</span></a>{% endif %}
 {% if management_permissions.content %}<a class="sidebar-link {% if current == 'sponsor_list' or current == 'sponsor_create' or current == 'sponsor_edit' %}is-active{% endif %}" href="{% url 'gestao:sponsor_list' event_id=ev.id %}" title="Patrocinadores"><i data-lucide="handshake"></i><span class="sidebar-label">Patrocinadores</span></a>{% endif %}
 <div class="sidebar-section-label">Administração</div>
+{% if management_permissions.events %}<a class="sidebar-link {% if current == 'raffle_management' %}is-active{% endif %}" href="{% url 'gestao:raffle_management' event_id=ev.id %}" title="Sorteio da moto"><i data-lucide="ticket"></i><span class="sidebar-label">Sorteio da moto</span></a>{% endif %}
+
 {% if management_permissions.events %}<a class="sidebar-link {% if current == 'event_detail' or current == 'event_edit' %}is-active{% endif %}" href="{% url 'gestao:event_detail' event_id=ev.id %}" title="Configurações do evento"><i data-lucide="settings-2"></i><span class="sidebar-label">Configurações</span></a>{% endif %}
 {% endif %}
 {% if management_permissions.audit %}<a class="sidebar-link {% if current == 'audit_log' %}is-active{% endif %}" href="{% url 'gestao:audit_log' %}" title="Auditoria"><i data-lucide="shield-check"></i><span class="sidebar-label">Auditoria</span></a>{% endif %}
@@ -36,12 +37,12 @@
 <div class="sidebar-footer"><a class="sidebar-link" href="{% url 'core:home' %}" target="_blank" rel="noopener" title="Abrir site público"><i data-lucide="external-link"></i><span class="sidebar-label">Abrir site público</span></a><button class="sidebar-link sidebar-pin" id="sidebarPin" type="button" title="Fixar navegação expandida" aria-pressed="false"><i data-lucide="panel-left"></i><span class="sidebar-label">Fixar navegação</span></button></div>
 </aside>
 <div class="management-workspace">
-<header class="management-topbar"><div class="topbar-leading"><button class="icon-button mobile-menu-toggle" type="button" data-menu-toggle aria-label="Abrir menu" aria-controls="managementSidebar" aria-expanded="false"><i data-lucide="menu"></i></button><div class="topbar-breadcrumb"><span>Equipe Morcego</span><i data-lucide="chevron-right"></i><strong>{% block gestao_header %}Painel de gestão{% endblock %}</strong></div></div><div class="topbar-actions"><a class="icon-button topbar-site-link" href="{% url 'core:home' %}" target="_blank" rel="noopener" title="Abrir site público" aria-label="Abrir site público"><i data-lucide="globe"></i></a><button class="icon-button" id="themeToggle" type="button" aria-label="Ativar tema escuro" aria-pressed="false"><i data-lucide="moon"></i></button><span class="topbar-divider"></span><details class="user-menu"><summary aria-label="Menu da conta"><span class="user-avatar">{{ request.user.full_name|default:request.user.email|slice:':2'|upper }}</span><span class="user-copy"><strong>{{ request.user.full_name|default:request.user.email|truncatechars:22 }}</strong><small>{{ management_role_label }}</small></span><i data-lucide="chevron-down"></i></summary><div class="user-dropdown"><a href="{% url 'minha_conta:dashboard' %}"><i data-lucide="user-round"></i>Minha conta</a><a href="{% url 'identity:logout' %}"><i data-lucide="log-out"></i>Sair do sistema</a></div></details></div></header>
+<header class="management-topbar"><div class="topbar-leading"><button class="icon-button mobile-menu-toggle" type="button" data-menu-toggle aria-label="Abrir menu" aria-controls="managementSidebar" aria-expanded="false"><i data-lucide="menu"></i></button><div class="topbar-breadcrumb"><span>Equipe Morcego</span><i data-lucide="chevron-right"></i><strong>{% block gestao_header %}Painel de gestão{% endblock %}</strong></div></div><div class="topbar-actions"><a class="icon-button topbar-site-link" href="{% url 'core:home' %}" target="_blank" rel="noopener" title="Abrir site público" aria-label="Abrir site público"><i data-lucide="globe"></i></a><span class="topbar-divider"></span><details class="user-menu"><summary aria-label="Menu da conta"><span class="user-avatar">{{ request.user.full_name|default:request.user.email|slice:':2'|upper }}</span><span class="user-copy"><strong>{{ request.user.full_name|default:request.user.email|truncatechars:22 }}</strong><small>{{ management_role_label }}</small></span><i data-lucide="chevron-down"></i></summary><div class="user-dropdown"><a href="{% url 'minha_conta:dashboard' %}"><i data-lucide="user-round"></i>Minha conta</a><a href="{% url 'identity:logout' %}"><i data-lucide="log-out"></i>Sair do sistema</a></div></details></div></header>
 {% if messages %}<div class="management-messages" aria-live="polite">{% for message in messages %}<div class="alert alert-{{ message.tags }}" role="status"><i data-lucide="info"></i><span>{{ message }}</span></div>{% endfor %}</div>{% endif %}
 <main class="management-main" id="mainContent" tabindex="-1">{% block content %}{% endblock %}</main>
 </div>
 <nav class="mobile-nav" aria-label="Navegação rápida"><a class="{% if current == 'dashboard' %}is-active{% endif %}" href="{% url 'gestao:dashboard' %}{% if ev %}?event_id={{ ev.id }}{% endif %}"><i data-lucide="layout-dashboard"></i><span>Início</span></a>{% if ev and management_permissions.registrations %}<a class="{% if current == 'registration_list' %}is-active{% endif %}" href="{% url 'gestao:registration_list' event_id=ev.id %}"><i data-lucide="users-round"></i><span>Inscrições</span></a>{% endif %}{% if ev and management_permissions.checkin %}<a class="{% if current == 'credenciamento' %}is-active{% endif %}" href="{% url 'gestao:credenciamento' event_id=ev.id %}"><i data-lucide="scan-line"></i><span>Scanner</span></a>{% endif %}{% if ev and management_permissions.finance %}<a class="{% if current == 'finance' %}is-active{% endif %}" href="{% url 'gestao:finance' event_id=ev.id %}"><i data-lucide="wallet"></i><span>Financeiro</span></a>{% endif %}<button type="button" data-menu-toggle aria-label="Abrir todos os módulos" aria-controls="managementSidebar" aria-expanded="false"><i data-lucide="menu"></i><span>Mais</span></button></nav>
 {% endwith %}
-<script src="{% static 'vendor/lucide/lucide.min.js' %}"></script><script src="{% static 'js/icons.js' %}"></script><script src="{% static 'js/main.js' %}"></script><script src="{% static 'js/management.js' %}?v=navie20261022"></script>
+<script src="{% static 'vendor/lucide/lucide.min.js' %}"></script><script src="{% static 'js/icons.js' %}"></script><script src="{% static 'js/main.js' %}"></script><script src="{% static 'js/management.js' %}?v=glass20261022"></script>
 {% block extra_js %}{% endblock %}
 </body></html>

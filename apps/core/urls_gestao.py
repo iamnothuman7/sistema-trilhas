@@ -3,6 +3,7 @@ from . import views_gestao
 from apps.reporting import exports
 from apps.reporting import views as reporting_views
 from apps.events import views_sponsors
+from apps.events import views_raffles
 
 app_name = "gestao"
 
@@ -48,6 +49,7 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/patrocinadores/", views_sponsors.sponsor_list, name="sponsor_list"),
     path("eventos/<uuid:event_id>/patrocinadores/novo/", views_sponsors.sponsor_create, name="sponsor_create"),
     path("eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/editar/", views_sponsors.sponsor_edit, name="sponsor_edit"),
+    path("eventos/<uuid:event_id>/sorteio/", views_raffles.raffle_management, name="raffle_management"),
 
     # Exportações
     path("eventos/<uuid:event_id>/exportar/inscritos/", views_gestao.export_participants, name="export_participants"),

@@ -18,7 +18,7 @@ def home(request):
     # Eventos em destaque com inscrições abertas ou próximos
     featured_events = Event.objects.filter(
         status__in=[EventStatus.PUBLISHED, EventStatus.SALES_CLOSED, EventStatus.IN_PROGRESS]
-    ).select_related("theme").order_by("starts_at")[:6]
+    ).select_related("theme", "motorcycle_raffle").order_by("starts_at")[:6]
     featured_events = list(featured_events)
     featured_sponsors = featured_events[0].sponsors.all().order_by("tier", "sort_order") if featured_events else []
 

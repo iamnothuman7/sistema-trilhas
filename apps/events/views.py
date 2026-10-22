@@ -8,7 +8,7 @@ from apps.mediaframes.models import FrameTemplate
 from apps.mediaframes.events_config import get_event_versions, select_version
 
 def get_event_resilient(slug, request):
-    event = get_object_or_404(Event.objects.select_related("theme", "organization"), slug=slug)
+    event = get_object_or_404(Event.objects.select_related("theme", "organization", "motorcycle_raffle"), slug=slug)
     if event.status == EventStatus.DRAFT and not can_manage_event(request.user, event, "events"):
         raise Http404("Evento não publicado.")
     return event

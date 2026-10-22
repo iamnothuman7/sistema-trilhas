@@ -1,0 +1,32 @@
+{% extends 'gestao/base_gestao.html' %}
+{% block title %}Sorteio da moto | {{ event.title }}{% endblock %}
+{% block gestao_header %}Sorteio da moto{% endblock %}
+{% block content %}
+<div class="page-heading"><div><h1>Sorteio da moto</h1><p>Configuração e interesses de {{ event.title }}.</p></div><a class="btn btn-secondary" href="{% url 'events:raffle' slug=event.slug %}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i>Ver página do sorteio</a></div>
+<div class="alert" role="status"><i data-lucide="info" aria-hidden="true"></i><span>Em preparação. Esta área é separada das inscrições do evento. Salvar ou publicar os dados não libera compra de cotas, reserva de números ou pagamentos.</span></div>
+<form method="post" class="card mg-section-gap">
+    {% csrf_token %}
+    <div class="card-header"><div><h2>Informações do sorteio</h2><p>Preencha somente os dados confirmados. Os campos ainda indefinidos podem ficar em branco.</p></div><span class="badge badge-info">{% if raffle.is_public %}Apresentação pública{% else %}Rascunho{% endif %}</span></div>
+    {% if form.errors %}<div class="mg-form-errors" role="alert"><strong>Confira os campos abaixo.</strong>{{ form.non_field_errors }}</div>{% endif %}
+    <div class="form-grid">
+        {% for field in form %}
+        {% if field.name != 'is_public' and field.name != 'interest_enabled' %}
+        <div class="form-group {% if field.name == 'description' or field.name == 'rules_text' or field.name == 'title' %}mg-full-width{% endif %}">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+            {% if field.help_text %}<small class="form-help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</small>{% endif %}<div class="mg-field-errors">{{ field.errors }}</div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <section class="mg-inset-card mg-element-gap"><h3>Publicação e interesses</h3>
+        <div class="form-group"><label class="form-label" for="{{ form.is_public.id_for_label }}">{{ form.is_public }} {{ form.is_public.label }}</label><small class="form-help">{{ form.is_public.help_text }}</small><div class="mg-field-errors">{{ form.is_public.errors }}</div></div>
+        <div><label class="form-label" for="{{ form.interest_enabled.id_for_label }}">{{ form.interest_enabled }} {{ form.interest_enabled.label }}</label><small class="form-help">{{ form.interest_enabled.help_text }}</small><div class="mg-field-errors">{{ form.interest_enabled.errors }}</div></div>
+    </section>
+    <div class="mg-form-actions"><button type="submit" class="btn btn-primary"><i data-lucide="check" aria-hidden="true"></i>Salvar configuração</button></div>
+</form>
+<section class="card"><div class="card-header"><div><h2>Interesses registrados</h2><p>{{ interest_count }} registro{{ interest_count|pluralize }}. Estes registros não representam cotas vendidas ou reservadas.</p></div></div>
+    {% if interests_page %}<div class="table-responsive"><table class="table"><thead><tr><th>Participante</th><th>E-mail da conta</th><th>Registrado em</th></tr></thead><tbody>{% for interest in interests_page %}<tr><td>{{ interest.user.full_name|default:'Participante' }}</td><td>{{ interest.user.email }}</td><td>{{ interest.created_at|date:'d/m/Y H:i' }}</td></tr>{% endfor %}</tbody></table></div>
+    {% if interests_page.has_other_pages %}<nav class="mg-pagination" aria-label="Páginas de interesses"><span>Página {{ interests_page.number }} de {{ interests_page.paginator.num_pages }}</span><div class="page-actions">{% if interests_page.has_previous %}<a class="btn btn-secondary btn-sm" href="?page={{ interests_page.previous_page_number }}">Anterior</a>{% endif %}{% if interests_page.has_next %}<a class="btn btn-secondary btn-sm" href="?page={{ interests_page.next_page_number }}">Próxima</a>{% endif %}</div></nav>{% endif %}
+    {% else %}<div class="empty-state compact"><span class="empty-icon"><i data-lucide="users-round" aria-hidden="true"></i></span><p>Nenhum interesse registrado. A coleta depende da apresentação pública e da opção habilitada acima.</p></div>{% endif %}
+</section>
+{% endblock %}

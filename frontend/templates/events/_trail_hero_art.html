@@ -1,0 +1,11 @@
+{% load static %}
+<div class="trail-hero-art" aria-hidden="true">
+  {% if hero_event.theme.hero_banner %}
+  <img src="{{ hero_event.theme.hero_banner.url }}" alt="" width="1536" height="1024" fetchpriority="high" decoding="async">
+  {% else %}
+  <picture><source media="(max-width: 700px)" srcset="{% static 'img/trail-hero-mobile.webp' %}"><img src="{% static 'img/trail-hero.webp' %}" alt="" width="1536" height="1024" fetchpriority="high" decoding="async"></picture>
+  {% endif %}
+</div>
+<div class="trail-hero-shade" aria-hidden="true"></div>
+<div class="tire-track tire-track--hero" aria-hidden="true"></div>
+<div class="trail-dust" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span></div>

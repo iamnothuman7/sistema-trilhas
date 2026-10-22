@@ -1,15 +1,15 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#101113">
+    <meta name="theme-color" content="#191512">
     <meta name="robots" content="noindex, nofollow">
     <title>{% block title %}Sua conta | Equipe Morcego{% endblock %}</title>
-    <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}?v=mor20261022">
-    <link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=navie20261022">
-    <link rel="stylesheet" href="{% static 'css/auth.css' %}?v=navie20261022">
+    <link rel="icon" type="image/png" href="{% static 'img/favicon-64.png' %}?v=glass20261022">
+    <link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=glass20261022">
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}?v=glass20261022">
     <script src="{% static 'vendor/lucide/lucide.min.js' %}" defer></script>
     <script src="{% static 'js/icons.js' %}" defer></script>
     <script src="{% static 'js/auth.js' %}" defer></script>
@@ -19,7 +19,7 @@
     <div class="auth-layout">
         <aside class="auth-brand" aria-label="Equipe Morcego">
             <a class="auth-brand-link" href="{% url 'core:home' %}" aria-label="Equipe Morcego, página inicial">
-                <img class="auth-logo" src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" width="1377" height="1142" fetchpriority="high">
+                <img class="auth-logo" src="{% static 'img/logo-display.webp' %}" alt="Equipe Morcego" width="1377" height="1142" fetchpriority="high">
                 <span class="auth-brand-name">Equipe Morcego<small>Sistema Trilhas</small></span>
             </a>
 

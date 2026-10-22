@@ -211,6 +211,9 @@ class Sponsor(models.Model):
     tier = models.CharField("Cota de Patrocínio", max_length=30, choices=SponsorTier.choices, default=SponsorTier.OURO)
     website = models.URLField("Site / Instagram", blank=True, null=True)
     logo_image = models.ImageField("Logotipo", upload_to="events/sponsors/", blank=True, validators=[validate_sponsor_logo_size])
+    logo_preview = models.ImageField("Prévia do logotipo", upload_to="events/sponsors/previews/", blank=True, editable=False)
+    logo_preview_width = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    logo_preview_height = models.PositiveIntegerField(null=True, blank=True, editable=False)
     instagram_url = models.URLField("Instagram", blank=True, validators=[validate_instagram_profile])
     sort_order = models.PositiveIntegerField("Ordem de Exibição", default=0)
     approved_at = models.DateTimeField("Aprovado em", default=timezone.now)
@@ -222,6 +225,12 @@ class Sponsor(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.get_tier_display()})"
+
+    @property
+    def display_logo_url(self):
+        if not self.logo_image:
+            return ""
+        return self.logo_preview.url if self.logo_preview else self.logo_image.url
 
 
 class DocumentKind(models.TextChoices):
@@ -257,3 +266,7 @@ class LegalDocumentVersion(models.Model):
 
     def __str__(self):
         return f"{self.get_kind_display()} v{self.version_number} ({self.event.title})"
+
+
+# Django discovers these event-specific models through the app's models module.
+from .models_raffles import MotorcycleRaffle, RaffleInterest  # noqa: E402,F401
