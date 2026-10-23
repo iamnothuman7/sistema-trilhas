@@ -46,7 +46,8 @@
 .mg-dialog { padding: 0; width: min(580px, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; color: var(--text); background: var(--glass-reflection), var(--glass-strong); border: 1px solid var(--glass-border); border-radius: var(--radius-lg); box-shadow: var(--glass-overlay-shadow); overflow: auto; }
 .mg-dialog::backdrop { background: rgb(5 6 8 / 62%); }
 .mg-dialog .mg-dialog-card { margin: 0; padding: 1.5rem; border: 0; box-shadow: none; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
-.mg-dialog .card-header { margin-bottom: 1.5rem; }
+.mg-dialog .card-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; margin-bottom: 1.5rem; }
+.mg-dialog .card-header > :first-child { min-width: 0; }
 .mg-dialog .form-control { width: 100%; }
 .mg-scanner-shell { width: 100%; max-width: 760px; margin-inline: auto; }
 .mg-scanner-shell > .mg-align-center h1 { margin: .875rem 0; }

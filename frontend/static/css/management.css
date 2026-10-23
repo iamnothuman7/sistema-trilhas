@@ -225,6 +225,12 @@ dialog::backdrop { background: rgb(0 0 0 / 55%); }
   .mobile-nav a,.mobile-nav button { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 0; background: transparent; color: var(--text-muted); font-size: 10px; font-weight: 600; padding: 8px 4px; border-radius: 12px; }
   .mobile-nav .lucide { width: 20px; height: 20px; }.mobile-nav .is-active { color: var(--brand-ink); background: var(--brand-soft); }
 }
+/* Phones and touch tablets need comfortable controls, including compact actions. */
+@media (max-width: 767px), (pointer: coarse) {
+  .btn-sm { min-width: 44px; min-height: 44px; }
+  .icon-button { width: 44px; height: 44px; flex-shrink: 0; }
+  .form-control { font-size: 16px; }
+}
 @media(max-width:420px) { .stat-grid { grid-template-columns: 1fr; }.event-meta { flex-direction: column; gap: 10px; }.page-heading .page-actions { width: 100%; } }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root { --surface: var(--surface-solid); --surface-hover: var(--surface-soft-solid); --glass: var(--surface-solid); --glass-strong: var(--surface-solid); --glass-border: var(--border); --glass-reflection: none; --input-bg: var(--surface-solid); }
