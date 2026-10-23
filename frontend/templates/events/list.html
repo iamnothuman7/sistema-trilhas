@@ -11,22 +11,8 @@
   <section class="public-section" aria-labelledby="upcoming-title">
     <div class="public-section-heading"><h2 id="upcoming-title">Próximos eventos</h2></div>
     {% if active_events %}
-    <div class="public-grid public-grid--three">
-      {% for event in active_events %}{% timezone event.timezone %}
-      <article class="public-event-card">
-        {% if event.theme.hero_banner %}<a class="public-event-media" href="{% url 'events:detail' slug=event.slug %}" tabindex="-1" aria-hidden="true"><img src="{{ event.theme.hero_banner.url }}" alt="" loading="lazy" width="640" height="400"></a>{% else %}<div class="public-event-media public-event-media--empty" aria-hidden="true"><i data-lucide="mountain" aria-hidden="true"></i></div>{% endif %}
-        <div class="public-event-body">
-          <div class="public-event-topline"><span class="public-tag">{{ event.get_status_display }}</span><span>{{ event.get_type_display }}</span></div>
-          <h3><a href="{% url 'events:detail' slug=event.slug %}">{{ event.title }}</a></h3>
-          <p class="public-event-description">{{ event.description|default:"Consulte a programação, as modalidades e as orientações deste evento."|truncatewords:20 }}</p>
-          <ul class="public-meta-list">
-            <li><i data-lucide="calendar-days" aria-hidden="true"></i><span>{{ event.starts_at|date:"d/m/Y \à\s H:i" }}</span></li>
-            <li><i data-lucide="map-pin" aria-hidden="true"></i><span>{{ event.venue }} · {{ event.city }}/{{ event.state }}</span></li>
-          </ul>
-          <div class="public-actions"><a class="public-button public-button--primary" href="{% url 'events:detail' slug=event.slug %}">Ver evento <i data-lucide="arrow-up-right" aria-hidden="true"></i></a><a class="public-button public-button--secondary public-button--icon" href="{% url 'events:frames' slug=event.slug %}" aria-label="Moldura de {{ event.title }}"><i data-lucide="camera" aria-hidden="true"></i></a></div>
-        </div>
-      </article>
-      {% endtimezone %}{% endfor %}
+    <div class="event-card-grid">
+      {% for event in active_events %}{% include 'events/_calendar_card.html' %}{% endfor %}
     </div>
     {% else %}<div class="public-empty"><span class="public-icon"><i data-lucide="calendar-days" aria-hidden="true"></i></span><h3>Novas trilhas vêm por aí</h3><p>Nenhum evento com inscrições ativas no momento.</p></div>{% endif %}
   </section>

@@ -2,6 +2,7 @@
 {% block title %}Percurso da Trilha | {{ event.title }}{% endblock %}
 {% block content %}
 <div class="public-page public-page--narrow">
+  {% include 'events/_event_navigation.html' with current='route' %}
   <a href="{% url 'events:detail' slug=event.slug %}" class="public-back"><i data-lucide="arrow-left" aria-hidden="true"></i> Voltar ao evento</a>
   <header class="public-intro"><span class="public-eyebrow">{{ event.title }}</span><h1>Conheça o percurso</h1><p>Distâncias, nível técnico e pontos de apoio para planejar sua participação.</p></header>
   {% for route in routes %}

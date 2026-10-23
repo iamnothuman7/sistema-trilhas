@@ -1,9 +1,11 @@
 {% extends "gestao/base_gestao.html" %}
+{% load tz %}
 
 {% block title %}{{ event.title }} | Gestão Equipe Morcego{% endblock %}
 {% block gestao_header %}Visão do evento{% endblock %}
 
 {% block content %}
+{% timezone event.timezone %}
 <div class="page-heading">
     <div>
         <div class="mg-section-title-row">
@@ -23,6 +25,14 @@
 </div>
 
 <div class="mg-module-grid mg-section-gap">
+    <a href="{% url 'gestao:event_edit' event_id=event.id %}" class="card mg-module-link">
+        <span class="mg-module-icon"><i data-lucide="settings-2" aria-hidden="true"></i></span>
+        <h2>Dados e publicação</h2><p>Edite datas, local, capacidade, atendimento e situação da edição.</p>
+    </a>
+    {% if management_permissions.content %}<a href="{% url 'gestao:event_appearance' event_id=event.id %}" class="card mg-module-link">
+        <span class="mg-module-icon"><i data-lucide="palette" aria-hidden="true"></i></span>
+        <h2>Aparência da edição</h2><p>Envie o banner e a logo e confira a página antes de divulgar.</p>
+    </a>{% endif %}
     <a href="{% url 'gestao:registration_list' event_id=event.id %}" class="card mg-module-link">
         <span class="mg-module-icon"><i data-lucide="users" aria-hidden="true"></i></span>
         <h2>Inscrições</h2><p>{{ kpi.active_confirmed }} confirmados. Consulte participantes, categorias e status.</p>
@@ -38,6 +48,14 @@
     <a href="{% url 'gestao:finance' event_id=event.id %}" class="card mg-module-link">
         <span class="mg-module-icon"><i data-lucide="wallet" aria-hidden="true"></i></span>
         <h2>Financeiro</h2><p>Acompanhe recebimentos, taxas, despesas e resultado.</p>
+    </a>
+    <a href="{% url 'gestao:reports' event_id=event.id %}" class="card mg-module-link">
+        <span class="mg-module-icon"><i data-lucide="chart-no-axes-combined" aria-hidden="true"></i></span>
+        <h2>Relatórios e exportações</h2><p>Filtre o período, acompanhe os resultados e baixe os arquivos CSV.</p>
+    </a>
+    <a href="{% url 'gestao:raffle_management' event_id=event.id %}" class="card mg-module-link">
+        <span class="mg-module-icon"><i data-lucide="ticket" aria-hidden="true"></i></span>
+        <h2>Sorteio da moto</h2><p>Organize a apresentação e as informações da edição.</p>
     </a>
     <a href="{% url 'gestao:expedition' event_id=event.id %}" class="card mg-module-link">
         <span class="mg-module-icon"><i data-lucide="route" aria-hidden="true"></i></span>
@@ -62,4 +80,5 @@
         <div><p class="stat-label">Fuso horário</p><strong>{{ event.timezone }}</strong></div>
     </div>
 </section>
+{% endtimezone %}
 {% endblock %}

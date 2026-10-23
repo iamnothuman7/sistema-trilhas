@@ -1,21 +1,53 @@
 {% extends "base.html" %}
-{% block title %}Sobre a Equipe Morcego | Tradição Off-Road{% endblock %}
+{% load static %}
+{% block title %}A equipe | Equipe Morcego{% endblock %}
 {% block content %}
 <div class="public-page public-page--narrow">
   <header class="public-intro">
-    <span class="public-eyebrow">Nossa história</span>
-    <h1>A Equipe Morcego</h1>
-    <p>Motociclismo, encontros e trilhas na Serra da Ibiapaba, em Tianguá, Ceará.</p>
+    <span class="public-eyebrow">Tianguá · Serra da Ibiapaba</span>
+    <h1>A trilha aproxima.<br>A amizade fica.</h1>
+    <p>Somos a Equipe Morcego. Nosso ponto de encontro é na trilha, com gente que compartilha a vontade de sair, explorar e viver boas histórias.</p>
   </header>
-  <section class="public-card public-prose">
-    <h2>Uma equipe que se encontra na trilha</h2>
-    <p>A Equipe Morcego reúne pilotos, trilheiros e suas famílias em eventos off-road na região de Tianguá. Trilhões, passeios e expedições fazem parte dessa história.</p>
-    <p>Com a coordenação de Kelvim Muniz, a equipe organiza suas edições e compartilha as informações de cada encontro: programação, modalidades, percursos e orientações aos participantes.</p>
-    <p>Neste site, você pode conhecer os eventos, acompanhar sua inscrição e consultar os documentos e as informações de credenciamento da edição escolhida.</p>
-    <div class="public-actions">
-      <a href="{% url 'events:list' %}" class="public-button public-button--primary">Conhecer os eventos <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
-      <a href="{% url 'core:contact' %}" class="public-button public-button--secondary">Falar com a equipe</a>
+  <section class="public-section" aria-labelledby="about-meeting">
+    <article class="public-event-card">
+      <div class="public-event-media"><img src="{% static 'img/historico/trilhao-foto-02.webp' %}" width="800" height="532" alt="Grupo de participantes reunido diante do painel de uma edição anterior do Trilhão" decoding="async"></div>
+      <div class="public-event-body">
+        <span class="public-eyebrow">Edições anteriores</span>
+        <h2 id="about-meeting">O encontro começa antes da largada</h2>
+        <p class="public-muted">Tem a conversa com quem chegou de outra cidade, a foto da equipe e a expectativa pelo caminho. É desse convívio que o Trilhão Tianguá Off Road faz parte.</p>
+        <p class="public-muted">As imagens deste acervo guardam encontros que já aconteceram. Cada nova edição tem suas próprias informações, programação e regras.</p>
+      </div>
+    </article>
+  </section>
+  <section class="public-section" aria-labelledby="about-next">
+    <div class="public-grid">
+      <div class="public-card">
+        <span class="public-icon"><i data-lucide="route" aria-hidden="true"></i></span>
+        <h2 id="about-next">O próximo encontro</h2>
+        <p class="public-muted">Consulte a página da edição para conhecer o que a organização já publicou e acompanhar sua inscrição, os documentos e as orientações para participar.</p>
+        <div class="public-actions"><a href="{% url 'events:list' %}" class="public-button public-button--primary">Ver os eventos <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
+      </div>
+      <div class="public-card">
+        <span class="public-icon"><i data-lucide="users-round" aria-hidden="true"></i></span>
+        <h2>Converse com a gente</h2>
+        <p class="public-muted">Quer saber mais sobre a equipe ou tirar uma dúvida sobre o evento? Encontre nossos canais de contato e acompanhe as novidades da Equipe Morcego.</p>
+        <div class="public-actions"><a href="{% url 'core:contact' %}" class="public-button public-button--secondary">Falar com a equipe <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
+      </div>
     </div>
+  </section>
+  <section class="public-section" aria-labelledby="about-memories">
+    <article class="public-event-card">
+      <div class="public-event-media"><img src="{% static 'img/historico/trilhao-foto-03.webp' %}" width="800" height="533" alt="Participantes levantando troféus em um encontro anterior" loading="lazy" decoding="async"></div>
+      <div class="public-event-body">
+        <span class="public-eyebrow">Nosso acervo</span>
+        <h2 id="about-memories">Histórias que a gente leva</h2>
+        <p class="public-muted">Reveja as fotos dos encontros anteriores nos álbuns compartilhados pela equipe.</p>
+        <div class="public-actions">
+          <a href="https://drive.google.com/drive/folders/1GOzd5u8kr_xl-rZQ8YBopfnd-AKuVEkI" class="public-button public-button--secondary" target="_blank" rel="noopener noreferrer">Álbum no Google Drive <i data-lucide="external-link" aria-hidden="true"></i></a>
+          <a href="https://banlek.com/album/1e1d6d" class="public-button public-button--secondary" target="_blank" rel="noopener noreferrer">Fotos na Banlek <i data-lucide="external-link" aria-hidden="true"></i></a>
+        </div>
+      </div>
+    </article>
   </section>
 </div>
 {% endblock %}

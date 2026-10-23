@@ -1,12 +1,13 @@
 import uuid
+from pathlib import Path
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseForbidden
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.utils import timezone
-from apps.events.models import Event, EventStatus, EventTheme, EventType
-from apps.catalog.models import Product, Lot, Coupon, CapacityResource, InventoryItem
+from apps.events.models import Event, EventStatus, EventTheme, EventType, EventPageBlock
+from apps.catalog.models import Product, ProductVariant, Lot, Coupon, CapacityResource, InventoryItem
 from apps.checkout.models import Order, OrderStatus
 from apps.registrations.models import (
     Registration, CommercialState, OperationalState,
@@ -31,6 +32,8 @@ from apps.reporting.selectors import financial_entries, get_financial_summary, i
 from urllib.parse import urlencode
 from django.db.models import Q
 from django.http import HttpResponseNotAllowed
+from django.views.decorators.cache import never_cache
+from apps.events.forms_management import EventManagementForm, EventAppearanceForm
 from apps.core.permissions import management_required, accessible_events, can_manage_event, can_create_events, is_administrator
 
 def staff_required_custom(view_func):
@@ -38,6 +41,7 @@ def staff_required_custom(view_func):
     return management_required(view_func)
 
 @staff_required_custom
+@never_cache
 def dashboard(request):
     events = accessible_events(request.user).order_by("-starts_at")
     selected_event_id = request.GET.get("event_id")
@@ -54,8 +58,12 @@ def dashboard(request):
         request.session["management_event_id"] = str(event.id)
         request.management_event = event
     kpi = get_event_kpi_summary(event) if event else {}
-    recent_orders = Order.objects.filter(event=event).order_by("-created_at")[:8] if event else []
-    recent_checkins = CheckinRecord.objects.filter(event=event).select_related("registration", "registration__person").order_by("-occurred_at")[:6] if event else []
+    show_recent_orders = bool(event and (can_manage_event(request.user, event, "finance") or
+                                        can_manage_event(request.user, event, "registrations")))
+    show_recent_checkins = bool(event and can_manage_event(request.user, event, "checkin"))
+    # The overview obeys the same capabilities as each detailed workspace.
+    recent_orders = Order.objects.filter(event=event).order_by("-created_at")[:8] if show_recent_orders else []
+    recent_checkins = CheckinRecord.objects.filter(event=event).select_related("registration", "registration__person").order_by("-occurred_at")[:6] if show_recent_checkins else []
 
     return render(request, "gestao/dashboard.html", {
         "events": events,
@@ -63,6 +71,8 @@ def dashboard(request):
         "kpi": kpi,
         "recent_orders": recent_orders,
         "recent_checkins": recent_checkins,
+        "show_recent_orders": show_recent_orders,
+        "show_recent_checkins": show_recent_checkins,
     })
 
 
@@ -73,47 +83,31 @@ def event_list(request):
 
 
 @staff_required_custom
+@never_cache
 def event_create(request):
-    if request.method == "POST":
-        title = request.POST.get("title")
-        slug = request.POST.get("slug")
-        edition = int(request.POST.get("edition_number", 1))
-        etype = request.POST.get("type", EventType.TRILHAO)
-        city = request.POST.get("city", "Tianguá")
-        venue = request.POST.get("venue", "Polo de Lazer")
-        starts_at = request.POST.get("starts_at")
-        ends_at = request.POST.get("ends_at")
-        reg_opens = request.POST.get("registration_opens_at")
-        reg_closes = request.POST.get("registration_closes_at")
-        max_attendees = int(request.POST.get("max_attendees", 300))
-        description = request.POST.get("description", "")
-
-        from apps.core.models import Organization
-        org = Organization.objects.first()
-
-        event = Event.objects.create(
-            organization=org,
-            title=title,
-            slug=slug,
-            edition_number=edition,
-            type=etype,
-            status=EventStatus.DRAFT,
-            city=city,
-            venue=venue,
-            starts_at=starts_at,
-            ends_at=ends_at,
-            registration_opens_at=reg_opens,
-            registration_closes_at=reg_closes,
-            max_attendees=max_attendees,
-            description=description,
-        )
-
-        EventTheme.objects.create(event=event)
-        log_audit(actor=request.user, event_id=event.id, action="EVENT_CREATED", entity_type="Event", entity_id=event.id, request=request)
-        messages.success(request, f"Evento '{event.title}' criado em rascunho com sucesso!")
-        return redirect("gestao:event_detail", event_id=event.id)
-
-    return render(request, "gestao/events/event_form.html")
+    form = EventManagementForm(request.POST if request.method == "POST" else None)
+    if request.method == "POST" and form.is_valid():
+        try:
+            with transaction.atomic():
+                event = form.save(commit=False)
+                event.status = EventStatus.DRAFT
+                # Explicitly choose a unique subdomain; changing a title later
+                # never changes the address of an existing edition.
+                base = event.slug.replace("-", "")[:80] or "evento"
+                event.subdomain = base
+                while Event.objects.filter(subdomain=event.subdomain).exists():
+                    event.subdomain = f"{base}{uuid.uuid4().hex[:8]}"
+                event.save()
+                EventTheme.objects.create(event=event, primary_color="#f97316", secondary_color="#c8bdb4",
+                                          accent_color="#ef5237", surface_color="#191512", text_color="#faf5f0")
+                CapacityResource.objects.create(event=event, type="EVENT_OVERALL", capacity_total=event.max_attendees)
+                log_audit(actor=request.user, event_id=event.id, action="EVENT_CREATED", entity_type="Event", entity_id=event.id, request=request)
+        except IntegrityError:
+            form.add_error(None, "Este endereço já foi utilizado. Escolha outro endereço e tente novamente.")
+        else:
+            messages.success(request, "Edição criada em rascunho. Revise a aparência, os lotes e as datas antes de publicar.")
+            return redirect("gestao:event_detail", event_id=event.id)
+    return render(request, "gestao/events/event_form.html", {"form": form, "creating": True})
 
 
 @staff_required_custom
@@ -127,29 +121,66 @@ def event_detail(request, event_id):
 
 
 @staff_required_custom
+@never_cache
 def event_edit(request, event_id):
-    event = get_object_or_404(Event.objects.select_related("theme"), id=event_id)
+    event = get_object_or_404(Event, id=event_id)
     if request.method == "POST":
-        event.title = request.POST.get("title", event.title)
-        event.status = request.POST.get("status", event.status)
-        event.city = request.POST.get("city", event.city)
-        event.venue = request.POST.get("venue", event.venue)
-        event.max_attendees = int(request.POST.get("max_attendees", event.max_attendees))
-        event.description = request.POST.get("description", event.description)
-        event.save()
+        with transaction.atomic():
+            # Same lock order as checkout reservation: event, then capacity.
+            event = Event.objects.select_for_update().get(pk=event_id)
+            resources = list(CapacityResource.objects.select_for_update().filter(event=event, type="EVENT_OVERALL").order_by("pk"))
+            form = EventManagementForm(request.POST, instance=event)
+            if form.is_valid():
+                changed = list(form.changed_data)
+                event = form.save()
+                if len(resources) == 1:
+                    for resource in resources:
+                        resource.capacity_total = event.max_attendees
+                        resource.save(update_fields=["capacity_total"])
+                elif not resources:
+                    active = Registration.objects.filter(event=event, commercial_state=CommercialState.ACTIVE).count()
+                    CapacityResource.objects.create(event=event, type="EVENT_OVERALL", capacity_total=event.max_attendees, committed_count=active)
+                log_audit(actor=request.user, event_id=event.id, action="EVENT_UPDATED", entity_type="Event", entity_id=event.id,
+                          diff={"fields": changed}, request=request)
+                messages.success(request, "Dados da edição atualizados. Inscrições, pagamentos e histórico foram preservados.")
+                return redirect("gestao:event_detail", event_id=event.id)
+    else:
+        form = EventManagementForm(instance=event)
+    return render(request, "gestao/events/event_edit.html", {"event": event, "form": form, "creating": False},
+                  status=409 if form.version_conflict else 200)
 
-        # Tema
-        theme = event.theme
-        theme.primary_color = request.POST.get("primary_color", theme.primary_color)
-        theme.secondary_color = request.POST.get("secondary_color", theme.secondary_color)
-        theme.surface_color = request.POST.get("surface_color", theme.surface_color)
-        theme.save()
 
-        log_audit(actor=request.user, event_id=event.id, action="EVENT_UPDATED", entity_type="Event", entity_id=event.id, request=request)
-        messages.success(request, "Evento atualizado com sucesso!")
-        return redirect("gestao:event_detail", event_id=event.id)
-
-    return render(request, "gestao/events/event_edit.html", {"event": event})
+@staff_required_custom
+@never_cache
+def event_appearance(request, event_id):
+    event = get_object_or_404(Event, pk=event_id)
+    theme = EventTheme.objects.filter(event=event).first() or EventTheme(event=event)
+    form = EventAppearanceForm(request.POST if request.method == "POST" else None, request.FILES or None, instance=theme)
+    if request.method == "POST" and form.is_valid():
+        written = []
+        try:
+            with transaction.atomic():
+                Event.objects.select_for_update().get(pk=event_id)
+                theme = EventTheme.objects.select_for_update().filter(event=event).first() or EventTheme(event=event)
+                for name in form.fields:
+                    value = form.cleaned_data[name]
+                    if name in request.FILES:
+                        suffix = Path(value.name).suffix.lower()
+                        field = getattr(theme, name)
+                        field.save(f"{uuid.uuid4().hex}{suffix}", value, save=False)
+                        written.append((field.storage, field.name))
+                    elif value is False:
+                        setattr(theme, name, "")
+                theme.save()
+                log_audit(actor=request.user, event_id=event.id, action="EVENT_APPEARANCE_UPDATED", entity_type="EventTheme", entity_id=theme.pk,
+                          diff={"fields": list(form.changed_data)}, request=request)
+        except Exception:
+            for storage, name in written:
+                storage.delete(name)
+            raise
+        messages.success(request, "Aparência salva. Abra a página da edição para conferir o banner e a logo.")
+        return redirect("gestao:event_appearance", event_id=event.id)
+    return render(request, "gestao/events/event_appearance.html", {"event": event, "theme": theme, "form": form})
 
 
 @staff_required_custom
@@ -161,26 +192,31 @@ def event_duplicate(request, event_id):
     """
     if not can_create_events(request.user):
         return HttpResponseForbidden("A duplicação de eventos exige acesso de administração geral.")
-    source = get_object_or_404(Event, id=event_id)
-
     with transaction.atomic():
+        source = get_object_or_404(Event.objects.select_for_update(), id=event_id)
+        date_shift = timezone.timedelta(days=365)
+        suffix = uuid.uuid4().hex[:12]
         new_event = Event.objects.create(
             organization=source.organization,
-            title=f"{source.title} (Nova Edição)",
-            slug=f"{source.slug}-copia-{uuid.uuid4().hex[:4]}",
+            title=f"{source.title[:186]} (Nova Edição)",
+            slug=f"{source.slug[:181]}-copia-{suffix}",
+            subdomain=f"{(source.subdomain or source.slug).replace('-', '')[:70]}copia{suffix}",
             edition_number=source.edition_number + 1,
             type=source.type,
             status=EventStatus.DRAFT,
             city=source.city,
             state=source.state,
             venue=source.venue,
-            starts_at=source.starts_at + timezone.timedelta(days=365),
-            ends_at=source.ends_at + timezone.timedelta(days=365),
-            registration_opens_at=timezone.now(),
-            registration_closes_at=source.ends_at + timezone.timedelta(days=360),
+            timezone=source.timezone,
+            starts_at=source.starts_at + date_shift,
+            ends_at=source.ends_at + date_shift,
+            registration_opens_at=source.registration_opens_at + date_shift,
+            registration_closes_at=source.registration_closes_at + date_shift,
             max_attendees=source.max_attendees,
             description=source.description,
             rules_summary=source.rules_summary,
+            contact_email=source.contact_email,
+            contact_phone=source.contact_phone,
         )
 
         # Copiar Tema
@@ -191,6 +227,11 @@ def event_duplicate(request, event_id):
                 secondary_color=source.theme.secondary_color,
                 accent_color=source.theme.accent_color,
                 surface_color=source.theme.surface_color,
+                text_color=source.theme.text_color,
+                # Reuse immutable stored assets; no file is moved or deleted.
+                hero_banner=source.theme.hero_banner.name,
+                logo_image=source.theme.logo_image.name,
+                custom_css=source.theme.custom_css,
             )
 
         # Copiar Produtos e Lotes
@@ -200,23 +241,39 @@ def event_duplicate(request, event_id):
                 kind=prod.kind,
                 name=prod.name,
                 description=prod.description,
-                active=True,
+                active=prod.active,
                 includes_shirt=prod.includes_shirt,
                 includes_meal=prod.includes_meal,
                 includes_kit=prod.includes_kit,
+                default_benefits_json=prod.default_benefits_json,
             )
+            ProductVariant.objects.bulk_create([
+                ProductVariant(product=new_prod, kind=variant.kind, code=variant.code,
+                               label=variant.label, extra_price_cents=variant.extra_price_cents)
+                for variant in prod.variants.all()
+            ])
             for lot in prod.lots.all():
                 Lot.objects.create(
                     event=new_event,
                     product=new_prod,
                     title=lot.title,
                     price_cents=lot.price_cents,
-                    opens_at=timezone.now(),
-                    closes_at=new_event.registration_closes_at,
+                    opens_at=lot.opens_at + date_shift,
+                    closes_at=lot.closes_at + date_shift,
                     max_quantity=lot.max_quantity,
+                    current_sold=0,
                     priority=lot.priority,
-                    active=True,
+                    active=lot.active,
                 )
+
+        EventPageBlock.objects.bulk_create([
+            EventPageBlock(event=new_event, page_slug=block.page_slug, section_key=block.section_key,
+                           title=block.title, sort_order=block.sort_order,
+                           content_json=block.content_json, visible=block.visible)
+            for block in source.page_blocks.all()
+        ])
+        # A new edition begins without sales or checkout reservations.
+        CapacityResource.objects.create(event=new_event, type="EVENT_OVERALL", capacity_total=new_event.max_attendees)
 
         log_audit(actor=request.user, event_id=new_event.id, action="EVENT_DUPLICATED", entity_type="Event", entity_id=new_event.id, diff={"source_id": str(source.id)}, request=request)
         messages.success(request, f"Edição duplicada com sucesso em rascunho como '{new_event.title}'!")
@@ -224,9 +281,10 @@ def event_duplicate(request, event_id):
 
 
 @staff_required_custom
+@never_cache
 def registration_list(request, event_id):
     event = get_object_or_404(Event, id=event_id)
-    regs = Registration.objects.filter(event=event).select_related("person", "source_order_line", "credential").order_by("registration_number", "-created_at")
+    regs = Registration.objects.filter(event=event).select_related("person", "source_order_line", "credential").order_by("registration_number", "-created_at", "pk")
 
     # Filtros
     q = request.GET.get("q", "").strip()
@@ -244,9 +302,14 @@ def registration_list(request, event_id):
     if op_filter:
         regs = regs.filter(operational_state=op_filter)
 
+    page = Paginator(regs, 40).get_page(request.GET.get("page"))
+    filters = {"q": q, "status": status_filter, "op_status": op_filter}
+
     return render(request, "gestao/registrations/registration_list.html", {
         "event": event,
-        "registrations": regs[:150],
+        "registrations": page.object_list,
+        "page_obj": page,
+        "pagination_query": urlencode({key: value for key, value in filters.items() if value}),
         "q": q,
         "status_filter": status_filter,
         "op_filter": op_filter,
@@ -654,9 +717,17 @@ def export_financial(request, event_id):
 
 
 @staff_required_custom
+@never_cache
 def audit_log_view(request):
     logs = AuditLog.objects.all()
     if not is_administrator(request.user):
         logs = logs.filter(event_id__in=accessible_events(request.user, "audit").values("id"))
-    logs = logs.order_by("-created_at")[:100]
-    return render(request, "gestao/audit/audit_log.html", {"logs": logs})
+    query = request.GET.get("q", "").strip()
+    if query:
+        logs = logs.filter(Q(action__icontains=query) | Q(actor_email__icontains=query) |
+                           Q(entity_type__icontains=query) | Q(entity_id__icontains=query) | Q(reason__icontains=query))
+    page = Paginator(logs.order_by("-created_at", "-pk"), 40).get_page(request.GET.get("page"))
+    return render(request, "gestao/audit/audit_log.html", {
+        "logs": page.object_list, "page_obj": page, "q": query,
+        "pagination_query": urlencode({"q": query}) if query else "",
+    })

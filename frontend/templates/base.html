@@ -4,20 +4,20 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#11100f"><meta name="color-scheme" content="dark">
 <title>{% block title %}Equipe Morcego | Trilhas e encontros{% endblock %}</title>
-<link rel="icon" type="image/png" sizes="64x64" href="{% static 'img/favicon-64.png' %}?v=trail20261022">
+<link rel="icon" type="image/png" sizes="64x64" href="{% static 'img/favicon-64.png' %}?v=trail20261023">
 <link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=navie2">
 <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=navie2">
 <link rel="stylesheet" href="{% static 'css/public-pages.css' %}?v=navie2">
 {% block extra_head %}{% endblock %}
-<link rel="stylesheet" href="{% static 'css/trail.css' %}?v=trail20261022">
+<link rel="stylesheet" href="{% static 'css/trail.css' %}?v=trail20261023">
 </head>
 <body>
 <a class="skip-link" href="#main-content">Ir para o conteúdo</a>
 <header class="navbar"><div class="container nav-container">
 <a href="{% url 'core:home' %}" class="brand-logo" aria-label="Equipe Morcego, início"><img src="{% static 'img/logo-nav.webp' %}" alt="" class="logo-emblem" width="96" height="80"></a>
-<nav class="desktop-navigation" aria-label="Navegação principal"><a href="{% url 'core:home' %}" class="nav-link{% if request.resolver_match.url_name == 'home' %} active{% endif %}">Início</a><a href="{% url 'events:list' %}" class="nav-link{% if request.resolver_match.app_name == 'events' %} active{% endif %}">Eventos</a>{% if event.motorcycle_raffle.is_public %}<a href="{% url 'events:raffle' slug=event.slug %}" class="nav-link">Sorteio da moto</a>{% elif featured_events.0.motorcycle_raffle.is_public %}<a href="{% url 'events:raffle' slug=featured_events.0.slug %}" class="nav-link">Sorteio da moto</a>{% endif %}<a href="{% url 'core:about' %}" class="nav-link">A equipe</a><a href="{% url 'core:contact' %}" class="nav-link">Contato</a></nav>
+<nav class="desktop-navigation" aria-label="Navegação principal"><a href="{% url 'core:home' %}" class="nav-link{% if request.resolver_match.url_name == 'home' %} active{% endif %}">Início</a><a href="{% url 'events:list' %}" class="nav-link{% if request.resolver_match.app_name == 'events' %} active{% endif %}">Eventos</a><a href="{% url 'core:about' %}" class="nav-link">A equipe</a><a href="{% url 'core:contact' %}" class="nav-link">Contato</a></nav>
 <div class="header-actions">{% if request.user.is_authenticated %}<a href="{% url 'minha_conta:dashboard' %}" class="btn btn-dark btn-sm" aria-label="Acessar minha conta"><i data-lucide="user-round" aria-hidden="true"></i> Minha conta</a>{% else %}<a href="{% url 'identity:login' %}" class="btn btn-dark btn-sm" aria-label="Acessar minha conta"><i data-lucide="user-round" aria-hidden="true"></i> Entrar</a>{% endif %}<button type="button" id="mobileMenuBtn" class="icon-button mobile-menu-button" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileMenuDrawer"><i data-lucide="menu" aria-hidden="true"></i></button></div>
-</div><nav id="mobileMenuDrawer" class="mobile-menu" aria-label="Navegação móvel" hidden><a href="{% url 'core:home' %}">Início</a><a href="{% url 'events:list' %}">Eventos</a>{% if event.motorcycle_raffle.is_public %}<a href="{% url 'events:raffle' slug=event.slug %}">Sorteio da moto</a>{% elif featured_events.0.motorcycle_raffle.is_public %}<a href="{% url 'events:raffle' slug=featured_events.0.slug %}">Sorteio da moto</a>{% endif %}<a href="{% url 'core:about' %}">A equipe</a><a href="{% url 'core:contact' %}">Contato</a>{% if request.user.is_authenticated %}<a href="{% url 'minha_conta:dashboard' %}">Minha conta</a>{% else %}<a href="{% url 'identity:register' %}">Criar conta</a>{% endif %}</nav></header>
+</div><nav id="mobileMenuDrawer" class="mobile-menu" aria-label="Navegação móvel" hidden><a href="{% url 'core:home' %}">Início</a><a href="{% url 'events:list' %}">Eventos</a><a href="{% url 'core:about' %}">A equipe</a><a href="{% url 'core:contact' %}">Contato</a>{% if request.user.is_authenticated %}<a href="{% url 'minha_conta:dashboard' %}">Minha conta</a>{% else %}<a href="{% url 'identity:register' %}">Criar conta</a>{% endif %}</nav></header>
 {% if messages %}<div class="container page-messages" role="status">{% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
 <main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>
 <footer class="footer"><div class="container footer-main"><div class="footer-brand"><img src="{% static 'img/logo-nav.webp' %}" alt="Equipe Morcego" class="logo-emblem" width="104" height="86" loading="lazy"><div><strong>O encontro é na trilha.</strong><p>Equipe Morcego · Tianguá, Ceará</p></div></div><div class="footer-links"><a href="{% url 'events:list' %}">Eventos</a><a href="{% url 'core:about' %}">A equipe</a><a href="{% url 'core:contact' %}">Fale com a gente</a><a href="{% url 'core:privacy' %}">Privacidade</a></div></div><div class="container footer-bottom"><span>© {{ current_year }} Equipe Morcego</span>{% if request.user.is_staff or user_memberships %}<a href="{% url 'gestao:dashboard' %}">Painel da equipe <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>{% else %}<a href="{% url 'identity:login' %}">Área do piloto <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>{% endif %}</div></footer>
@@ -30,5 +30,5 @@ document.addEventListener('DOMContentLoaded',function(){
  document.addEventListener('keydown',function(event){if(event.key==='Escape'&&!menu.hidden){close();button.focus();}});
  window.matchMedia('(min-width: 961px)').addEventListener('change',function(event){if(event.matches)close();});
 });
-</script><script src="{% static 'js/trail-motion.js' %}?v=trail20261022" defer></script>{% block extra_js %}{% endblock %}
+</script><script src="{% static 'js/trail-motion.js' %}?v=trail20261023" defer></script>{% block extra_js %}{% endblock %}
 </body></html>

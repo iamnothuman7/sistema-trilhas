@@ -1,5 +1,6 @@
 import uuid
 import secrets
+import re
 from functools import wraps
 from datetime import timedelta
 from django.shortcuts import render, redirect, get_object_or_404
@@ -9,11 +10,13 @@ from django.db.models import Max, Q
 from django.utils import timezone
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.views.decorators.http import require_POST
 from django.views.decorators.debug import sensitive_post_parameters, sensitive_variables
 from django.views.decorators.cache import never_cache
 from apps.events.models import Event, EventStatus
 from apps.catalog.models import Product, Lot, ProductVariant, Coupon, CapacityResource, CapacityHold, HoldStatus
+from apps.catalog.offers import available_registration_lots, registration_catalog
 from apps.checkout.models import Order, OrderLine, OrderStatus, OrderCoupon, ReceivableDue, DueType
 from apps.payments.models import ChargeAttempt, ChargeState, PaymentMethod
 from apps.payments.gateway import MercadoPagoGateway
@@ -32,6 +35,39 @@ def private_checkout(view):
     return wrapped
 
 
+def _registration_context(request, event, products, active_lots):
+    buyer = {}
+    for field, user_field in (("name", "full_name"), ("email", "email"), ("phone", "phone"), ("document", "")):
+        buyer[field] = request.POST.get(f"purchaser_{field}", "") if request.method == "POST" else (
+            getattr(request.user, user_field, "") if request.user.is_authenticated and user_field else "")
+    rows = []
+    names = request.POST.getlist("participant_name[]") if request.method == "POST" else []
+    for index, name in enumerate(names):
+        row = {"name": name}
+        for field in ("email", "phone", "city", "state", "team", "product", "lot", "shirt"):
+            values = request.POST.getlist(f"participant_{field}[]")
+            row[field] = values[index] if index < len(values) else ""
+        rows.append(row)
+    if not rows and request.method == "POST" and request.POST.get("participant_name") is not None:
+        rows = [{field: request.POST.get("participant_"+field, "") for field in ("name", "email", "phone", "city", "state", "team")}]
+        rows[0].update(product=request.POST.get("product_id", ""), lot=request.POST.get("lot_id", ""), shirt=request.POST.get("shirt_size", "M"))
+    if not rows:
+        selected = request.GET.get("product", "")
+        if selected not in {str(product.pk) for product in products}:
+            selected = str(products[0].pk) if products else ""
+        rows = [{"city": event.city, "state": event.state, "shirt": "M", "product": selected}]
+    shirt_options = []
+    for product in products:
+        variants = [variant for variant in product.variants.all() if variant.kind == "SHIRT_SIZE"]
+        sizes = [(variant.code, variant.label, variant.extra_price_cents) for variant in variants] if variants else [(code, code, 0) for code in ("P", "M", "G", "GG", "XG")]
+        if not product.includes_shirt:
+            sizes = [("", "Esta inscrição não inclui camiseta", 0)]
+        shirt_options.extend({"product_id": str(product.pk), "code": code, "label": label, "extra_cents": extra} for code, label, extra in sizes)
+    return {"event": event, "products": products, "active_lots": active_lots, "shirt_options": shirt_options,
+            "buyer": buyer, "participant_rows": rows, "coupon_code": request.POST.get("coupon_code", ""),
+            "payments_available": not MercadoPagoGateway().configuration_issues()}
+
+
 @private_checkout
 def start_registration(request, event_slug):
     """
@@ -48,8 +84,7 @@ def start_registration(request, event_slug):
     from apps.payments.services import expire_stale_orders
     expire_stale_orders(event_id=event.pk)
 
-    products = Product.objects.filter(event=event, active=True).prefetch_related("lots", "variants")
-    active_lots = Lot.objects.filter(event=event, active=True).order_by("priority", "opens_at")
+    products, active_lots, _ = registration_catalog(event)
 
     if request.method == "POST":
         purchaser_name = request.POST.get("purchaser_name", "").strip()
@@ -84,15 +119,75 @@ def start_registration(request, event_slug):
 
         if not purchaser_name or not purchaser_email or not purchaser_phone or not participant_names:
             messages.error(request, "Por favor, preencha todos os campos obrigatórios do comprador e dos pilotos.")
-            return render(request, "checkout/registration_form.html", {
-                "event": event, "products": products, "active_lots": active_lots
-            })
+            return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots))
+
+        errors = []
+        try:
+            validate_email(purchaser_email)
+            if len(purchaser_email) > 254:
+                raise ValidationError("E-mail muito longo.")
+        except ValidationError:
+            errors.append("Informe um e-mail válido para o responsável pela inscrição.")
+        if len(purchaser_name) > 150 or len(purchaser_phone) > 30 or len(purchaser_doc) > 20:
+            errors.append("Revise os dados do responsável: nome até 150 caracteres, telefone até 30 e documento até 20.")
+        participants = []
+        for index, raw_name in enumerate(participant_names):
+            def value(values, default=""):
+                return ((values[index] or "") if index < len(values) else default).strip()
+            participant = {"name": raw_name.strip(), "email": value(participant_emails).lower(),
+                "phone": value(participant_phones), "city": value(participant_cities, event.city),
+                "state": value(participant_states, event.state).upper(), "team": value(participant_teams),
+                "product_id": value(participant_products), "lot_id": value(participant_lots),
+                "shirt": value(participant_shirts, "M")}
+            label = f"Participante {index+1}"
+            if not participant["name"] or len(participant["name"]) > 150:
+                errors.append(f"{label}: informe um nome com até 150 caracteres.")
+            if participant["email"]:
+                try:
+                    validate_email(participant["email"])
+                    if len(participant["email"]) > 254:
+                        raise ValidationError("E-mail muito longo.")
+                except ValidationError:
+                    errors.append(f"{label}: informe um e-mail válido ou deixe esse campo em branco.")
+            if participant["state"] and not re.fullmatch(r"[A-Z]{2}", participant["state"]):
+                errors.append(f"{label}: informe a UF com duas letras, como CE.")
+            if any(len(participant[field]) > limit for field, limit in (("phone", 30), ("city", 100), ("team", 120), ("shirt", 30))):
+                errors.append(f"{label}: revise o tamanho dos campos de telefone, cidade, equipe e camiseta.")
+            participants.append(participant)
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots))
 
         num_participants = len(participant_names)
 
         with transaction.atomic():
             # One lock also serializes initial capacity creation and registration numbering.
-            Event.objects.select_for_update().get(pk=event.pk)
+            event = Event.objects.select_for_update(of=("self",)).select_related("theme").get(pk=event.pk)
+            if not event.is_registration_open:
+                messages.error(request, "As inscrições foram encerradas enquanto você preenchia os dados. Nenhum pedido foi criado.")
+                return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots))
+            products, active_lots, _ = registration_catalog(event)
+            for participant in participants:
+                try:
+                    product = Product.objects.filter(id=participant["product_id"], event=event, active=True).first() if participant["product_id"] else (products[0] if products else None)
+                    valid_lots = available_registration_lots(event).filter(product=product)
+                    lot = valid_lots.filter(id=participant["lot_id"]).first() if participant["lot_id"] else valid_lots.first()
+                except (ValueError, ValidationError):
+                    product = lot = None
+                if not product or not lot or not lot.is_open:
+                    messages.error(request, "O pacote ou lote escolhido não está disponível. Revise a inscrição.")
+                    return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots))
+                size_variants = {variant.code: variant for variant in product.variants.filter(kind="SHIRT_SIZE")}
+                allowed_sizes = set(size_variants) or {"P", "M", "G", "GG", "XG"}
+                if product.includes_shirt and participant["shirt"] not in allowed_sizes:
+                    messages.error(request, f"Escolha um tamanho de camiseta disponível para {participant['name']}.")
+                    return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots))
+                if not product.includes_shirt:
+                    participant["shirt"] = ""
+                variant = size_variants.get(participant["shirt"]) if product.includes_shirt else None
+                participant.update(product=product, lot=lot, variant=variant,
+                                   extra_cents=variant.extra_price_cents if variant else 0)
             # 1. Travar recurso de capacidade geral
             cap_resource, _ = CapacityResource.objects.select_for_update().get_or_create(
                 event=event,
@@ -102,9 +197,7 @@ def start_registration(request, event_slug):
 
             if cap_resource.available_count < num_participants:
                 messages.error(request, f"Desculpe, restam apenas {cap_resource.available_count} vaga(s) disponível(is).")
-                return render(request, "checkout/registration_form.html", {
-                    "event": event, "products": products, "active_lots": active_lots
-                })
+                return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots))
 
             # 2. Criar o pedido
             ref_code = f"TM-{event.edition_number:02d}-{secrets.token_hex(3).upper()}"
@@ -127,31 +220,10 @@ def start_registration(request, event_slug):
             next_registration_number = (Registration.objects.filter(event=event).aggregate(number=Max("registration_number"))["number"] or 0) + 1
 
             # 3. Criar as linhas do pedido e inscrições
-            for i in range(num_participants):
-                p_name = participant_names[i].strip()
-                p_email = (participant_emails[i] if i < len(participant_emails) else "").strip()
-                p_phone = (participant_phones[i] if i < len(participant_phones) else "").strip()
-                p_city = (participant_cities[i] if i < len(participant_cities) else "Tianguá").strip()
-                p_state = (participant_states[i] if i < len(participant_states) else "CE").strip()
-                p_team = (participant_teams[i] if i < len(participant_teams) else "").strip()
-                prod_id = participant_products[i] if i < len(participant_products) else None
-                lot_id = participant_lots[i] if i < len(participant_lots) else None
-                shirt = (participant_shirts[i] if i < len(participant_shirts) else "M").strip()
-
-                try:
-                    product = Product.objects.filter(id=prod_id, event=event, active=True).first() if prod_id else products.first()
-                    valid_lots = Lot.objects.filter(event=event, product=product, active=True,
-                        opens_at__lte=timezone.now(), closes_at__gte=timezone.now())
-                    lot = valid_lots.filter(id=lot_id).first() if lot_id else valid_lots.first()
-                except (ValueError, ValidationError):
-                    product = lot = None
-                if not product or not lot or not lot.is_open:
-                    messages.error(request, "O pacote ou lote escolhido não está disponível. Revise a inscrição.")
-                    result = render(request, "checkout/registration_form.html", {
-                        "event": event, "products": products, "active_lots": active_lots
-                    })
-                    transaction.set_rollback(True)
-                    return result
+            for participant in participants:
+                p_name, p_email, p_phone = participant["name"], participant["email"], participant["phone"]
+                p_city, p_state, p_team = participant["city"], participant["state"], participant["team"]
+                product, lot, shirt = participant["product"], participant["lot"], participant["shirt"]
                 lot_capacity, _ = CapacityResource.objects.select_for_update().get_or_create(
                     event=event, type="LOT_TOTAL", reference_id=str(lot.id),
                     defaults={"capacity_total": lot.max_quantity, "committed_count": lot.current_sold})
@@ -159,14 +231,12 @@ def start_registration(request, event_slug):
                     lot_capacity.capacity_total = lot.max_quantity
                 if lot_capacity.available_count < 1:
                     messages.error(request, "O lote escolhido não tem vagas suficientes para este grupo. Selecione outro lote.")
-                    result = render(request, "checkout/registration_form.html", {
-                        "event": event, "products": products, "active_lots": active_lots
-                    })
+                    result = render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots))
                     transaction.set_rollback(True)
                     return result
                 lot_capacity.reserved_count += 1
                 lot_capacity.save(update_fields=["capacity_total", "reserved_count"])
-                price_cents = lot.price_cents
+                price_cents = lot.price_cents + participant["extra_cents"]
                 gross_total += price_cents
 
                 # A name is not an identity: participants may be unrelated namesakes.
@@ -183,6 +253,7 @@ def start_registration(request, event_slug):
                     order=order,
                     product=product,
                     lot=lot,
+                    variant=participant["variant"],
                     intended_person_name=p_name,
                     intended_person_email=p_email,
                     intended_person_phone=p_phone,
@@ -197,6 +268,10 @@ def start_registration(request, event_slug):
                         "product_name": product.name if product else "Inscrição Piloto",
                         "lot_title": lot.title if lot else "Lote Único",
                         "price_cents": price_cents,
+                        "lot_price_cents": lot.price_cents,
+                        "variant_extra_price_cents": participant["extra_cents"],
+                        "variant_code": participant["variant"].code if participant["variant"] else "",
+                        "variant_label": participant["variant"].label if participant["variant"] else "",
                         "shirt_size": shirt,
                         "includes_kit": product.includes_kit,
                         "includes_shirt": product.includes_shirt,
@@ -288,11 +363,7 @@ def start_registration(request, event_slug):
         request.session["checkout_order_ids"] = [str(value) for value in authorized_ids[-49:]] + [str(order.id)]
         return redirect("checkout:order_payment", order_id=order.id)
 
-    return render(request, "checkout/registration_form.html", {
-        "event": event,
-        "products": products,
-        "active_lots": active_lots,
-    })
+    return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots))
 
 
 def authorized_order(request, order_id):

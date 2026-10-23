@@ -3,6 +3,7 @@
 {% block title %}Programação Oficial | {{ event.title }}{% endblock %}
 {% block content %}{% timezone event.timezone %}
 <div class="public-page public-page--narrow">
+  {% include 'events/_event_navigation.html' with current='schedule' %}
   <a href="{% url 'events:detail' slug=event.slug %}" class="public-back"><i data-lucide="arrow-left" aria-hidden="true"></i> Voltar ao evento</a>
   <header class="public-intro"><span class="public-eyebrow">{{ event.title }}</span><h1>Programação do evento</h1><p>Horários, locais e atividades publicados pela organização.</p></header>
   {% if schedule %}

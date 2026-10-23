@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Patrocinadores | {{ event.title }}{% endblock %}
 {% block content %}
-<section class="section-space"><div class="container"><a href="{% url 'events:detail' slug=event.slug %}" class="back-link"><i data-lucide="arrow-left" aria-hidden="true"></i> {{ event.title }}</a><header class="section-heading section-heading-center sponsor-heading"><span class="eyebrow">Juntos pelo off-road</span><h1>Quem apoia<br>esse encontro.</h1><p>Marcas que caminham com a Equipe Morcego.</p></header>
+<section class="section-space"><div class="container">{% include 'events/_event_navigation.html' with current='sponsors' %}<a href="{% url 'events:detail' slug=event.slug %}" class="back-link"><i data-lucide="arrow-left" aria-hidden="true"></i> {{ event.title }}</a><header class="section-heading section-heading-center sponsor-heading"><span class="eyebrow">Juntos pelo off-road</span><h1>Quem apoia<br>esse encontro.</h1><p>Marcas que caminham com a Equipe Morcego.</p></header>
 {% if sponsors %}{% include 'events/_sponsor_grid.html' %}{% else %}<div class="sponsor-invitation"><span class="icon-tile"><i data-lucide="handshake" aria-hidden="true"></i></span><h2>Sua marca pode estar aqui.</h2><p>Converse com a equipe e conheça as possibilidades de apoio a esta edição.</p><a href="{% url 'core:contact' %}" class="btn btn-primary">Quero apoiar <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>{% endif %}
 </div></section>{% endblock %}

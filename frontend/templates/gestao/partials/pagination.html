@@ -1,0 +1,15 @@
+{% if page_obj.paginator %}
+<nav class="mg-pagination" aria-label="{{ pagination_label|default:'Páginas da listagem' }}">
+    <span>{% if page_obj.paginator.count %}Exibindo {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ page_obj.paginator.count }} registros{% else %}0 registros{% endif %}{% if page_obj.paginator.num_pages > 1 %} · Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}{% endif %}</span>
+    {% if page_obj.paginator.num_pages > 1 %}<div class="page-actions">
+        {% if page_obj.has_previous %}
+        <a class="btn btn-secondary btn-sm" href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page=1" aria-label="Primeira página">Primeira</a>
+        <a class="btn btn-secondary btn-sm" href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" rel="prev">Anterior</a>
+        {% endif %}
+        {% if page_obj.has_next %}
+        <a class="btn btn-secondary btn-sm" href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ page_obj.next_page_number }}" rel="next">Próxima</a>
+        <a class="btn btn-secondary btn-sm" href="?{% if pagination_query %}{{ pagination_query }}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}" aria-label="Última página">Última</a>
+        {% endif %}
+    </div>{% endif %}
+</nav>
+{% endif %}

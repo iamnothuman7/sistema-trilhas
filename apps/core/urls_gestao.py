@@ -16,6 +16,7 @@ urlpatterns = [
     path("eventos/novo/", views_gestao.event_create, name="event_create"),
     path("eventos/<uuid:event_id>/", views_gestao.event_detail, name="event_detail"),
     path("eventos/<uuid:event_id>/editar/", views_gestao.event_edit, name="event_edit"),
+    path("eventos/<uuid:event_id>/aparencia/", views_gestao.event_appearance, name="event_appearance"),
     path("eventos/<uuid:event_id>/duplicar/", views_gestao.event_duplicate, name="event_duplicate"),
 
     # Inscrições

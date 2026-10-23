@@ -39,6 +39,54 @@ class ManagementAccessTests(TestCase):
         dashboard = self.client.get(f"/gestao/?event_id={other.id}")
         self.assertEqual(dashboard.context['selected_event'], self.event)
 
+    def test_dashboard_personal_data_obeys_module_permissions(self):
+        user = self.operator(RoleChoices.CONTENT)
+        registration = self.registration()
+        order = registration.source_order_line.order
+        order.purchaser_name = "Comprador restrito da edição"
+        order.save(update_fields=["purchaser_name"])
+        registration.person.full_name = "Participante restrito da edição"
+        registration.person.save(update_fields=["full_name"])
+        CheckinRecord.objects.create(registration=registration, event=self.event, operator=user, source_key="dashboard-checkin")
+        for role, orders_allowed, checkins_allowed in (
+            (RoleChoices.CONTENT, False, False), (RoleChoices.LOGISTICS, False, False),
+            (RoleChoices.CHECKIN_AGENT, False, True), (RoleChoices.FINANCE, True, False),
+            (RoleChoices.REGISTRATION_AGENT, True, True), (RoleChoices.EVENT_MANAGER, True, True),
+        ):
+            with self.subTest(role=role):
+                EventMembership.objects.filter(user=user).update(role_code=role)
+                response = self.client.get('/gestao/')
+                self.assertEqual(response.status_code, 200)
+                self.assertIn("no-store", response["Cache-Control"])
+                self.assertEqual(response.context["show_recent_orders"], orders_allowed)
+                self.assertEqual(response.context["show_recent_checkins"], checkins_allowed)
+                self.assertEqual(len(response.context["recent_orders"]), int(orders_allowed))
+                self.assertEqual(len(response.context["recent_checkins"]), int(checkins_allowed))
+                for text, allowed in ((order.purchaser_name, orders_allowed), ("Últimos pedidos", orders_allowed),
+                                      (registration.person.full_name, checkins_allowed), ("Últimas presenças", checkins_allowed)):
+                    if allowed:
+                        self.assertContains(response, text)
+                    else:
+                        self.assertNotContains(response, text)
+
+    def test_dashboard_uses_capabilities_of_the_selected_edition(self):
+        user = self.operator(RoleChoices.REGISTRATION_AGENT)
+        registration = self.registration()
+        other = Event.objects.create(organization=self.org, title="Edição de conteúdo", slug="edicao-conteudo-dashboard",
+            starts_at=self.event.starts_at, ends_at=self.event.ends_at,
+            registration_opens_at=self.event.registration_opens_at, registration_closes_at=self.event.registration_closes_at)
+        EventMembership.objects.create(user=user, event=other, role_code=RoleChoices.CONTENT)
+        Order.objects.create(event=other, merchant_reference="DASHBOARD-OTHER", purchaser_name="Comprador de outra edição",
+            purchaser_email="other-buyer@example.test", total_cents=12000, expires_at=timezone.now()+timedelta(hours=1))
+        allowed = self.client.get('/gestao/', {"event_id": str(self.event.pk)})
+        self.assertEqual([item.pk for item in allowed.context["recent_orders"]], [registration.source_order_line.order_id])
+        restricted = self.client.get('/gestao/', {"event_id": str(other.pk)})
+        self.assertEqual(restricted.context["selected_event"], other)
+        self.assertEqual(restricted.context["recent_orders"], [])
+        self.assertEqual(restricted.context["recent_checkins"], [])
+        self.assertNotContains(restricted, "Comprador de outra edição")
+        self.assertNotContains(restricted, "DASHBOARD-OTHER")
+
     def test_revoked_membership_cannot_access_management(self):
         user = self.operator()
         EventMembership.objects.filter(user=user).update(revoked_at=timezone.now())

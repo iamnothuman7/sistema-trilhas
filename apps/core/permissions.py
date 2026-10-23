@@ -22,7 +22,7 @@ ACTION_ROLES = {
 }
 VIEW_ACTIONS = {
     "dashboard": "view", "event_list": "events", "event_create": "events",
-    "event_detail": "events", "event_edit": "events", "event_duplicate": "events",
+    "event_detail": "events", "event_edit": "events", "event_duplicate": "events", "event_appearance": "content",
     "registration_list": "registrations", "registration_detail": "registrations",
     "registration_change_status": "registrations", "export_participants": "registrations",
     "credenciamento_scanner": "checkin", "credenciamento_lookup_api": "checkin",

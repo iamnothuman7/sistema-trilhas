@@ -1,10 +1,11 @@
 {% extends "gestao/base_gestao.html" %}
-{% load trilhas_ui %}
+{% load trilhas_ui tz %}
 
 {% block title %}Financeiro · {{ event.title }} | Equipe Morcego{% endblock %}
 {% block gestao_header %}Financeiro{% endblock %}
 
 {% block content %}
+{% timezone event.timezone %}
 <div class="page-heading">
     <div><h1>Financeiro da edição</h1><p>Recebimentos, compromissos e resultado de {{ event.title }}.</p></div>
     <div class="page-actions">
@@ -81,6 +82,7 @@
 {% for exp in expenses %}{% if exp.status == 'PENDING' %}
 <dialog id="cancelExpense{{ exp.id }}" class="mg-dialog" aria-labelledby="cancel-title-{{ exp.id }}"><div class="card mg-dialog-card"><div class="card-header"><h2 class="section-title" id="cancel-title-{{ exp.id }}">Cancelar despesa</h2><button type="button" class="btn btn-secondary btn-sm" aria-label="Fechar cancelamento" onclick="document.getElementById('cancelExpense{{ exp.id }}').close()"><i data-lucide="x" aria-hidden="true"></i></button></div><p class="mg-space-bottom">{{ exp.description }} · <strong>R$ {{ exp.amount_cents|money }}</strong></p><form method="post" action="{% url 'gestao:cancel_expense' event_id=event.id expense_id=exp.id %}">{% csrf_token %}<div class="form-group"><label class="form-label" for="cancel-reason-{{ exp.id }}">Motivo do cancelamento</label><textarea id="cancel-reason-{{ exp.id }}" name="reason" class="form-control" rows="3" maxlength="500" required placeholder="Informe por que a despesa será cancelada."></textarea><p class="form-help">A justificativa será registrada no histórico de auditoria.</p></div><div class="mg-form-actions"><button type="button" class="btn btn-secondary" onclick="document.getElementById('cancelExpense{{ exp.id }}').close()">Voltar</button><button type="submit" class="btn btn-danger">Cancelar despesa</button></div></form></div></dialog>
 {% endif %}{% endfor %}
+{% endtimezone %}
 {% endblock %}
 
 {% block extra_js %}

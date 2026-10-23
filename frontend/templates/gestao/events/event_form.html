@@ -1,89 +1,45 @@
 {% extends "gestao/base_gestao.html" %}
-
-{% block title %}Criar Novo Evento | Painel Gestão{% endblock %}
-{% block gestao_header %}Cadastro de Nova edição{% endblock %}
-
+{% block title %}{% if creating %}Nova edição{% else %}Editar {{ event.title }}{% endif %} | Equipe Morcego{% endblock %}
+{% block gestao_header %}{% if creating %}Criar edição{% else %}Editar evento{% endif %}{% endblock %}
 {% block content %}
-<div class="card mg-form-sheet">
-    <h2 class="section-title">
-        Nova edição
-    </h2>
-
-    <form method="POST">
-        {% csrf_token %}
-        <div class="form-group">
-            <label class="form-label" for="field-title">Nome Oficial do Evento *</label>
-            <input type="text" name="title" class="form-control" required placeholder="Ex: 3º Trilhão Tianguá Off Road" id="field-title">
-        </div>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label class="form-label" for="field-slug">Identificador na URL (Slug) *</label>
-                <input type="text" name="slug" class="form-control" required placeholder="ex: 3-trilhao-tiangua" id="field-slug">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="field-edition_number">Número da Edição *</label>
-                <input type="number" name="edition_number" class="form-control" value="3" min="1" id="field-edition_number">
-            </div>
-        </div>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label class="form-label" for="field-type">Tipo do Evento *</label>
-                <select name="type" class="form-control" id="field-type">
-                    <option value="TRILHAO">Trilhão Off-Road (1 Dia)</option>
-                    <option value="EXPEDITION">Expedição (Múltiplos Dias)</option>
-                    <option value="ENCOUNTER">Encontro / Passeio Off-Road</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="field-max_attendees">Capacidade Máxima de Pilotos *</label>
-                <input type="number" name="max_attendees" class="form-control" value="300" min="10" id="field-max_attendees">
-            </div>
-        </div>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label class="form-label" for="field-venue">Local de Concentração *</label>
-                <input type="text" name="venue" class="form-control" required value="Polo de Lazer de Tianguá" id="field-venue">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="field-city">Cidade / UF *</label>
-                <input type="text" name="city" class="form-control" required value="Tianguá" id="field-city">
-            </div>
-        </div>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label class="form-label" for="field-starts_at">Data e Hora de Início *</label>
-                <input type="datetime-local" name="starts_at" class="form-control" required id="field-starts_at">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="field-ends_at">Data e Hora de Término *</label>
-                <input type="datetime-local" name="ends_at" class="form-control" required id="field-ends_at">
-            </div>
-        </div>
-
-        <div class="form-grid">
-            <div class="form-group">
-                <label class="form-label" for="field-registration_opens_at">Abertura das Inscrições *</label>
-                <input type="datetime-local" name="registration_opens_at" class="form-control" required id="field-registration_opens_at">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="field-registration_closes_at">Encerramento das Inscrições *</label>
-                <input type="datetime-local" name="registration_closes_at" class="form-control" required id="field-registration_closes_at">
-            </div>
-        </div>
-
-        <div class="form-group">
-            <label class="form-label" for="field-description">Apresentação / Descrição do Evento</label>
-            <textarea name="description" class="form-control" rows="4" placeholder="Detalhes, percurso e atrações..." id="field-description"></textarea>
-        </div>
-
-        <div class="mg-form-actions mg-space-top">
-            <a href="{% url 'gestao:event_list' %}" class="btn btn-secondary">Cancelar</a>
-            <button type="submit" class="btn btn-primary btn-lg">Salvar e Criar Estrutura</button>
-        </div>
-    </form>
+<div class="mg-form-sheet">
+<div class="page-heading"><div><h1>{% if creating %}Prepare uma nova edição{% else %}Dados do evento{% endif %}</h1><p>{% if creating %}Comece pelos dados e pelas datas. A edição será salva em rascunho para você revisar antes de publicar.{% else %}Atualize as informações de {{ event.title }}. Os pedidos, as inscrições e o histórico continuam vinculados à mesma edição.{% endif %}</p></div></div>
+<form method="post" class="mg-stack">
+{% csrf_token %}
+{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+{% if form.errors %}<div class="mg-form-errors" role="alert"><strong>Revise os campos indicados abaixo.</strong>{{ form.non_field_errors }}{% if form.version_conflict %}<a href="{% url 'gestao:event_edit' event_id=event.id %}" class="btn btn-secondary">Reabrir dados atuais</a>{% endif %}</div>{% endif %}
+<section class="card" aria-labelledby="identity-title"><div class="card-header"><div><h2 id="identity-title">1. Identifique a edição</h2><p>Use o nome que os participantes vão reconhecer.</p></div></div>
+{% if creating %}{% include "gestao/events/_field.html" with field=form.organization %}
+{% endif %}{% include "gestao/events/_field.html" with field=form.title %}
+<div class="form-grid">{% include "gestao/events/_field.html" with field=form.edition_number %}
+{% include "gestao/events/_field.html" with field=form.type %}
 </div>
+{% include "gestao/events/_field.html" with field=form.slug %}
+{% if not creating %}{% include "gestao/events/_field.html" with field=form.status %}
+{% endif %}</section>
+<section class="card" aria-labelledby="schedule-title"><div class="card-header"><div><h2 id="schedule-title">2. Local e datas</h2><p>Confira o fuso antes de preencher os horários.</p></div></div>
+{% include "gestao/events/_field.html" with field=form.venue %}
+<div class="form-grid">{% include "gestao/events/_field.html" with field=form.city %}
+{% include "gestao/events/_field.html" with field=form.state %}
+</div>
+{% include "gestao/events/_field.html" with field=form.timezone %}
+<div class="form-grid">{% include "gestao/events/_field.html" with field=form.starts_at %}
+{% include "gestao/events/_field.html" with field=form.ends_at %}
+</div>
+</section>
+<section class="card" aria-labelledby="registrations-title"><div class="card-header"><div><h2 id="registrations-title">3. Período de inscrições</h2><p>A abertura também depende da publicação do evento e da disponibilidade dos lotes.</p></div></div>
+<div class="form-grid">{% include "gestao/events/_field.html" with field=form.registration_opens_at %}
+{% include "gestao/events/_field.html" with field=form.registration_closes_at %}
+</div>
+{% include "gestao/events/_field.html" with field=form.max_attendees %}
+</section>
+<section class="card" aria-labelledby="content-title"><div class="card-header"><div><h2 id="content-title">4. Apresentação e atendimento</h2><p>Informe somente contatos reais da organização. Campos opcionais podem ficar em branco.</p></div></div>
+{% include "gestao/events/_field.html" with field=form.description %}
+{% include "gestao/events/_field.html" with field=form.rules_summary %}
+<div class="form-grid">{% include "gestao/events/_field.html" with field=form.contact_email %}
+{% include "gestao/events/_field.html" with field=form.contact_phone %}
+</div>
+</section>
+<div class="mg-form-actions"><a class="btn btn-secondary" href="{% if creating %}{% url 'gestao:event_list' %}{% else %}{% url 'gestao:event_detail' event_id=event.id %}{% endif %}">Cancelar</a><button type="submit" class="btn btn-primary"><i data-lucide="save" aria-hidden="true"></i>{% if creating %}Criar rascunho{% else %}Salvar dados do evento{% endif %}</button></div>
+</form></div>
 {% endblock %}

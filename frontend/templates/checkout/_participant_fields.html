@@ -1,0 +1,15 @@
+{% load trilhas_ui %}
+<article class="participant-item card" data-participant>
+    <div class="card-header"><h2 data-participant-title>Participante {{ forloop.counter|default:'1' }}</h2><button type="button" class="payment-button payment-button-secondary" data-remove-participant{% if forloop.first %} hidden{% endif %}><i data-lucide="trash-2" aria-hidden="true"></i> Remover</button></div>
+    <div class="registration-grid">
+        <label class="form-label">Nome completo *<input name="participant_name[]" class="form-control" autocomplete="name" required value="{{ participant.name|default:'' }}"></label>
+        <label class="form-label">E-mail do participante, se tiver<input type="email" name="participant_email[]" class="form-control" autocomplete="email" value="{{ participant.email|default:'' }}"></label>
+        <label class="form-label">WhatsApp<input type="tel" name="participant_phone[]" class="form-control" autocomplete="tel" value="{{ participant.phone|default:'' }}"></label>
+        <label class="form-label">Inscrição *<select name="participant_product[]" class="form-control" required>{% for product in products %}<option value="{{ product.pk }}"{% if participant.product == product.pk|stringformat:'s' %} selected{% endif %}>{{ product.name }}</option>{% endfor %}</select></label>
+        <label class="form-label">Oferta disponível *<select name="participant_lot[]" class="form-control" required>{% for lot in active_lots %}<option value="{{ lot.pk }}" data-product="{{ lot.product_id }}" data-cents="{{ lot.price_cents }}"{% if participant.lot == lot.pk|stringformat:'s' %} selected{% endif %}>{{ lot.title }} · R$ {{ lot.formatted_price }}</option>{% endfor %}</select></label>
+        <label class="form-label">Tamanho da camiseta<select name="participant_shirt[]" class="form-control">{% for size in shirt_options %}<option value="{{ size.code }}" data-product="{{ size.product_id }}" data-extra-cents="{{ size.extra_cents }}"{% if participant.shirt == size.code and participant.product == size.product_id %} selected{% endif %}>{{ size.label }}{% if size.extra_cents %} (+ R$ {{ size.extra_cents|money }}){% endif %}</option>{% endfor %}</select><small class="registration-caption">Acréscimos, quando houver, aparecem na opção e no subtotal.</small></label>
+        <label class="form-label">Equipe / motoclube<input name="participant_team[]" class="form-control" value="{{ participant.team|default:'' }}"></label>
+        <label class="form-label">Cidade<input name="participant_city[]" class="form-control" autocomplete="address-level2" value="{{ participant.city|default:'' }}"></label>
+        <label class="form-label">UF<input name="participant_state[]" class="form-control" maxlength="2" autocomplete="address-level1" value="{{ participant.state|default:'' }}"></label>
+    </div>
+</article>

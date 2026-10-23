@@ -1,4 +1,5 @@
 {% extends "gestao/base_gestao.html" %}
+{% load tz %}
 
 {% block title %}Edições e Eventos | Painel Gestão{% endblock %}
 {% block gestao_header %}Eventos e edições{% endblock %}
@@ -30,12 +31,13 @@
             </thead>
             <tbody>
                 {% for ev in events %}
+                    {% timezone ev.timezone %}
                     <tr>
                         <td>
                             <strong>
                                 <a href="{% url 'gestao:event_detail' event_id=ev.id %}">{{ ev.title }}</a>
                             </strong>
-                            <div class="text-muted mg-meta">Slug: /eventos/{{ ev.slug }}/</div>
+                            <div class="text-muted mg-meta">{{ ev.slug }}</div>
                         </td>
                         <td><span class="badge badge-info">{{ ev.get_type_display }}</span></td>
                         <td>{{ ev.venue }} - {{ ev.city }}/{{ ev.state }}</td>
@@ -58,6 +60,7 @@
                             </div>
                         </td>
                     </tr>
+                    {% endtimezone %}
                 {% empty %}
                     <tr>
                         <td colspan="7" class="text-muted mg-align-center mg-table-empty">

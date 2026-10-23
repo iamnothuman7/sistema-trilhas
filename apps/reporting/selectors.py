@@ -1,6 +1,7 @@
 from datetime import datetime, time
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from django.db.models import Sum, Count, Q
-from django.db.models.functions import TruncDate
+from django.db.models.functions import Trim, TruncDate
 from django.utils import timezone
 from apps.events.models import Event
 from apps.checkout.models import Order, OrderStatus
@@ -17,14 +18,14 @@ def get_event_kpi_summary(event: Event) -> dict:
     regs = Registration.objects.filter(event=event)
     total_registered = regs.count()
     active_confirmed = regs.filter(commercial_state=CommercialState.ACTIVE).count()
-    ready_for_checkin = regs.filter(operational_state=OperationalState.READY).count()
-    checked_in_count = regs.filter(operational_state=OperationalState.CHECKED_IN).count()
+    ready_for_checkin = regs.filter(commercial_state=CommercialState.ACTIVE, operational_state=OperationalState.READY).count()
+    checked_in_count = regs.filter(commercial_state=CommercialState.ACTIVE, operational_state=OperationalState.CHECKED_IN).count()
     pending_terms = regs.filter(commercial_state=CommercialState.ACTIVE, operational_state=OperationalState.NOT_READY).count()
 
     # Vendas e Pedidos
     orders = Order.objects.filter(event=event)
     orders_paid = orders.filter(status=OrderStatus.PAID)
-    orders_pending = orders.filter(status__in=[OrderStatus.RESERVED, OrderStatus.AWAITING_PAYMENT])
+    orders_pending = orders.filter(status__in=[OrderStatus.RESERVED, OrderStatus.AWAITING_PAYMENT], expires_at__gte=timezone.now())
 
     total_gross_cents = orders_paid.aggregate(s=Sum("gross_cents"))["s"] or 0
     total_discount_cents = orders_paid.aggregate(s=Sum("discount_cents"))["s"] or 0
@@ -41,7 +42,8 @@ def get_event_kpi_summary(event: Event) -> dict:
     # Capacidade Geral
     cap_resource = CapacityResource.objects.filter(event=event, type="EVENT_OVERALL").first()
     max_capacity = cap_resource.capacity_total if cap_resource else event.max_attendees
-    vacancies_left = max(0, max_capacity - active_confirmed)
+    occupied = cap_resource.reserved_count + max(active_confirmed, cap_resource.committed_count) if cap_resource else active_confirmed
+    vacancies_left = max(0, max_capacity - occupied)
 
     # Kits e Camisetas
     shirt_entitlements = Entitlement.objects.filter(registration__event=event, benefit_type="CAMISETA")
@@ -77,19 +79,26 @@ REVENUE_KINDS = (
 )
 
 
-def in_period(queryset, field, start=None, end=None, *, date_field=False):
-    """Inclusive calendar dates in the configured timezone, without filtering on creation by mistake."""
+def event_timezone(event):
+    try:
+        return ZoneInfo(event.timezone)
+    except (ZoneInfoNotFoundError, ValueError, TypeError):
+        return timezone.get_default_timezone()
+
+
+def in_period(queryset, field, start=None, end=None, *, date_field=False, tz=None):
+    """Inclusive calendar dates, interpreted in the event timezone when supplied."""
     if start:
-        lower = start if date_field else timezone.make_aware(datetime.combine(start, time.min))
+        lower = start if date_field else timezone.make_aware(datetime.combine(start, time.min), tz)
         queryset = queryset.filter(**{field + "__gte": lower})
     if end:
-        upper = end if date_field else timezone.make_aware(datetime.combine(end, time.max))
+        upper = end if date_field else timezone.make_aware(datetime.combine(end, time.max), tz)
         queryset = queryset.filter(**{field + "__lte": upper})
     return queryset
 
 
 def financial_entries(event, start=None, end=None):
-    return in_period(FinancialEntry.objects.filter(event=event), "recognized_at", start, end)
+    return in_period(FinancialEntry.objects.filter(event=event), "recognized_at", start, end, tz=event_timezone(event))
 
 
 def get_financial_summary(event, start=None, end=None):
@@ -125,8 +134,16 @@ def get_financial_summary(event, start=None, end=None):
 
 
 def get_event_report(event, start=None, end=None):
-    registrations = in_period(Registration.objects.filter(event=event), "created_at", start, end)
-    orders = in_period(Order.objects.filter(event=event), "created_at", start, end)
+    registrations = in_period(Registration.objects.filter(event=event), "created_at", start, end, tz=event_timezone(event))
+    active_registrations = registrations.filter(commercial_state=CommercialState.ACTIVE)
+    # Only aggregate names and counts; no individual participant data is exposed.
+    missing_group = Q(name__isnull=True) | Q(name="") | Q(name__iregex=r"^n[ãa]o\s*informad[oa]$")
+    teams = list(active_registrations.annotate(name=Trim("team_name")).exclude(missing_group)
+                 .values("name").annotate(count=Count("pk")).order_by("-count", "name"))
+    cities = list(active_registrations.annotate(name=Trim("person__city"), state=Trim("person__state"))
+                  .exclude(missing_group).values("name", "state").annotate(count=Count("pk"))
+                  .order_by("-count", "name", "state"))
+    orders = in_period(Order.objects.filter(event=event), "created_at", start, end, tz=event_timezone(event))
     counts = registrations.aggregate(
         total=Count("pk"),
         active=Count("pk", filter=Q(commercial_state=CommercialState.ACTIVE)),
@@ -141,7 +158,7 @@ def get_event_report(event, start=None, end=None):
     daily = list(
         financial_entries(event, start, end)
         .exclude(kind=FinancialEntryKind.TRANSFERENCIA_BANCO)
-        .annotate(day=TruncDate("recognized_at"))
+        .annotate(day=TruncDate("recognized_at", tzinfo=event_timezone(event)))
         .values("day")
         .annotate(
             revenue_cents=Sum("amount_cents_signed", filter=Q(kind__in=REVENUE_KINDS)),
@@ -155,7 +172,9 @@ def get_event_report(event, start=None, end=None):
         "orders_total_cents": order_totals["amount"] or 0,
         "orders_by_status": orders_by_status,
         "categories": list(registrations.values("category_name").annotate(count=Count("pk")).order_by("-count", "category_name")),
-        "shirts": list(registrations.filter(commercial_state=CommercialState.ACTIVE).values("shirt_size").annotate(count=Count("pk")).order_by("shirt_size")),
+        "shirts": list(active_registrations.values("shirt_size").annotate(count=Count("pk")).order_by("shirt_size")),
+        "teams": teams,
+        "cities": cities,
         "finance": get_financial_summary(event, start, end),
         "daily": daily,
     }

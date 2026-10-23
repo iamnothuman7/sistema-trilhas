@@ -203,6 +203,75 @@ class ReportingFinanceTests(TestCase):
         self.assertEqual(report["shirts"], [{"shirt_size": "G", "count": 1}])
         self.assertEqual(report["orders_count"], 2)
 
+    def test_dashboard_kpis_exclude_inactive_registrations_and_expired_receivables(self):
+        self.registration(operational_state=OperationalState.READY)
+        self.registration(operational_state=OperationalState.CHECKED_IN)
+        canceled_ready = self.registration(commercial_state=CommercialState.CANCELED, operational_state=OperationalState.READY)
+        canceled_checked_in = self.registration(commercial_state=CommercialState.CANCELED, operational_state=OperationalState.CHECKED_IN)
+        pending = self.order(status=OrderStatus.AWAITING_PAYMENT, total_cents=12000)
+        self.order(status=OrderStatus.RESERVED, total_cents=6000)
+        for status in (OrderStatus.RESERVED, OrderStatus.AWAITING_PAYMENT):
+            self.order(status=status, total_cents=50000, expires_at=timezone.now()-timedelta(seconds=1))
+        self.order(event=self.other_event, status=OrderStatus.AWAITING_PAYMENT, total_cents=99000)
+        summary = get_event_kpi_summary(self.event)
+        self.assertEqual(summary["ready_for_checkin"], 1)
+        self.assertEqual(summary["checked_in_count"], 1)
+        self.assertEqual(summary["pending_to_receive_cents"], 18000)
+        canceled_ready.refresh_from_db()
+        canceled_checked_in.refresh_from_db()
+        pending.refresh_from_db()
+        self.assertEqual(canceled_ready.operational_state, OperationalState.READY)
+        self.assertEqual(canceled_checked_in.operational_state, OperationalState.CHECKED_IN)
+        self.assertEqual(pending.status, OrderStatus.AWAITING_PAYMENT)
+
+    def test_team_and_city_groups_use_only_active_registrations_in_event_and_local_period(self):
+        from datetime import timezone as dt_timezone
+        self.event.timezone = "America/Manaus"
+        self.event.save(update_fields=["timezone"])
+        first = datetime(2027, 4, 18, 4, tzinfo=dt_timezone.utc)
+        last = first + timedelta(days=1) - timedelta(microseconds=1)
+
+        def add(team="Trilha do Sol", city="Ubajara", state="CE", when=first, **overrides):
+            registration = self.registration(team_name=team, **overrides)
+            Person.objects.filter(pk=registration.person_id).update(city=city, state=state)
+            Registration.objects.filter(pk=registration.pk).update(created_at=when)
+            return registration
+
+        add(team="  Trilha do Sol  ", city=" Ubajara ")
+        add(when=first + timedelta(hours=1))
+        add(when=last)
+        add(team="Serra", city="Tianguá")
+        add(team="Serra", state="PI")
+        add(commercial_state=CommercialState.CANCELED)
+        add(commercial_state=CommercialState.RESERVED)
+        add(event=self.other_event)
+        add(when=first - timedelta(microseconds=1))
+        add(when=last + timedelta(microseconds=1))
+        for missing in (None, "", "   ", "Não informado", " NÃO INFORMADO ", "Nãoinformado", "Não informada"):
+            add(team=missing, city=missing or "")
+
+        query = {"date_start": "2027-04-18", "date_end": "2027-04-18"}
+        response = self.client.get(reverse("gestao:reports", args=[self.event.pk]), query)
+        self.assertEqual(response.status_code, 200)
+        report = response.context["report"]
+        self.assertEqual(report["teams"], [{"name": "Trilha do Sol", "count": 3}, {"name": "Serra", "count": 2}])
+        self.assertEqual(report["cities"], [
+            {"name": "Ubajara", "state": "CE", "count": 3},
+            {"name": "Tianguá", "state": "CE", "count": 1},
+            {"name": "Ubajara", "state": "PI", "count": 1},
+        ])
+        self.assertContains(response, "Inscrições por equipe")
+        self.assertContains(response, "Ubajara / PI")
+        self.assertNotContains(response, "Piloto de teste")
+        self.assertNotContains(response, "piloto@example.test")
+
+    def test_team_and_city_tables_explain_empty_period(self):
+        response = self.client.get(reverse("gestao:reports", args=[self.event.pk]))
+        self.assertEqual(response.context["report"]["teams"], [])
+        self.assertEqual(response.context["report"]["cities"], [])
+        self.assertContains(response, "Nenhuma equipe informada nas inscrições ativas do período.")
+        self.assertContains(response, "Nenhuma cidade informada nas inscrições ativas do período.")
+
     def test_csv_contains_numeric_signed_money_and_escapes_text_formulas(self):
         self.entry(FinancialEntryKind.DESPESA, -29, description="  =1+1", source_reference="@SUM(A1)")
         self.entry(FinancialEntryKind.RECEITA_MANUAL, 9999, event=self.other_event)
@@ -214,18 +283,38 @@ class ReportingFinanceTests(TestCase):
         self.assertEqual(rows[1][4], "'  =1+1")
         self.assertEqual(response["Cache-Control"], "private, no-store")
 
-    def test_finance_membership_can_render_reports_and_export_all_types(self):
+    def test_finance_membership_can_export_finance_without_participant_access(self):
         self.registration()
         self.create()
         url = reverse("gestao:reports", args=[self.event.pk])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Relatórios da edição")
-        for kind in ["participants", "financial", "orders", "summary"]:
+        self.assertNotContains(response, "Participantes CSV")
+        self.assertEqual(self.client.get(url, {"export": "participants"}).status_code, 403)
+        for kind in ["financial", "orders", "summary"]:
             response = self.client.get(url, {"export": kind})
             self.assertEqual(response.status_code, 200)
             self.assertIn("text/csv", response["Content-Type"])
+        self.assertEqual(AuditLog.objects.filter(action="EXPORT_EVENT_REPORT").count(), 3)
+        EventMembership.objects.create(user=self.user, event=self.event, role_code=RoleChoices.REGISTRATION_AGENT)
+        self.assertContains(self.client.get(url), "Participantes CSV")
+        self.assertEqual(self.client.get(url, {"export": "participants"}).status_code, 200)
         self.assertEqual(AuditLog.objects.filter(action="EXPORT_EVENT_REPORT").count(), 4)
+
+    def test_reports_and_exports_use_event_timezone_at_day_boundary(self):
+        from datetime import timezone as dt_timezone
+        self.event.timezone = "America/Manaus"
+        self.event.save(update_fields=["timezone"])
+        when = datetime(2027, 4, 18, 3, 30, tzinfo=dt_timezone.utc)
+        self.entry(FinancialEntryKind.RECEITA_MANUAL, 12000, recognized_at=when)
+        day = when.date() - timedelta(days=1)
+        report = get_event_report(self.event, day, day)
+        self.assertEqual(report["finance"]["revenue_cents"], 12000)
+        self.assertEqual(report["daily"][0]["day"], day)
+        self.assertEqual(get_event_report(self.event, when.date(), when.date())["daily"], [])
+        response = export_financial_csv(self.event, day, day)
+        self.assertIn("17/04/2027 23:30", response.content.decode())
 
     def test_reports_reject_other_event_and_checkin_role(self):
         self.assertEqual(self.client.get(reverse("gestao:reports", args=[self.other_event.pk])).status_code, 403)
@@ -236,6 +325,27 @@ class ReportingFinanceTests(TestCase):
         url = reverse("gestao:reports", args=[self.event.pk])
         for query in [{"date_start": "invalid"}, {"date_start": "2026-10-23", "date_end": "2026-10-22"}, {"export": "unknown"}]:
             self.assertEqual(self.client.get(url, query).status_code, 400)
+
+    def test_report_finance_and_exports_reject_dates_outside_supported_years(self):
+        report_url = reverse("gestao:reports", args=[self.event.pk])
+        routes = [(report_url, {}), (report_url, {"export": "financial"}),
+                  (report_url, {"export": "orders"}), (report_url, {"export": "summary"}),
+                  (reverse("gestao:finance", args=[self.event.pk]), {}),
+                  (reverse("gestao:export_financial", args=[self.event.pk]), {})]
+        for invalid in ({"date_start": "0001-01-01"}, {"date_end": "9999-12-31"},
+                        {"date_start": "1899-12-31"}, {"date_end": "2200-01-01"}):
+            for url, options in routes:
+                with self.subTest(query=invalid, route=url, options=options):
+                    response = self.client.get(url, invalid | options)
+                    self.assertEqual(response.status_code, 400)
+        response = self.client.get(report_url, {"date_end": "9999-12-31"})
+        self.assertContains(response, "Informe uma data entre 01/01/1900 e 31/12/2199.", status_code=400)
+        self.assertIsNone(response.context["report"])
+        self.assertFalse(AuditLog.objects.filter(action="EXPORT_EVENT_REPORT").exists())
+        valid = {"date_start": "1900-01-01", "date_end": "2199-12-31"}
+        for url, options in routes:
+            with self.subTest(valid_route=url, options=options):
+                self.assertEqual(self.client.get(url, valid | options).status_code, 200)
 
     def test_finance_form_preserves_invalid_values_and_rejects_get_mutation(self):
         url = reverse("gestao:add_expense", args=[self.event.pk])

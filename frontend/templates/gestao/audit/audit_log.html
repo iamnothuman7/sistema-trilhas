@@ -9,6 +9,14 @@
     <p class="text-muted">Consulte o histórico das operações administrativas e seus responsáveis.</p>
 </div>
 
+<section class="card mg-element-gap" aria-label="Filtros do histórico">
+    <form method="get" class="mg-finance-filters">
+        <div class="form-group"><label class="form-label" for="audit-search">Buscar no histórico</label><input type="search" class="form-control" name="q" id="audit-search" value="{{ q }}" placeholder="Ação, responsável, entidade ou motivo"></div>
+        <button type="submit" class="btn btn-primary">Buscar</button>
+        <a class="btn btn-secondary" href="{% url 'gestao:audit_log' %}">Limpar</a>
+    </form>
+</section>
+
 <div class="card">
     <div class="table-responsive">
         <table class="table">
@@ -35,12 +43,13 @@
                 {% empty %}
                     <tr>
                         <td colspan="6" class="text-muted mg-align-center mg-table-empty">
-                            Nenhum registro de auditoria registrado ainda.
+                            Nenhum registro de auditoria encontrado{% if q %} com os filtros selecionados{% endif %}.
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% include "gestao/partials/pagination.html" with pagination_label="Páginas do histórico de atividades" %}
 </div>
 {% endblock %}

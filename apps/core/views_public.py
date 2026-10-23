@@ -1,6 +1,5 @@
 from django.shortcuts import render
-from django.utils import timezone
-from apps.events.models import Event, EventStatus
+from apps.events.public_catalog import upcoming_events, past_events
 from apps.events.views import event_detail
 from apps.core.models import Organization
 
@@ -15,22 +14,9 @@ def home(request):
 
     org = Organization.objects.first()
 
-    # Eventos em destaque com inscrições abertas ou próximos
-    featured_events = Event.objects.filter(
-        status__in=[EventStatus.PUBLISHED, EventStatus.SALES_CLOSED, EventStatus.IN_PROGRESS]
-    ).select_related("theme", "motorcycle_raffle").order_by("starts_at")[:6]
-    featured_events = list(featured_events)
-    featured_sponsors = featured_events[0].sponsors.all().order_by("tier", "sort_order") if featured_events else []
-
-    # Eventos passados / galeria histórica
-    past_events = Event.objects.filter(
-        status__in=[EventStatus.FINISHED, EventStatus.ARCHIVED]
-    ).order_by("-ends_at")[:4]
-
     return render(request, "core/home.html", {
-        "featured_events": featured_events,
-        "featured_sponsors": featured_sponsors,
-        "past_events": past_events,
+        "featured_events": list(upcoming_events()[:6]),
+        "past_events": past_events()[:4],
         "org": org,
     })
 

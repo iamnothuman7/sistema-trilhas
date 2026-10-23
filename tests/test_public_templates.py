@@ -64,15 +64,15 @@ class PublicEventTemplateTests(SimpleTestCase):
         ))
         html = render_to_string("core/home.html", {"featured_events": [event]})
         self.assertIn('/media/events/banners/april.jpg', html)
-        self.assertNotIn('/media/events/logos/april.png', html)
+        self.assertIn('/media/events/logos/april.png', html)
 
     def test_detail_uses_actual_dates_and_safe_description_fallback(self):
         html = render_to_string("events/detail.html", {"event": self.event(), "products": []})
         self.assert_current_event(html)
         self.assertIn('<title>Expedição Serra em Abril | Equipe Morcego Oficial</title>', html)
         self.assertIn('<meta name="description"', html)
-        self.assertIn("Fazer inscrição", html)
-        self.assertIn("As modalidades desta edição serão divulgadas", html)
+        self.assertNotIn("Fazer inscrição", html)
+        self.assertIn("Inscrições indisponíveis no momento", html)
 
     def test_multi_day_event_shows_both_actual_dates(self):
         event = self.event(ends_at=datetime(2027, 4, 19, 21, tzinfo=timezone.utc))
@@ -94,7 +94,7 @@ class PublicEventTemplateTests(SimpleTestCase):
         product = SimpleNamespace(name="Modalidade com camiseta", description=None,
                                   get_kind_display="Piloto", includes_shirt=True,
                                   includes_meal=False, includes_kit=False)
-        html = render_to_string("events/detail.html", {"event": self.event(), "products": [product]})
+        html = render_to_string("events/detail.html", {"event": self.event(), "registration_offers": [{"product": product, "lot": SimpleNamespace(price_cents=12000)}]})
         self.assertIn("Camiseta oficial", html)
         self.assertNotIn("Kit do participante", html)
         self.assertNotIn("Alimentação conforme a modalidade", html)

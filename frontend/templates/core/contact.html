@@ -1,26 +1,62 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Contato e Suporte | Equipe Morcego{% endblock %}
 {% block content %}
 <div class="public-page public-page--narrow">
   <header class="public-intro">
-    <span class="public-eyebrow">Fale conosco</span>
-    <h1>Como podemos ajudar?</h1>
-    <p>Dúvidas sobre inscrições, compras em grupo, patrocínio ou o evento? Consulte os canais e as informações da organização.</p>
+    <span class="public-eyebrow">A conversa também faz parte</span>
+    <h1>Fale com a<br>Equipe Morcego.</h1>
+    <p>Dúvidas sobre inscrição, participação em grupo ou patrocínio? Encontre a organização pelos canais abaixo.</p>
   </header>
-  <div class="public-grid">
-    <section class="public-card">
-      <span class="public-icon"><i data-lucide="mail" aria-hidden="true"></i></span>
-      <h2>E-mail de suporte</h2>
-      <p class="public-muted">Para facilitar o atendimento, informe o nome do evento e, se houver, o número do pedido.</p>
-      {% if organization.support_email %}<p>{{ organization.support_email }}</p><div class="public-actions"><a href="mailto:{{ organization.support_email }}" class="public-button public-button--primary">Enviar e-mail <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>{% else %}<p class="public-note">O canal de atendimento será informado pela organização na página do evento.</p>{% endif %}
-    </section>
-    <section class="public-card">
-      <span class="public-icon"><i data-lucide="circle-help" aria-hidden="true"></i></span>
-      <h2>Informações do evento</h2>
-      <p class="public-muted">Consulte a página da edição para ver a programação, o percurso, o regulamento e as orientações publicadas pela equipe.</p>
-      <div class="public-actions"><a href="{% url 'events:list' %}" class="public-button public-button--secondary">Encontrar meu evento</a></div>
-    </section>
-  </div>
-  <div class="public-actions"><a href="{% url 'minha_conta:dashboard' %}" class="public-back"><i data-lucide="user-round" aria-hidden="true"></i> Acessar minhas inscrições</a></div>
+  <section class="public-section" aria-label="Canais de atendimento">
+    <div class="public-grid">
+      <section class="public-card">
+        <span class="public-icon"><i data-lucide="messages-square" aria-hidden="true"></i></span>
+        <h2>Converse com a equipe</h2>
+        <p class="public-muted">Informe a edição do evento e o assunto para ajudar a organização a orientar você.</p>
+        {% if organization.phone and organization.phone != '(88) 99999-9999' %}
+        <p><strong>{{ organization.phone }}</strong></p>
+        <div class="public-actions"><a href="tel:{{ organization.phone|cut:' '|cut:'('|cut:')'|cut:'-' }}" class="public-button public-button--primary">Ligar para a organização <i data-lucide="phone" aria-hidden="true"></i></a></div>
+        {% else %}
+        <p><strong>(88) 99287-4581</strong></p>
+        <div class="public-actions"><a href="https://wa.me/5588992874581" class="public-button public-button--primary" target="_blank" rel="noopener noreferrer">Conversar no WhatsApp <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
+        {% endif %}
+      </section>
+      <section class="public-card">
+        <span class="public-icon"><i data-lucide="mail" aria-hidden="true"></i></span>
+        <h2>Atendimento por e-mail</h2>
+        <p class="public-muted">Se a dúvida for sobre uma compra, envie também o código do pedido para facilitar a localização.</p>
+        {% if organization.support_email and organization.support_email != 'contato@equipemorcego.com.br' %}
+        <p>{{ organization.support_email }}</p>
+        <div class="public-actions"><a href="mailto:{{ organization.support_email }}" class="public-button public-button--secondary">Enviar e-mail <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
+        {% else %}
+        <p>tianguaoffroad@gmail.com</p>
+        <div class="public-actions"><a href="mailto:tianguaoffroad@gmail.com" class="public-button public-button--secondary">Enviar e-mail <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
+        {% endif %}
+      </section>
+    </div>
+  </section>
+  <section class="public-section" aria-label="Acompanhe a equipe e sua inscrição">
+    <div class="public-grid">
+      <section class="public-card">
+        <span class="public-icon"><i data-lucide="camera" aria-hidden="true"></i></span>
+        <h2>Acompanhe a equipe</h2>
+        <p class="public-muted">Fotos, encontros e novidades no perfil da Equipe Morcego das Trilhas.</p>
+        <div class="public-actions"><a href="https://www.instagram.com/equipemorcegodastrilhas/" class="public-button public-button--secondary" target="_blank" rel="noopener noreferrer">Ver Instagram <i data-lucide="external-link" aria-hidden="true"></i></a></div>
+      </section>
+      <section class="public-card">
+        <span class="public-icon"><i data-lucide="ticket" aria-hidden="true"></i></span>
+        <h2>Já fez sua inscrição?</h2>
+        <p class="public-muted">Consulte sua participação na área do piloto. Programação, regulamento e orientações ficam na página de cada edição.</p>
+        <div class="public-actions"><a href="{% url 'minha_conta:dashboard' %}" class="public-button public-button--secondary">Minhas inscrições <i data-lucide="arrow-right" aria-hidden="true"></i></a><a href="{% url 'events:list' %}" class="public-back">Ver eventos</a></div>
+      </section>
+    </div>
+  </section>
+  <section class="public-section" aria-labelledby="contact-history">
+    <article class="public-event-card">
+      <div class="public-event-media"><img src="{% static 'img/historico/trilhao-foto-01.webp' %}" width="800" height="1203" alt="Pilotos reunidos em uma estrada durante um encontro anterior" loading="lazy" decoding="async"></div>
+      <div class="public-event-body"><span class="public-eyebrow">Edições anteriores</span><h2 id="contact-history">Nosso encontro é na trilha</h2><p class="public-muted">Conheça um pouco da nossa história e reveja momentos compartilhados pela equipe.</p><div class="public-actions"><a href="{% url 'core:about' %}" class="public-button public-button--secondary">Conhecer a equipe <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div></div>
+    </article>
+  </section>
 </div>
 {% endblock %}

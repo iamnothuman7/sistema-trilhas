@@ -1,241 +1,30 @@
 {% extends "base.html" %}
-
-{% block title %}Inscrição Oficial | {{ event.title }}{% endblock %}
-
+{% load static %}
+{% block title %}Inscrição | {{ event.title }}{% endblock %}
 {% block extra_head %}{% include "checkout/_payment_styles.html" %}{% endblock %}
-
 {% block content %}
 <div class="payment-page registration-page">
-    <header class="registration-intro">
-        <span class="payment-kicker">Sua inscrição · Dados dos participantes</span>
-        <h1>
-            Inscrição: {{ event.title }}
-        </h1>
-        <p class="payment-muted">
-            Preencha seus dados para reservar sua vaga com segurança.
-        </p>
-    </header>
-
-    <form method="POST" id="registrationForm">
+    <a href="{% url 'events:detail' slug=event.slug %}#inscricao" class="public-back"><i data-lucide="arrow-left" aria-hidden="true"></i> Voltar ao evento</a>
+    <header class="registration-intro"><span class="payment-kicker">Inscrição no evento</span><h1>{{ event.title }}</h1><p class="payment-muted">Informe quem vai participar e confira o valor antes de continuar.{% if event.motorcycle_raffle.is_public %} A inscrição não inclui cotas do sorteio.{% endif %}</p></header>
+    {% if active_lots %}
+    {% if not payments_available %}<div class="payment-alert" role="status">O pagamento online ainda não está disponível. Você pode conferir os dados e o valor da inscrição; nenhuma cobrança será realizada nesta etapa.</div>{% endif %}
+    <form method="post" id="registrationForm">
         {% csrf_token %}
-
-        <!-- Seção 1: Dados do Comprador / Responsável pelo Pagamento -->
-        <div class="payment-card">
-            <div class="card-header">
-                <h2>
-                    1. Seus dados
-                </h2>
-                <span class="registration-caption">Quem receberá o comprovante</span>
-            </div>
-
+        <section class="payment-card"><header class="card-header"><div><h2>1. Seus dados</h2><span class="registration-caption">Responsável pela inscrição e pelo comprovante</span></div></header>
             <div class="registration-grid">
-                <div class="form-group registration-wide">
-                    <label class="form-label">Nome completo *</label>
-                    <input type="text" name="purchaser_name" class="form-control" required placeholder="Seu nome completo" value="{% if request.user.is_authenticated %}{{ request.user.full_name|default:"" }}{% endif %}">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">E-mail *</label>
-                    <input type="email" name="purchaser_email" class="form-control" required placeholder="seu@email.com" value="{% if request.user.is_authenticated %}{{ request.user.email }}{% endif %}">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">WhatsApp com DDD *</label>
-                    <input type="text" name="purchaser_phone" class="form-control" required placeholder="(88) 99999-9999" value="{% if request.user.is_authenticated %}{{ request.user.phone|default:"" }}{% endif %}">
-                </div>
-
-                <div class="form-group registration-wide">
-                    <label class="form-label">CPF do Titular do Pagamento (Exigido pelo Mercado Pago) *</label>
-                    <input type="text" name="purchaser_document" class="form-control" required placeholder="000.000.000-00">
-                </div>
+                <label class="form-label registration-wide">Nome completo *<input name="purchaser_name" class="form-control" autocomplete="name" required value="{{ buyer.name|default:'' }}"></label>
+                <label class="form-label">E-mail *<input type="email" name="purchaser_email" class="form-control" autocomplete="email" required value="{{ buyer.email|default:'' }}"></label>
+                <label class="form-label">WhatsApp com DDD *<input type="tel" name="purchaser_phone" class="form-control" autocomplete="tel" required value="{{ buyer.phone|default:'' }}"></label>
+                <label class="form-label registration-wide">CPF do responsável pelo pagamento *<input name="purchaser_document" class="form-control" inputmode="numeric" required value="{{ buyer.document|default:'' }}"></label>
             </div>
-        </div>
-
-        <!-- Seção 2: Participantes / Pilotos -->
-        <div class="payment-card">
-            <div class="card-header">
-                <div>
-                    <h2>
-                        2. Participantes
-                    </h2>
-                    <div class="registration-caption">
-                        Você pode inscrever a si mesmo ou comprar para sua equipe/amigos em uma única transação
-                    </div>
-                </div>
-                <button type="button" id="btnAddParticipant" class="payment-button payment-button-secondary">
-                    <i data-lucide="plus" aria-hidden="true"></i> Adicionar piloto
-                </button>
-            </div>
-
-            <div id="participantsContainer">
-                <!-- Card do Piloto 1 -->
-                <div class="participant-item card">
-                    <div style="font-weight: 800; color: var(--primary); margin-bottom: 1rem; font-size: 1rem;">
-                        PILOTO #1
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
-                        <div class="form-group">
-                            <label class="form-label">Nome do participante *</label>
-                            <input type="text" name="participant_name[]" class="form-control" required placeholder="Nome do Piloto">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">WhatsApp do Piloto</label>
-                            <input type="text" name="participant_phone[]" class="form-control" placeholder="(88) 99999-9999">
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
-                        <div class="form-group">
-                            <label class="form-label">Modalidade *</label>
-                            <select name="participant_product[]" class="form-control" required>
-                                {% for prod in products %}
-                                    <option value="{{ prod.id }}">{{ prod.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Lote Vigente *</label>
-                            <select name="participant_lot[]" class="form-control" required>
-                                {% for lot in active_lots %}
-                                    <option value="{{ lot.id }}">{{ lot.title }} - R$ {{ lot.formatted_price }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Tamanho da Camisa *</label>
-                            <select name="participant_shirt[]" class="form-control" required>
-                                <option value="P">P (Pequeno)</option>
-                                <option value="M" selected>M (Médio)</option>
-                                <option value="G">G (Grande)</option>
-                                <option value="GG">GG (Extra Grande)</option>
-                                <option value="XG">XG (Especial)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 1rem;">
-                        <div class="form-group">
-                            <label class="form-label">Cidade</label>
-                            <input type="text" name="participant_city[]" class="form-control" value="Tianguá">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">UF</label>
-                            <input type="text" name="participant_state[]" class="form-control" value="CE" maxlength="2">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Equipe / Moto Clube</label>
-                            <input type="text" name="participant_team[]" class="form-control" placeholder="Ex: Equipe Morcego">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Seção 3: Cupom de Desconto -->
-        <div class="payment-card">
-            <div class="form-group">
-                <label class="form-label">Possui Cupom de Desconto?</label>
-                <div>
-                    <input type="text" name="coupon_code" class="form-control registration-coupon" placeholder="CÓDIGO DO CUPOM">
-                </div>
-            </div>
-        </div>
-
-        <!-- Botão Final de Submissão -->
-        <button type="submit" class="payment-button registration-submit">
-            Avançar para pagamento <i data-lucide="arrow-right" aria-hidden="true"></i>
-        </button>
+        </section>
+        <section class="payment-card"><header class="card-header"><div><h2>2. Quem vai participar</h2><span class="registration-caption">Inscreva você ou mais participantes no mesmo pedido.</span></div><button type="button" id="btnAddParticipant" class="payment-button payment-button-secondary"><i data-lucide="plus" aria-hidden="true"></i> Adicionar participante</button></header>
+            <div id="participantsContainer">{% for participant in participant_rows %}{% include "checkout/_participant_fields.html" %}{% endfor %}</div>
+        </section>
+        <section class="payment-card"><label class="form-label">Cupom de desconto, se tiver<input name="coupon_code" class="form-control registration-coupon" value="{{ coupon_code }}" autocomplete="off"></label><div class="payment-total"><span>Subtotal das inscrições</span><strong id="registrationTotal" aria-live="polite">Confira a oferta selecionada</strong></div><p class="registration-caption">Descontos válidos são calculados ao continuar. O valor final fica disponível antes de qualquer pagamento.</p></section>
+        <button type="submit" class="payment-button registration-submit"{% if not event.is_registration_open %} disabled{% endif %}>{% if event.is_registration_open %}Conferir pedido <i data-lucide="arrow-right" aria-hidden="true"></i>{% else %}Inscrições indisponíveis{% endif %}</button>
     </form>
+    {% else %}<section class="payment-card"><h2>Inscrições indisponíveis no momento</h2><p>A organização ainda não disponibilizou uma oferta para esta edição ou as vagas estão esgotadas.</p><a href="{% url 'events:detail' slug=event.slug %}" class="payment-button payment-button-secondary">Voltar ao evento</a></section>{% endif %}
 </div>
 {% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    let count = 1;
-    const btnAdd = document.getElementById("btnAddParticipant");
-    const container = document.getElementById("participantsContainer");
-
-    btnAdd.addEventListener("click", function() {
-        count++;
-        const item = document.createElement("div");
-        item.className = "participant-item card";
-        item.style.backgroundColor = "var(--surface-hover)";
-        item.style.marginBottom = "1.25rem";
-        item.style.border = "1px solid var(--border)";
-
-        item.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <div style="font-weight: 800; color: var(--primary); font-size: 1rem;">
-                    PILOTO #${count}
-                </div>
-                <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('.participant-item').remove()">Remover</button>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
-                <div class="form-group">
-                    <label class="form-label">Nome do participante *</label>
-                    <input type="text" name="participant_name[]" class="form-control" required placeholder="Nome do Piloto">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">WhatsApp do Piloto</label>
-                    <input type="text" name="participant_phone[]" class="form-control" placeholder="(88) 99999-9999">
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
-                <div class="form-group">
-                    <label class="form-label">Modalidade *</label>
-                    <select name="participant_product[]" class="form-control" required>
-                        {% for prod in products %}
-                            <option value="{{ prod.id }}">{{ prod.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Lote Vigente *</label>
-                    <select name="participant_lot[]" class="form-control" required>
-                        {% for lot in active_lots %}
-                            <option value="{{ lot.id }}">{{ lot.title }} - R$ {{ lot.formatted_price }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Tamanho da Camisa *</label>
-                    <select name="participant_shirt[]" class="form-control" required>
-                        <option value="P">P (Pequeno)</option>
-                        <option value="M" selected>M (Médio)</option>
-                        <option value="G">G (Grande)</option>
-                        <option value="GG">GG (Extra Grande)</option>
-                        <option value="XG">XG (Especial)</option>
-                    </select>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 1rem;">
-                <div class="form-group">
-                    <label class="form-label">Cidade</label>
-                    <input type="text" name="participant_city[]" class="form-control" value="Tianguá">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">UF</label>
-                    <input type="text" name="participant_state[]" class="form-control" value="CE" maxlength="2">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Equipe / Moto Clube</label>
-                    <input type="text" name="participant_team[]" class="form-control" placeholder="Ex: Equipe Morcego">
-                </div>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-});
-</script>
-{% endblock %}
+{% block extra_js %}<script src="{% static 'js/registration.js' %}?v=mor20261022" defer></script>{% endblock %}

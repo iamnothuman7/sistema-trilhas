@@ -5,6 +5,7 @@
 {% timezone event.timezone %}
 <div class="public-page public-page--narrow">
     <a href="{% url 'events:detail' slug=event.slug %}" class="public-back"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar ao evento</a>
+    {% include 'events/_event_navigation.html' with current='raffle' %}
     <header class="public-intro"><span class="public-eyebrow">{{ event.title }}</span><h1>{% if raffle %}{{ raffle.title }}{% else %}Sorteio de moto{% endif %}</h1><p>{% if raffle %}Uma ação separada da inscrição no evento. Os detalhes serão publicados aqui pela organização.{% else %}Nenhum sorteio divulgado para esta edição.{% endif %}</p></header>
     {% if raffle_preview %}<div class="alert alert-warning" role="status">Prévia da organização. Este rascunho ainda não está público.</div>{% endif %}
     {% if raffle %}
@@ -13,12 +14,12 @@
         <h2>{% if raffle.motorcycle_model %}{{ raffle.motorcycle_model }}{% else %}A moto será apresentada em breve{% endif %}</h2>
         <p class="public-document">{{ raffle.description|default:'A organização está preparando a apresentação da moto, as regras e os detalhes das cotas.' }}</p>
         <dl class="public-stats">
-            <div><dt>Valor previsto por cota</dt><dd>{% if raffle.quota_price_cents %}R$ {{ raffle.quota_price_cents|money }}{% else %}Em breve{% endif %}</dd></div>
+            <div><dt>Cotas do sorteio</dt><dd>{% if raffle.quota_price_cents %}R$ {{ raffle.quota_price_cents|money }}{% else %}Em breve{% endif %}</dd></div>
             <div><dt>Quantidade prevista de cotas</dt><dd>{{ raffle.quota_quantity|default:'Em breve' }}</dd></div>
             <div><dt>Data prevista</dt><dd>{% if raffle.draw_at %}{{ raffle.draw_at|date:'d/m/Y · H:i' }}{% else %}Em breve{% endif %}</dd></div>
         </dl>
         <p class="public-muted">A compra de cotas ainda não está disponível. Nenhum pagamento ou reserva de número pode ser feito nesta página.</p>
-        <div class="public-actions"><button type="button" class="public-button public-button--secondary" disabled aria-disabled="true"><i data-lucide="lock-keyhole" aria-hidden="true"></i>Compra de cotas indisponível</button></div>
+        <div class="public-actions"><button type="button" class="public-button public-button--secondary" disabled aria-disabled="true"><i data-lucide="lock-keyhole" aria-hidden="true"></i>Cotas em breve</button></div>
     </section>
     <section class="public-card"><h2>Regras do sorteio</h2><p class="public-document">{{ raffle.rules_text|default:'As regras ainda não foram divulgadas. Elas serão publicadas aqui antes de qualquer abertura de cotas.' }}</p></section>
     {% if interest_registered %}

@@ -1,0 +1,4 @@
+{% load static %}
+{% if logo_event.theme.logo_image %}<img src="{{ logo_event.theme.logo_image.url }}" alt="{{ logo_event.title }}" class="logo-emblem" width="440" height="440" loading="lazy" decoding="async">
+{% elif logo_event.slug == '3-trilhao-tiangua-off-road-2027' %}<img src="{% static 'img/logo-3trilhao-2027.webp' %}" alt="3º Trilhão Tianguá Off Road 2027" class="logo-emblem" width="590" height="370" loading="lazy" decoding="async">
+{% else %}<img src="{% static 'img/logo-display.webp' %}" alt="Equipe Morcego" class="logo-emblem" width="640" height="531" loading="lazy" decoding="async">{% endif %}

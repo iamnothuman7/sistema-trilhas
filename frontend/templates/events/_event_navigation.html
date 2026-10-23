@@ -1,0 +1,9 @@
+<nav class="event-subnav" aria-label="Áreas de {{ event.title }}">
+    <a href="{% url 'events:detail' slug=event.slug %}"{% if current == 'event' %} aria-current="page"{% endif %}>O evento</a>
+    <a href="{% url 'events:detail' slug=event.slug %}#inscricao">Inscrição</a>
+    <a href="{% url 'events:schedule' slug=event.slug %}"{% if current == 'schedule' %} aria-current="page"{% endif %}>Programação</a>
+    <a href="{% url 'events:route' slug=event.slug %}"{% if current == 'route' %} aria-current="page"{% endif %}>Percurso</a>
+    <a href="{% url 'events:sponsors' slug=event.slug %}"{% if current == 'sponsors' %} aria-current="page"{% endif %}>Patrocinadores</a>
+    {% if event.motorcycle_raffle.is_public %}<a href="{% url 'events:raffle' slug=event.slug %}" class="event-raffle-link"{% if current == 'raffle' %} aria-current="page"{% endif %}><i data-lucide="ticket" aria-hidden="true"></i> Sorteio da moto</a>{% endif %}
+    <a href="{% url 'events:rules' slug=event.slug %}"{% if current == 'rules' %} aria-current="page"{% endif %}>Regulamento</a>
+</nav>

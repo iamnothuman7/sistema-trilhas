@@ -18,13 +18,13 @@
         <a class="btn btn-secondary" href="{% url 'gestao:reports' event_id=event.id %}">Limpar</a>
     </form>
     {% if date_form.non_field_errors %}<div class="mg-field-errors" role="alert">{{ date_form.non_field_errors }}</div>{% endif %}
-    <p class="mg-section-description mg-space-top-sm">Inscrições e pedidos usam a data de criação e mostram sua situação atual. O financeiro usa a data de reconhecimento; contas a pagar usam o vencimento. Sem datas, o relatório considera todo o evento.</p>
+    <p class="mg-section-description mg-space-top-sm">Inscrições e pedidos usam a data de criação e mostram sua situação atual. O financeiro usa a data de reconhecimento; contas a pagar usam o vencimento. Sem datas, o relatório considera todo o evento. As datas e os horários seguem {{ event.timezone }}.</p>
 </section>
 
 {% if report %}
 <div class="page-actions mg-element-gap" aria-label="Exportações em CSV">
     <a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&amp;export=summary"><i data-lucide="download" aria-hidden="true"></i> Resumo CSV</a>
-    <a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&amp;export=participants">Participantes CSV</a>
+    {% if can_export_participants %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&amp;export=participants">Participantes CSV</a>{% endif %}
     <a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&amp;export=orders">Pedidos CSV</a>
     <a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&amp;export=financial">Extrato CSV</a>
 </div>
@@ -65,6 +65,14 @@
     <section class="card" aria-labelledby="report-shirts-title">
         <div class="card-header"><div><h2 class="section-title" id="report-shirts-title">Tamanhos informados</h2><p class="mg-section-description">Preferências das inscrições ativas criadas no período. A entrega depende dos benefícios de cada inscrição.</p></div></div>
         <div class="table-responsive"><table class="table"><thead><tr><th scope="col">Tamanho</th><th scope="col">Participantes</th></tr></thead><tbody>{% for item in report.shirts %}<tr><td>{{ item.shirt_size|default:"Não informado" }}</td><td>{{ item.count }}</td></tr>{% empty %}<tr><td colspan="2" class="mg-table-empty">Nenhuma inscrição ativa no período.</td></tr>{% endfor %}</tbody></table></div>
+    </section>
+    <section class="card" aria-labelledby="report-teams-title">
+        <div class="card-header"><div><h2 class="section-title" id="report-teams-title">Inscrições por equipe</h2><p class="mg-section-description">Inscrições ativas criadas no período, agrupadas pela equipe informada. Cadastros sem equipe são desconsiderados.</p></div></div>
+        <div class="table-responsive"><table class="table" aria-labelledby="report-teams-title"><thead><tr><th scope="col">Equipe / motoclube</th><th scope="col">Inscrições ativas</th></tr></thead><tbody>{% for item in report.teams %}<tr><td>{{ item.name }}</td><td>{{ item.count }}</td></tr>{% empty %}<tr><td colspan="2" class="mg-table-empty">Nenhuma equipe informada nas inscrições ativas do período.</td></tr>{% endfor %}</tbody></table></div>
+    </section>
+    <section class="card" aria-labelledby="report-cities-title">
+        <div class="card-header"><div><h2 class="section-title" id="report-cities-title">Inscrições por cidade</h2><p class="mg-section-description">Inscrições ativas criadas no período, agrupadas pela cidade e UF informadas. Cadastros sem cidade são desconsiderados.</p></div></div>
+        <div class="table-responsive"><table class="table" aria-labelledby="report-cities-title"><thead><tr><th scope="col">Cidade / UF</th><th scope="col">Inscrições ativas</th></tr></thead><tbody>{% for item in report.cities %}<tr><td>{{ item.name }}{% if item.state %} / {{ item.state }}{% endif %}</td><td>{{ item.count }}</td></tr>{% empty %}<tr><td colspan="2" class="mg-table-empty">Nenhuma cidade informada nas inscrições ativas do período.</td></tr>{% endfor %}</tbody></table></div>
     </section>
 </div>
 {% endif %}

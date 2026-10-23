@@ -79,7 +79,7 @@ class MotorcycleRaffleTests(TestCase):
         raffle = self.public_raffle(interest_enabled=False)
         response = self.client.get(self.public_url())
         self.assertContains(response, "A moto será apresentada em breve")
-        self.assertContains(response, "Compra de cotas indisponível")
+        self.assertContains(response, "Cotas em breve")
         self.assertContains(response, "Em breve")
         self.assertNotContains(response, "R$")
         self.assertNotContains(response, "None")

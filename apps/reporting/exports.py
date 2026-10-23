@@ -6,7 +6,7 @@ from django.utils import timezone
 from apps.core.utils import escape_csv_cell, cents_to_reais
 from apps.registrations.models import Registration
 from apps.checkout.models import Order
-from .selectors import financial_entries, in_period
+from .selectors import financial_entries, in_period, event_timezone
 
 
 def safe_text(value):
@@ -56,7 +56,7 @@ def export_participants_csv(event, start=None, end=None) -> HttpResponse:
         "Código do Pedido"
     ])
 
-    registrations = in_period(Registration.objects.filter(event=event), "created_at", start, end).select_related(
+    registrations = in_period(Registration.objects.filter(event=event), "created_at", start, end, tz=event_timezone(event)).select_related(
         "person", "source_order_line", "source_order_line__order"
     ).order_by("registration_number", "created_at")
 
@@ -74,7 +74,7 @@ def export_participants_csv(event, start=None, end=None) -> HttpResponse:
             safe_text(reg.shirt_size or ""),
             safe_text(reg.get_commercial_state_display()),
             safe_text(reg.get_operational_state_display()),
-            timezone.localtime(reg.created_at).strftime("%d/%m/%Y %H:%M"),
+            timezone.localtime(reg.created_at, event_timezone(event)).strftime("%d/%m/%Y %H:%M"),
             safe_text(order.merchant_reference if order else "")
         ])
 
@@ -100,7 +100,7 @@ def export_financial_csv(event, start=None, end=None) -> HttpResponse:
     entries = financial_entries(event, start, end).order_by("-recognized_at", "-pk")
     for entry in entries:
         writer.writerow([
-            timezone.localtime(entry.recognized_at).strftime("%d/%m/%Y %H:%M"),
+            timezone.localtime(entry.recognized_at, event_timezone(event)).strftime("%d/%m/%Y %H:%M"),
             safe_text(entry.get_kind_display()),
             decimal_amount(entry.amount_cents_signed),
             safe_text(entry.source_reference),
@@ -115,10 +115,10 @@ def export_orders_csv(event, start=None, end=None):
     output.write("\ufeff")
     writer = csv.writer(output, delimiter=";")
     writer.writerow(["Pedido", "Criado em", "Comprador", "E-mail", "Situação", "Bruto (R$)", "Desconto (R$)", "Total do pedido (R$)"])
-    orders = in_period(Order.objects.filter(event=event), "created_at", start, end).order_by("created_at", "pk")
+    orders = in_period(Order.objects.filter(event=event), "created_at", start, end, tz=event_timezone(event)).order_by("created_at", "pk")
     for order in orders.iterator():
         writer.writerow([
-            safe_text(order.merchant_reference), timezone.localtime(order.created_at).strftime("%d/%m/%Y %H:%M"),
+            safe_text(order.merchant_reference), timezone.localtime(order.created_at, event_timezone(event)).strftime("%d/%m/%Y %H:%M"),
             safe_text(order.purchaser_name), safe_text(order.purchaser_email), safe_text(order.get_status_display()),
             decimal_amount(order.gross_cents), decimal_amount(order.discount_cents), decimal_amount(order.total_cents),
         ])

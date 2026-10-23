@@ -3,29 +3,25 @@ from django.utils import timezone
 from django.http import Http404
 from apps.core.permissions import can_manage_event
 from .models import Event, EventStatus, EventScheduleItem, Route, Sponsor, LegalDocumentVersion
-from apps.catalog.models import Product, Lot
+from apps.catalog.offers import registration_catalog
+from apps.payments.gateway import MercadoPagoGateway
+from .public_catalog import upcoming_events, past_events
 from apps.mediaframes.models import FrameTemplate
 from apps.mediaframes.events_config import get_event_versions, select_version
 
 def get_event_resilient(slug, request):
     event = get_object_or_404(Event.objects.select_related("theme", "organization", "motorcycle_raffle"), slug=slug)
-    if event.status == EventStatus.DRAFT and not can_manage_event(request.user, event, "events"):
+    if event.status == EventStatus.DRAFT and not (
+        can_manage_event(request.user, event, "events") or can_manage_event(request.user, event, "content")
+    ):
         raise Http404("Evento não publicado.")
     return event
 
 def event_list(request):
     """Catálogo público de todos os eventos da Equipe Morcego."""
-    active_events = Event.objects.filter(
-        status__in=[EventStatus.PUBLISHED, EventStatus.SALES_CLOSED, EventStatus.IN_PROGRESS]
-    ).select_related("theme").order_by("starts_at")
-
-    past_events = Event.objects.filter(
-        status__in=[EventStatus.FINISHED, EventStatus.ARCHIVED]
-    ).order_by("-ends_at")
-
     return render(request, "events/list.html", {
-        "active_events": active_events,
-        "past_events": past_events,
+        "active_events": upcoming_events(),
+        "past_events": past_events(),
     })
 
 def event_detail(request, slug):
@@ -33,8 +29,7 @@ def event_detail(request, slug):
     event = get_event_resilient(slug, request)
 
     now = timezone.now()
-    products = Product.objects.filter(event=event, active=True).prefetch_related("lots", "variants")
-    active_lots = Lot.objects.filter(event=event, active=True).order_by("priority", "opens_at")
+    products, active_lots, registration_offers = registration_catalog(event)
 
     schedule = event.schedule_items.all()[:5]
     routes = event.routes.filter(public_flag=True)
@@ -46,6 +41,8 @@ def event_detail(request, slug):
         "event": event,
         "products": products,
         "active_lots": active_lots,
+        "registration_offers": registration_offers,
+        "payments_available": not MercadoPagoGateway().configuration_issues(),
         "schedule": schedule,
         "routes": routes,
         "sponsors": sponsors,

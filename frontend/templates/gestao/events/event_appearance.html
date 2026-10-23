@@ -1,0 +1,21 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Aparência · {{ event.title }} | Equipe Morcego{% endblock %}
+{% block gestao_header %}Aparência da edição{% endblock %}
+{% block content %}
+<div class="mg-form-sheet">
+  <div class="page-heading"><div><h1>Deixe a edição com sua identidade</h1><p>Personalize o banner e a logo de {{ event.title }}. O site mantém o tema escuro e a paleta da Equipe Morcego.</p></div><div class="page-actions"><a class="btn btn-secondary" href="{% url 'events:detail' slug=event.slug %}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i>Conferir página</a></div></div>
+  <form method="post" enctype="multipart/form-data" class="mg-stack">
+    {% csrf_token %}
+    {% if form.errors %}<div class="mg-form-errors" role="alert"><strong>Revise a imagem indicada abaixo.</strong>{{ form.non_field_errors }}</div>{% endif %}
+    <section class="card"><div class="card-header"><div><h2>Banner principal</h2><p>A imagem acompanha o título na página da edição. Evite textos essenciais nas bordas: o enquadramento muda no celular.</p></div></div>
+      {% if theme.hero_banner %}<img class="mg-frame-preview" src="{{ theme.hero_banner.url }}" alt="Banner atual da edição">{% else %}<p class="text-muted">Sem banner próprio. A página usa a arte padrão da equipe.</p>{% endif %}
+      {% include "gestao/events/_field.html" with field=form.hero_banner %}
+    </section>
+    <section class="card"><div class="card-header"><div><h2>Logo da edição</h2><p>A logo aparece inteira, sem filtros ou recortes. O emblema da equipe continua identificando o sistema.</p></div></div>
+      {% if theme.logo_image %}<img class="mg-frame-preview" src="{{ theme.logo_image.url }}" alt="Logo atual da edição">{% else %}<p class="text-muted">Sem logo própria. A página usa o emblema da Equipe Morcego.</p>{% endif %}
+      {% include "gestao/events/_field.html" with field=form.logo_image %}
+    </section>
+    <div class="mg-form-actions"><a class="btn btn-secondary" href="{% url 'gestao:dashboard' %}?event_id={{ event.id }}">Voltar ao painel</a><button class="btn btn-primary" type="submit"><i data-lucide="save" aria-hidden="true"></i>Salvar aparência</button></div>
+  </form>
+</div>
+{% endblock %}

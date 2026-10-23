@@ -1,5 +1,5 @@
-/* Equipe Morcego: dark earth, racing typography and small compositor-only motion.
-   Glass is deliberately limited to the header; cards use translucent paint. */
+/* Equipe Morcego: dark earth, racing typography and motion in visible sections.
+   The header uses backdrop glass; cards use translucent layers without additional blur. */
 :root {
   color-scheme: dark;
   --primary: #ff7a28; --primary-hover: #ff9652; --accent: #ef5237;
@@ -36,6 +36,7 @@ a:hover, .text-link:hover { color: #ffab72; }
 .mobile-menu { position: absolute; top: 104px; left: 0; right: 0; border: 1px solid var(--border); border-radius: 24px; background: #1c1917; box-shadow: 0 20px 45px #0006; }
 .trail-hero { position: relative; isolation: isolate; overflow: hidden; margin-top: -110px; padding: 174px 0 24px; min-height: 790px; background: #17130f; }
 .trail-hero-art, .trail-hero-shade { position: absolute; z-index: -3; inset: 0; pointer-events: none; }
+.trail-hero-art { overflow: hidden; }
 .trail-hero-art picture { display: contents; }
 .trail-hero-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 48%; }
 .trail-hero-shade { z-index: -2; background: linear-gradient(90deg, #100f0fe8 0%, #100f0fa6 31%, #100f0f15 66%), linear-gradient(0deg, #11100f 0%, #11100f08 30%, #11100f16 75%, #11100f77); }
@@ -215,3 +216,203 @@ a:hover, .text-link:hover { color: #ffab72; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; transition: none !important; } }
 @media (prefers-reduced-transparency: reduce) { .nav-container, .mobile-menu { background: #1c1917; backdrop-filter: none; -webkit-backdrop-filter: none; } }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .nav-container { background: #1c1917; } }
+
+/* Institutional home and portrait-first campaign art. */
+.trail-hero-art img { object-position: center top; }
+.trail-hero--home { min-height: 820px; }
+.trail-hero--home .trail-hero-content { min-height: 530px; }
+.trail-hero-copy h1 > span, .trail-hero-copy h1 > em { display: inline-block; animation: headline-launch .9s cubic-bezier(.2,.75,.2,1) both; }
+.trail-hero-copy h1 > span:nth-of-type(2) { animation-delay: .12s; }
+.trail-hero-copy h1 > em { animation-delay: .24s; }
+.trail-hero--home .trail-hero-copy { max-width: 650px; }
+.trail-hero--home .trail-hero-lead { max-width: 43ch; }
+.trail-hero-shade { background: linear-gradient(90deg,#100f0feb 0%,#100f0fb5 28%,#100f0f15 64%),linear-gradient(0deg,#11100f 0%,#11100f00 27%,#11100f0d 82%,#11100f44); }
+.trail-band-track { transform: none; animation: trail-band-run 28s linear infinite; }
+.trail-band-track > span { display: flex; align-items: center; gap: 30px; padding-right: 30px; }
+.trail-band .lucide { width: 22px; height: 22px; }
+.live-dot { position: relative; }
+.live-dot::after { content: ''; position: absolute; inset: -5px; border: 1px solid #ff9f5d77; border-radius: 50%; animation: trail-pulse 2.6s ease-out infinite; }
+.trail-speed-lines { position: absolute; inset: 22% 0 8%; z-index: -1; pointer-events: none; overflow: hidden; }
+.trail-speed-lines span { position: absolute; top: 36%; right: -100px; width: 120px; height: 1px; background: linear-gradient(90deg,transparent,#ffb67c66); transform: rotate(-14deg); animation: trail-speed 7s ease-in infinite; opacity: 0; }
+.trail-speed-lines span:nth-child(2) { top: 56%; animation-delay: 2s; width: 85px; }
+.trail-speed-lines span:nth-child(3) { top: 78%; animation-delay: 4s; width: 180px; }
+.tire-track--hero { animation: trail-tread-pass 12s ease-in-out infinite; }
+.trail-featured-event { display: grid; grid-template-columns: .95fr 1.05fr; background: var(--glass-fill); border: 1px solid #d69b6838; border-radius: 30px; overflow: hidden; box-shadow: inset 0 1px #ffe1bd15,0 30px 80px #0003; }
+.trail-featured-art { min-width: 0; position: relative; isolation: isolate; display: flex; align-items: center; justify-content: center; padding: 65px 36px 80px; background: radial-gradient(ellipse at 50% 45%,#81401844,transparent 70%),#181411; overflow: hidden; }
+.trail-featured-art::after { content: ''; position: absolute; inset: 0; z-index: -2; opacity: .3; background: repeating-linear-gradient(135deg,transparent 0 48px,#e7ba8e0a 49px 50px); }
+.trail-featured-art img { width: 100%; max-height: 310px; position: relative; transition: transform .5s ease; }
+.trail-featured-art:hover img { transform: translateY(-6px) rotate(-2deg); }
+.trail-featured-label { position: absolute; bottom: 26px; display: inline-flex; align-items: center; gap: 12px; padding: 8px 16px; background: #fff1; border: 1px solid #fff2; border-radius: 99px; font-size: 11px; }
+.trail-featured-copy { padding: 48px; }
+.trail-featured-copy h3 { font-size: clamp(28px,3vw,42px); line-height: 1.14; margin-bottom: 20px; }
+.trail-featured-copy > p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+.trail-featured-copy .event-facts { font-size: 12px; }
+.trail-featured-copy > .btn { margin-top: 28px; }
+.trail-event-hint { display: block; color: #aea196; font-size: 10px; margin-top: 12px; }
+.trail-countdown { display: flex; gap: 12px; align-items: center; margin-top: 26px; }
+.trail-countdown > span:not(.countdown-caption) { min-width: 58px; padding: 10px 13px; text-align: center; background: #ffffff06; border: 1px solid #ffffff12; border-radius: 12px; }
+.trail-countdown strong { display: block; font: 800 28px/1.2 Inter,sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -.06em; }
+.trail-countdown small { font-size: 9px; color: #b8a18f; text-transform: uppercase; letter-spacing: .07em; }
+.countdown-caption { font-size: 10px; color: #b8a18f; margin-left: 5px; }
+.trail-calendar-grid { margin-top: 28px; }
+.event-preview { transition: transform .25s,border-color .25s; }
+.event-preview:hover { transform: translateY(-5px); border-color: #ff94515c; }
+.event-preview-media { background: radial-gradient(ellipse,#71361530,transparent 70%),#1c1815; }
+.event-preview-media .logo-emblem { max-height: 260px; }
+.event-preview-copy .event-facts { font-size: 12px; margin: 20px 0; }
+.trail-manifesto { background: radial-gradient(ellipse at 0 80%,#7e32132e,transparent 50%),#151210; border-block: 1px solid #fff1; overflow: hidden; }
+.trail-manifesto-grid { display: grid; grid-template-columns: 1fr 1.1fr; align-items: center; gap: 80px; }
+.trail-team-art { position: relative; isolation: isolate; padding: 35px 25px 50px; }
+.trail-team-art > img { display: block; width: 100%; position: relative; animation: emblem-float 7s ease-in-out infinite; }
+.trail-coordinate { display: block; text-align: center; font: 500 10px/1.5 Inter,sans-serif; letter-spacing: .15em; color: #ad8971; margin-top: 30px; }
+.trail-orbit { position: absolute; width: 84%; aspect-ratio: 1; border-radius: 50%; border: 1px dashed #e5a46a2b; left: 8%; top: 50%; translate: 0 -50%; z-index: -1; }
+.trail-orbit::before { content: ''; position: absolute; inset: 8%; border: 1px solid #cda47c14; border-radius: 50%; }
+.trail-orbit::after { content: ''; position: absolute; inset: -12%; border: 1px solid #cda47c0b; border-radius: 50%; }
+.trail-featured-art .trail-orbit { animation: trail-orbit-spin 80s linear infinite; }
+.trail-contour { position: absolute; inset: -20%; z-index: -2; background: repeating-radial-gradient(ellipse at 60% 40%,transparent 0 32px,#b0804b12 33px 34px,transparent 35px 55px); transform: rotate(-25deg); }
+.trail-manifesto h2 { font-size: clamp(32px,3.5vw,48px); }
+.trail-manifesto p { color: var(--text-muted); font-size: 14px; margin-top: 20px; }
+.trail-manifesto p.trail-manifesto-lead { color: #e5d7cb; font-size: 17px; margin-top: 28px; }
+.trail-values { display: flex; flex-wrap: wrap; gap: 12px 20px; margin: 28px 0 16px; }
+.trail-values span { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; color: #ffb681; }
+.trail-values svg { width: 18px; }
+.trail-archive-card { display: grid; grid-template-columns: 180px 1fr 100px; align-items: center; gap: 48px; padding: 48px; border: 1px solid #cba08033; border-radius: 26px; background: linear-gradient(110deg,#322319,#171310); position: relative; overflow: hidden; transition: border-color .3s; }
+.trail-archive-card:hover { border-color: #ffb27888; color: #fff; }
+.trail-archive-card > :not(.tire-track) { z-index: 1; }
+.trail-archive-number { font: italic 800 130px/.9 Inter,sans-serif; letter-spacing: -.1em; color: #ff945c; }
+.trail-archive-number > span { display: block; margin-top: 14px; font: 600 10px/1.5 Inter,sans-serif; letter-spacing: .4em; text-align: center; }
+.trail-archive-card h3 { font-size: 32px; line-height: 1.15; }
+.trail-archive-card p { max-width: 50ch; font-size: 13px; color: #baa592; margin-top: 18px; }
+.trail-archive-card .text-link { margin-top: 22px; }
+.trail-archive-icon { width: 76px; height: 76px; stroke-width: 1; color: #ad744c; }
+.trail-archive-card .tire-track { right: 40px; top: -350px; opacity: .1; }
+.trail-past-events { margin-top: 28px; }
+.trail-past-events a { display: flex; justify-content: space-between; gap: 20px; padding: 22px 0; border-bottom: 1px solid #fff1; }
+.trail-past-events small { color: #d59b6f; }
+.trail-route-line { margin: -10px 0 18px; height: 70px; opacity: .7; }
+.trail-route-line svg { width: 100%; height: 100%; overflow: visible; }
+.trail-route-line path { fill: none; stroke-width: 2; }
+.trail-route-base { stroke: #c68a5433; stroke-dasharray: 3 10; }
+.trail-route-runner { stroke: #ff9b55; stroke-dasharray: 38 1200; animation: trail-route-travel 9s linear infinite; }
+.motion-outside *, .motion-outside *::before, .motion-outside *::after { animation-play-state: paused !important; }
+.trail-gallery { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; margin-top: 28px; }
+.trail-gallery figure { margin: 0; }
+.trail-gallery a { display: block; border-radius: 18px; overflow: hidden; }
+.trail-gallery img { display: block; width: 100%; aspect-ratio: 4/3; object-fit: cover; transition: transform .5s; }
+.trail-gallery a:hover img { transform: scale(1.035); }
+.trail-gallery figcaption { font-size: 11px; color: var(--text-muted); margin: 12px 0 0; }
+@keyframes headline-launch { from { transform: translateY(25px) rotate(1deg); opacity: 0; } to { transform: translateY(0) rotate(0); opacity: 1; } }
+@keyframes trail-band-run { to { transform: translateX(-50%); } }
+@keyframes trail-pulse { 0% { transform: scale(.6); opacity: .8; } 100% { transform: scale(1.8); opacity: 0; } }
+@keyframes trail-speed { 0%,55% { transform: translateX(0) rotate(-14deg); opacity: 0; } 65% { opacity: .6; } 88%,100% { transform: translateX(-100vw) rotate(-14deg); opacity: 0; } }
+@keyframes trail-tread-pass { 0%,100% { transform: translateY(0) rotate(-25deg); opacity: .1; } 50% { transform: translateY(70px) rotate(-25deg); opacity: .17; } }
+@keyframes emblem-float { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-9px) rotate(1deg); } }
+@keyframes trail-orbit-spin { to { transform: rotate(360deg); } }
+@keyframes trail-route-travel { to { stroke-dashoffset: -1238; } }
+@media(min-width:1600px) { .trail-hero--home { min-height: 880px; } }
+@media(max-width:1100px) {
+ .trail-featured-event { grid-template-columns: .85fr 1.15fr; }
+ .trail-featured-copy { padding: 36px; }
+ .trail-featured-art { padding-inline: 24px; }
+ .trail-manifesto-grid { gap: 40px; }
+ .countdown-caption { display: none; }
+ .trail-archive-card { grid-template-columns: 140px 1fr 65px; gap: 32px; }
+ .trail-archive-number { font-size: 110px; }
+}
+@media(max-width:700px) {
+ .trail-hero--home { padding-top: clamp(355px,111vw,530px); min-height: 0; }
+ .trail-hero-art { height: auto; bottom: auto; aspect-ratio: 2/3; }
+ .trail-hero-art img { width: 100%; height: 100%; object-fit: contain; object-position: center top; }
+ .trail-hero-art--custom { top: 90px; height: 330px; aspect-ratio: auto; }
+ .trail-hero-art--custom img { object-fit: contain; }
+ .trail-hero-shade { background: linear-gradient(0deg,#11100f 0%,#11100f 12%,#11100f00 60%,#11100f00 86%,#11100f22); }
+ .trail-hero--home .trail-hero-content { min-height: 0; }
+ .trail-hero--home h1 { font-size: clamp(52px,14.5vw,88px); line-height: .98; }
+ .trail-hero--home .trail-eyebrow { font-size: 9px; margin-bottom: 18px; }
+ .trail-hero--home .trail-hero-lead { font-size: 13px; }
+ .trail-hero--home .action-row { gap: 10px; }
+ .trail-hero--home .action-row > .btn { width: 100%; }
+ .trail-hero--home .trail-secondary-link { justify-content: center; width: 100%; }
+ .trail-hero-foot { margin-top: 22px; }
+ .trail-speed-lines { inset: 16% 0 50%; }
+ .trail-featured-event { grid-template-columns: 1fr; border-radius: 24px; }
+ .trail-featured-art { min-height: 280px; padding: 35px 32px 70px; }
+ .trail-featured-art img { max-height: 210px; max-width: 380px; }
+ .trail-featured-art .trail-orbit { width: 65%; left: 17.5%; }
+ .trail-featured-label { bottom: 20px; }
+ .trail-featured-copy { padding: 28px 24px; }
+ .trail-featured-copy > .eyebrow { font-size: 9px; }
+ .trail-featured-copy h3 { font-size: 29px; }
+ .trail-featured-copy > p { font-size: 13px; }
+ .trail-featured-copy > .btn { width: 100%; }
+ .trail-countdown { gap: 10px; }
+ .trail-countdown > span:not(.countdown-caption) { flex: 1; padding: 10px; }
+ .trail-manifesto-grid { grid-template-columns: 1fr; gap: 36px; }
+ .trail-team-art { padding: 10px 30px 16px; max-width: 430px; justify-self: center; }
+ .trail-manifesto h2 { font-size: clamp(30px,8.2vw,43px); }
+ .trail-manifesto p.trail-manifesto-lead { font-size: 16px; }
+ .trail-manifesto p { font-size: 13px; }
+ .trail-archive-card { grid-template-columns: 1fr; gap: 30px; padding: 30px 26px; }
+ .trail-archive-number { font-size: 88px; display: flex; align-items: flex-end; gap: 22px; }
+ .trail-archive-number > span { margin-bottom: 6px; text-align: left; }
+ .trail-archive-icon { position: absolute; right: 26px; top: 42px; width: 44px; height: 44px; }
+ .trail-archive-card h3 { font-size: 28px; }
+ .trail-gallery { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+ .trail-gallery figure:first-child { grid-column: 1/-1; }
+ .trail-gallery figure:first-child img { aspect-ratio: 16/9; }
+ .trail-gallery figcaption { font-size: 10px; }
+ .trail-route-line { height: 45px; margin: 0 0 20px; }
+ .trail-past-events a { flex-direction: column; gap: 8px; }
+ .trail-hero--event { padding-top: clamp(360px,111vw,530px); }
+}
+@media(prefers-reduced-motion:reduce) { .trail-hero-copy h1 > span,.trail-hero-copy h1 > em { opacity: 1; transform: none; } }
+
+.event-edition-brand { width: min(27vw,360px); flex-shrink: 0; align-self: flex-end; margin-bottom: 20px; }
+.event-edition-brand img { width: 100%; height: auto; max-height: 280px; }
+.product-card--raffle { background: radial-gradient(ellipse at top right,#9a3d1833,transparent 65%),var(--glass-fill); border-color: #dc8a4c55; }
+.product-card--raffle .product-price strong { color: #fbb17e; }
+.event-subnav a[aria-current="page"] { color: #ffae73; border-color: #ff8a4366; background: #ff8a4310; }
+@media(max-width:700px) {
+ .event-edition-brand { width: 220px; max-width: 75%; margin: 24px auto 0; }
+ .trail-hero--event .trail-hero-content { display: flex; flex-direction: column; gap: 8px; }
+ .trail-hero--event .trail-hero-copy { width: 100%; }
+ .product-grid { grid-template-columns: 1fr; }
+ .product-card { min-width: 0; }
+}
+
+/* Keep the edition mark on the text side so it never masks the rider. */
+.event-identity-row { display: flex; align-items: center; gap: 26px; margin: 0 0 26px; }
+.event-identity-row .event-edition-brand { width: 180px; margin: 0; align-self: center; }
+.event-identity-row .trail-eyebrow { margin: 0; line-height: 1.9; color: #c9a58d; font-size: 9px; }
+.trail-hero--event .trail-hero-content { display: block; }
+.trail-hero--event h1 { font-size: clamp(44px,5.4vw,76px); }
+.trail-hero--event .back-link { margin-bottom: 18px; }
+.raffle-card-symbol { display: block; color: #ffa66c; margin: 24px 0 20px; }
+.raffle-card-symbol .lucide { width: 92px; height: 64px; stroke-width: 1.25; }
+@media(max-width:700px) {
+ .event-identity-row { gap: 20px; margin-bottom: 24px; }
+ .event-identity-row .event-edition-brand { width: 150px; margin: 0; max-width: 50%; }
+ .event-identity-row .trail-eyebrow { font-size: 8px; letter-spacing: .1em; }
+ .trail-hero--event h1 { font-size: clamp(35px,10vw,58px); }
+}
+
+.trail-hero-art--custom img { object-fit: contain; object-position: right center; }
+@media(max-width:700px) { .trail-hero-art--custom img { object-position: center top; } }
+
+@media(min-width:701px) and (max-width:1000px) {
+ .trail-hero,.trail-hero--event { padding-top: calc(66.667vw + 18px); min-height: 0; }
+ .trail-hero-art { height: auto; bottom: auto; aspect-ratio: 3/2; }
+ .trail-hero-art img { object-fit: contain; object-position: right top; }
+ .trail-hero-shade { background: linear-gradient(0deg,#11100f 0%,#11100f 20%,#11100f00 65%); }
+ .trail-hero--home .trail-hero-content,.trail-hero--event .trail-hero-content { min-height: 0; }
+ .trail-hero--home h1 { font-size: 88px; }
+ .trail-hero--home .trail-hero-copy { max-width: 100%; }
+ .trail-hero--home h1 > br:first-of-type { display: none; }
+ .trail-hero--home h1 > span:first-child { margin-right: .16em; }
+ .trail-hero--event .trail-hero-copy { max-width: 100%; }
+}
+
+.trail-hero-art:not(.trail-hero-art--custom) img { animation: trail-camera-drift 16s ease-in-out infinite; transform-origin: 70% 55%; }
+@keyframes trail-camera-drift { 0%,100% { transform: scale(1) translate(0,0); } 50% { transform: scale(1.025) translate(-.3%,.15%); } }
+
+.trail-hero-art::after { content: ''; position: absolute; inset: 70% 0 0; background: linear-gradient(0deg,#11100f,transparent); pointer-events: none; }
