@@ -27,7 +27,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { min-width: 320px; }
+html { min-width: 0; }
 body { margin: 0; }
 button, input { font: inherit; }
 a { color: inherit; }

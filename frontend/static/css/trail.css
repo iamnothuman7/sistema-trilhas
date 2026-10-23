@@ -27,7 +27,7 @@ a:hover, .text-link:hover { color: #ffab72; }
 .btn-dark:hover, .btn-secondary:hover, .btn-light:hover { background: #ffffff12; color: #fff; border-color: #ff9b5650; }
 .navbar { width: min(1280px, calc(100% - 64px)); margin: 16px auto 0; top: 16px; background: transparent; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
 .nav-container { width: 100%; height: 94px; padding: 9px 28px; border: 1px solid #ffffff26; border-radius: 999px; background: linear-gradient(120deg, #ffffff0a, #ffffff02), #181614bd; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: inset 0 1px #ffffff0b, 0 10px 40px #00000030; }
-.brand-logo img { width: 100px; height: 78px; }
+.brand-logo img { width: 80px; height: 62px; object-fit: contain; }
 .desktop-navigation { gap: 28px; }
 .nav-link { color: #cfc7bf; position: relative; font-family: Inter, sans-serif; font-weight: 500; }
 .nav-link.active { color: #ff9956; }
@@ -165,7 +165,7 @@ a:hover, .text-link:hover { color: #ffab72; }
   html { scroll-padding-top: 104px; }
   .navbar { width: calc(100% - 28px); top: 10px; margin-top: 10px; }
   .nav-container { height: 76px; padding: 5px 16px; gap: 12px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-  .brand-logo img { width: 78px; height: 62px; }
+  .brand-logo img { width: 62px; height: 50px; }
   .header-actions .btn { width: auto; font-size: 12px; min-width: 64px; }
   .header-actions .btn .lucide { display: none; }
   .mobile-menu { top: 86px; }
