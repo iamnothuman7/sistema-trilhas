@@ -29,6 +29,9 @@ wheels/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+/homologation.sqlite3*
+/homologation-media/
+/homologation-*.json
 media/
 staticfiles/
 

@@ -4,7 +4,9 @@ O checkout usa **Payments API `/v1/payments`** para Pix e cartão. Não existe a
 
 ## Situação da ativação
 
-A aplicação Mercado Pago da Equipe Morcego ainda precisa ser criada. As credenciais de outro cliente ou aplicação do Navie Vibe **não devem ser copiadas**. A implementação foi verificada com respostas HTTP simuladas em banco de testes; nenhuma cobrança real foi realizada. A ativação e homologação da conta própria continuam pendentes.
+Em 23/10/2026, a homologação passou a operar em instalação e banco próprios, com HTTPS em `homologacao.equipemorcego.nabio.pro`. Foram confirmados na API do Mercado Pago, com `live_mode=false`: aprovação e recusa de cartão, geração de Pix, reembolso parcial e total e cancelamento de Pix. Os testes HTTP de segurança e conciliação do webhook também passaram, usando notificações assinadas pelo executor dos testes e recursos consultados na API autenticada. Isso não comprova, por si só, a entrega de uma notificação originada no Mercado Pago.
+
+A ativação de pagamentos reais continua pendente. O rascunho de produção permanece separado da configuração em uso. Não copie credenciais de outro cliente ou aplicação do Navie Vibe. Consulte [o relatório de homologação](HOMOLOGACAO_MERCADO_PAGO.md) para resultados, limitações e a sequência de ativação.
 
 O inventário de produção anterior à migração contém um pedido marcado como pago e uma inscrição ativa, sem `ChargeAttempt` associado. Isso não comprova liquidação pelo Mercado Pago. A migração preserva esse legado e não fabrica uma transação nem altera o estado existente. A organização deve conferir esse registro com o comprovante original.
 
