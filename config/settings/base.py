@@ -165,6 +165,7 @@ MP_API_BASE = os.getenv("MP_API_BASE", "https://api.mercadopago.com")
 MP_COLLECTOR_ID = os.getenv("MP_COLLECTOR_ID", "")
 MP_WEBHOOK_URL = os.getenv("MP_WEBHOOK_URL", "")
 MP_WEBHOOK_MAX_AGE_SECONDS = int(os.getenv("MP_WEBHOOK_MAX_AGE_SECONDS", "900"))
+MP_CREDENTIALS_ENCRYPTION_KEY = os.getenv("MP_CREDENTIALS_ENCRYPTION_KEY", "")
 
 # Business Rule Timing Defaults (in minutes/hours)
 QUOTE_TTL_MINUTES = int(os.getenv("QUOTE_TTL_MINUTES", "5"))

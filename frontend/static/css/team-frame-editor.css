@@ -1,0 +1,14 @@
+/* Scoped composition for the internal team artwork tool. */
+.team-art-layout { display: grid; grid-template-columns: minmax(300px,.95fr) minmax(0,1.05fr); gap: 24px; align-items: start; }
+.team-art-controls,.team-art-preview-column { min-width: 0; }
+.team-art-controls .form-group:last-child { margin-bottom: 0; }
+.team-art-preview-column { position: sticky; top: 88px; }
+.team-art-preview-card { max-width: 640px; margin-inline: auto; }
+.team-art-preview-card canvas { display: block; width: auto; height: auto; max-width: 100%; max-height: min(65dvh,780px); margin-inline: auto; border-radius: 12px; background: #191512; }
+.team-art-range { display: block; width: 100%; min-height: 44px; accent-color: var(--primary); cursor: pointer; }
+.team-art-controls output { float: right; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.team-art-controls input[type="file"] { padding: 10px; overflow: hidden; }
+.team-art-controls input[type="file"]::file-selector-button { color: var(--text); background: var(--surface-hover); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; margin-right: 10px; cursor: pointer; }
+.team-art-preview-card [role="status"] { min-height: 2.6em; overflow-wrap: anywhere; }
+@media(max-width:1000px) { .team-art-layout { grid-template-columns: minmax(270px,1fr) minmax(0,1fr); } .team-art-layout .card { padding: 24px 20px; } }
+@media(max-width:767px) { .team-art-layout { grid-template-columns: minmax(0,1fr); } .team-art-preview-column { position: static; } .team-art-preview-card canvas { max-height: none; width: 100%; } }

@@ -1,0 +1,7 @@
+{% load registration_ui %}
+{% pickup_instructions as pickup_steps %}
+<section class="public-card" aria-label="Credenciamento e retirada">
+  <h2>Credenciamento e retirada</h2>
+  <ol>{% for step in pickup_steps %}<li><p>{{ step }}</p></li>{% endfor %}</ol>
+  <div class="public-actions"><a class="public-button public-button--secondary" href="{% url 'minha_conta:dashboard' %}"><i data-lucide="user-round" aria-hidden="true"></i> Área do participante</a></div>
+</section>

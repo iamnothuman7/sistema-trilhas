@@ -18,6 +18,7 @@
             </div>
         </div>
         <div class="page-actions">
+            <a class="btn btn-secondary" href="{% url 'minha_conta:registration_pdf' reg.id %}"><i data-lucide="file-down" aria-hidden="true"></i> Comprovante PDF</a>
             <span class="badge {% if reg.commercial_state == 'ACTIVE' %}badge-success{% else %}badge-warning{% endif %}">
                 {{ reg.get_commercial_state_display }}
             </span>

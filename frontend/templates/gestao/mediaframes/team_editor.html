@@ -1,0 +1,42 @@
+{% extends "gestao/base_gestao.html" %}
+{% load static %}
+{% block title %}Arte de equipe confirmada | {{ event.title }}{% endblock %}
+{% block gestao_header %}Arte de equipe confirmada{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/team-frame-editor.css' %}?v=team20261022">{% endblock %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">Ferramenta interna</span><h1>Equipe confirmada</h1><p>Monte uma arte de {{ event.title }} para baixar e compartilhar com a equipe.</p></div><a class="btn btn-secondary" href="{% url 'gestao:frames' event_id=event.id %}"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar às molduras</a></div>
+<div class="alert"><i data-lucide="lock-keyhole" aria-hidden="true"></i><span>Fotos, logos e a arte final ficam neste dispositivo. Esta ferramenta não publica imagens no site.</span></div>
+{% if teams %}
+<div class="team-art-layout" id="teamArtEditor">
+    <div class="mg-stack team-art-controls">
+        <section class="card" aria-labelledby="team-source-title">
+            <div class="card-header"><h2 id="team-source-title">1. Escolha a equipe</h2></div>
+            <div class="form-group"><label class="form-label" for="teamChoice">Equipe da edição</label><select class="form-control" id="teamChoice" aria-describedby="teamChoiceHelp">{% for team in teams %}<option value="{{ team.id }}">{{ team.name }} · {% if team.count == 1 %}1 inscrição ativa{% else %}{{ team.count }} inscrições ativas{% endif %}</option>{% endfor %}</select><small class="form-help" id="teamChoiceHelp">A lista reúne equipes com pelo menos uma inscrição ativa e pagamento confirmado neste evento. Não inclui reservas ou inscrições canceladas.</small></div>
+            <div class="form-group"><label class="form-label" for="teamArtFormat">Formato da imagem</label><select class="form-control" id="teamArtFormat"><option value="story">Story · 1080 × 1920 px</option><option value="feed">Feed · 1080 × 1350 px</option></select></div>
+            <div class="form-group"><label class="form-label" for="teamArtSubtitle">Mensagem complementar <span class="text-muted">(opcional)</span></label><input class="form-control" id="teamArtSubtitle" type="text" maxlength="70" placeholder="Ex.: Nos vemos na trilha!"><small class="form-help">Até 70 caracteres. O nome da equipe e os dados da edição vêm do cadastro.</small></div>
+        </section>
+        <section class="card" aria-labelledby="team-images-title">
+            <div class="card-header"><h2 id="team-images-title">2. Adicione foto ou logo</h2></div>
+            <div class="form-group"><label class="form-label" for="teamPhoto">Foto da equipe</label><input class="form-control" type="file" id="teamPhoto" accept="image/jpeg,image/png,image/webp" aria-describedby="teamImageHelp"><button type="button" class="btn btn-secondary btn-sm mg-space-top-sm" id="removeTeamPhoto" hidden>Remover foto</button></div>
+            <div class="form-group"><label class="form-label" for="teamLogo">Logo da equipe</label><input class="form-control" type="file" id="teamLogo" accept="image/jpeg,image/png,image/webp" aria-describedby="teamImageHelp"><button type="button" class="btn btn-secondary btn-sm mg-space-top-sm" id="removeTeamLogo" hidden>Remover logo</button></div>
+            <p class="form-help" id="teamImageHelp">Use ao menos uma imagem. PNG, JPG ou WebP, até 15 MB e 24 megapixels. A transparência da logo é preservada.</p>
+        </section>
+        <section class="card" aria-labelledby="team-composition-title">
+            <div class="card-header"><h2 id="team-composition-title">3. Ajuste a composição</h2><button type="button" class="btn btn-secondary btn-sm" id="resetTeamComposition">Restaurar</button></div>
+            <div class="form-group"><label class="form-label" for="teamPhotoFit">Enquadramento da foto</label><select class="form-control" id="teamPhotoFit"><option value="contain">Mostrar a foto inteira</option><option value="cover">Preencher o espaço com corte</option></select></div>
+            <div class="form-group"><label class="form-label" for="teamPhotoZoom">Zoom da foto <output id="teamPhotoZoomValue" for="teamPhotoZoom">100%</output></label><input class="team-art-range" type="range" id="teamPhotoZoom" min="100" max="250" step="5" value="100"></div>
+            <div class="form-group"><label class="form-label" for="teamPhotoX">Posição horizontal <output id="teamPhotoXValue" for="teamPhotoX">50%</output></label><input class="team-art-range" type="range" id="teamPhotoX" min="0" max="100" step="1" value="50"></div>
+            <div class="form-group"><label class="form-label" for="teamPhotoY">Posição vertical <output id="teamPhotoYValue" for="teamPhotoY">50%</output></label><input class="team-art-range" type="range" id="teamPhotoY" min="0" max="100" step="1" value="50"></div>
+            <div class="form-group"><label class="form-label" for="teamLogoPosition">Logo sobre a foto</label><select class="form-control" id="teamLogoPosition"><option value="right">Canto inferior direito</option><option value="left">Canto inferior esquerdo</option></select><small class="form-help">Sem foto, a logo fica centralizada no espaço principal.</small></div>
+        </section>
+    </div>
+    <aside class="team-art-preview-column" aria-label="Prévia da arte">
+        <div class="card team-art-preview-card"><div class="card-header"><h2>Prévia</h2><span class="badge badge-info" id="teamArtDimensions">1080 × 1920 px</span></div><canvas id="teamArtCanvas" width="1080" height="1920" role="img" aria-label="Prévia da arte da equipe selecionada">A prévia precisa de um navegador com suporte a Canvas.</canvas><p id="teamArtStatus" class="form-help" role="status" aria-live="polite">Preparando a identidade da edição…</p><button type="button" class="btn btn-primary btn-block mg-space-top" id="downloadTeamArt" disabled><i data-lucide="download" aria-hidden="true"></i>Baixar imagem PNG</button><p class="form-help">Confira o enquadramento e o nome antes de compartilhar.</p></div>
+    </aside>
+</div>
+{{ team_art_config|json_script:"teamArtConfig" }}
+{% else %}
+<section class="card empty-state"><span class="empty-icon"><i data-lucide="users-round" aria-hidden="true"></i></span><h2>Nenhuma equipe confirmada nesta edição</h2><p>As equipes aparecerão aqui quando houver inscrições ativas, com pagamento confirmado e o campo Equipe preenchido. Reservas e inscrições canceladas não entram na lista.</p></section>
+{% endif %}
+{% endblock %}
+{% block extra_js %}{% if teams %}<script src="{% static 'js/team_frame_editor.js' %}?v=team20261022" defer></script>{% endif %}{% endblock %}

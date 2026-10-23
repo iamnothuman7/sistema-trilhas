@@ -4,6 +4,78 @@ from django.utils import timezone
 from django.utils.text import slugify
 from .validators import validate_instagram_profile, validate_sponsor_logo_size
 
+
+class TeamAlias(models.Model):
+    event = models.ForeignKey("Event", on_delete=models.CASCADE, related_name="team_aliases")
+    source_name = models.CharField("Nome informado", max_length=120)
+    source_key = models.CharField(max_length=240, editable=False)
+    canonical_name = models.CharField("Exibir como", max_length=120)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Correção de nome de equipe"
+        verbose_name_plural = "Correções de nomes de equipes"
+        ordering = ["source_name"]
+        constraints = [models.UniqueConstraint(fields=["event", "source_key"], name="unique_team_alias_per_event")]
+
+    def clean(self):
+        from .rankings import display_name, group_key, validate_alias_mapping
+        self.source_name = display_name(self.source_name)
+        self.canonical_name = display_name(self.canonical_name)
+        self.source_key = group_key(self.source_name)
+        if self.event_id:
+            validate_alias_mapping(self.event, "team", self.source_key, self.canonical_name, exclude_pk=self.pk)
+
+    def save(self, *args, **kwargs):
+        from .rankings import group_key
+        self.source_key = group_key(self.source_name)
+        if kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = set(kwargs["update_fields"]) | {"source_key"}
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.source_name} → {self.canonical_name}"
+
+
+class CityAlias(models.Model):
+    event = models.ForeignKey("Event", on_delete=models.CASCADE, related_name="city_aliases")
+    source_name = models.CharField("Cidade informada", max_length=100)
+    state = models.CharField("UF", max_length=2, blank=True)
+    source_key = models.CharField(max_length=200, editable=False)
+    canonical_name = models.CharField("Exibir como", max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Correção de nome de cidade"
+        verbose_name_plural = "Correções de nomes de cidades"
+        ordering = ["state", "source_name"]
+        constraints = [models.UniqueConstraint(fields=["event", "state", "source_key"], name="unique_city_alias_per_event_uf")]
+
+    def clean(self):
+        from .rankings import STATE_CODES, display_name, group_key, validate_alias_mapping
+        from django.core.exceptions import ValidationError
+        self.source_name = display_name(self.source_name)
+        self.canonical_name = display_name(self.canonical_name)
+        self.state = display_name(self.state).upper()
+        if self.state and self.state not in STATE_CODES:
+            raise ValidationError({"state": "Escolha uma UF válida."})
+        self.source_key = group_key(self.source_name)
+        if self.event_id:
+            validate_alias_mapping(self.event, "city", self.source_key, self.canonical_name, state=self.state, exclude_pk=self.pk)
+
+    def save(self, *args, **kwargs):
+        from .rankings import group_key
+        self.source_key = group_key(self.source_name)
+        self.state = self.state.strip().upper()
+        if kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = set(kwargs["update_fields"]) | {"source_key", "state"}
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.source_name}/{self.state or 'UF ausente'} → {self.canonical_name}"
+
 class EventType(models.TextChoices):
     TRILHAO = "TRILHAO", "Trilhão Off-Road"
     EXPEDITION = "EXPEDITION", "Expedição de Múltiplos Dias"

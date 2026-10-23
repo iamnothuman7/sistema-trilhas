@@ -186,3 +186,11 @@ class ClaimToken(models.Model):
 
     def is_valid(self):
         return self.used_at is None and self.expires_at > timezone.now()
+
+
+class CheckoutAccount(models.Model):
+    """Origin of a new buyer account; only its original checkout may set its first password."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="checkout_origin")
+    order = models.OneToOneField("checkout.Order", on_delete=models.PROTECT, related_name="created_account")
+    created_at = models.DateTimeField(auto_now_add=True)
+    activated_at = models.DateTimeField(blank=True, null=True)

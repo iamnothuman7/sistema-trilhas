@@ -332,6 +332,8 @@ def reconcile_payment(payment, *, charge_id=None):
                     PaymentAllocation.objects.get_or_create(charge_attempt=charge, order_line=line, defaults={"amount_cents": line.net_cents})
                 ReceivableDue.objects.filter(order=order, due_type="FULL").update(allocated_paid_cents=amount, status="PAID")
                 _activate_registrations(order)
+                from apps.identity.onboarding import provision_buyer_account
+                provision_buyer_account(order)
     elif refund:
         charge.state = ChargeState.CANCELED
         full = refund == amount

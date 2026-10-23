@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -21,6 +21,7 @@ from apps.checkout.models import OrderStatus
 from apps.core.utils import log_audit
 from apps.identity.models import ClaimToken, Person, UserPersonLink
 from .models import Registration, TermsAcceptance
+from .eligibility import credential_is_available
 
 
 def private_page(view):
@@ -52,13 +53,11 @@ def _terms_context(reg, user):
     owners = UserPersonLink.objects.filter(person_id=reg.person_id).values("user_id")
     accepted = set(reg.terms_acceptances.filter(accepting_user_id__in=owners).values_list("document_version_id", flat=True))
     all_accepted = bool(documents) and all(doc.pk in accepted for doc in documents)
-    credential = getattr(reg, "credential", None)
     return {
         "required_docs": documents, "accepted_doc_ids": accepted, "all_accepted": all_accepted,
         "is_holder": UserPersonLink.objects.filter(user=user, person_id=reg.person_id).exists(),
         "can_share_claim": reg.source_order_line.order.purchaser_user_id == user.pk and not owners.exists(),
-        "credential_available": bool(all_accepted and reg.is_eligible_for_qr() and credential and credential.is_valid
-                                     and reg.source_order_line.order.status == OrderStatus.PAID),
+        "credential_available": credential_is_available(reg),
     }
 
 
@@ -138,6 +137,36 @@ def credential_view(request, registration_id):
         messages.warning(request, "A credencial depende do pagamento confirmado, do aceite dos termos vigentes e de uma inscrição válida.")
         return redirect("minha_conta:registration_detail", registration_id=reg.pk)
     return render(request, "registrations/credential_card.html", {"reg": reg})
+
+
+@private_page
+@require_GET
+@never_cache
+def registration_pdf(request, registration_id):
+    """A holder, buyer session, or event operator may download a private snapshot."""
+    from django.contrib.auth.views import redirect_to_login
+    from apps.checkout.views import authorized_order
+    from apps.core.permissions import can_manage_event
+    authenticated = request.user.is_authenticated and request.user.is_active
+    if request.user.is_authenticated and not request.user.is_active:
+        return HttpResponseForbidden("Acesso indisponível para esta conta.")
+    if not authenticated and not request.session.get("checkout_order_ids"):
+        return redirect_to_login(request.get_full_path(), login_url="/login/")
+    reg = get_object_or_404(Registration.objects.select_related(
+        "event", "person", "credential", "source_order_line__order",
+    ).prefetch_related("entitlements"), pk=registration_id)
+    holder = authenticated and UserPersonLink.objects.filter(user=request.user, person_id=reg.person_id).exists()
+    operator = authenticated and any(can_manage_event(request.user, reg.event, action)
+                                    for action in ("registrations", "checkin"))
+    if not holder and not operator:
+        authorized_order(request, reg.source_order_line.order_id)
+    from .pdf import build_registration_pdf
+    content = build_registration_pdf(reg)
+    response = HttpResponse(content, content_type="application/pdf")
+    number = reg.registration_number or str(reg.pk)[:8]
+    response["Content-Disposition"] = f'attachment; filename="comprovante-inscricao-{number}.pdf"'
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 def _private_claim_response(request, template, context, status=200):

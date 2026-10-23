@@ -10,6 +10,26 @@ O inventário de produção anterior à migração contém um pedido marcado com
 
 ## Configuração
 
+A tela **Gestão → Mercado Pago** permite configurar a conta própria. A edição é restrita a superusuário ou `OWNER` global ativo; `is_staff` sozinho, gerente de evento e financeiro não autorizam mudar o recebedor. Equipes com capacidade financeira podem consultar o status sem ver os campos de credenciais.
+
+O fluxo do painel tem três decisões separadas:
+
+1. **Salvar rascunho** armazena as credenciais cifradas e não muda a configuração em uso. Campos de credenciais vazios preservam os valores anteriores. As credenciais existentes nunca voltam preenchidas no HTML, inclusive quando há erro de formulário.
+2. **Testar conta sem cobrar** faz somente `GET https://api.mercadopago.com/users/me`, sem seguir redirecionamentos e com timeouts de 5/20 segundos. O ID retornado precisa coincidir com o recebedor informado. O teste não comprova Public Key, entrega do webhook, ambiente de cobrança ou homologação. O prefixo do token não é usado para certificar ambiente.
+3. **Ativar configuração conferida** exige teste do mesmo rascunho nos últimos 30 minutos e confirmações explícitas da conta, ambiente e webhook. Para produção, exige também declaração de homologação isolada concluída. Salvar novamente invalida a verificação anterior; uma aba antiga não pode sobrescrever ou ativar uma revisão mais recente.
+
+O gateway consulta o snapshot ativo do painel em cobranças, consultas e webhooks. Enquanto não houver snapshot ativo, preserva o fallback `.env`. Rascunhos incompletos não derrubam esse fallback. Se um snapshot ativo não puder ser decifrado, o gateway fica indisponível em vez de escolher silenciosamente outra conta no ambiente.
+
+Depois da primeira tentativa Mercado Pago, mudar recebedor, ambiente, Public Key, segredo ou URL do webhook pelo painel é bloqueado. Isso preserva a conciliação/reembolso e as assinaturas das notificações em andamento. Ativação e início da cobrança travam a mesma conexão antes de acessar pedidos; o checkout relê a configuração sob esse bloqueio. Assim, a troca antes da primeira cobrança continua possível sem correr com sua criação. Renovar o Access Token da mesma aplicação/conta/ambiente continua possível com nova verificação. Mudanças da identidade da conexão com histórico exigem manutenção coordenada. Se houver tentativas anteriores sem configuração completa verificável, a ativação também exige conferência técnica do histórico. Faça a homologação em instalação e banco isolados; não misture cobranças de teste com histórico de produção.
+
+### Proteção e operação do servidor
+
+`MercadoPagoConnection` (migração `payments.0004_mercado_pago_connection`) guarda rascunho e snapshot ativo separados, cifrados com Fernet autenticado (`cryptography==50.0.2`). A chave é derivada por HKDF-SHA256 de `MP_CREDENTIALS_ENCRYPTION_KEY`, se fornecida, ou de `DJANGO_SECRET_KEY`. Não copie segredos de outro projeto. Credenciais não são gravadas em `.env`, Git ou auditoria pelo painel; a auditoria registra somente ação, revisão, ambiente e ID recebedor.
+
+Mantenha a chave de criptografia estável e em backup seguro separado do banco. Trocar/perder a chave sem recriptografar os registros torna as credenciais salvas ilegíveis e bloqueia pagamentos online. A tela não implementa rotação de chave mestra nem recuperação automática de segredo. Proteção do banco em repouso não protege contra comprometimento do servidor que possui a chave; restrinja acesso administrativo e backups.
+
+A URL do webhook vem da configuração confiável do servidor, com o domínio oficial abaixo como padrão; não é aceita uma URL enviada pelo formulário. Verificação e ativação usam POST com CSRF, e a página não deve ser armazenada em cache. Nenhuma verificação externa acontece ao abrir a tela.
+
 Na conta própria, crie uma aplicação de Checkout Transparente/Checkout API, habilite os meios desejados e configure a notificação **Pagamentos** no endpoint HTTPS:
 
 `https://equipemorcego.nabio.pro/integracoes/mercadopago/webhook/`
@@ -26,6 +46,7 @@ Configure no ambiente do servidor, sem inserir credenciais em templates, JavaScr
 | `MP_ENVIRONMENT` | `sandbox` para homologação; `production` para pagamentos reais |
 | `MP_API_BASE` | `https://api.mercadopago.com` — outros hosts são recusados |
 | `MP_WEBHOOK_MAX_AGE_SECONDS` | Tolerância do timestamp assinado, padrão 900 segundos |
+| `MP_CREDENTIALS_ENCRYPTION_KEY` | Opcional, chave exclusiva e estável para cifrar o cadastro do painel; vazio usa a chave Django derivada |
 
 O campo `live_mode` retornado pelo provedor deve corresponder ao ambiente selecionado. Não confunda credenciais de teste da aplicação com contas de teste: siga o modo recomendado no painel Mercado Pago e confirme o `live_mode` na homologação. O código não flexibiliza essa conferência silenciosamente.
 
@@ -33,12 +54,12 @@ O CardForm exige HTTPS no checkout e acesso do navegador a `https://sdk.mercadop
 
 ## Verificação e implantação
 
-1. Execute `python manage.py migrate` para criar `PaymentTransaction` e a chave única de notificações.
+1. Instale as dependências e execute `python manage.py migrate` para criar as tabelas de transações, notificações e conexão protegida.
 2. Execute `python manage.py check_mercadopago`. Esse comando confere presença/formato e não faz rede nem revela segredos.
 3. Execute explicitamente `python manage.py check_mercadopago --verify-account` quando o token próprio estiver configurado. Faz somente `GET /users/me`, exibe o ID retornado e exige que corresponda a `MP_COLLECTOR_ID`. Não cria cobrança.
 4. Reinicie o serviço após atualizar o ambiente. Configure o mesmo endpoint e segredo no painel do Mercado Pago.
 5. Homologue na conta própria usando os compradores/cartões de teste indicados pelo Mercado Pago. Verifique aprovação, pendência, recusa, assinatura de webhook, repetição de notificação e devolução. As respostas simuladas dos testes automatizados não substituem essa etapa.
-6. Ative credenciais reais e `MP_ENVIRONMENT=production` somente após a homologação. Confirme novamente a conta recebedora e a entrega do webhook.
+6. Ative credenciais reais pelo painel ou pela configuração de ambiente somente após a homologação. Confirme novamente a conta recebedora e a entrega do webhook. Selecionar `sandbox` não converte uma credencial real em teste: use credenciais do ambiente correspondente no Mercado Pago.
 
 ## Regras de confirmação
 
@@ -72,6 +93,8 @@ O fluxo usa `select_for_update` e unicidade no banco. PostgreSQL é recomendado 
 
 `python manage.py test tests.test_payments --noinput`
 
+`python manage.py test tests.test_payment_connection --noinput` cobre o cadastro cifrado, permissões globais, ausência de segredos no HTML/auditoria, fallback, conferência somente leitura, conta divergente, timeouts, conflitos de revisão, ativação explícita, histórico e falha fechada ao trocar a chave de criptografia. Todas as consultas externas são substituídas por mocks; nenhuma credencial ou cobrança real é usada.
+
 Os testes substituem HTTP por mocks e nunca usam credenciais reais. Cobrem payload/API, indisponibilidade, assinatura, origem, quantia, moeda, conta, ambiente, notificações sucessivas/repetidas, atraso, capacidade, parcelas inválidas, estados, recuperação, estornos, taxa real e conteúdo honesto das páginas.
 
 ## Referências utilizadas
@@ -80,5 +103,9 @@ Os testes substituem HTTP por mocks e nunca usam credenciais reais. Cobrem paylo
 - [Mercado Pago — CardForm e tokenização](https://www.mercadopago.com.br/developers/pt/docs/checkout-api-payments/integration-configuration/card/integrate-via-cardform)
 - [Mercado Pago — envio de Pix pelo Payment Brick](https://www.mercadopago.com.br/developers/pt/docs/checkout-bricks/payment-brick/payment-submission/pix)
 - [SDK oficial — validação de assinatura e timestamp de webhook](https://github.com/mercadopago/sdk-nodejs/blob/master/src/utils/webhook/index.ts)
+- [Mercado Pago — compra de teste na Payments API](https://www.mercadopago.com.br/developers/pt/docs/checkout-api-payments/integration-test/make-test-purchase)
+- [Cryptography — Fernet e guarda da chave](https://cryptography.io/en/latest/fernet/)
 
 Do Navie Vibe foram adaptados os padrões de cobrança real por Payments API, conta recebedora explícita, confirmação atômica, recuperação por consulta e taxas obtidas do provedor, observados em `eventos/checkout.py` e `financeiro/mercadopago_sync.py`. Não foram copiados tokens, compradores, dados financeiros ou configuração de outro tenant.
+
+A organização do cadastro de credenciais no painel também tomou como referência `administracao/views.py:salvar_credenciais_plataforma` e `administracao/templates/administracao/financeiro.html`. O Trilhas adiciona criptografia, campos sem valor renderizado, autorização global explícita, rascunho separado, revisão concorrente e ativação após conferência; não reproduz a afirmação do modelo original de que apenas marcar sandbox garante ausência de cobrança real.

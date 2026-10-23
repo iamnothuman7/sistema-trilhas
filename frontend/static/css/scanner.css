@@ -1,0 +1,21 @@
+.mg-scanner-shell .scanner-viewport { margin-top: 1rem; margin-bottom: 1rem; }
+.scanner-camera-controls { flex-wrap: wrap; }
+.scanner-camera-controls .btn { min-height: 48px; }
+.scanner-camera-status { margin: 1rem 0; line-height: 1.6; }
+.scanner-photo-option { border-top: 1px solid var(--border); padding-top: 1rem; }
+.scanner-photo-option summary { cursor: pointer; padding: .5rem 0; font-weight: 600; }
+.scanner-photo-option label { display: block; margin: .75rem 0 .5rem; }
+.scanner-photo-option p { margin-top: .5rem; }
+.scanner-match { display: flex; flex-direction: column; align-items: flex-start; text-align: left; width: 100%; margin-top: .75rem; white-space: normal; overflow-wrap: anywhere; }
+.scanner-match span { font-size: .875rem; font-weight: 400; }
+.scanner-delivery-controls { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; }
+.scanner-delivery-controls label { font-size: .875rem; }
+.scanner-quantity { display: block; max-width: 100px; min-height: 44px; margin-top: .25rem; }
+.scanner-delivery-history { margin-top: 1.5rem; }
+.scanner-delivery-history li { margin-top: .75rem; line-height: 1.6; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+    .scanner-camera-controls .btn { flex: 1 1 auto; }
+    .mg-scanner-benefit { align-items: flex-start; flex-direction: column; }
+    .scanner-delivery-controls { width: 100%; }
+    .scanner-delivery-controls .btn { flex: 1; min-height: 48px; }
+}

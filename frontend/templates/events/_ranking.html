@@ -1,0 +1,14 @@
+<section class="event-ranking" id="ranking" aria-labelledby="event-ranking-title">
+    <div class="event-ranking-heading"><span class="eyebrow">Quem já confirmou presença</span><h2 id="event-ranking-title">Equipes e cidades na trilha</h2><p>Ranking de inscrições ativas com pagamento confirmado nesta edição. Os totais são recalculados automaticamente.</p></div>
+    <div class="event-ranking-grid">
+        <article class="event-ranking-card"><header><i data-lucide="users-round" aria-hidden="true"></i><h3>Equipes confirmadas</h3><span>{{ ranking.team_group_count }} equipe{{ ranking.team_group_count|pluralize }}</span></header>
+            <ol class="event-ranking-list">{% for row in ranking.teams %}<li><span class="event-ranking-position" aria-label="Posição {{ row.rank }}">{{ row.rank }}º</span><span class="event-ranking-name">{{ row.name }}</span><span class="event-ranking-count">{{ row.count }} <small>{% if row.count == 1 %}inscrição{% else %}inscrições{% endif %}</small></span></li>{% empty %}<li class="event-ranking-empty">As primeiras equipes aparecerão aqui após a confirmação das inscrições e dos pagamentos.</li>{% endfor %}</ol>
+            {% if ranking.team_group_count > ranking.teams|length %}<p class="event-ranking-note">As {{ ranking.teams|length }} equipes com mais inscrições confirmadas.</p>{% endif %}
+        </article>
+        <article class="event-ranking-card"><header><i data-lucide="map-pin" aria-hidden="true"></i><h3>Cidades confirmadas</h3><span>{{ ranking.city_group_count }} cidade{{ ranking.city_group_count|pluralize }}</span></header>
+            <ol class="event-ranking-list">{% for row in ranking.cities %}<li><span class="event-ranking-position" aria-label="Posição {{ row.rank }}">{{ row.rank }}º</span><span class="event-ranking-name">{{ row.name }} <small>{{ row.state|default:"UF não informada" }}</small></span><span class="event-ranking-count">{{ row.count }} <small>{% if row.count == 1 %}inscrição{% else %}inscrições{% endif %}</small></span></li>{% empty %}<li class="event-ranking-empty">As primeiras cidades aparecerão aqui após a confirmação das inscrições e dos pagamentos.</li>{% endfor %}</ol>
+            {% if ranking.city_group_count > ranking.cities|length %}<p class="event-ranking-note">As {{ ranking.cities|length }} cidades com mais inscrições confirmadas.</p>{% endif %}
+        </article>
+    </div>
+    <p class="event-ranking-note">Cada inscrição confirmada conta uma vez. Empates compartilham a posição. Reservas, cancelamentos e nomes não informados ficam fora dos grupos.</p>
+</section>

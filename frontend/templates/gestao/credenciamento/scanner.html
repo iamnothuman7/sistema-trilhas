@@ -3,13 +3,14 @@
 
 {% block title %}Scanner de Credenciamento | {{ event.title }}{% endblock %}
 {% block gestao_header %}Credenciamento: {{ event.title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/scanner.css' %}?v=scanner20261022">{% endblock %}
 
 {% block content %}
 <div class="mg-scanner-shell">
     <div class="mg-align-center mg-element-gap">
         <span class="badge badge-success">CREDENCIAMENTO</span>
         <h1>
-            Credenciamento
+            Credenciamento e kits
         </h1>
         <p class="text-muted">
             Leia o QR Code ou busque o participante para registrar a presença e as entregas.
@@ -17,16 +18,26 @@
     </div>
 
     <!-- Câmera do Scanner -->
+    <section class="card mg-element-gap" aria-labelledby="camera-title">
+    <h2 class="section-title" id="camera-title">Ler a credencial</h2>
     <div class="scanner-viewport">
         <video id="scannerVideo" autoplay muted playsinline class="mg-scanner-video"></video>
-        <div class="scanner-laser"></div>
-        <div id="scannerPlaceholder" class="mg-scanner-placeholder"></div>
+        <div id="scannerPlaceholder" class="mg-scanner-placeholder"><p>Toque em Iniciar câmera e permita o acesso.</p></div>
     </div>
+    <div class="page-actions scanner-camera-controls">
+        <button type="button" id="btnStartCamera" class="btn btn-primary"><i data-lucide="camera" aria-hidden="true"></i> Iniciar câmera</button>
+        <button type="button" id="btnStopCamera" class="btn btn-secondary" disabled>Parar</button>
+        <button type="button" id="btnSwitchCamera" class="btn btn-secondary" disabled><i data-lucide="switch-camera" aria-hidden="true"></i> Trocar câmera</button>
+    </div>
+    <p id="cameraStatus" class="text-muted scanner-camera-status" role="status" aria-live="polite">A câmera abre após seu toque. A leitura consulta a ficha; presença e entrega exigem confirmação.</p>
+    <details class="scanner-photo-option"><summary>Usar uma foto do QR</summary><label class="form-label" for="scannerPhoto">Fotografar ou escolher imagem da credencial</label><input type="file" id="scannerPhoto" class="form-control" accept="image/jpeg,image/png,image/webp"><p class="text-muted mg-meta">JPG, PNG ou WebP, até 15 MB e 24 megapixels. A foto é lida no celular e não é enviada ao servidor.</p></details>
+    </section>
 
     <!-- Busca Rápida Manual -->
     <div class="card mg-element-gap">
         <div class="mg-scanner-search">
-            <input type="text" id="manualCodeInput" aria-label="Número, nome ou código do participante" class="form-control" placeholder="Digitar número (#101), nome ou código do QR..." autofocus>
+            <input type="hidden" id="scannerCSRF" value="{{ csrf_token }}">
+            <input type="search" id="manualCodeInput" aria-label="Número, nome ou código do participante" class="form-control" placeholder="Número (#101), nome ou código do QR" maxlength="256" autocomplete="off" spellcheck="false">
             <button type="button" id="btnManualSearch" class="btn btn-primary mg-nowrap">
                 <i data-lucide="search" aria-hidden="true"></i> Buscar
             </button>
@@ -41,7 +52,7 @@
     <!-- Histórico dos Últimos Atendidos -->
     <div class="card">
         <h3 class="section-title">
-            Últimos Credenciados Hoje
+            Presenças recentes
         </h3>
         <div class="mg-stack">
             {% for checkin in recent_checkins %}
@@ -49,15 +60,15 @@
                     <div>
                         <strong>#{{ checkin.registration.registration_number }} - {{ checkin.registration.person.full_name }}</strong>
                         <div class="text-muted mg-meta">
-                            Camiseta: Tam. {{ checkin.registration.shirt_size }} &bull; Atendido por {{ checkin.operator.full_name|default:"Operador" }}
+                            Camiseta: Tam. {{ checkin.registration.shirt_size }}
                         </div>
                     </div>
                     <div class="mg-strong text-success">
-                        {{ checkin.occurred_at|date:"H:i" }}
+                        {{ checkin.occurred_at|date:"d/m H:i" }}
                     </div>
                 </div>
             {% empty %}
-                <p class="text-muted mg-meta">Nenhum participante credenciado nesta sessão ainda.</p>
+                <p class="text-muted mg-meta">Nenhuma presença registrada nesta edição.</p>
             {% endfor %}
         </div>
     </div>
@@ -65,7 +76,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/scanner.js' %}?v=mor20261022"></script>
+<script src="{% static 'vendor/jsqr/jsQR.js' %}?v=1.4.0"></script>
+<script src="{% static 'js/scanner.js' %}?v=scanner20261022"></script>
 <script>
 let scannerApp;
 document.addEventListener("DOMContentLoaded", function() {
@@ -74,7 +86,6 @@ document.addEventListener("DOMContentLoaded", function() {
     const deliverUrl = "{% url 'gestao:deliver_benefit' event_id=event.id %}";
 
     scannerApp = new EventScanner("{{ event.id }}", lookupUrl, confirmUrl, deliverUrl);
-    scannerApp.startCamera();
 });
 </script>
 {% endblock %}

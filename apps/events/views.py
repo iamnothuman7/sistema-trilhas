@@ -1,6 +1,8 @@
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
-from django.http import Http404
+from django.http import Http404, JsonResponse
+from django.views.decorators.http import require_GET
+from .rankings import get_event_rankings
 from apps.core.permissions import can_manage_event
 from .models import Event, EventStatus, EventScheduleItem, Route, Sponsor, LegalDocumentVersion
 from apps.catalog.offers import registration_catalog
@@ -49,7 +51,16 @@ def event_detail(request, slug):
         "now": now,
         "event_versions": versions,
         "selected_version": selected,
+        "ranking": get_event_rankings(event),
     })
+
+
+@require_GET
+def event_ranking_snapshot(request, slug):
+    event = get_event_resilient(slug, request)
+    response = JsonResponse(get_event_rankings(event))
+    response["Cache-Control"] = "no-store"
+    return response
 
 def event_schedule(request, slug):
     """Cronograma completo do evento."""

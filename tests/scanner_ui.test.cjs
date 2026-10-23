@@ -27,8 +27,11 @@ class Element {
   }
 }
 
-function setup(fetch = async () => { throw new TypeError('offline'); }) {
-  const elements = Object.fromEntries(['scannerVideo', 'scannerResult', 'manualCodeInput', 'btnManualSearch', 'scannerPlaceholder'].map(id => [id, new Element('div')]));
+function setup(fetch = async () => { throw new TypeError('offline'); }, overrides = {}) {
+  const elements = Object.fromEntries(['scannerVideo', 'scannerResult', 'manualCodeInput', 'btnManualSearch', 'scannerPlaceholder',
+    'btnStartCamera', 'btnStopCamera', 'btnSwitchCamera', 'cameraStatus', 'scannerPhoto'].map(id => [id, new Element('div')]));
+  elements.scannerVideo.play = async () => {};
+  elements.scannerVideo.pause = () => {};
   const context = vm.createContext({
     document: {
       getElementById: id => elements[id],
@@ -37,11 +40,12 @@ function setup(fetch = async () => { throw new TypeError('offline'); }) {
       cookie: 'csrftoken=test-token'
     },
     window: { addEventListener() {}, renderTrilhasIcons() {}, location: { href: 'https://example.test/gestao/' } },
-    fetch, FormData, URL, Error, SyntaxError, TypeError, setTimeout, crypto: webcrypto,
+    fetch, FormData, URL, Error, SyntaxError, TypeError, setTimeout, clearTimeout, crypto: webcrypto,
+    ...overrides,
   });
   const source = fs.readFileSync(path.join(__dirname, '../frontend/static/js/scanner.js'), 'utf8');
   vm.runInContext(source + '\nglobalThis.Scanner = EventScanner;', context);
-  return { scanner: new context.Scanner('event', '/lookup', '/confirm', '/deliver'), elements };
+  return { scanner: new context.Scanner('event', '/lookup', '/confirm', '/deliver'), elements, context };
 }
 
 function participant(overrides = {}) {
@@ -158,4 +162,190 @@ test('resposta ilegível preserva UUID e trocar benefício ou inscrição inicia
   assert.equal(keys[0], keys[1]);
   assert.notEqual(keys[1], keys[2]);
   assert.notEqual(keys[2], keys[3]);
+});
+
+function mediaStream(deviceId = 'rear') {
+  const track = { stopped: 0, stop() { this.stopped += 1; }, getSettings: () => ({ deviceId }) };
+  return { track, getTracks: () => [track], getVideoTracks: () => [track] };
+}
+
+test('câmera funciona sem BarcodeDetector com decoder local e prefere traseira sem áudio', async () => {
+  const stream = mediaStream();
+  let constraints;
+  const { scanner, elements } = setup(undefined, {
+    jsQR: () => null, setTimeout: () => 1, clearTimeout() {},
+    navigator: { mediaDevices: { getUserMedia: async value => { constraints = value; return stream; }, enumerateDevices: async () => [] } },
+  });
+  await scanner.startCamera();
+  assert.equal(scanner.scanning, true);
+  assert.equal(constraints.audio, false);
+  assert.equal(constraints.video.facingMode.ideal, 'environment');
+  assert.equal(elements.btnStartCamera.disabled, true);
+  assert.equal(elements.btnStopCamera.disabled, false);
+  scanner.stopCamera();
+  assert.equal(stream.track.stopped, 1);
+  assert.equal(elements.scannerVideo.srcObject, null);
+  assert.equal(scanner.scanning, false);
+  assert.equal(elements.btnStartCamera.disabled, false);
+});
+
+test('câmera informa HTTPS e permissão negada sem prender controles', async () => {
+  const { scanner, elements, context } = setup(undefined, {
+    jsQR: () => null,
+    navigator: { mediaDevices: { getUserMedia: async () => { throw Object.assign(new Error('denied'), { name: 'NotAllowedError' }); } } },
+  });
+  context.window.isSecureContext = false;
+  await scanner.startCamera();
+  assert.match(elements.cameraStatus.textContent, /HTTPS/);
+  context.window.isSecureContext = true;
+  await scanner.startCamera();
+  assert.match(elements.cameraStatus.textContent, /Permissão da câmera negada/);
+  assert.equal(scanner.cameraStarting, false);
+  assert.equal(elements.btnStartCamera.disabled, false);
+});
+
+test('cancelar enquanto permissão está pendente encerra mídia devolvida depois', async () => {
+  let grant;
+  const stream = mediaStream();
+  const { scanner } = setup(undefined, {
+    jsQR: () => null,
+    navigator: { mediaDevices: { getUserMedia: () => new Promise(resolve => { grant = resolve; }) } },
+  });
+  const starting = scanner.startCamera();
+  await Promise.resolve();
+  scanner.stopCamera();
+  grant(stream);
+  await starting;
+  assert.equal(stream.track.stopped, 1);
+  assert.equal(scanner.scanning, false);
+  assert.equal(scanner.stream, null);
+});
+
+test('trocar câmera encerra a anterior e solicita o dispositivo seguinte', async () => {
+  const streams = [mediaStream('rear'), mediaStream('front')];
+  const calls = [];
+  const { scanner } = setup(undefined, {
+    jsQR: () => null, setTimeout: () => 1, clearTimeout() {},
+    navigator: { mediaDevices: {
+      getUserMedia: async value => { calls.push(value); return streams[calls.length - 1]; },
+      enumerateDevices: async () => ['rear', 'front'].map(deviceId => ({ kind: 'videoinput', deviceId })),
+    } },
+  });
+  await scanner.startCamera();
+  await scanner.switchCamera();
+  assert.equal(streams[0].track.stopped, 1);
+  assert.equal(calls[1].video.deviceId.exact, 'front');
+  assert.equal(scanner.deviceId, 'front');
+  scanner.stopCamera();
+  assert.equal(streams[1].track.stopped, 1);
+});
+
+test('decoder local lê QR real e fallback atende detector nativo incompleto', async () => {
+  const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures/scanner_qr_matrix.json'), 'utf8'));
+  const size = fixture.rows.length * 4;
+  const pixels = new Uint8ClampedArray(size * size * 4);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const offset = (y * size + x) * 4;
+    const color = fixture.rows[Math.floor(y / 4)][Math.floor(x / 4)] === '1' ? 0 : 255;
+    pixels.set([color, color, color, 255], offset);
+  }
+  const { scanner } = setup(undefined, { jsQR: require('../frontend/static/vendor/jsqr/jsQR.js') });
+  scanner.canvas.getContext = () => ({ drawImage() {}, getImageData: () => ({ data: pixels, width: size, height: size }) });
+  scanner.detector = { detect: async () => { throw new Error('native unsupported'); } };
+  assert.equal(await scanner.decodeImage({ width: size, height: size }), fixture.value);
+  assert.equal(scanner.detector, null);
+});
+
+test('leitura de QR para câmera e consulta uma ficha, sem confirmar entrega automaticamente', async () => {
+  const { scanner, elements } = setup();
+  const stream = mediaStream();
+  scanner.stream = stream;
+  scanner.scanning = true;
+  elements.scannerVideo.readyState = 2;
+  scanner.decodeImage = async () => 'opaque-qr-token';
+  const lookups = [];
+  scanner.lookupCode = async code => lookups.push(code);
+  scanner.submitAction = () => assert.fail('QR não autoriza entrega automática');
+  await scanner.scanLoop();
+  await scanner.scanLoop();
+  assert.deepEqual(lookups, ['opaque-qr-token']);
+  assert.equal(scanner.lookupMethod, 'qr');
+  assert.equal(stream.track.stopped, 1);
+});
+
+test('busca ambígua exige seleção e resposta antiga não troca a ficha atual', async () => {
+  let oldResponse;
+  const { scanner, elements } = setup(async url => {
+    if (url.searchParams.get('code') === 'antigo') return new Promise(resolve => { oldResponse = resolve; });
+    if (url.searchParams.get('registration_id')) return { ok: true, json: async () => ({ found: true, ...participant({ name: 'Nome escolhido' }) }) };
+    return { ok: true, json: async () => ({ ambiguous: true, matches: [
+      { registration_id: 'registration', name: 'Nome <script>', number: 101, city: 'Tianguá' },
+      { registration_id: 'other', name: 'Outro nome', number: 102, city: 'Fortaleza' },
+    ] }) };
+  });
+  const stale = scanner.lookupCode('antigo');
+  await scanner.lookupCode('Piloto');
+  assert.equal(scanner.currentReg, null);
+  assert.equal(elements.scannerResult.querySelectorAll('button').length, 2);
+  assert.ok(elements.scannerResult.textContent.includes('Nome <script>'));
+  await elements.scannerResult.querySelectorAll('button')[0].listeners.click();
+  oldResponse({ ok: true, json: async () => ({ found: true, ...participant({ name: 'Nome antigo' }) }) });
+  await stale;
+  assert.ok(elements.scannerResult.textContent.includes('Nome escolhido'));
+  assert.ok(!elements.scannerResult.textContent.includes('Nome antigo'));
+});
+
+test('recarga da aba preserva chave e quantidade de entrega com resposta incerta', async () => {
+  const saved = new Map();
+  const window = { addEventListener() {}, location: { href: 'https://example.test/' },
+    sessionStorage: { getItem: key => saved.get(key), setItem: (key, value) => saved.set(key, value) } };
+  const requests = [];
+  const fetch = async (_url, options) => { requests.push(options.body); throw new TypeError('network failure'); };
+  const first = setup(fetch, { window });
+  first.scanner.renderParticipantCard(participant());
+  await first.scanner.deliverBenefit('benefit', first.elements.scannerResult.querySelectorAll('button')[1], 2);
+  assert.equal(first.elements.scannerResult.querySelectorAll('input')[0].readOnly, true);
+  assert.equal(first.elements.scannerResult.querySelectorAll('input')[0].value, '2');
+  const second = setup(fetch, { window });
+  second.scanner.renderParticipantCard(participant());
+  assert.match(second.elements.scannerResult.textContent, /Conferir entrega pendente/);
+  await second.scanner.deliverBenefit('benefit', second.elements.scannerResult.querySelectorAll('button')[1], 1);
+  assert.equal(requests[0].get('idempotency_key'), requests[1].get('idempotency_key'));
+  assert.equal(requests[1].get('quantity'), '2');
+  assert.equal(saved.values().next().value.includes('Piloto'), false);
+});
+
+test('recusa definitiva permite corrigir quantidade; sessão expirada não vira erro de rede', async () => {
+  const { scanner, elements } = setup(async () => ({ ok: false, status: 409, json: async () => ({ success: false, error: 'Saldo insuficiente' }) }));
+  scanner.renderParticipantCard(participant());
+  await scanner.deliverBenefit('benefit', elements.scannerResult.querySelectorAll('button')[1], 2);
+  assert.equal(scanner.deliveryIntentions.benefit, undefined);
+  assert.equal(elements.scannerResult.querySelectorAll('input')[0].readOnly, false);
+  assert.match(elements.scannerResult.textContent, /Saldo insuficiente/);
+  const expired = setup(async () => ({ redirected: true, status: 200 }));
+  await expired.scanner.lookupCode('42');
+  assert.match(expired.elements.scannerResult.textContent, /sessão expirou/);
+});
+
+test('foto é decodificada localmente, URL temporária é liberada e arquivo inválido é recusado', async () => {
+  let revoked;
+  class Photo {
+    constructor() { this.naturalWidth = this.naturalHeight = 400; }
+    set src(_) { Promise.resolve().then(() => this.onload()); }
+  }
+  class LocalURL extends URL {
+    static createObjectURL() { return 'blob:local-qr'; }
+    static revokeObjectURL(url) { revoked = url; }
+  }
+  const { scanner, elements } = setup(undefined, { jsQR: () => null, Image: Photo, URL: LocalURL });
+  scanner.decodeImage = async () => 'photo-qr';
+  const calls = [];
+  scanner.lookupCode = async code => calls.push(code);
+  await scanner.readPhoto({ size: 20, type: 'image/png' });
+  assert.deepEqual(calls, ['photo-qr']);
+  assert.equal(revoked, 'blob:local-qr');
+  assert.equal(scanner.lookupMethod, 'qr');
+  await scanner.readPhoto({ size: 16 * 1024 * 1024, type: 'image/png' });
+  assert.match(elements.cameraStatus.textContent, /até 15 MB/);
+  assert.equal(calls.length, 1);
 });

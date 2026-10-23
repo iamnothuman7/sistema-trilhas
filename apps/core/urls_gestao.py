@@ -4,12 +4,16 @@ from apps.reporting import exports
 from apps.reporting import views as reporting_views
 from apps.events import views_sponsors
 from apps.events import views_raffles
+from apps.events import views_rankings
+from apps.mediaframes import views_management as frame_views
+from apps.payments import views_management as payment_views
 
 app_name = "gestao"
 
 urlpatterns = [
     # Dashboard Principal
     path("", views_gestao.dashboard, name="dashboard"),
+    path("integracoes/mercado-pago/", payment_views.mercadopago_connection, name="mercadopago_connection"),
 
     # Eventos
     path("eventos/", views_gestao.event_list, name="event_list"),
@@ -39,12 +43,14 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/pagar/", views_gestao.pay_expense, name="pay_expense"),
     path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/cancelar/", views_gestao.cancel_expense, name="cancel_expense"),
     path("eventos/<uuid:event_id>/relatorios/", reporting_views.event_reports, name="reports"),
+    path("eventos/<uuid:event_id>/ranking/", views_rankings.ranking_management, name="ranking_management"),
 
     # Expedição
     path("eventos/<uuid:event_id>/expedicao/", views_gestao.expedition_management, name="expedition"),
 
     # Molduras
     path("eventos/<uuid:event_id>/molduras/", views_gestao.frame_management, name="frames"),
+    path("eventos/<uuid:event_id>/molduras/equipes/", frame_views.team_frame_editor, name="team_frame_editor"),
 
     # Patrocinadores
     path("eventos/<uuid:event_id>/patrocinadores/", views_sponsors.sponsor_list, name="sponsor_list"),

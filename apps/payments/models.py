@@ -3,6 +3,30 @@ from django.db import models
 from django.utils import timezone
 from apps.core.utils import cents_to_reais
 
+
+class MercadoPagoConnection(models.Model):
+    """Central, encrypted credentials. Draft changes never replace the active snapshot."""
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    revision = models.PositiveIntegerField(default=0)
+    draft_ciphertext = models.TextField(blank=True, default="")
+    active_ciphertext = models.TextField(blank=True, default="")
+    verified_draft_digest = models.CharField(max_length=64, blank=True, default="")
+    verified_at = models.DateTimeField(null=True, blank=True)
+    verified_collector_id = models.CharField(max_length=30, blank=True, default="")
+    active_environment = models.CharField(max_length=20, blank=True, default="")
+    active_collector_id = models.CharField(max_length=30, blank=True, default="")
+    activated_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey("identity.User", null=True, blank=True, on_delete=models.SET_NULL, related_name="mp_connection_updates")
+
+    class Meta:
+        verbose_name = "Conexão central Mercado Pago"
+        constraints = [models.CheckConstraint(condition=models.Q(id=1), name="mp_connection_singleton")]
+
+    def __str__(self):
+        return "Conexão Mercado Pago da Equipe Morcego"
+
+
 class ChargeState(models.TextChoices):
     NEW = "NEW", "Nova Tentativa"
     SENT = "SENT", "Enviado ao Provedor"
@@ -49,6 +73,7 @@ class ChargeAttempt(models.Model):
 
     sent_at = models.DateTimeField("Enviado em", default=timezone.now)
     resolved_at = models.DateTimeField("Resolvido / Confirmado em", blank=True, null=True)
+    last_checked_at = models.DateTimeField("Última consulta pelo comprador", blank=True, null=True)
 
     class Meta:
         verbose_name = "Tentativa de Pagamento"

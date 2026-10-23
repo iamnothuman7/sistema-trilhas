@@ -10,6 +10,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         gateway = MercadoPagoGateway()
+        self.stdout.write("Fonte: " + {"panel": "painel (snapshot ativo)", "environment": "ambiente do servidor", "unavailable": "credenciais salvas indisponíveis"}.get(gateway.configuration_source, "configuração"))
         self.stdout.write(f"Ambiente: {gateway.environment}")
         issues = gateway.configuration_issues(card=True)
         self.stdout.write("Configuração: " + ("pendente: " + ", ".join(issues) if issues else "completa"))

@@ -7,11 +7,11 @@
 <div class="page-heading mg-section-gap">
     <div>
         <h1>Molduras digitais</h1>
-        <p class="text-muted">Disponibilize artes do evento para os participantes compartilharem.</p>
+        <p class="text-muted">Crie artes internas de equipes ou organize as molduras disponíveis aos participantes.</p>
     </div>
-    <button type="button" class="btn btn-primary" onclick="document.getElementById('frameModal').showModal()">
+    <div class="page-actions"><a class="btn btn-primary" href="{% url 'gestao:team_frame_editor' event_id=event.id %}"><i data-lucide="users-round" aria-hidden="true"></i>Arte de equipe confirmada</a><button type="button" class="btn btn-secondary" onclick="document.getElementById('frameModal').showModal()">
         <i data-lucide="plus" aria-hidden="true"></i> Adicionar moldura
-    </button>
+    </button></div>
 </div>
 
 <!-- Lista de Molduras Ativas -->

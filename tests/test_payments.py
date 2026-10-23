@@ -44,6 +44,8 @@ def response(data, status=200):
 @override_settings(**MP_TEST_SETTINGS)
 class GatewayTests(SimpleTestCase):
     def setUp(self):
+        from apps.payments.gateway_config import GatewayConfiguration, environment_configuration
+        patch("apps.payments.gateway_config.load_gateway_configuration", side_effect=lambda: GatewayConfiguration(environment_configuration())).start()
         self.now = timezone.now()
         self.charge = SimpleNamespace(id=uuid.uuid4(), idempotency_key=str(uuid.uuid4()), amount_cents=18001,
             pix_expiration=self.now + timedelta(minutes=30), order=SimpleNamespace(id=uuid.uuid4(),

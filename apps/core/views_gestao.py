@@ -358,6 +358,7 @@ def registration_change_status(request, event_id, reg_id):
 
 
 @staff_required_custom
+@never_cache
 def credenciamento_scanner(request, event_id):
     """
     Interface móvel de alta velocidade para operadores de credenciamento.
@@ -373,45 +374,58 @@ def credenciamento_scanner(request, event_id):
 
 
 @staff_required_custom
+@never_cache
 def credenciamento_lookup_api(request, event_id):
     """
     API JSON que resolve código do QR ou busca rápida.
     Retorna apenas dados necessários para a conferência operacional (LGPD).
     """
+    from apps.registrations.eligibility import eligibility_reason
+    from apps.reporting.selectors import event_timezone
+    if request.method != "GET":
+        return HttpResponseNotAllowed(["GET"])
+    registrations = Registration.objects.filter(event_id=event_id).select_related(
+        "person", "credential", "checkin_record", "event", "source_order_line__order")
+    selected = request.GET.get("registration_id", "")
     code = request.GET.get("code", "").strip()
-    if not code:
-        return JsonResponse({"found": False, "error": "Código não informado."})
-
-    # Tratamento se o QR vier no formato TRILHA:slug:TOKEN
-    if ":" in code:
-        parts = code.split(":")
-        token = parts[-1]
+    if selected:
+        try:
+            reg = registrations.filter(pk=uuid.UUID(selected)).first()
+        except (ValueError, TypeError, AttributeError):
+            return JsonResponse({"found": False, "error": "Inscrição inválida."}, status=400)
     else:
+        if not code or len(code) > 256:
+            return JsonResponse({"found": False, "error": "Informe um nome, número ou código de até 256 caracteres."}, status=400)
         token = code
-
-    # Localizar credencial pelo raw_token ou token_digest
-    cred = RegistrationCredential.objects.filter(
-        registration__event_id=event_id,
-        raw_token__iexact=token
-    ).select_related("registration", "registration__person").first()
-
-    if not cred:
-        # Tenta buscar por número de inscrição ou nome
-        reg = Registration.objects.filter(
-            event_id=event_id
-        ).filter(
-            Q(registration_number__iexact=token) | Q(person__full_name__icontains=token)
-        ).select_related("person", "credential").first()
-    else:
-        reg = cred.registration
-
-    if not reg:
+        if ":" in code:
+            parts = code.split(":")
+            if len(parts) != 3 or parts[0].upper() != "TRILHA" or parts[1] != request.management_event.slug:
+                return JsonResponse({"found": False, "error": "Este QR não corresponde à edição selecionada."})
+            token = parts[2]
+        reg = registrations.filter(credential__raw_token__iexact=token).first()
+        if reg is None and ":" not in code:
+            number = token.removeprefix("#").strip()
+            if number.isdecimal():
+                matches = registrations.filter(registration_number=int(number)) if len(number) <= 10 and int(number) <= 2147483647 else registrations.none()
+            elif len(token) < 2 or len(token) > 150:
+                return JsonResponse({"found": False, "error": "Digite pelo menos duas letras do nome ou o número da inscrição."}, status=400)
+            else:
+                matches = registrations.filter(person__full_name__icontains=token)
+            candidates = list(matches.order_by("registration_number", "person__full_name", "pk")[:11])
+            if len(candidates) > 1:
+                return JsonResponse({"found": False, "ambiguous": True, "more_results": len(candidates) > 10,
+                    "matches": [{"registration_id": str(item.pk), "number": item.registration_number,
+                        "name": item.person.full_name, "city": item.person.city,
+                        "team": item.team_name or item.person.team_name or "", "category": item.category_name}
+                        for item in candidates[:10]]})
+            reg = candidates[0] if candidates else None
+    if reg is None:
         return JsonResponse({"found": False, "error": "Participante não localizado neste evento."})
 
-    if hasattr(reg, "credential") and not reg.credential.is_valid:
-        return JsonResponse({"found": False, "error": "Credencial revogada ou expirada."})
-
     has_checked_in = hasattr(reg, "checkin_record")
+    blocked_reason = eligibility_reason(reg)
+    eligible = not blocked_reason
+    local_zone = event_timezone(reg.event)
     entitlements_data = []
     for ent in reg.entitlements.all():
         entitlements_data.append({
@@ -425,6 +439,7 @@ def credenciamento_lookup_api(request, event_id):
             "state": ent.state,
         })
 
+    history = Consumption.objects.filter(entitlement__registration=reg).select_related("entitlement", "operator").order_by("-occurred_at", "-pk")[:20]
     return JsonResponse({
         "found": True,
         "registration_id": str(reg.id),
@@ -432,17 +447,24 @@ def credenciamento_lookup_api(request, event_id):
         "name": reg.person.full_name,
         "team": reg.team_name or reg.person.team_name or "-",
         "category": reg.category_name,
+        "city": reg.person.city,
         "shirt_size": reg.shirt_size,
         "commercial_state": reg.commercial_state,
         "is_active": reg.commercial_state == CommercialState.ACTIVE,
         "operational_state": reg.operational_state,
+        "eligible": eligible,
+        "blocked_reason": blocked_reason,
         "has_checked_in": has_checked_in,
-        "checked_in_at": reg.checkin_record.occurred_at.strftime("%H:%M") if has_checked_in else None,
+        "checked_in_at": timezone.localtime(reg.checkin_record.occurred_at, local_zone).strftime("%d/%m/%Y %H:%M") if has_checked_in else None,
         "entitlements": entitlements_data,
+        "delivery_history": [{"id": str(item.pk), "title": item.entitlement.title, "quantity": item.quantity,
+            "action": item.action, "operator": item.operator.full_name or "Equipe",
+            "occurred_at": timezone.localtime(item.occurred_at, local_zone).strftime("%d/%m/%Y %H:%M")} for item in history],
     })
 
 
 @staff_required_custom
+@never_cache
 @transaction.atomic
 def credenciamento_confirm_api(request, event_id):
     """
@@ -451,16 +473,15 @@ def credenciamento_confirm_api(request, event_id):
     """
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
+    from apps.registrations.eligibility import credential_is_available
 
     try:
         reg_id = uuid.UUID(request.POST.get("registration_id", ""))
     except (ValueError, TypeError):
         return JsonResponse({"success": False, "error": "Inscrição inválida."}, status=400)
     reg = get_object_or_404(Registration.objects.select_for_update(), id=reg_id, event_id=event_id)
-    if reg.commercial_state != CommercialState.ACTIVE or reg.operational_state not in (OperationalState.READY, OperationalState.CHECKED_IN):
-        return JsonResponse({"success": False, "error": "Inscrição sem pagamento confirmado ou aceite dos termos."}, status=409)
-    if hasattr(reg, "credential") and not reg.credential.is_valid:
-        return JsonResponse({"success": False, "error": "Credencial revogada ou expirada."}, status=409)
+    if not credential_is_available(reg):
+        return JsonResponse({"success": False, "error": "Inscrição não apta: confira pagamento, termos atuais e validade da credencial."}, status=409)
 
     source_key = f"CHECKIN-{event_id}-{reg.id}"
     checkin, created = CheckinRecord.objects.get_or_create(
@@ -469,13 +490,13 @@ def credenciamento_confirm_api(request, event_id):
         defaults={
             "operator": request.user,
             "source_key": source_key,
-            "checkin_type": CheckinType.SCAN,
+            "checkin_type": CheckinType.SCAN if request.POST.get("lookup_method") == "qr" else CheckinType.MANUAL_SEARCH,
             "occurred_at": timezone.now(),
         }
     )
 
     reg.operational_state = OperationalState.CHECKED_IN
-    reg.save()
+    reg.save(update_fields=["operational_state", "updated_at"])
 
     return JsonResponse({
         "success": True,
@@ -485,16 +506,21 @@ def credenciamento_confirm_api(request, event_id):
 
 
 @staff_required_custom
+@never_cache
 def deliver_benefit_api(request, event_id):
     """
     Entrega benefício (Kit, Camiseta, Refeição) atômica com lock contra entrega duplicada.
     """
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
+    from apps.registrations.eligibility import credential_is_available
 
     try:
         ent_id = uuid.UUID(request.POST.get("entitlement_id", ""))
         idempotency_key = uuid.UUID(request.POST.get("idempotency_key", ""))
+        quantity = int(request.POST.get("quantity", "1"))
+        if not 1 <= quantity <= 1000:
+            raise ValueError
     except (ValueError, TypeError):
         return JsonResponse({"success": False, "error": "Benefício ou identificação da entrega inválidos."}, status=400)
     registration_id = Entitlement.objects.filter(id=ent_id, registration__event_id=event_id).values_list("registration_id", flat=True).first()
@@ -508,35 +534,36 @@ def deliver_benefit_api(request, event_id):
             return JsonResponse({"success": False, "error": "Benefício não encontrado."}, status=404)
 
         source_key = f"DELIVER-{ent.id}-{idempotency_key}"
-        if Consumption.objects.filter(entitlement=ent, source_key=source_key, action="DELIVERED").exists():
+        previous = Consumption.objects.filter(entitlement=ent, source_key=source_key, action="DELIVERED").first()
+        if previous:
+            if previous.quantity != quantity:
+                return JsonResponse({"success": False, "error": "Esta entrega já foi registrada com outra quantidade. Consulte o histórico."}, status=409)
             return JsonResponse({
                 "success": True, "already_delivered": True,
                 "remaining": ent.remaining, "quantity_used": ent.quantity_used,
                 "is_consumed": ent.quantity_used >= ent.quantity_total,
             })
 
-        if ent.state == EntitlementState.REVOKED or reg.commercial_state != CommercialState.ACTIVE or reg.operational_state not in (OperationalState.READY, OperationalState.CHECKED_IN):
+        if ent.state not in (EntitlementState.AVAILABLE, EntitlementState.PARTIALLY_USED) or not credential_is_available(reg):
             return JsonResponse({"success": False, "error": "Benefício indisponível ou inscrição não apta para retirada."}, status=409)
-        if hasattr(reg, "credential") and not reg.credential.is_valid:
-            return JsonResponse({"success": False, "error": "Credencial revogada ou expirada."}, status=409)
 
-        if ent.remaining <= 0:
+        if ent.remaining < quantity:
             return JsonResponse({
                 "success": False,
-                "error": "Este item já foi totalmente entregue!",
-                "already_consumed": True
-            })
+                "error": "A quantidade solicitada supera o saldo disponível. Consulte a ficha novamente.",
+                "already_consumed": ent.remaining == 0,
+            }, status=409)
 
         Consumption.objects.create(
             entitlement=ent,
-            quantity=1,
+            quantity=quantity,
             action="DELIVERED",
             operator=request.user,
             source_key=source_key,
             occurred_at=timezone.now(),
         )
 
-        ent.quantity_used += 1
+        ent.quantity_used += quantity
         if ent.quantity_used >= ent.quantity_total:
             ent.state = EntitlementState.CONSUMED
         else:

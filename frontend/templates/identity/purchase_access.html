@@ -1,0 +1,22 @@
+{% extends "identity/auth_base.html" %}
+{% block title %}Acessar minha compra | Equipe Morcego{% endblock %}
+{% block auth_heading %}{% if new_account %}Sua conta já está criada{% else %}Acessar minha compra{% endif %}{% endblock %}
+{% block auth_description %}{{ order.merchant_reference }} · {{ order.event.title }}. {% if new_account %}Defina sua senha para acompanhar as inscrições e baixar os comprovantes, sem repetir o cadastro.{% else %}Use o acesso do responsável pela compra. Se ainda não houver uma conta, ela será preparada com os dados do pedido.{% endif %}{% endblock %}
+{% block auth_form %}
+{% if access_error %}<div class="auth-message auth-message-error" role="alert"><p>{{ access_error }}</p></div>{% endif %}
+{% if request.user.is_authenticated %}<a class="auth-return" href="{% url 'identity:logout' %}">Sair desta conta</a>{% else %}
+<form method="post" class="auth-form" data-auth-form>
+{% csrf_token %}
+<div class="auth-field"><label for="buyerEmail">E-mail da compra</label><div class="auth-input-wrap"><input id="buyerEmail" value="{{ order.purchaser_email }}" readonly autocomplete="username"></div></div>
+{% if new_account %}
+{% for field in form %}<div class="auth-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label><div class="auth-input-wrap">{{ field }}</div>{% for error in field.errors %}<p class="auth-message auth-message-error" role="alert">{{ error }}</p>{% endfor %}</div>{% endfor %}
+<p class="auth-description">Use pelo menos 8 caracteres e evite senhas comuns ou parecidas com seus dados pessoais.</p>
+<button class="auth-submit" type="submit" data-submit-button><span data-submit-label>Salvar senha e acessar inscrições</span><i data-lucide="arrow-right" aria-hidden="true"></i></button>
+{% else %}
+<div class="auth-field"><label for="existingPassword">Senha, se já possui conta</label><div class="auth-input-wrap"><input id="existingPassword" type="password" name="password" autocomplete="current-password"></div></div>
+<button class="auth-submit" type="submit" data-submit-button><span data-submit-label>Continuar para minha conta</span><i data-lucide="arrow-right" aria-hidden="true"></i></button>
+{% endif %}
+</form>{% endif %}
+<div class="auth-switch"><a href="{% url 'checkout:order_result' order.id %}">Voltar à confirmação da compra</a></div>
+<div class="auth-switch"><a href="{% url 'identity:password_reset' %}">Esqueci minha senha</a></div>
+{% endblock %}

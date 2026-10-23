@@ -23,6 +23,8 @@
       {% endif %}
       <p id="payment-feedback" class="payment-alert" role="status" aria-live="polite">Aguardando a confirmação do Mercado Pago…</p>
       <p class="payment-help payment-muted">Sua inscrição só será liberada após a confirmação. O aceite dos termos pode continuar pendente.</p>
+      <form id="refresh-payment" method="post" action="{% url 'checkout:refresh_payment' order.id %}">{% csrf_token %}<button type="submit" class="payment-button payment-button-secondary payment-full">Já paguei. Verificar agora</button></form>
+      <p class="payment-help payment-muted">Este botão consulta o pagamento existente. Não gera uma nova cobrança.</p>
     </section>
     <p class="payment-help">Se você já pagou e a confirmação não aparecer, fale com a organização e informe <strong>{{ order.merchant_reference }}</strong>.</p>
     <a class="payment-button payment-button-secondary" href="{% url 'core:contact' %}">Preciso de ajuda</a>
@@ -34,6 +36,20 @@
 (() => {
   const feedback = document.getElementById('payment-feedback');
   const instructions = document.getElementById('pix-instructions');
+  document.getElementById('refresh-payment')?.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const button = this.querySelector('button');
+    if (button.disabled) return;
+    button.disabled = true; button.textContent = 'Consultando pagamento…';
+    try {
+      const response = await fetch(this.action, {method: 'POST', body: new FormData(this), credentials: 'same-origin', cache: 'no-store'});
+      if (!response.ok) throw new Error('unavailable');
+      const data = await response.json();
+      if (data.redirect_url) { window.location.assign(data.redirect_url); return; }
+      feedback.textContent = data.message;
+    } catch (_) { feedback.textContent = 'A consulta não foi concluída. Tente novamente em instantes; não pague outra vez.'; }
+    finally { button.disabled = false; button.textContent = 'Já paguei. Verificar agora'; }
+  });
   document.getElementById('copy-pix')?.addEventListener('click', async function () {
     const code = document.getElementById('pix-code');
     try { await navigator.clipboard.writeText(code.value); this.textContent = 'Código copiado'; }

@@ -12,7 +12,9 @@
       <div class="payment-total"><span>Valor do pedido</span><strong>R$ {{ order.formatted_total }}</strong></div>
       {% if is_paid %}
         <p>{% if provider_verified %}O Mercado Pago confirmou o pagamento.{% else %}O pedido consta como pago no sistema.{% endif %} Confira abaixo as inscrições vinculadas ao pedido.</p>
-        <ul class="payment-list">{% for line in order.lines.all %}<li><strong>{{ line.intended_person_name }}</strong><small class="payment-muted">{% if line.registration %}{{ line.registration.get_commercial_state_display }} · {{ line.registration.get_operational_state_display }}{% else %}A organização está preparando sua inscrição.{% endif %}</small>{% if line.registration %}<form method="post" action="{% url 'minha_conta:create_claim' line.registration.id %}" style="margin-top:12px">{% csrf_token %}<button type="submit" class="payment-button payment-button-secondary">Vincular ao participante</button></form>{% endif %}</li>{% endfor %}</ul>
+        <p>Seu acesso fica vinculado à compra. Se esta é sua primeira inscrição, defina sua senha agora; se já tem conta, entre com a senha habitual. Depois, cada participante deve se vincular à própria inscrição e aceitar os termos para liberar a credencial.</p>
+        <a class="payment-button" href="{% url 'identity:purchase_access' order.id %}">Acessar minha conta e concluir a inscrição</a>
+        <ul class="payment-list">{% for line in order.lines.all %}<li><strong>{{ line.intended_person_name }}</strong><small class="payment-muted">{% if line.registration %}{{ line.registration.get_commercial_state_display }} · {{ line.registration.get_operational_state_display }}{% else %}A organização está preparando sua inscrição.{% endif %}</small>{% if line.registration %}<a class="payment-button payment-button-secondary" style="margin-top:12px" href="{% url 'minha_conta:registration_pdf' line.registration.id %}"><i data-lucide="file-down" aria-hidden="true"></i> Baixar comprovante em PDF</a><form method="post" action="{% url 'minha_conta:create_claim' line.registration.id %}" style="margin-top:12px">{% csrf_token %}<button type="submit" class="payment-button payment-button-secondary">Vincular ao participante</button></form>{% endif %}</li>{% endfor %}</ul>
         <p class="payment-help payment-muted">A liberação para credenciamento depende também do aceite dos termos e das exigências do evento.</p>
       {% elif order.status == 'PAID_NEEDS_REVIEW' %}
         <p>A organização precisa conferir o pagamento e a disponibilidade da reserva antes de liberar a inscrição. Não faça outro pagamento.</p>
@@ -23,7 +25,7 @@
       {% else %}<p>Este pedido ainda não tem pagamento confirmado. A inscrição será liberada somente depois da confirmação.</p>{% endif %}
     </section>
     <div class="payment-actions">
-      {% if is_paid %}<a class="payment-button" href="{% url 'minha_conta:dashboard' %}">Minhas inscrições e termos</a>{% endif %}
+      {% if is_paid %}<a class="payment-button" href="{% url 'identity:purchase_access' order.id %}">Acessar minhas inscrições e termos</a>{% endif %}
       {% if order.status == 'RESERVED' or order.status == 'AWAITING_PAYMENT' %}<a class="payment-button" href="{% url 'checkout:order_payment' order.id %}">Acompanhar pagamento</a>{% endif %}
       <a class="payment-button payment-button-secondary" href="{% url 'core:contact' %}">Falar com a organização</a>
       <a class="payment-button payment-button-secondary" href="{% url 'events:detail' order.event.slug %}">Ver evento</a>

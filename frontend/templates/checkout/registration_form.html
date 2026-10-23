@@ -11,6 +11,7 @@
     <form method="post" id="registrationForm">
         {% csrf_token %}
         <section class="payment-card"><header class="card-header"><div><h2>1. Seus dados</h2><span class="registration-caption">Responsável pela inscrição e pelo comprovante</span></div></header>
+            <p class="registration-caption">Não precisa fazer um cadastro separado. Após o pagamento confirmado, sua conta é criada com os dados da compra e você define a senha no primeiro acesso. Se já tiver conta, use sua senha habitual.</p>
             <div class="registration-grid">
                 <label class="form-label registration-wide">Nome completo *<input name="purchaser_name" class="form-control" autocomplete="name" required value="{{ buyer.name|default:'' }}"></label>
                 <label class="form-label">E-mail *<input type="email" name="purchaser_email" class="form-control" autocomplete="email" required value="{{ buyer.email|default:'' }}"></label>
@@ -22,6 +23,8 @@
             <div id="participantsContainer">{% for participant in participant_rows %}{% include "checkout/_participant_fields.html" %}{% endfor %}</div>
         </section>
         <section class="payment-card"><label class="form-label">Cupom de desconto, se tiver<input name="coupon_code" class="form-control registration-coupon" value="{{ coupon_code }}" autocomplete="off"></label><div class="payment-total"><span>Subtotal das inscrições</span><strong id="registrationTotal" aria-live="polite">Confira a oferta selecionada</strong></div><p class="registration-caption">Descontos válidos são calculados ao continuar. O valor final fica disponível antes de qualquer pagamento.</p></section>
+        {% include "registrations/_pickup_instructions.html" %}
+        <p class="registration-caption"><a href="{% url 'events:rules' event.slug %}">Ler o regulamento e os termos completos desta edição</a>. Cada participante deverá aceitar os termos na própria conta para liberar o QR Code.</p>
         <button type="submit" class="payment-button registration-submit"{% if not event.is_registration_open %} disabled{% endif %}>{% if event.is_registration_open %}Conferir pedido <i data-lucide="arrow-right" aria-hidden="true"></i>{% else %}Inscrições indisponíveis{% endif %}</button>
     </form>
     {% else %}<section class="payment-card"><h2>Inscrições indisponíveis no momento</h2><p>A organização ainda não disponibilizou uma oferta para esta edição ou as vagas estão esgotadas.</p><a href="{% url 'events:detail' slug=event.slug %}" class="payment-button payment-button-secondary">Voltar ao evento</a></section>{% endif %}

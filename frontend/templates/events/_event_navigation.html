@@ -1,6 +1,7 @@
 <nav class="event-subnav" aria-label="Áreas de {{ event.title }}">
     <a href="{% url 'events:detail' slug=event.slug %}"{% if current == 'event' %} aria-current="page"{% endif %}>O evento</a>
     <a href="{% url 'events:detail' slug=event.slug %}#inscricao">Inscrição</a>
+    <a href="{% url 'events:detail' slug=event.slug %}#ranking">Equipes e cidades</a>
     <a href="{% url 'events:schedule' slug=event.slug %}"{% if current == 'schedule' %} aria-current="page"{% endif %}>Programação</a>
     <a href="{% url 'events:route' slug=event.slug %}"{% if current == 'route' %} aria-current="page"{% endif %}>Percurso</a>
     <a href="{% url 'events:sponsors' slug=event.slug %}"{% if current == 'sponsors' %} aria-current="page"{% endif %}>Patrocinadores</a>

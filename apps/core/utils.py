@@ -47,7 +47,7 @@ def log_audit(actor=None, event_id=None, action="", entity_type="", entity_id=""
         ip_addr = request.META.get("HTTP_X_FORWARDED_FOR", request.META.get("REMOTE_ADDR"))
         if ip_addr and "," in ip_addr:
             ip_addr = ip_addr.split(",")[0].strip()
-    elif actor:
+    if actor_id is None and actor:
         actor_id = str(getattr(actor, "id", actor))
         actor_email = getattr(actor, "email", None)
 

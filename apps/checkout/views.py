@@ -456,6 +456,16 @@ def process_payment_attempt(request, order_id):
             messages.error(request, "Preencha o formulário seguro do cartão antes de continuar.")
             return redirect("checkout:order_payment", order_id=order.id)
     with transaction.atomic():
+        # Share the activation lock before creating the first charge: a concurrent
+        # account switch must either finish first or observe this attempt afterward.
+        from apps.payments.models import MercadoPagoConnection
+        connection, _ = MercadoPagoConnection.objects.get_or_create(pk=1)
+        MercadoPagoConnection.objects.select_for_update().get(pk=connection.pk)
+        try:
+            MercadoPagoGateway().require_configuration(card=method == PaymentMethod.CREDIT_CARD)
+        except GatewayError as exc:
+            messages.error(request, str(exc))
+            return redirect("checkout:order_payment", order_id=order.id)
         order = Order.objects.select_for_update().select_related("event").get(pk=order_id)
         if order.status not in {OrderStatus.RESERVED, OrderStatus.AWAITING_PAYMENT}:
             return redirect("checkout:order_result", order_id=order.id)
@@ -527,6 +537,40 @@ def order_status_api(request, order_id):
         "is_paid": order.status == OrderStatus.PAID, "redirect_url": redirect_url})
     response["Cache-Control"] = "no-store"
     return response
+
+
+@private_checkout
+@require_POST
+def order_refresh_payment(request, order_id):
+    """Recover a delayed notification by reading the provider; never create another charge."""
+    from apps.payments.services import refresh_charge, PaymentValidationError
+    from apps.payments.gateway import GatewayError
+    order = authorized_order(request, order_id)
+    charge = order.charge_attempts.first()
+    message = "A situação do pedido está atualizada."
+    if order.status in {OrderStatus.RESERVED, OrderStatus.AWAITING_PAYMENT} and charge:
+        if MercadoPagoGateway().configuration_issues():
+            message = "A consulta ao Mercado Pago está indisponível. Fale com a organização e não pague novamente."
+        else:
+            now = timezone.now()
+            claimed = ChargeAttempt.objects.filter(pk=charge.pk, state__in=[ChargeState.SENT, ChargeState.PENDING, ChargeState.UNKNOWN]).filter(
+                Q(last_checked_at__isnull=True) | Q(last_checked_at__lt=now-timedelta(seconds=30))
+            ).update(last_checked_at=now)
+            if claimed:
+                try:
+                    refresh_charge(charge)
+                    message = "Consulta concluída. Se ainda estiver pendente, aguarde a confirmação; não é necessário pagar novamente."
+                except GatewayError:
+                    message = "Não foi possível consultar agora. Tente novamente em alguns instantes, sem fazer outro pagamento."
+                except PaymentValidationError:
+                    message = "A confirmação precisa de conferência pela organização. Não faça outro pagamento."
+            else:
+                message = "Já consultamos há poucos segundos. Aguarde 30 segundos para uma nova consulta."
+    response = order_status_api(request, order_id)
+    import json
+    data = json.loads(response.content)
+    data["message"] = message
+    return JsonResponse(data)
 
 
 @private_checkout

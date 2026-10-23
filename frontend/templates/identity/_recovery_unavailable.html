@@ -1,0 +1,3 @@
+<div class="auth-message auth-message-info" role="status"><i data-lucide="info" aria-hidden="true"></i><p>A recuperação por e-mail está indisponível no momento. Nenhum link foi enviado. Fale com a organização para recuperar seu acesso.</p></div>
+{% if return_to_purchase %}<p><a class="auth-return" href="{{ return_to_purchase }}">Retomar o acesso da minha compra <i data-lucide="arrow-right" aria-hidden="true"></i></a></p>{% endif %}
+<p><a class="auth-return" href="{% url 'core:contact' %}">Falar com a organização <i data-lucide="message-circle" aria-hidden="true"></i></a></p>

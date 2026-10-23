@@ -3,10 +3,10 @@ import uuid
 from unittest.mock import patch
 from django.test import TestCase
 from django.utils import timezone
-from apps.identity.models import User, EventMembership, RoleChoices, Person
-from apps.events.models import Event
-from apps.checkout.models import Order, OrderLine
-from apps.registrations.models import Registration, CommercialState, OperationalState, Entitlement, EntitlementState, Consumption
+from apps.identity.models import User, EventMembership, RoleChoices, Person, UserPersonLink
+from apps.events.models import Event, LegalDocumentVersion, DocumentKind
+from apps.checkout.models import Order, OrderLine, OrderStatus
+from apps.registrations.models import Registration, CommercialState, OperationalState, Entitlement, EntitlementState, Consumption, RegistrationCredential, TermsAcceptance
 from apps.operations.models import CheckinRecord
 from tests import test_system as _fixtures
 
@@ -22,9 +22,16 @@ class ManagementAccessTests(TestCase):
 
     def registration(self, commercial=CommercialState.ACTIVE, operational=OperationalState.READY):
         person = Person.objects.create(full_name="Piloto Teste", email="piloto@example.test")
-        order = Order.objects.create(event=self.event, merchant_reference="ACCESS-1", purchaser_name="Teste", purchaser_email="teste@example.test", total_cents=18000, expires_at=timezone.now()+timedelta(hours=1))
+        order = Order.objects.create(event=self.event, merchant_reference="ACCESS-1", purchaser_name="Teste", purchaser_email="teste@example.test", total_cents=18000, status=OrderStatus.PAID, expires_at=timezone.now()+timedelta(hours=1))
         line = OrderLine.objects.create(order=order, product=self.product, lot=self.lot, intended_person_name="Piloto Teste", unit_cents=18000, net_cents=18000)
-        return Registration.objects.create(event=self.event, person=person, source_order_line=line, registration_number=42, commercial_state=commercial, operational_state=operational)
+        reg = Registration.objects.create(event=self.event, person=person, source_order_line=line, registration_number=42, commercial_state=commercial, operational_state=operational)
+        UserPersonLink.objects.create(user=self.user, person=person)
+        document, _ = LegalDocumentVersion.objects.get_or_create(event=self.event, kind=DocumentKind.REGULAMENTO,
+            version_number=1, defaults={"content": "Regulamento de teste"})
+        TermsAcceptance.objects.create(registration=reg, document_version=document, accepting_user=self.user, evidence_hash="0" * 64)
+        token = uuid.uuid4().hex
+        RegistrationCredential.objects.create(registration=reg, raw_token=token, token_digest=token * 2)
+        return reg
 
     def test_operator_cannot_access_finance_or_export(self):
         self.operator()

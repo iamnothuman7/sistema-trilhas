@@ -21,6 +21,7 @@
           {% else %}<i data-lucide="circle-help" aria-hidden="true"></i> Consulte as pendências da inscrição{% endif %}
         </p>
         <div class="public-actions"><a href="{% url 'minha_conta:registration_detail' registration_id=reg.id %}" class="public-button public-button--secondary">Ver detalhes <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>{% if reg.is_eligible_for_qr and reg.credential.is_valid %}<a href="{% url 'minha_conta:credential_view' registration_id=reg.id %}" class="public-button public-button--primary"><i data-lucide="qr-code" aria-hidden="true"></i> Ver QR Code</a>{% endif %}</div>
+        <div class="public-actions"><a href="{% url 'minha_conta:registration_pdf' registration_id=reg.id %}" class="public-button public-button--secondary"><i data-lucide="download" aria-hidden="true"></i> Baixar documento PDF</a></div>
       </article>
       {% endfor %}
     </div>

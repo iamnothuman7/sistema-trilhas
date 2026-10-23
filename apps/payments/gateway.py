@@ -20,14 +20,13 @@ class GatewayError(Exception):
 
 class MercadoPagoGateway:
     """Pix and tokenized cards use the same /v1/payments contract."""
-    def __init__(self):
-        self.access_token = getattr(settings, "MP_ACCESS_TOKEN", "").strip()
-        self.public_key = getattr(settings, "MP_PUBLIC_KEY", "").strip()
-        self.webhook_secret = getattr(settings, "MP_WEBHOOK_SECRET", "").strip()
-        self.collector_id = str(getattr(settings, "MP_COLLECTOR_ID", "")).strip()
-        self.webhook_url = getattr(settings, "MP_WEBHOOK_URL", "").strip()
-        self.environment = getattr(settings, "MP_ENVIRONMENT", "sandbox")
-        self.api_base = getattr(settings, "MP_API_BASE", "https://api.mercadopago.com").rstrip("/")
+    def __init__(self, configuration=None):
+        from .gateway_config import load_gateway_configuration, GatewayConfiguration
+        loaded = GatewayConfiguration(configuration, source="draft") if configuration is not None else load_gateway_configuration()
+        for key in ("access_token", "public_key", "webhook_secret", "collector_id", "webhook_url", "environment", "api_base"):
+            setattr(self, key, str(loaded.values.get(key, "")).strip())
+        self.configuration_source = loaded.source
+        self.api_base = self.api_base.rstrip("/")
         self.timeout = (5, 20)
 
     def configuration_issues(self, *, card=False):
@@ -65,7 +64,7 @@ class MercadoPagoGateway:
             raise GatewayError("NOT_CONFIGURED", "A integração de pagamentos não está configurada.")
         try:
             response = requests.request(method, f"{self.api_base}{path}", json=payload, params=params,
-                                        headers=self._headers(key), timeout=self.timeout)
+                                        headers=self._headers(key), timeout=self.timeout, allow_redirects=False)
         except requests.RequestException as exc:
             raise GatewayError("CONNECTION_ERROR", "A confirmação está demorando. Não faça outro pagamento enquanto verificamos.", uncertain=True) from exc
         if response.status_code not in (200, 201):

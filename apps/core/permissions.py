@@ -33,6 +33,8 @@ VIEW_ACTIONS = {
     "audit_log_view": "audit",
     "sponsor_list": "content", "sponsor_create": "content", "sponsor_edit": "content",
     "raffle_management": "events",
+    "team_frame_editor": "content",
+    "ranking_management": "registrations",
 }
 
 
@@ -100,6 +102,7 @@ def management_required(view_func):
 def management_context(request):
     if not request.user.is_authenticated or not request.path.startswith("/gestao/"):
         return {}
+    from apps.payments.connection import can_view_connection, can_manage_connection
     event = getattr(request, "management_event", None)
     events = accessible_events(request.user).order_by("-starts_at")
     if event is None:
@@ -121,4 +124,6 @@ def management_context(request):
         if membership:
             role = membership.get_role_code_display().split(" / ")[0]
     return {"management_event": event, "management_permissions": permissions, "management_role_label": role,
-            "management_can_create_events": can_create_events(request.user)}
+            "management_can_create_events": can_create_events(request.user),
+            "management_can_view_mp": can_view_connection(request.user),
+            "management_can_manage_mp": can_manage_connection(request.user)}
