@@ -4,7 +4,7 @@ O checkout usa **Payments API `/v1/payments`** para Pix e cartão. Não existe a
 
 ## Situação da ativação
 
-Em 23/10/2026, a homologação passou a operar em instalação e banco próprios, com HTTPS em `homologacao.equipemorcego.nabio.pro`. Foram confirmados na API do Mercado Pago, com `live_mode=false`: aprovação e recusa de cartão, geração de Pix, reembolso parcial e total e cancelamento de Pix. Os testes HTTP de segurança e conciliação do webhook também passaram, usando notificações assinadas pelo executor dos testes e recursos consultados na API autenticada. Isso não comprova, por si só, a entrega de uma notificação originada no Mercado Pago.
+Em 23/10/2026, a homologação passou a operar em instalação e banco próprios, com HTTPS em `homologacao.equipemorcego.nabio.pro`. A aplicação principal foi conferida e configurada para **Checkout Transparente → API Pagamentos**, com seu par de credenciais de teste. Cartão aprovado, recusado e em análise, Pix, reembolso parcial/total e cancelamento foram confirmados na API com `live_mode=false`. Cartão e Pix também passaram pelo formulário HTTP do sistema, com proteção contra reenvio. O simulador oficial do Mercado Pago entregou notificações de Pix e cartão com **200 OK**, assinatura válida e processamento confirmado no banco. A matriz de segurança do webhook e os testes de conciliação passaram.
 
 A ativação de pagamentos reais continua pendente. O rascunho de produção permanece separado da configuração em uso. Não copie credenciais de outro cliente ou aplicação do Navie Vibe. Consulte [o relatório de homologação](HOMOLOGACAO_MERCADO_PAGO.md) para resultados, limitações e a sequência de ativação.
 
