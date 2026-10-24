@@ -445,6 +445,35 @@ class PaymentReconciliationTests(TestCase):
         self.assertEqual(stranger.post(reverse("checkout:process_payment", args=[self.order.id]), self.checkout_data()).status_code, 404)
         self.http.assert_not_called()
 
+    def test_pix_countdown_uses_persisted_expiry_and_never_confirms_on_expiration(self):
+        self.charge.pix_expiration = self.now - timedelta(seconds=1)
+        self.charge.pix_copy_paste = "SANDBOX_CODE"
+        self.charge.save()
+        data = self.client.get(reverse("checkout:status_api", args=[self.order.id])).json()
+        self.assertEqual(data["pix_expires_at"], self.charge.pix_expiration.isoformat())
+        self.assertIn("server_time", data)
+        self.assertFalse(data["is_paid"])
+        self.assertIsNone(data["redirect_url"])
+        page = self.client.get(reverse("checkout:order_waiting", args=[self.order.id]))
+        self.assertContains(page, 'id="pix-countdown"')
+        self.assertNotContains(page, 'id="payment-success-title"')
+        self.http.assert_not_called()
+
+    def test_verified_pix_and_card_both_offer_success_modal_and_receipt(self):
+        for method in ["pix", "credit_card"]:
+            with self.subTest(method=method):
+                self.charge.payment_method = method
+                self.charge.save(update_fields=["payment_method"])
+                reconcile_payment(self.payment(payment_method_id="master" if method == "credit_card" else "pix",
+                    payment_type_id="credit_card" if method == "credit_card" else "bank_transfer"))
+                data = self.client.get(reverse("checkout:status_api", args=[self.order.id])).json()
+                self.assertTrue(data["is_paid"])
+                self.assertEqual(data["redirect_url"], reverse("checkout:order_result", args=[self.order.id]))
+                page = self.client.get(data["redirect_url"])
+                self.assertContains(page, 'id="payment-success-title"')
+                self.assertContains(page, reverse("minha_conta:registration_pdf", args=[self.registration.id]))
+        self.assertEqual(PaymentTransaction.objects.count(), 1)
+
     def test_authenticated_buyer_can_access_order_without_guest_session(self):
         buyer = User.objects.create_user(email="owner@example.com", password="unit-password", full_name="Comprador")
         self.order.purchaser_user = buyer; self.order.save()

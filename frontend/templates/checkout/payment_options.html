@@ -1,8 +1,18 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Pagamento | Equipe Morcego{% endblock %}
 {% block extra_head %}{% include "checkout/_payment_styles.html" %}{% endblock %}
 {% block content %}
 <div class="payment-page">
+  <dialog class="payment-dialog" id="payment-dialog" data-auto-open="false" aria-labelledby="payment-progress-title">
+    <button type="button" class="payment-dialog-close" data-close-payment aria-label="Fechar acompanhamento"><i data-lucide="x" aria-hidden="true"></i></button>
+    <div class="payment-dialog-body payment-success">
+      <span class="payment-progress-icon" aria-hidden="true"></span>
+      <h2 id="payment-progress-title">Preparando seu pagamento</h2>
+      <p role="status">Estamos consultando o Mercado Pago. Aguarde a próxima tela e não envie outro pagamento.</p>
+      <small>Pedido {{ order.merchant_reference }} · R$ {{ order.formatted_total }}</small>
+    </div>
+  </dialog>
   <span class="payment-kicker">Sua inscrição · Pagamento</span>
   <h1>Escolha como pagar</h1>
   <p class="payment-muted">{{ order.event.title }} · Pedido <span class="payment-reference">{{ order.merchant_reference }}</span></p>
@@ -70,9 +80,12 @@
 </div>
 {% endblock %}
 {% block extra_js %}
+<script src="{% static 'js/payment-dialog.js' %}?v=20261024"></script>
 <script>
 document.getElementById('pix-payment-form')?.addEventListener('submit', function () {
   const button = this.querySelector('button'); button.disabled = true; button.textContent = 'Gerando seu Pix…';
+  document.getElementById('payment-progress-title').textContent = 'Gerando seu Pix';
+  document.getElementById('payment-dialog').showModal();
 });
 </script>
 {% if payments_available and card_available %}
@@ -111,6 +124,8 @@ document.getElementById('pix-payment-form')?.addEventListener('submit', function
             installments: data.installments, identification_type: data.identificationType, identification_number: data.identificationNumber };
           Object.entries(fields).forEach(([name, value]) => { form.elements.namedItem(name).value = value || ''; });
           button.disabled = true; button.textContent = 'Confirmando pagamento…';
+          document.getElementById('payment-progress-title').textContent = 'Confirmando seu cartão';
+          document.getElementById('payment-dialog').showModal();
           HTMLFormElement.prototype.submit.call(form);
         }
       }

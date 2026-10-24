@@ -520,7 +520,7 @@ def order_waiting(request, order_id):
         return redirect("checkout:order_payment", order_id=order.id)
     if charge.state in {ChargeState.FAILED, ChargeState.CANCELED}:
         return redirect("checkout:order_payment", order_id=order.id)
-    return render(request, "checkout/waiting_pix.html", {"order": order, "charge": charge})
+    return render(request, "checkout/waiting_pix.html", {"order": order, "charge": charge, "server_now": timezone.now()})
 
 
 @private_checkout
@@ -534,7 +534,9 @@ def order_status_api(request, order_id):
     if terminal or retry:
         redirect_url = reverse("checkout:order_result" if terminal else "checkout:order_payment", kwargs={"order_id": order.id})
     response = JsonResponse({"status": order.status, "payment_state": charge.state if charge else None,
-        "is_paid": order.status == OrderStatus.PAID, "redirect_url": redirect_url})
+        "is_paid": order.status == OrderStatus.PAID, "redirect_url": redirect_url,
+        "server_time": timezone.now().isoformat(),
+        "pix_expires_at": charge.pix_expiration.isoformat() if charge and charge.pix_expiration else None})
     response["Cache-Control"] = "no-store"
     return response
 

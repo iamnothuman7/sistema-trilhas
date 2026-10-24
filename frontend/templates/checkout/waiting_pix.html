@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Acompanhar pagamento | Equipe Morcego{% endblock %}
 {% block extra_head %}{% include "checkout/_payment_styles.html" %}{% endblock %}
 {% block content %}
@@ -7,16 +8,32 @@
     <div class="payment-status-icon"><i data-lucide="clock-3" aria-hidden="true"></i></div>
     <h1>{% if charge.payment_method == 'pix' and charge.pix_copy_paste %}Pague com Pix{% else %}Aguardando confirmação{% endif %}</h1>
     <p class="payment-muted">Pedido {{ order.merchant_reference }} · {{ order.event.title }}</p>
-    <section class="payment-card">
+    <button type="button" class="payment-button" data-open-payment>Abrir acompanhamento do pagamento</button>
+    <p class="payment-help payment-muted">Você pode fechar esta janela e abri-la novamente. A cobrança continua sendo acompanhada.</p>
+    <dialog class="payment-dialog" id="payment-dialog" aria-labelledby="payment-dialog-title"
+      data-status-url="{% url 'checkout:status_api' order.id %}" data-server-now="{{ server_now|date:'c' }}">
+      <button type="button" class="payment-dialog-close" data-close-payment aria-label="Fechar acompanhamento"><i data-lucide="x" aria-hidden="true"></i></button>
+      <div class="payment-dialog-body">
+      <span class="payment-kicker">Equipe Morcego · Pagamento seguro</span>
+      <h2 id="payment-dialog-title">{% if charge.payment_method == 'pix' and charge.pix_copy_paste %}Sua trilha começa aqui{% else %}Estamos conferindo seu pagamento{% endif %}</h2>
+      <p class="payment-muted payment-help">Pedido {{ order.merchant_reference }}</p>
+      {% if is_homologation %}<p class="payment-test-notice">Compra fictícia. Não transfira dinheiro pelo Pix.</p>{% endif %}
       <div class="payment-total" style="margin-top:0;border:0;padding-top:0"><span>Total do pedido</span><strong>R$ {{ order.formatted_total }}</strong></div>
       {% if charge.payment_method == 'pix' and charge.pix_copy_paste %}
       <div id="pix-instructions" data-expires="{{ charge.pix_expiration|date:'c' }}">
-        <p>Abra o aplicativo do seu banco e escaneie o código ou use Pix Copia e Cola.</p>
-        {% if charge.pix_qr_code %}<img class="payment-qr" src="data:image/png;base64,{{ charge.pix_qr_code }}" alt="QR Code Pix deste pedido" width="240" height="240">{% endif %}
-        <label for="pix-code" class="payment-muted">Código Pix Copia e Cola</label>
-        <textarea class="payment-copy" id="pix-code" readonly spellcheck="false">{{ charge.pix_copy_paste }}</textarea>
+        <div class="payment-countdown" id="pix-countdown-panel">
+          <span><i data-lucide="timer" aria-hidden="true"></i> Tempo para pagar</span>
+          <strong id="pix-countdown" role="timer" aria-label="Tempo restante para pagar o Pix">--:--</strong>
+        </div>
+        <p class="payment-help">{% if is_homologation %}QR Code de homologação, apenas para testar a integração.{% else %}No celular, copie o código e pague no aplicativo do banco. Em outra tela, escaneie o QR Code.{% endif %}</p>
+        <div id="pix-payable">
         <button class="payment-button payment-full" id="copy-pix" type="button">Copiar código Pix</button>
+        {% if charge.pix_qr_code %}<img class="payment-qr" src="data:image/png;base64,{{ charge.pix_qr_code }}" alt="QR Code Pix deste pedido" width="240" height="240">{% endif %}
+        <details id="pix-code-details"><summary>Ver código Pix Copia e Cola</summary>
+        <label for="pix-code" class="payment-muted">Código Pix Copia e Cola</label>
+        <textarea class="payment-copy" id="pix-code" readonly spellcheck="false">{{ charge.pix_copy_paste }}</textarea></details>
         <p class="payment-help payment-muted">Válido até {{ charge.pix_expiration|date:"d/m H:i" }}. Confira o recebedor e o valor antes de confirmar no banco.</p>
+        </div>
       </div>
       {% else %}
       <p>A confirmação está sendo consultada. Não faça outro pagamento para este pedido enquanto verificamos.</p>
@@ -25,52 +42,15 @@
       <p class="payment-help payment-muted">Sua inscrição só será liberada após a confirmação. O aceite dos termos pode continuar pendente.</p>
       <form id="refresh-payment" method="post" action="{% url 'checkout:refresh_payment' order.id %}">{% csrf_token %}<button type="submit" class="payment-button payment-button-secondary payment-full">Já paguei. Verificar agora</button></form>
       <p class="payment-help payment-muted">Este botão consulta o pagamento existente. Não gera uma nova cobrança.</p>
-    </section>
+      </div>
+    </dialog>
+    <noscript><p class="payment-alert">Ative o JavaScript para abrir o QR Code e acompanhar o pagamento automaticamente.</p><form method="post" action="{% url 'checkout:refresh_payment' order.id %}">{% csrf_token %}<button class="payment-button">Verificar pagamento</button></form></noscript>
     <p class="payment-help">Se você já pagou e a confirmação não aparecer, fale com a organização e informe <strong>{{ order.merchant_reference }}</strong>.</p>
     <a class="payment-button payment-button-secondary" href="{% url 'core:contact' %}">Preciso de ajuda</a>
   </div>
 </div>
 {% endblock %}
 {% block extra_js %}
-<script>
-(() => {
-  const feedback = document.getElementById('payment-feedback');
-  const instructions = document.getElementById('pix-instructions');
-  document.getElementById('refresh-payment')?.addEventListener('submit', async function (event) {
-    event.preventDefault();
-    const button = this.querySelector('button');
-    if (button.disabled) return;
-    button.disabled = true; button.textContent = 'Consultando pagamento…';
-    try {
-      const response = await fetch(this.action, {method: 'POST', body: new FormData(this), credentials: 'same-origin', cache: 'no-store'});
-      if (!response.ok) throw new Error('unavailable');
-      const data = await response.json();
-      if (data.redirect_url) { window.location.assign(data.redirect_url); return; }
-      feedback.textContent = data.message;
-    } catch (_) { feedback.textContent = 'A consulta não foi concluída. Tente novamente em instantes; não pague outra vez.'; }
-    finally { button.disabled = false; button.textContent = 'Já paguei. Verificar agora'; }
-  });
-  document.getElementById('copy-pix')?.addEventListener('click', async function () {
-    const code = document.getElementById('pix-code');
-    try { await navigator.clipboard.writeText(code.value); this.textContent = 'Código copiado'; }
-    catch (_) { code.focus(); code.select(); feedback.textContent = 'Selecione e copie o código exibido acima.'; }
-  });
-  async function poll() {
-    const expired = instructions && new Date(instructions.dataset.expires).getTime() <= Date.now();
-    if (expired) {
-      instructions.hidden = true; feedback.textContent = 'O prazo do Pix terminou. Se você já pagou, aguarde a confirmação ou fale com a organização.';
-    }
-    let delay = 5000;
-    try {
-      const response = await fetch("{% url 'checkout:status_api' order.id %}", { cache: 'no-store', credentials: 'same-origin' });
-      if (!response.ok) throw new Error('unavailable');
-      const data = await response.json();
-      if (data.redirect_url) { window.location.assign(data.redirect_url); return; }
-      feedback.textContent = expired ? 'O prazo do Pix terminou. Se você já pagou, aguarde a confirmação ou fale com a organização.' : 'Aguardando a confirmação do Mercado Pago…';
-    } catch (_) { delay = 15000; feedback.textContent = 'Sem conexão para atualizar agora. Tentaremos novamente; não pague outra vez.'; }
-    window.setTimeout(poll, document.hidden ? 30000 : delay);
-  }
-  window.setTimeout(poll, 3000);
-})();
-</script>
+<script src="{% static 'js/payment-dialog.js' %}?v=20261024"></script>
+<script src="{% static 'js/payment-status.js' %}?v=20261024"></script>
 {% endblock %}
