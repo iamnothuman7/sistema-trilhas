@@ -114,3 +114,6 @@
 @media (prefers-reduced-transparency: reduce) {
   .mg-dialog::backdrop { -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
+
+/* Long participant contacts must wrap inside the detail card on narrow phones. */
+.mg-personal-details > div { min-width: 0; overflow-wrap: anywhere; }

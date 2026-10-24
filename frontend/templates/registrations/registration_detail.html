@@ -25,7 +25,7 @@
   </section>
   <section class="public-card">
     <h2>Kits e benefícios</h2>
-    {% for ent in entitlements %}<div class="public-benefit"><div><strong>{{ ent.title }}</strong><p>{{ ent.quantity_used }} de {{ ent.quantity_total }} entregues</p></div><span class="public-tag {% if ent.state == 'REVOKED' %}public-tag--negative{% elif ent.quantity_used >= ent.quantity_total %}public-tag--positive{% else %}public-tag--warning{% endif %}">{{ ent.get_state_display }}</span></div>{% empty %}<p class="public-muted">Os benefícios aparecerão após a confirmação da inscrição.</p>{% endfor %}
+    {% for ent in entitlements %}<div class="public-benefit"><div><strong>{{ ent.title }}</strong><p>{{ ent.quantity_used }} de {{ ent.quantity_total }} entregues</p></div><span class="public-tag {% if ent.state == 'REVOKED' %}public-tag--negative{% elif ent.quantity_used >= ent.quantity_total %}public-tag--positive{% else %}public-tag--warning{% endif %}">{% if ent.state == 'REVOKED' or ent.quantity_used >= ent.quantity_total %}{{ ent.get_state_display }}{% elif not credential_available %}Retirada bloqueada · conclua as pendências{% else %}{{ ent.get_state_display }}{% endif %}</span></div>{% empty %}<p class="public-muted">Os benefícios aparecerão após a confirmação da inscrição.</p>{% endfor %}
   </section>
   {% include 'registrations/_pickup_instructions.html' %}
 </div>

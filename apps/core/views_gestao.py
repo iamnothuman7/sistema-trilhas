@@ -324,6 +324,7 @@ def registration_detail(request, event_id, reg_id):
         id=reg_id,
         event=event
     )
+    from apps.registrations.eligibility import credential_is_available
     entitlements = reg.entitlements.all()
     terms = reg.terms_acceptances.all()
     consumptions = Consumption.objects.filter(entitlement__registration=reg).select_related("operator", "entitlement")
@@ -334,6 +335,7 @@ def registration_detail(request, event_id, reg_id):
         "entitlements": entitlements,
         "terms": terms,
         "consumptions": consumptions,
+        "credential_available": credential_is_available(reg),
     })
 
 

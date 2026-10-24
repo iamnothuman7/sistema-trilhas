@@ -4,7 +4,7 @@
 <div class="public-page">
   <header class="public-heading-row">
     <div class="public-intro"><span class="public-eyebrow">Área do piloto</span><h1>Olá, {{ request.user.full_name }}.</h1><p>Suas inscrições, documentos e credenciais em um só lugar.</p></div>
-    <a href="{% url 'events:list' %}" class="public-button public-button--primary"><i data-lucide="plus" aria-hidden="true"></i> Nova inscrição</a>
+    <div class="public-actions"><a href="{% url 'events:list' %}" class="public-button public-button--primary"><i data-lucide="plus" aria-hidden="true"></i> Nova inscrição</a><a href="{% url 'identity:logout' %}" class="public-button public-button--secondary"><i data-lucide="log-out" aria-hidden="true"></i> Sair da conta</a></div>
   </header>
   <section class="public-section" aria-labelledby="registrations-title">
     <div class="public-section-heading"><h2 id="registrations-title">Minhas inscrições</h2></div>

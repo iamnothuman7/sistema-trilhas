@@ -230,3 +230,33 @@ class ParticipantAccessTests(TestCase):
         self.assertEqual(client.post(url, {"confirm_holder": "yes"}).status_code, 403)
         client.force_login(self.buyer)
         self.assertEqual(client.post(self.url("create_claim")).status_code, 403)
+
+    def test_available_kit_is_shown_as_blocked_until_registration_is_eligible(self):
+        from apps.registrations.models import Entitlement
+        Entitlement.objects.create(registration=self.reg, benefit_type="KIT", title="Kit", quantity_total=1)
+        self.link_holder()
+        page = self.client.get(self.url("registration_detail"))
+        self.assertContains(page, "Retirada bloqueada")
+        self.assertNotContains(page, "Disponível para Retirada")
+        self.assertEqual(self.client.post(self.url("accept_terms"), self.complete_documents()).status_code, 302)
+        page = self.client.get(self.url("registration_detail"))
+        self.assertNotContains(page, "Retirada bloqueada")
+        self.assertContains(page, "Disponível para Retirada")
+
+    def test_management_kit_label_and_qr_follow_current_eligibility(self):
+        from apps.registrations.models import Entitlement
+        Entitlement.objects.create(registration=self.reg, benefit_type="KIT", title="Kit", quantity_total=1)
+        self.buyer.is_staff = True
+        self.buyer.save(update_fields=["is_staff"])
+        operator = Client()
+        operator.force_login(self.buyer)
+        url = reverse("gestao:registration_detail", args=[self.event.pk, self.reg.pk])
+        page = operator.get(url)
+        self.assertContains(page, "Retirada bloqueada")
+        self.assertNotContains(page, "Disponível para Retirada")
+        self.link_holder()
+        self.client.post(self.url("accept_terms"), self.complete_documents())
+        page = operator.get(url)
+        self.assertNotContains(page, "Retirada bloqueada")
+        self.assertContains(page, "Disponível para Retirada")
+        self.assertContains(page, 'alt="QR Code de acesso do participante"')

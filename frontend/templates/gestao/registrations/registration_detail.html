@@ -37,7 +37,7 @@
             <h3 class="section-title">
                 Dados Pessoais
             </h3>
-            <div class="form-grid">
+            <div class="form-grid mg-personal-details">
                 <div><span class="text-muted">E-mail:</span> <strong>{{ reg.person.email|default:"Não informado" }}</strong></div>
                 <div><span class="text-muted">WhatsApp:</span> <strong>{{ reg.person.phone|default:"Não informado" }}</strong></div>
                 <div><span class="text-muted">Cidade/UF:</span> <strong>{{ reg.person.city }}/{{ reg.person.state }}</strong></div>
@@ -60,7 +60,7 @@
                             <div class="text-muted mg-meta">Entregue: {{ ent.quantity_used }} de {{ ent.quantity_total }}</div>
                         </div>
                         <span class="badge {% if ent.quantity_used >= ent.quantity_total %}badge-success{% else %}badge-warning{% endif %}">
-                            {{ ent.get_state_display }}
+                            {% if ent.state == 'REVOKED' or ent.quantity_used >= ent.quantity_total %}{{ ent.get_state_display }}{% elif not credential_available %}Retirada bloqueada · inscrição com pendência{% else %}{{ ent.get_state_display }}{% endif %}
                         </span>
                     </div>
                 {% endfor %}
@@ -94,7 +94,7 @@
             <div class="mg-strong text-muted mg-meta stat-label mg-space-bottom-sm">
                 QR Code de Acesso
             </div>
-            {% if reg.credential and reg.credential.qr_code_image %}
+            {% if credential_available and reg.credential.qr_code_image %}
                 <img src="data:image/png;base64,{{ reg.credential.qr_code_image }}" alt="QR Code de acesso do participante" class="mg-qr-image">
                 <div class="mg-code mg-strong mg-text-brand mg-meta">
                     {{ reg.credential.raw_token }}
