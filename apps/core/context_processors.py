@@ -1,4 +1,5 @@
 from datetime import datetime
+from django.conf import settings
 from apps.core.models import Organization
 
 def global_context(request):
@@ -30,6 +31,7 @@ def global_context(request):
         **management_context(request),
         "organization": org,
         "current_year": datetime.now().year,
+        "is_homologation": getattr(settings, "IS_HOMOLOGATION", False),
         "user_memberships": user_memberships,
         "current_event": getattr(request, "current_event", None),
         "is_event_subdomain": getattr(request, "is_event_subdomain", False),

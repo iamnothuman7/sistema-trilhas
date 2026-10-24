@@ -9,9 +9,10 @@
 <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=navie2">
 <link rel="stylesheet" href="{% static 'css/public-pages.css' %}?v=navie2">
 {% block extra_head %}{% endblock %}
-<link rel="stylesheet" href="{% static 'css/trail.css' %}?v=trail20261023-nav2">
+<link rel="stylesheet" href="{% static 'css/trail.css' %}?v=trail20261024-hero">
 </head>
 <body>
+{% if is_homologation %}<aside class="homologation-notice" role="status"><strong>Ambiente de testes</strong> · Inscrições fictícias. Use somente cartões de teste; não transfira dinheiro pelo Pix.</aside>{% endif %}
 <a class="skip-link" href="#main-content">Ir para o conteúdo</a>
 <header class="navbar"><div class="container nav-container">
 <a href="{% url 'core:home' %}" class="brand-logo" aria-label="Equipe Morcego, início"><img src="{% static 'img/logo-nav.webp' %}" alt="" class="logo-emblem" width="96" height="80"></a>

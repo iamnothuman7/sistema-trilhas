@@ -11,7 +11,7 @@
       {% if payments_available %}
       <section class="payment-card">
         <h2><i data-lucide="qr-code" aria-hidden="true"></i> Pix</h2>
-        <p class="payment-muted">Gere um código para pagar no aplicativo do seu banco. A inscrição será confirmada após a aprovação do Mercado Pago.</p>
+        <p class="payment-muted">{% if is_homologation %}Gere um QR de teste para conferir a integração. Não faça transferência pelo aplicativo do banco: este pedido é fictício.{% else %}Gere um código para pagar no aplicativo do seu banco. A inscrição será confirmada após a aprovação do Mercado Pago.{% endif %}</p>
         <form method="post" action="{% url 'checkout:process_payment' order.id %}" id="pix-payment-form">
           {% csrf_token %}<input type="hidden" name="payment_method" value="pix"><input type="hidden" name="attempt_key" value="{{ attempt_key }}">
           <button type="submit" class="payment-button payment-full">Gerar Pix de R$ {{ order.formatted_total }}</button>

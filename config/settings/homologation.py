@@ -6,6 +6,7 @@ if BASE_DIR.name != "equipemorcego-homologacao" or os.getenv("MP_ENVIRONMENT") !
     raise ImproperlyConfigured("Homologation requires its own installation and sandbox credentials.")
 
 DEBUG = False
+IS_HOMOLOGATION = True
 ALLOWED_HOSTS = ["homologacao.equipemorcego.nabio.pro", "localhost", "127.0.0.1"]
 CSRF_TRUSTED_ORIGINS = ["https://homologacao.equipemorcego.nabio.pro"]
 DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "homologation.sqlite3", "OPTIONS": {"timeout": 30}}}

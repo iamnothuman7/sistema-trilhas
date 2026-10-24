@@ -11,6 +11,7 @@
 }
 html { background: var(--bg-dark); scroll-padding-top: 130px; }
 body { background: radial-gradient(ellipse at 85% 35%, #44201435, transparent 46%), #11100f; }
+.homologation-notice { position: relative; z-index: 101; padding: 12px 20px; background: #ffb479; color: #24160d; text-align: center; font-size: 13px; line-height: 1.5; }
 h1, h2, h3, h4 { font-weight: 800; letter-spacing: -.045em; }
 h2 { font-size: clamp(32px, 4vw, 54px); line-height: 1.13; }
 h2 em { font-style: normal; color: #ff8c43; }
@@ -219,8 +220,8 @@ a:hover, .text-link:hover { color: #ffab72; }
 
 /* Institutional home and portrait-first campaign art. */
 .trail-hero-art img { object-position: center top; }
-.trail-hero--home { min-height: 820px; }
-.trail-hero--home .trail-hero-content { min-height: 530px; }
+.trail-hero--home { min-height: 720px; padding-top: 148px; }
+.trail-hero--home .trail-hero-content { min-height: 0; align-items: flex-start; }
 .trail-hero-copy h1 > span, .trail-hero-copy h1 > em { display: inline-block; animation: headline-launch .9s cubic-bezier(.2,.75,.2,1) both; }
 .trail-hero-copy h1 > span:nth-of-type(2) { animation-delay: .12s; }
 .trail-hero-copy h1 > em { animation-delay: .24s; }
@@ -309,7 +310,7 @@ a:hover, .text-link:hover { color: #ffab72; }
 @keyframes emblem-float { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-9px) rotate(1deg); } }
 @keyframes trail-orbit-spin { to { transform: rotate(360deg); } }
 @keyframes trail-route-travel { to { stroke-dashoffset: -1238; } }
-@media(min-width:1600px) { .trail-hero--home { min-height: 880px; } }
+@media(min-width:1600px) { .trail-hero--home { min-height: 760px; } }
 @media(max-width:1100px) {
  .trail-featured-event { grid-template-columns: .85fr 1.15fr; }
  .trail-featured-copy { padding: 36px; }
@@ -320,7 +321,7 @@ a:hover, .text-link:hover { color: #ffab72; }
  .trail-archive-number { font-size: 110px; }
 }
 @media(max-width:700px) {
- .trail-hero--home { padding-top: clamp(355px,111vw,530px); min-height: 0; }
+ .trail-hero--home { padding-top: clamp(224px,64vw,300px); min-height: 0; }
  .trail-hero-art { height: auto; bottom: auto; aspect-ratio: 2/3; }
  .trail-hero-art img { width: 100%; height: 100%; object-fit: contain; object-position: center top; }
  .trail-hero-art--custom { top: 90px; height: 330px; aspect-ratio: auto; }
@@ -328,9 +329,9 @@ a:hover, .text-link:hover { color: #ffab72; }
  .trail-hero-shade { background: linear-gradient(0deg,#11100f 0%,#11100f 12%,#11100f00 60%,#11100f00 86%,#11100f22); }
  .trail-hero--home .trail-hero-content { min-height: 0; }
  .trail-hero--home h1 { font-size: clamp(52px,14.5vw,88px); line-height: .98; }
- .trail-hero--home .trail-eyebrow { font-size: 9px; margin-bottom: 18px; }
+ .trail-hero--home h1 { margin-bottom: 16px; }
  .trail-hero--home .trail-hero-lead { font-size: 13px; }
- .trail-hero--home .action-row { gap: 10px; }
+ .trail-hero--home .action-row { gap: 8px; margin-top: 18px; }
  .trail-hero--home .action-row > .btn { width: 100%; }
  .trail-hero--home .trail-secondary-link { justify-content: center; width: 100%; }
  .trail-hero-foot { margin-top: 22px; }
@@ -366,6 +367,7 @@ a:hover, .text-link:hover { color: #ffab72; }
  .trail-hero--event { padding-top: clamp(360px,111vw,530px); }
 }
 @media(prefers-reduced-motion:reduce) { .trail-hero-copy h1 > span,.trail-hero-copy h1 > em { opacity: 1; transform: none; } }
+@media(max-width:360px) { .trail-hero--home { padding-top: 200px; } }
 
 .event-edition-brand { width: min(27vw,360px); flex-shrink: 0; align-self: flex-end; margin-bottom: 20px; }
 .event-edition-brand img { width: 100%; height: auto; max-height: 280px; }
@@ -401,12 +403,14 @@ a:hover, .text-link:hover { color: #ffab72; }
 
 @media(min-width:701px) and (max-width:1000px) {
  .trail-hero,.trail-hero--event { padding-top: calc(66.667vw + 18px); min-height: 0; }
+ .trail-hero--home { padding-top: 190px; }
  .trail-hero-art { height: auto; bottom: auto; aspect-ratio: 3/2; }
  .trail-hero-art img { object-fit: contain; object-position: right top; }
  .trail-hero-shade { background: linear-gradient(0deg,#11100f 0%,#11100f 20%,#11100f00 65%); }
  .trail-hero--home .trail-hero-content,.trail-hero--event .trail-hero-content { min-height: 0; }
  .trail-hero--home h1 { font-size: 88px; }
  .trail-hero--home .trail-hero-copy { max-width: 100%; }
+ .trail-hero--home .trail-hero-shade { background: linear-gradient(90deg,#100f0fe8,#100f0f80 65%,#100f0f33),linear-gradient(0deg,#11100f,transparent 80%); }
  .trail-hero--home h1 > br:first-of-type { display: none; }
  .trail-hero--home h1 > span:first-child { margin-right: .16em; }
  .trail-hero--event .trail-hero-copy { max-width: 100%; }

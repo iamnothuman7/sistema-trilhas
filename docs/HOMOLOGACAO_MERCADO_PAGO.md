@@ -6,7 +6,7 @@ Produção: `https://equipemorcego.nabio.pro`, diretório `/var/www/apps/equipem
 
 Homologação: `https://homologacao.equipemorcego.nabio.pro`, diretório `/var/www/apps/equipemorcego-homologacao`, serviço `equipemorcego-homologacao.service`, usuário Unix `morcego-hml`, porta local 8056. Banco SQLite, mídia, sessões, CSRF e chaves Django são exclusivos desse ambiente. O envio de e-mail usa backend em memória. O serviço está habilitado para iniciar automaticamente após reboot.
 
-Somente o endpoint HTTPS `/integracoes/mercadopago/webhook/` aceita acesso externo. As demais rotas retornam 403 para acessos externos e são testadas por conexão local no servidor, com TLS válido. O certificado usa a renovação existente do Certbot. Nginx envia `X-Robots-Tag: noindex, nofollow, noarchive`.
+O endpoint HTTPS `/integracoes/mercadopago/webhook/` aceita as notificações externas com a validação de assinatura da aplicação. Desde 24/10/2026, as demais rotas também permitem teste manual pelo titular mediante autenticação HTTP Basic exclusiva da homologação; sem autenticação retornam 401. Conexões locais no servidor continuam permitidas. A senha não pertence ao administrador do sistema nem à conta Mercado Pago; seu hash fica em arquivo restrito do Nginx, fora do repositório. O certificado usa a renovação existente do Certbot. Nginx envia `X-Robots-Tag: noindex, nofollow, noarchive`.
 
 O perfil `config.settings.homologation` exige o diretório dedicado e `MP_ENVIRONMENT=sandbox`. Não carregue esse perfil na instalação de produção. O ambiente de teste compartilha apenas as dependências Python da instalação existente; não compartilha o banco, `.env` ou arquivos de participantes. O serviço tem `ReadOnlyPaths` apontando para a instalação produtiva.
 
@@ -70,7 +70,7 @@ Evidências de sandbox: cartão APRO `1354121803`, FUND `1354130675`, CONT `1354
 
 As evidências sanitizadas ficam em arquivos `homologation-*-results.json` no diretório isolado, com modo 600. O `.env` pertence a `morcego-hml:morcego-hml` com modo 600; manter esse proprietário inclusive quando uma ferramenta substituir o arquivo atomicamente. Nunca publicar esses arquivos, o banco ou segredos no Git.
 
-Após reiniciar o serviço, verificar `systemctl is-active equipemorcego-homologacao.service` e o webhook sem assinatura (HTTP 401). O diretório público deve continuar retornando 403 externamente. Para conciliação manual, executar o comando de gestão a partir do diretório isolado com `--settings=config.settings.homologation`; nunca executar os cenários fictícios usando `config.settings.production`.
+Após reiniciar o serviço, verificar `systemctl is-active equipemorcego-homologacao.service` e o webhook sem assinatura (HTTP 401). O diretório público deve continuar exigindo autenticação externamente (401 sem credenciais), e o webhook sem assinatura deve retornar 401 independentemente dessa autenticação. Para conciliação manual, executar o comando de gestão a partir do diretório isolado com `--settings=config.settings.homologation`; nunca executar os cenários fictícios usando `config.settings.production`.
 
 ## Referências oficiais
 
@@ -78,3 +78,13 @@ Após reiniciar o serviço, verificar `systemctl is-active equipemorcego-homolog
 - [Cartões e cenários de teste](https://www.mercadopago.com.br/developers/pt/docs/checkout-api-payments/additional-content/your-integrations/test/cards)
 - [Webhooks: ambiente, tópico e assinatura](https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks)
 - [Erros da criação de pagamentos](https://www.mercadopago.com.br/developers/pt/reference/online-payments/checkout-api-payments/create-payment/post)
+
+## Teste manual pelo titular — 24/10/2026
+
+Abra `https://homologacao.equipemorcego.nabio.pro/checkout/inscricao/homologacao-pagamento/` e informe o usuário e a senha de acesso à homologação entregues separadamente. Escolha a inscrição fictícia de R$ 120 e preencha os dados de um participante fictício. Use um e-mail diferente do cadastrado na conta vendedora do Mercado Pago.
+
+Para aprovação: Mastercard `5480 8328 0103 3311`, validade `11/30`, CVV `123`, titular `APRO`, CPF `12345678909`, uma parcela. Para conferir outras respostas, inicie um novo pedido fictício e use titular `FUND` (recusado por saldo insuficiente) ou `CONT` (em análise). Não reenvie pedidos cujo resultado esteja inconclusivo.
+
+O aviso de ambiente de testes aparece nas páginas públicas da homologação. Pix permite conferir geração de QR e acompanhamento de pendência; não faça transferência bancária real. O ambiente não envia e-mails externos. A homologação não libera uma inscrição no evento real.
+
+A conta e as credenciais produtivas continuam sem ativação. Os testes de formulário HTTP e API não devem ser descritos como uma validação visual de todos os navegadores ou como garantia de indisponibilidade zero do Mercado Pago.
