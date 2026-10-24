@@ -453,7 +453,7 @@ class PaymentReconciliationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("private", response["Cache-Control"])
         self.assertIn("no-store", response["Cache-Control"])
-        self.assertEqual(response["Referrer-Policy"], "no-referrer")
+        self.assertEqual(response["Referrer-Policy"], "same-origin")
         other = User.objects.create_user(email="other@example.com", password="unit-password", full_name="Outro")
         browser.force_login(other)
         self.assertEqual(browser.get(reverse("checkout:status_api", args=[self.order.id])).status_code, 404)

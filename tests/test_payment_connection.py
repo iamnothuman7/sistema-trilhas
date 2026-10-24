@@ -63,7 +63,7 @@ class MercadoPagoConnectionTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertIn("no-store", response["Cache-Control"])
-        self.assertEqual(response["Referrer-Policy"], "no-referrer")
+        self.assertEqual(response["Referrer-Policy"], "same-origin")
         self.assertFalse(MercadoPagoConnection.objects.exists())
         self.http.assert_not_called()
         self.assertContains(response, "Testar conta sem cobrar")

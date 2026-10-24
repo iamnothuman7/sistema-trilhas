@@ -67,7 +67,7 @@ class PasswordRecoveryTests(TestCase):
         form_page = client.get(clean_url)
         self.assertContains(form_page, "Defina sua senha")
         self.assertEqual(form_page["Cache-Control"], "private, no-store")
-        self.assertEqual(initial["Referrer-Policy"], "no-referrer")
+        self.assertEqual(initial["Referrer-Policy"], "same-origin")
         return client.post(clean_url, {"new_password1": password, "new_password2": password})
 
     def test_normal_user_recovers_once_without_auto_login_or_person_links(self):

@@ -85,5 +85,5 @@ def mercadopago_connection(request):
         except CredentialStorageError as exc:
             context["connection_error"] = str(exc)
     response = render(request, "gestao/payments/connection.html", context, status=status)
-    response["Referrer-Policy"] = "no-referrer"
+    response["Referrer-Policy"] = "same-origin"
     return response

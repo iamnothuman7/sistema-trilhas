@@ -29,7 +29,9 @@ def private_page(view):
     def wrapped(request, *args, **kwargs):
         response = view(request, *args, **kwargs)
         response["Cache-Control"] = "private, no-store"
-        response["Referrer-Policy"] = "no-referrer"
+        response["Referrer-Policy"] = (
+            "no-referrer" if response.get("Content-Type", "").startswith("application/pdf") else "same-origin"
+        )
         return response
     return wrapped
 
@@ -171,7 +173,7 @@ def registration_pdf(request, registration_id):
 
 def _private_claim_response(request, template, context, status=200):
     response = render(request, template, context, status=status)
-    response["Referrer-Policy"] = "no-referrer"
+    response["Referrer-Policy"] = "same-origin"
     response["Cache-Control"] = "private, no-store"
     return response
 

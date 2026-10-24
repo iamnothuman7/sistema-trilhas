@@ -93,7 +93,7 @@ class PurchaseAccountTests(TestCase):
         result = self.client.post(self.url(), {"new_password1": "12345678", "new_password2": "12345678"})
         self.assertEqual(result.status_code, 400)
         self.assertIn("no-store", result["Cache-Control"])
-        self.assertEqual(result["Referrer-Policy"], "no-referrer")
+        self.assertEqual(result["Referrer-Policy"], "same-origin")
         self.assertNotContains(result, 'value="12345678"', status_code=400)
         user.refresh_from_db()
         self.assertFalse(user.has_usable_password())
@@ -113,3 +113,20 @@ class PurchaseAccountTests(TestCase):
         session["checkout_order_ids"] = [str(self.order.pk)]
         session.save()
         self.assertEqual(client.post(self.url(), {}).status_code, 403)
+
+    def test_same_origin_form_post_with_csrf_succeeds_but_null_origin_is_rejected(self):
+        self.paid()
+        client = Client(enforce_csrf_checks=True)
+        session = client.session
+        session["checkout_order_ids"] = [str(self.order.pk)]
+        session.save()
+        page = client.get(self.url(), secure=True)
+        self.assertEqual(page["Referrer-Policy"], "same-origin")
+        token = client.cookies["csrftoken"].value
+        data = {"csrfmiddlewaretoken": token, "new_password1": "Mobile-Test-Access-2027",
+                "new_password2": "Mobile-Test-Access-2027"}
+        rejected = client.post(self.url(), data, secure=True, HTTP_ORIGIN="null")
+        self.assertEqual(rejected.status_code, 403)
+        accepted = client.post(self.url(), data, secure=True, HTTP_ORIGIN="https://testserver")
+        self.assertEqual(accepted.status_code, 302)
+        self.assertIn("_auth_user_id", client.session)

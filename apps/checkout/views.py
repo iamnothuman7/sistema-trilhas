@@ -30,7 +30,7 @@ def private_checkout(view):
     @never_cache
     def wrapped(request, *args, **kwargs):
         response = view(request, *args, **kwargs)
-        response["Referrer-Policy"] = "no-referrer"
+        response["Referrer-Policy"] = "same-origin"
         return response
     return wrapped
 
