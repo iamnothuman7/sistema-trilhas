@@ -80,7 +80,9 @@ def dashboard(request):
 @never_cache
 def registration_detail(request, registration_id):
     reg = _registration_for_view(request, registration_id)
-    context = {"reg": reg, "entitlements": reg.entitlements.all(), **_terms_context(reg, request.user)}
+    from apps.mediaframes.access import authorized_pilot_art
+    context = {"reg": reg, "entitlements": reg.entitlements.all(), **_terms_context(reg, request.user),
+               "pilot_art_available": bool(authorized_pilot_art(request.user, reg.pk))}
     return render(request, "registrations/registration_detail.html", context)
 
 

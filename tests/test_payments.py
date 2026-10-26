@@ -494,7 +494,7 @@ class PaymentReconciliationTests(TestCase):
             opens_at=self.now-timedelta(days=1), closes_at=self.now+timedelta(days=1), max_quantity=10)
         result = self.client.post(reverse("checkout:start_registration", args=[self.event.slug]), {
             "purchaser_name": "Comprador", "purchaser_email": "buyer@example.com", "purchaser_phone": "00000000000",
-            "participant_name[]": ["Mesmo Nome", "Mesmo Nome"], "participant_email[]": ["first@example.com", "second@example.com"],
+            "participant_document[]": ["52998224725", "11144477735"], "participant_name[]": ["Mesmo Nome", "Mesmo Nome"], "participant_email[]": ["first@example.com", "second@example.com"],
             "participant_product[]": [str(self.product.id), str(self.product.id)], "participant_lot[]": [str(lot.id), str(lot.id)],
         })
         self.assertEqual(result.status_code, 302)
@@ -517,7 +517,7 @@ class PaymentReconciliationTests(TestCase):
         before = Order.objects.count()
         result = self.client.post(reverse("checkout:start_registration", args=[self.event.slug]), {
             "purchaser_name": "Comprador", "purchaser_email": "buyer@example.com", "purchaser_phone": "00000000000",
-            "participant_name[]": ["Primeiro", "Segundo"], "participant_product[]": [str(self.product.id)]*2,
+            "participant_document[]": ["52998224725", "11144477735"], "participant_name[]": ["Primeiro", "Segundo"], "participant_product[]": [str(self.product.id)]*2,
             "participant_lot[]": [str(lot.id)]*2,
         })
         self.assertContains(result, "não tem vagas suficientes")
@@ -530,7 +530,7 @@ class PaymentReconciliationTests(TestCase):
         before = Order.objects.count()
         result = self.client.post(reverse("checkout:start_registration", args=[self.event.slug]), {
             "purchaser_name": "Comprador", "purchaser_email": "buyer@example.com", "purchaser_phone": "00000000000",
-            "participant_name": "Inválido", "product_id": str(self.product.id), "lot_id": "not-a-uuid",
+            "participant_document": "52998224725", "participant_name": "Inválido", "product_id": str(self.product.id), "lot_id": "not-a-uuid",
         })
         self.assertContains(result, "O pacote ou lote escolhido não está disponível")
         self.assertEqual(Order.objects.count(), before)

@@ -2,7 +2,8 @@
 <!DOCTYPE html>
 <html lang="pt-br" data-theme="dark">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#11100f"><meta name="color-scheme" content="dark">
+<script src="{% static 'js/theme.js' %}?v=20261026"></script>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#11100f"><meta name="color-scheme" content="dark light">
 <title>{% block title %}Equipe Morcego | Trilhas e encontros{% endblock %}</title>
 <link rel="icon" type="image/png" sizes="64x64" href="{% static 'img/favicon-64.png' %}?v=trail20261023">
 <link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=navie2">
@@ -10,6 +11,7 @@
 <link rel="stylesheet" href="{% static 'css/public-pages.css' %}?v=navie2">
 {% block extra_head %}{% endblock %}
 <link rel="stylesheet" href="{% static 'css/trail.css' %}?v=trail20261024-hero">
+<link rel="stylesheet" href="{% static 'css/theme.css' %}?v=20261026">
 </head>
 <body>
 {% if is_homologation %}<aside class="homologation-notice" role="status"><strong>Ambiente de testes</strong> · Inscrições fictícias. Use somente cartões de teste; não transfira dinheiro pelo Pix.</aside>{% endif %}
@@ -17,7 +19,7 @@
 <header class="navbar"><div class="container nav-container">
 <a href="{% url 'core:home' %}" class="brand-logo" aria-label="Equipe Morcego, início"><img src="{% static 'img/logo-nav.webp' %}" alt="" class="logo-emblem" width="96" height="80"></a>
 <nav class="desktop-navigation" aria-label="Navegação principal"><a href="{% url 'core:home' %}" class="nav-link{% if request.resolver_match.url_name == 'home' %} active{% endif %}">Início</a><a href="{% url 'events:list' %}" class="nav-link{% if request.resolver_match.app_name == 'events' %} active{% endif %}">Eventos</a><a href="{% url 'core:about' %}" class="nav-link">A equipe</a><a href="{% url 'core:contact' %}" class="nav-link">Contato</a></nav>
-<div class="header-actions"><button type="button" id="mobileMenuBtn" class="icon-button mobile-menu-button" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileMenuDrawer"><i data-lucide="menu" aria-hidden="true"></i></button></div>
+<div class="header-actions">{% include "includes/theme_toggle.html" %}<button type="button" id="mobileMenuBtn" class="icon-button mobile-menu-button" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileMenuDrawer"><i data-lucide="menu" aria-hidden="true"></i></button></div>
 </div><nav id="mobileMenuDrawer" class="mobile-menu" aria-label="Navegação móvel" hidden><a href="{% url 'core:home' %}">Início</a><a href="{% url 'events:list' %}">Eventos</a><a href="{% url 'core:about' %}">A equipe</a><a href="{% url 'core:contact' %}">Contato</a></nav></header>
 {% if messages %}<div class="container page-messages" role="status">{% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
 <main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>

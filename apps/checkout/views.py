@@ -5,7 +5,7 @@ from functools import wraps
 from datetime import timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseBadRequest
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models import Max, Q
 from django.utils import timezone
 from django.contrib import messages
@@ -21,6 +21,7 @@ from apps.checkout.models import Order, OrderLine, OrderStatus, OrderCoupon, Rec
 from apps.payments.models import ChargeAttempt, ChargeState, PaymentMethod
 from apps.payments.gateway import MercadoPagoGateway
 from apps.identity.models import Person
+from apps.identity.documents import normalize_cpf
 from apps.registrations.models import Registration, CommercialState, OperationalState
 
 
@@ -29,7 +30,13 @@ def private_checkout(view):
     @wraps(view)
     @never_cache
     def wrapped(request, *args, **kwargs):
-        response = view(request, *args, **kwargs)
+        try:
+            response = view(request, *args, **kwargs)
+        except IntegrityError as exc:
+            if "unique_live_registration_cpf_event" not in str(exc) and "registrations_registration.participant_cpf" not in str(exc):
+                raise
+            messages.error(request, "Já existe uma inscrição ou reserva para este CPF neste evento. Acesse sua conta para acompanhar o pedido.")
+            response = redirect(request.path)
         response["Referrer-Policy"] = "same-origin"
         return response
     return wrapped
@@ -44,12 +51,12 @@ def _registration_context(request, event, products, active_lots):
     names = request.POST.getlist("participant_name[]") if request.method == "POST" else []
     for index, name in enumerate(names):
         row = {"name": name}
-        for field in ("email", "phone", "city", "state", "team", "product", "lot", "shirt"):
+        for field in ("document", "email", "phone", "city", "state", "team", "product", "lot", "shirt"):
             values = request.POST.getlist(f"participant_{field}[]")
             row[field] = values[index] if index < len(values) else ""
         rows.append(row)
     if not rows and request.method == "POST" and request.POST.get("participant_name") is not None:
-        rows = [{field: request.POST.get("participant_"+field, "") for field in ("name", "email", "phone", "city", "state", "team")}]
+        rows = [{field: request.POST.get("participant_"+field, "") for field in ("name", "document", "email", "phone", "city", "state", "team")}]
         rows[0].update(product=request.POST.get("product_id", ""), lot=request.POST.get("lot_id", ""), shirt=request.POST.get("shirt_size", "M"))
     if not rows:
         selected = request.GET.get("product", "")
@@ -96,6 +103,7 @@ def start_registration(request, event_slug):
         # Participantes enviados (suporta individual e múltiplos)
         # Nomes: participant_name[], emails: participant_email[], etc.
         participant_names = request.POST.getlist("participant_name[]")
+        participant_documents = request.POST.getlist("participant_document[]")
         participant_emails = request.POST.getlist("participant_email[]")
         participant_phones = request.POST.getlist("participant_phone[]")
         participant_cities = request.POST.getlist("participant_city[]")
@@ -108,6 +116,7 @@ def start_registration(request, event_slug):
         # Se veio formato simples (1 participante)
         if not participant_names and request.POST.get("participant_name"):
             participant_names = [request.POST.get("participant_name")]
+            participant_documents = [request.POST.get("participant_document", "")]
             participant_emails = [request.POST.get("participant_email", purchaser_email)]
             participant_phones = [request.POST.get("participant_phone", purchaser_phone)]
             participant_cities = [request.POST.get("participant_city", "Tianguá")]
@@ -131,6 +140,7 @@ def start_registration(request, event_slug):
         if len(purchaser_name) > 150 or len(purchaser_phone) > 30 or len(purchaser_doc) > 20:
             errors.append("Revise os dados do responsável: nome até 150 caracteres, telefone até 30 e documento até 20.")
         participants = []
+        participant_cpfs = set()
         for index, raw_name in enumerate(participant_names):
             def value(values, default=""):
                 return ((values[index] or "") if index < len(values) else default).strip()
@@ -140,6 +150,13 @@ def start_registration(request, event_slug):
                 "product_id": value(participant_products), "lot_id": value(participant_lots),
                 "shirt": value(participant_shirts, "M")}
             label = f"Participante {index+1}"
+            try:
+                participant["cpf"] = normalize_cpf(value(participant_documents))
+                if participant["cpf"] in participant_cpfs:
+                    errors.append(f"{label}: cada CPF pode ter apenas uma inscrição por evento, inclusive em compras em grupo.")
+                participant_cpfs.add(participant["cpf"])
+            except ValidationError as exc:
+                errors.append(f"{label}: {exc.messages[0]}")
             if not participant["name"] or len(participant["name"]) > 150:
                 errors.append(f"{label}: informe um nome com até 150 caracteres.")
             if participant["email"]:
@@ -168,6 +185,10 @@ def start_registration(request, event_slug):
                 messages.error(request, "As inscrições foram encerradas enquanto você preenchia os dados. Nenhum pedido foi criado.")
                 return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots))
             products, active_lots, _ = registration_catalog(event)
+            if Registration.objects.filter(event=event, participant_cpf__in=participant_cpfs,
+                    commercial_state__in=[CommercialState.RESERVED, CommercialState.ACTIVE]).exists():
+                messages.error(request, "Já existe uma inscrição ou reserva para um dos CPFs neste evento. Acesse sua conta para acompanhar o pedido. Reservas não pagas são liberadas ao expirar.")
+                return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots))
             for participant in participants:
                 try:
                     product = Product.objects.filter(id=participant["product_id"], event=event, active=True).first() if participant["product_id"] else (products[0] if products else None)
@@ -242,6 +263,7 @@ def start_registration(request, event_slug):
                 # A name is not an identity: participants may be unrelated namesakes.
                 person = Person.objects.create(
                     full_name=p_name,
+                    document_number=participant["cpf"],
                     email=p_email or None,
                     phone=p_phone or None,
                     city=p_city,
@@ -265,6 +287,7 @@ def start_registration(request, event_slug):
                     unit_cents=price_cents,
                     net_cents=price_cents,
                     item_snapshot_json={
+                        "kind": product.kind,
                         "product_name": product.name if product else "Inscrição Piloto",
                         "lot_title": lot.title if lot else "Lote Único",
                         "price_cents": price_cents,
@@ -281,6 +304,7 @@ def start_registration(request, event_slug):
 
                 # Criar inscrição vinculada
                 Registration.objects.create(
+                    participant_cpf=participant["cpf"],
                     event=event,
                     person=person,
                     source_order_line=line,

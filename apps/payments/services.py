@@ -158,6 +158,8 @@ def expire_order(order_id):
         _release_capacity(order, expired=True)
         order.status = OrderStatus.EXPIRED
         order.save(update_fields=["status", "updated_at"])
+        Registration.objects.filter(source_order_line__order=order, commercial_state=CommercialState.RESERVED).update(
+            commercial_state=CommercialState.CANCELED, updated_at=timezone.now())
     return order
 
 
@@ -319,6 +321,9 @@ def reconcile_payment(payment, *, charge_id=None):
             already_fulfilled = PaymentTransaction.objects.filter(charge_attempt__order=order, fulfilled_at__isnull=False).exclude(pk=snapshot.pk).exists()
             lines = list(order.lines.all())
             correct_lines = sum(line.net_cents for line in lines) == amount
+            # Do not resurrect a canceled/transferred registration after its CPF was released.
+            correct_lines = correct_lines and not Registration.objects.filter(source_order_line__order=order).exclude(
+                commercial_state=CommercialState.RESERVED).exists()
             approved_at = provider_datetime(payment.get("date_approved"))
             if already_fulfilled or order.status not in {OrderStatus.RESERVED, OrderStatus.AWAITING_PAYMENT} or not correct_lines or not _commit_capacity(order, approved_at):
                 order.status = OrderStatus.PAID_NEEDS_REVIEW

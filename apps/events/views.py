@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
 from django.http import Http404, JsonResponse
 from django.views.decorators.http import require_GET
+from django.views.decorators.cache import never_cache
 from .rankings import get_event_rankings
 from apps.core.permissions import can_manage_event
 from .models import Event, EventStatus, EventScheduleItem, Route, Sponsor, LegalDocumentVersion
@@ -86,11 +87,14 @@ def event_sponsors(request, slug):
     sponsors = event.sponsors.all().order_by("tier", "sort_order")
     return render(request, "events/sponsors.html", {"event": event, "sponsors": sponsors})
 
+@never_cache
 def event_frames(request, slug):
     """
     Gerador interativo de Molduras Digitais 3D Pop-Out (Estilo Flávio Folia / NaBio).
     """
     event = get_event_resilient(slug, request)
+    from apps.mediaframes.access import available_pilot_art
+    art_registrations = available_pilot_art(request.user, event=event)
     templates = FrameTemplate.objects.filter(event=event, is_active=True).order_by("-created_at")
     versions = get_event_versions(event)
     selected = select_version(request.GET.get("versao"), versions)
@@ -98,6 +102,7 @@ def event_frames(request, slug):
     return render(request, "events/frames.html", {
         "event": event,
         "templates": templates,
+        "art_registrations": art_registrations,
         "event_versions": versions,
         "selected_version": selected,
     })

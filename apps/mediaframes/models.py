@@ -49,6 +49,8 @@ class GeneratedMontage(models.Model):
     A foto original do usuário nunca é salva em disco — apenas o recorte em memória e o story final.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey("identity.User", on_delete=models.PROTECT, null=True, blank=True, related_name="pilot_montages")
+    registration = models.ForeignKey("registrations.Registration", on_delete=models.PROTECT, null=True, blank=True, related_name="montages")
     event = models.ForeignKey("events.Event", on_delete=models.CASCADE, related_name="generated_montages", null=True, blank=True)
     version = models.CharField("Versão do Modelo", max_length=60, default="trilhao-fogo")
     pilot_name = models.CharField("Nome do Piloto", max_length=120, blank=True, default="")

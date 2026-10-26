@@ -17,6 +17,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from apps.events.models import Event
 from .background import PROCESSING_LOCK, remove_background
 from .models import GeneratedMontage
+from .access import authorized_pilot_art
 
 logger = logging.getLogger(__name__)
 MAX_UPLOAD_BYTES = 12 * 1024 * 1024
@@ -36,6 +37,24 @@ def _client_ip(request):
     return request.META.get("REMOTE_ADDR")
 
 
+def _authorized_montage(request, montage_id):
+    if not request.user.is_authenticated or not request.user.is_active:
+        return None
+    montage = GeneratedMontage.objects.filter(pk=montage_id, owner=request.user, registration__isnull=False).first()
+    if not montage or not authorized_pilot_art(request.user, montage.registration_id):
+        return None
+    return montage
+
+
+@never_cache
+def story_access(request, registration_id):
+    if request.method != "GET":
+        return _error("Método não permitido.", 405)
+    if not authorized_pilot_art(request.user, registration_id):
+        return _error("A arte exige uma inscrição de piloto paga e vinculada à sua conta.", 403)
+    return JsonResponse({"allowed": True})
+
+
 @never_cache
 def remove_photo_background(request):
     if request.method != "POST":
@@ -43,9 +62,15 @@ def remove_photo_background(request):
         response["Allow"] = "POST"
         return response
 
+    if not request.user.is_authenticated or not request.user.is_active:
+        return _error("Entre na sua conta para criar a arte do piloto confirmado.", 403)
+
     try:
         if int(request.META.get("CONTENT_LENGTH") or 0) > MAX_REQUEST_BYTES:
             return _error("A foto é muito grande. Escolha uma imagem de até 12 MB.", 413)
+        registration = authorized_pilot_art(request.user, request.POST.get("registration_id"))
+        if not registration:
+            return _error("A arte exige uma inscrição de piloto paga e vinculada à sua conta.", 403)
         photo = request.FILES.get("photo")
     except (RequestDataTooBig, TooManyFilesSent):
         return _error("Envie uma única foto de até 12 MB.", 413)
@@ -85,11 +110,14 @@ def remove_photo_background(request):
         response["Retry-After"] = "3"
         return response
 
-    event = getattr(request, "current_event", None) or Event.objects.first()
+    event = registration.event
     montage = None
     try:
         montage = GeneratedMontage.objects.create(
             event=event,
+            owner=request.user,
+            registration=registration,
+            pilot_name=registration.person.full_name[:120],
             ip_address=_client_ip(request),
         )
     except Exception:
@@ -125,7 +153,7 @@ def backup_montage(request, montage_id):
     if request.method != "POST":
         return _error("Método não permitido.", 405)
 
-    montage = GeneratedMontage.objects.filter(pk=montage_id).first()
+    montage = _authorized_montage(request, montage_id)
     if not montage:
         return _error("Montagem não encontrada.", 404)
 
@@ -143,7 +171,7 @@ def backup_montage(request, montage_id):
         return _error("PNG inválido.", 400)
 
     version = request.POST.get("version", "trilhao-fogo")[:60]
-    pilot_name = request.POST.get("pilot_name", "").strip()[:120]
+    pilot_name = montage.registration.person.full_name[:120]
     team_name = request.POST.get("team_name", "").strip()[:120]
     digest = hashlib.sha256(raw).hexdigest()
 
@@ -164,15 +192,17 @@ def deliver_download(request, montage_id):
     if request.method != "POST":
         return _error("Método não permitido.", 405)
 
-    montage = GeneratedMontage.objects.filter(pk=montage_id).first()
+    montage = _authorized_montage(request, montage_id)
+    if not montage:
+        return _error("Montagem indisponível para esta conta ou inscrição.", 403)
     uploaded = request.FILES.get("image")
-    if not uploaded:
+    if not uploaded or uploaded.size > MAX_UPLOAD_BYTES:
         return _error("Imagem ausente.", 400)
 
     raw = uploaded.read(MAX_UPLOAD_BYTES + 1)
     download_id = request.POST.get("download_id", "")
     version = request.POST.get("version", "trilhao-fogo")[:60]
-    pilot_name = request.POST.get("pilot_name", "").strip()[:120]
+    pilot_name = montage.registration.person.full_name[:120]
     team_name = request.POST.get("team_name", "").strip()[:120]
 
     if montage:

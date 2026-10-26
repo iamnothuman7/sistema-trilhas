@@ -37,7 +37,7 @@ class RegistrationOfferTests(TestCase):
 
     def post_data(self, **changes):
         values = {"purchaser_name": "Responsável", "purchaser_email": "buyer@example.test", "purchaser_phone": "88999999999",
-            "purchaser_document": "00000000191", "participant_name[]": ["Piloto da edição"],
+            "participant_document[]": ["52998224725"], "purchaser_document": "00000000191", "participant_name[]": ["Piloto da edição"],
             "participant_product[]": [str(self.product.pk)], "participant_lot[]": [str(self.lot.pk)],
             "participant_shirt[]": ["G"], "participant_city[]": ["Ubajara"], "participant_state[]": ["CE"]}
         values.update(changes)

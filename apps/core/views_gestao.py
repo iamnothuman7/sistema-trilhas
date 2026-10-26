@@ -352,7 +352,12 @@ def registration_change_status(request, event_id, reg_id):
 
         if new_status in CommercialState.values:
             reg.commercial_state = new_status
-            reg.save(update_fields=["commercial_state", "updated_at"])
+            try:
+                with transaction.atomic():
+                    reg.save(update_fields=["commercial_state", "updated_at"])
+            except IntegrityError:
+                messages.error(request, "Este CPF já possui outra inscrição ou reserva neste evento. Não é possível reativar uma inscrição duplicada.")
+                return redirect("gestao:registration_detail", event_id=event.id, reg_id=reg.id)
             log_audit(actor=request.user, event_id=event.id, action="REGISTRATION_STATUS_CHANGED", entity_type="Registration", entity_id=reg.id, diff={"old": old_status, "new": new_status}, reason=reason, request=request)
             messages.success(request, f"Situação da inscrição atualizada para {reg.get_commercial_state_display()}.")
 

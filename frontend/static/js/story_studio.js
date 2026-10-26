@@ -20,6 +20,7 @@
   const downloadLabel = document.getElementById('download-label');
   const pilotNameInput = document.getElementById('pilot-name-input');
   const teamNameInput = document.getElementById('team-name-input');
+  const registrationSelect = document.getElementById('story-registration');
 
   const WIDTH = 1080;
   const HEIGHT = 1920;
@@ -64,7 +65,7 @@
     controller: null,
     cutoutError: false,
     brandReady: false,
-    pilotName: '',
+    pilotName: pilotNameInput?.value.trim() || '',
     teamName: '',
     zoom: 1,
     offsetX: 0,
@@ -91,6 +92,7 @@
   function syncControls() {
     const hasPhoto = Boolean(state.photo);
     const isBusy = state.busy || state.exporting;
+    if (registrationSelect) registrationSelect.disabled = isBusy;
     document.body.classList.toggle('has-photo', hasPhoto);
     canvas.classList.toggle('is-editable', hasPhoto);
     canvas.style.touchAction = hasPhoto ? 'none' : 'pan-y';
@@ -650,6 +652,7 @@
     try {
       const form = new FormData();
       form.append('photo', state.normalizedPhoto, 'retrato.png');
+      form.append('registration_id', registrationSelect.value);
       const response = await fetch('/api/remove-background/', {
         method: 'POST',
         body: form,
@@ -814,6 +817,14 @@
   uploadButton?.addEventListener('click', choosePhoto);
   changeButton?.addEventListener('click', choosePhoto);
   resetButton?.addEventListener('click', reset);
+  registrationSelect?.addEventListener('change', () => {
+    reset();
+    const option = registrationSelect.selectedOptions[0];
+    pilotNameInput.value = state.pilotName = option?.dataset.name || '';
+    teamNameInput.value = state.teamName = option?.dataset.team || '';
+    buildLayers();
+    scheduleRender();
+  });
   retryButton?.addEventListener('click', () => {
     if (state.normalizedPhoto && !state.busy && !state.exporting) removeBackground(state.request);
   });
@@ -828,6 +839,10 @@
     syncControls();
     announce('Preparando sua montagem em alta qualidade…');
     try {
+      const access = await fetch('/api/registrations/' + registrationSelect.value + '/story-access/', {
+        credentials: 'same-origin', cache: 'no-store'
+      });
+      if (!access.ok) throw new Error('Confirme o pagamento e acesse novamente a sua conta para baixar a arte.');
       if (document.fonts?.ready) await document.fonts.ready;
       buildLayers();
       render();
@@ -840,9 +855,10 @@
         form.append('pilot_name', state.pilotName);
         form.append('team_name', state.teamName);
         form.append('image', blob, 'montagem.png');
-        void fetch('/api/montages/' + state.montageId + '/download/', {
+        const delivery = await fetch('/api/montages/' + state.montageId + '/download/', {
           method: 'POST', body: form, credentials: 'same-origin', headers: { 'X-CSRFToken': csrfToken() }
-        }).catch(() => {});
+        });
+        if (!delivery.ok) throw new Error('A inscrição não está disponível para esta arte. Atualize a página e confira sua conta.');
       }
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
@@ -853,8 +869,8 @@
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 60000);
       announce('Story 3D baixado com sucesso! Poste no Instagram e marque @equipemorcego.');
-    } catch (_) {
-      announce('Não foi possível baixar agora. Tente novamente.', true);
+    } catch (error) {
+      announce(error.message || 'Não foi possível baixar agora. Tente novamente.', true);
     } finally {
       state.exporting = false;
       syncControls();

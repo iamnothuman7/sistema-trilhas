@@ -25,6 +25,7 @@ class Registration(models.Model):
     source_order_line = models.OneToOneField("checkout.OrderLine", on_delete=models.PROTECT, related_name="registration")
 
     registration_number = models.PositiveIntegerField("Número de Inscrição (#)", blank=True, null=True, db_index=True)
+    participant_cpf = models.CharField("CPF do participante", max_length=11, blank=True, null=True, editable=False)
     commercial_state = models.CharField("Estado Comercial", max_length=30, choices=CommercialState.choices, default=CommercialState.RESERVED, db_index=True)
     operational_state = models.CharField("Estado Operacional", max_length=30, choices=OperationalState.choices, default=OperationalState.NOT_READY, db_index=True)
 
@@ -43,6 +44,21 @@ class Registration(models.Model):
         verbose_name = "Inscrição"
         verbose_name_plural = "Inscrições"
         ordering = ["registration_number", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["event", "participant_cpf"],
+                condition=models.Q(commercial_state__in=["RESERVED", "ACTIVE"], participant_cpf__isnull=False),
+                name="unique_live_registration_cpf_event"),
+            models.CheckConstraint(condition=models.Q(participant_cpf__isnull=True) | models.Q(participant_cpf__regex=r"^[0-9]{11}$"),
+                name="registration_cpf_canonical"),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.participant_cpf:
+            from apps.identity.documents import normalize_cpf
+            self.participant_cpf = normalize_cpf(self.participant_cpf)
+        else:
+            self.participant_cpf = None
+        super().save(*args, **kwargs)
 
     def __str__(self):
         num_str = f"#{self.registration_number} - " if self.registration_number else ""

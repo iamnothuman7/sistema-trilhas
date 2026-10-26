@@ -51,6 +51,7 @@
 </style>
 {% endblock %}
 {% block content %}
+{% if art_registrations %}
 {{ event_versions|json_script:"event-versions" }}
 <div class="story-studio" data-version="{{ selected_version.id }}">
   <div class="studio-grid">
@@ -71,7 +72,7 @@
       <section class="studio-panel">
         <h2 class="studio-section-title">2. Deixe com a sua cara</h2>
         <div class="studio-field-grid">
-          <div class="form-group"><label class="form-label" for="pilot-name-input">Nome ou apelido (opcional)</label><input type="text" id="pilot-name-input" class="form-control" placeholder="Seu nome" maxlength="32"></div>
+          <div class="form-group"><label class="form-label" for="story-registration">Piloto confirmado</label><select id="story-registration" class="form-control">{% for reg in art_registrations %}<option value="{{ reg.id }}" data-name="{{ reg.person.full_name }}" data-team="{{ reg.team_name|default:'' }}">#{{ reg.registration_number }} · {{ reg.person.full_name }}</option>{% endfor %}</select><input type="hidden" id="pilot-name-input" value="{{ art_registrations.0.person.full_name }}"></div>
           <div class="form-group"><label class="form-label" for="team-name-input">Equipe ou cidade (opcional)</label><input type="text" id="team-name-input" class="form-control" placeholder="Sua equipe" maxlength="32"></div>
         </div>
       </section>
@@ -103,8 +104,14 @@
     </div>
   </div>
 </div>
+{% else %}
+<div class="public-page public-page--narrow">
+  <header class="public-page-heading"><span class="public-eyebrow">{{ event.title }}</span><h1>Seu story de piloto confirmado</h1><p>A arte oficial é exclusiva para quem já tem uma inscrição de piloto com pagamento confirmado nesta edição.</p></header>
+  <section class="public-card"><h2>Já comprou sua inscrição?</h2><p>Entre com a conta usada na compra ou com a conta vinculada à sua inscrição. Pagamentos pendentes, inscrições canceladas e reembolsadas não liberam a arte.</p><div class="public-actions">{% if not user.is_authenticated %}<a class="public-button public-button--primary" href="{% url 'identity:login' %}?next={{ request.path|urlencode }}">Entrar na minha conta</a>{% else %}<a class="public-button public-button--primary" href="{% url 'minha_conta:dashboard' %}">Ver minhas inscrições</a>{% endif %}<a class="public-button public-button--secondary" href="{% url 'events:detail' slug=event.slug %}#inscricao">Ver inscrição no evento</a></div></section>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/story_studio.js' %}?v=mor20261022"></script>
+{% if art_registrations %}<script src="{% static 'js/story_studio.js' %}?v=paidpilot20261026"></script>{% endif %}
 {% endblock %}
