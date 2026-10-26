@@ -5,9 +5,11 @@ import re
 
 from django.db import transaction
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods
 
 from .gateway import MercadoPagoGateway, GatewayError
 from .models import ProviderEvent
@@ -17,9 +19,14 @@ logger = logging.getLogger(__name__)
 
 
 @csrf_exempt
-@require_POST
+@never_cache
+@require_http_methods(["GET", "HEAD", "POST"])
 def mercadopago_webhook(request):
     """The notification only selects a resource; only its authenticated API state settles it."""
+    if request.method in ("GET", "HEAD"):
+        response = render(request, "payments/webhook_info.html")
+        response["X-Robots-Tag"] = "noindex, nofollow"
+        return response
     gateway = MercadoPagoGateway()
     if gateway.configuration_issues():
         return JsonResponse({"error": "integration_unavailable"}, status=503)

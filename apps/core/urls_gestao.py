@@ -60,6 +60,7 @@ urlpatterns = [
 
     # Molduras
     path("eventos/<uuid:event_id>/molduras/", views_gestao.frame_management, name="frames"),
+    path("eventos/<uuid:event_id>/molduras/oficiais/", frame_views.official_frame_preview, name="official_frame_preview"),
     path("eventos/<uuid:event_id>/molduras/equipes/", frame_views.team_frame_editor, name="team_frame_editor"),
 
     # Patrocinadores

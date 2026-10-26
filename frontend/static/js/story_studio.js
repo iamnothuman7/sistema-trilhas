@@ -5,6 +5,8 @@
   if (!canvas) return;
 
   const context = canvas.getContext('2d');
+  const previewOnly = canvas.dataset.previewOnly === 'true';
+  const studio = document.querySelector('.story-studio');
   const input = document.getElementById('photo-input');
   const uploadButton = document.getElementById('upload-button');
   const downloadButton = document.getElementById('download-button');
@@ -23,19 +25,19 @@
   const registrationSelect = document.getElementById('story-registration');
 
   const WIDTH = 1080;
-  let HEIGHT = 1920;
-  let activeFormat = 'story';
+  let activeFormat = studio?.dataset.format === 'feed' ? 'feed' : 'story';
+  let HEIGHT = activeFormat === 'feed' ? 1350 : 1920;
   const formatButtons = [...document.querySelectorAll('[data-art-format]')];
   const versionsEl = document.getElementById('event-versions');
   const versions = versionsEl ? JSON.parse(versionsEl.textContent) : [];
   if (!versions.length) return;
 
-  let activeVersion = versions.find(v => v.id === document.querySelector('.story-studio')?.dataset.version) || versions[0];
+  let activeVersion = versions.find(v => v.id === studio?.dataset.version) || versions[0];
   const versionButtons = [...document.querySelectorAll('[data-event-version]')];
   const COLORS = { ...activeVersion.palette };
-  let activeLayout = activeVersion.layout;
+  let activeLayout = activeFormat === 'feed' ? activeVersion.feed_layout : activeVersion.layout;
   let PHOTO = { ...activeLayout.photo };
-  let POP_OUT = activeVersion.layout.pop_out;
+  let POP_OUT = activeLayout.pop_out;
   let editionArtwork = null;
   let editionDecorations = {};
   const imageCache = new Map();
@@ -55,6 +57,7 @@
   const frameLayer = document.createElement('canvas');
   frameLayer.width = background.width = foreground.width = canvas.width = WIDTH;
   frameLayer.height = background.height = foreground.height = canvas.height = HEIGHT;
+    canvas.style.setProperty('--art-ratio', `1080/${HEIGHT}`);
 
   const state = {
     montageId: null,
@@ -101,7 +104,7 @@
     canvas.style.touchAction = hasPhoto ? 'none' : 'pan-y';
     canvas.setAttribute('aria-busy', String(isBusy || !artworkIsReady()));
     const previewTag = document.querySelector('.preview-tag');
-    if (previewTag) previewTag.textContent = editionReady ? `PRÉVIA DO SEU ${activeFormat.toUpperCase()}` : 'Carregando modelo…';
+    if (previewTag) previewTag.textContent = editionReady ? `${previewOnly ? 'MODELO' : 'PRÉVIA DO SEU'} ${activeFormat.toUpperCase()}` : 'Carregando modelo…';
     if (controls) controls.hidden = !hasPhoto;
     versionButtons.forEach(button => { button.disabled = state.exporting; });
     formatButtons.forEach(button => {
@@ -116,7 +119,7 @@
     if (resetButton) { resetButton.disabled = state.exporting; resetButton.hidden = !hasPhoto; }
     if (retryButton) { retryButton.hidden = !state.cutoutError; retryButton.disabled = isBusy; }
     if (downloadButton) {
-      downloadButton.disabled = !hasPhoto || (!state.cutout && !state.cutoutError) || isBusy || !artworkIsReady();
+      downloadButton.disabled = (!previewOnly && (!hasPhoto || (!state.cutout && !state.cutoutError))) || isBusy || !artworkIsReady();
     }
     if (downloadLabel) {
       downloadLabel.textContent = state.busy && hasPhoto
@@ -125,7 +128,7 @@
         ? 'Gerando PNG Alta Definição…'
         : state.cutoutError
         ? 'Tentar Recorte Novamente'
-        : `Baixar meu ${activeFormat === 'feed' ? 'feed' : 'story'}`;
+        : previewOnly ? `Baixar prévia ${activeFormat === 'feed' ? 'Feed' : 'Story'}` : `Baixar meu ${activeFormat === 'feed' ? 'feed' : 'story'}`;
     }
     if (zoomInput) {
       zoomInput.disabled = isBusy || !hasPhoto;
@@ -856,15 +859,17 @@
       await removeBackground(state.request);
       return;
     }
-    if (!state.photo || state.busy || state.exporting || !artworkIsReady()) return;
+    if ((!previewOnly && !state.photo) || state.busy || state.exporting || !artworkIsReady()) return;
     state.exporting = true;
     syncControls();
     announce('Preparando sua montagem em alta qualidade…');
     try {
+      if (!previewOnly) {
       const access = await fetch('/api/registrations/' + registrationSelect.value + '/story-access/', {
         credentials: 'same-origin', cache: 'no-store'
       });
       if (!access.ok) throw new Error('Confirme o pagamento e acesse novamente a sua conta para baixar a arte.');
+      }
       if (document.fonts?.ready) await document.fonts.ready;
       buildLayers();
       render();
@@ -886,12 +891,12 @@
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = (activeVersion.filename || 'eu-vou-equipe-morcego.png').replace(/\.png$/i, `-${activeFormat}.png`);
+      anchor.download = (activeVersion.filename || 'eu-vou-equipe-morcego.png').replace(/\.png$/i, `${previewOnly ? '-previa' : ''}-${activeFormat}.png`);
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 60000);
-      announce(`${activeFormat === 'feed' ? 'Feed' : 'Story'} baixado! Você também pode selecionar ${activeFormat === 'feed' ? 'Story' : 'Feed'} e baixar a outra versão com a mesma foto.`);
+      announce(previewOnly ? 'Prévia baixada. Este modelo não é um comprovante de inscrição.' : `${activeFormat === 'feed' ? 'Feed' : 'Story'} baixado! Você também pode selecionar ${activeFormat === 'feed' ? 'Story' : 'Feed'} e baixar a outra versão com a mesma foto.`);
     } catch (error) {
       announce(error.message || 'Não foi possível baixar agora. Tente novamente.', true);
     } finally {
@@ -950,7 +955,7 @@
     applyFormatLayout();
     buildLayers(); render(); syncControls();
     if (state.montageId) scheduleGenerated(state.montageId);
-    announce(`${format === 'feed' ? 'Feed' : 'Story'} selecionado. ${state.photo ? 'Sua foto foi mantida. Ajuste e baixe esta versão.' : 'Adicione sua foto para começar.'}`);
+    announce(`${format === 'feed' ? 'Feed' : 'Story'} selecionado. ${previewOnly ? 'Prévia interna atualizada.' : state.photo ? 'Sua foto foi mantida. Ajuste e baixe esta versão.' : 'Adicione sua foto para começar.'}`);
   }));
 
   function selectEdition(identifier) {
@@ -968,7 +973,7 @@
     const studioEdition = document.getElementById('studio-edition');
     if (studioEdition) studioEdition.textContent = `${activeVersion.label} · ${activeVersion.selector_detail}`;
     loadEditionArtwork();
-    announce(`${version.label} selecionado. ${state.photo ? 'Sua foto e recorte 3D foram mantidos!' : 'Adicione sua foto para criar o efeito 3D.'}`);
+    announce(`${version.label} selecionado. ${previewOnly ? 'Confira o modelo nos dois formatos.' : state.photo ? 'Sua foto e recorte 3D foram mantidos!' : 'Adicione sua foto para criar o efeito 3D.'}`);
   }
 
   versionButtons.forEach(button => {

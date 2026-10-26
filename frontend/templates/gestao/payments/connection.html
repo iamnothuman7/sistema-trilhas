@@ -27,8 +27,9 @@
     <section class="mp-webhook mg-stack" aria-labelledby="webhook-help">
       <div><h3 id="webhook-help">Confirmação automática dos pagamentos</h3><p>O webhook avisa ao sistema quando alguém paga. Configure uma vez na mesma aplicação do Mercado Pago:</p></div>
       <ol class="mp-steps"><li>Abra <strong>Webhooks</strong> e escolha o ambiente correspondente.</li><li>Cole a URL abaixo, selecione o evento <strong>Pagamentos</strong> e salve.</li><li>Copie a <strong>assinatura secreta</strong> exibida pelo Mercado Pago e cole no último campo deste painel.</li></ol>
-      <label class="form-label" for="mpWebhookUrl">URL pronta para copiar</label><input id="mpWebhookUrl" class="form-control" type="text" readonly value="{{ webhook_url }}">
+      <label class="form-label" for="mpWebhookUrl">URL pronta para copiar e colar no Mercado Pago</label><input id="mpWebhookUrl" class="form-control" type="text" readonly value="{{ webhook_url }}">
       <button class="btn btn-secondary" type="button" onclick="copyToClipboard(document.getElementById('mpWebhookUrl').value, this)"><i data-lucide="copy" aria-hidden="true"></i>Copiar URL do webhook</button>
+      <p class="text-muted">Abrir essa URL no navegador mostra apenas uma orientação. Para testar o recebimento, use a simulação em Webhooks no Mercado Pago.</p>
       {% include "gestao/events/_field.html" with field=form.webhook_secret %}<span class="badge {% if webhook_secret_saved %}badge-success{% else %}badge-warning{% endif %}">{% if webhook_secret_saved %}Assinatura salva{% else %}Falta preencher a assinatura{% endif %}</span>
       <p class="text-muted">A assinatura é gerada pelo Mercado Pago; ela não é o Access Token. Salvar a chave aqui não configura a URL na conta externa.</p>
     </section>

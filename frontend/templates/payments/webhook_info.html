@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Notificações do Mercado Pago | Equipe Morcego{% endblock %}
+{% block extra_head %}<meta name="robots" content="noindex,nofollow">{% endblock %}
+{% block content %}
+<div class="public-page public-page--narrow">
+  <header class="public-intro"><span class="public-eyebrow">Integração Mercado Pago</span><h1>Endereço de notificações</h1><p>Este endereço recebe automaticamente as atualizações de pagamento enviadas pelo Mercado Pago.</p></header>
+  <section class="public-card"><h2>Como usar este endereço</h2><p>Copie a URL indicada no painel do sistema e cadastre-a na seção <strong>Webhooks</strong> da aplicação do Mercado Pago, selecionando <strong>Pagamentos</strong>.</p><p class="public-note">Abrir esta página no navegador não testa a conexão e não confirma nenhum pagamento. Confira a configuração e os testes pelo painel interno.</p><div class="public-actions"><a class="public-button public-button--primary" href="{% url 'gestao:mercadopago_connection' %}"><i data-lucide="plug-zap" aria-hidden="true"></i>Abrir conexão Mercado Pago</a><a class="public-button public-button--secondary" href="{% url 'minha_conta:dashboard' %}">Minhas inscrições</a></div></section>
+</div>
+{% endblock %}

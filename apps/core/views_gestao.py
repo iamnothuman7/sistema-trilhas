@@ -717,7 +717,11 @@ def expedition_management(request, event_id):
 @staff_required_custom
 def frame_management(request, event_id):
     event = get_object_or_404(Event, id=event_id)
-    templates = FrameTemplate.objects.filter(event=event)
+    from apps.mediaframes.events_config import get_event_versions
+    templates = list(FrameTemplate.objects.filter(event=event))
+    for template in templates:
+        template.available_asset_url = (template.overlay_asset.url if template.overlay_asset
+            and template.overlay_asset.storage.exists(template.overlay_asset.name) else "")
 
     if request.method == "POST":
         title = request.POST.get("title")
@@ -744,6 +748,7 @@ def frame_management(request, event_id):
     return render(request, "gestao/mediaframes/frame_list.html", {
         "event": event,
         "templates": templates,
+        "official_versions": get_event_versions(event),
     })
 
 

@@ -1,4 +1,6 @@
 {% extends "gestao/base_gestao.html" %}
+{% load static %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/frame-catalog.css' %}?v=20261026">{% endblock %}
 
 {% block title %}Molduras Digitais: {{ event.title }} | Painel Gestão{% endblock %}
 {% block gestao_header %}Molduras digitais: {{ event.title }}{% endblock %}
@@ -14,7 +16,9 @@
     </button></div>
 </div>
 
-<!-- Lista de Molduras Ativas -->
+{% include "gestao/mediaframes/_official_catalog.html" %}
+<h2 class="section-title">Arquivos de molduras adicionados</h2>
+<!-- Arquivos enviados pela organização -->
 <div class="card">
     <div class="mg-module-grid">
         {% for t in templates %}
@@ -24,16 +28,14 @@
                 <div class="text-muted mg-meta mg-space-bottom">
                     Dimensões: {{ t.width }}x{{ t.height }} px &bull; Acesso: {{ t.get_access_policy_display }}
                 </div>
-                {% if t.overlay_asset %}
-                    <img src="{{ t.overlay_asset.url }}" alt="{{ t.title }}" class="mg-space-bottom mg-frame-preview">
-                {% endif %}
-                <a href="{% url 'events:frames' slug=event.slug %}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-block">
-                    Testar no Gerador <i data-lucide="arrow-right" aria-hidden="true"></i>
-                </a>
+                {% if t.available_asset_url %}
+                    <img src="{{ t.available_asset_url }}" alt="{{ t.title }}" class="mg-space-bottom mg-frame-preview">
+                <a href="{{ t.available_asset_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-block">Ver arquivo PNG <i data-lucide="external-link" aria-hidden="true"></i></a>
+                {% else %}<p class="text-muted">Arquivo indisponível. Os modelos oficiais estão disponíveis acima.</p>{% endif %}
             </div>
         {% empty %}
             <div class="text-muted mg-align-center mg-full-width">
-                <p>Nenhuma moldura cadastrada para este evento. O gerador público utilizará o layout padrão.</p>
+                <p>Nenhum arquivo adicional enviado. As molduras oficiais já estão disponíveis acima.</p>
             </div>
         {% endfor %}
     </div>

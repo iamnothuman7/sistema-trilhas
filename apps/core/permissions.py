@@ -44,6 +44,7 @@ VIEW_ACTIONS = {
     "sponsor_receipt": "finance", "sponsor_reversal": "finance",
     "raffle_management": "events",
     "team_frame_editor": "content",
+    "official_frame_preview": "content",
     "ranking_management": "registrations",
 }
 

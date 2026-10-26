@@ -1,0 +1,14 @@
+.official-frames{display:grid;gap:22px;margin-bottom:36px}
+.official-frame-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+.official-frame-card.card{padding:0;overflow:hidden;min-width:0}
+.official-frame-thumb{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:center;aspect-ratio:4/5;padding:20px 22px 16px;overflow:hidden;color:#fff;background:radial-gradient(ellipse at top,var(--frame-accent),var(--frame-dark) 80%);text-decoration:none}
+.official-frame-landscape{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;opacity:.58}
+.official-frame-logo{position:relative;width:85%;height:37%;object-fit:contain;filter:drop-shadow(0 4px 10px #0008)}
+.official-frame-person{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:76%;flex:1;min-height:0;margin-top:12px;border:3px solid var(--frame-accent);border-radius:100px 100px 12px 12px;background:#160d08de;color:var(--frame-accent)}
+.official-frame-person svg{width:42px;height:42px}.official-frame-person span{font-size:10px;font-weight:700;letter-spacing:.08em}
+.official-frame-banner{position:relative;width:90%;margin-top:-20px;padding:8px;text-align:center;font-size:clamp(24px,3vw,42px);line-height:1;background:var(--frame-accent);color:var(--frame-dark);transform:rotate(-3deg);border-radius:6px}
+.official-frame-date{margin-top:12px;font-size:11px;font-weight:600;text-shadow:0 2px 4px #000}
+.official-frame-copy{padding:22px;display:grid;gap:14px}.official-frame-copy h3{font-size:18px;line-height:1.4;margin:0}.official-frame-copy p{font-size:12px;color:var(--text-muted);margin:0}
+.official-frame-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.official-frame-actions .btn{min-width:0;white-space:normal;padding:12px 8px}
+@media(max-width:1100px){.official-frame-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.official-frame-grid{grid-template-columns:minmax(0,1fr)}.official-frame-thumb{aspect-ratio:4/4.5}.official-frame-copy{padding:20px}}

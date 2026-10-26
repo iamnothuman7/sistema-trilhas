@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends studio_base_template|default:"base.html" %}
 {% load static %}
 {% block title %}Crie seu story e feed | {{ event.title }} | Equipe Morcego{% endblock %}
 {% block extra_head %}
@@ -55,12 +55,14 @@
 .story-studio .purchase-art-ready{margin-bottom:28px;padding:24px;border:1px solid var(--ui-green);border-radius:20px;background:var(--ui-panel)}
 .story-studio .purchase-art-ready h2{font-size:24px;margin:0 0 10px}.story-studio .purchase-art-ready p{margin:0 0 14px;color:var(--text-muted)}
 .story-studio .purchase-art-ready .public-actions{gap:12px}
+.management-main .story-studio{max-width:none;padding:0}.management-main .story-studio .public-back{display:inline-flex;align-items:center;gap:10px;margin-bottom:24px}
 </style>
 {% endblock %}
 {% block content %}
-{% if art_registrations %}
+{% if art_registrations or internal_preview %}
 {{ event_versions|json_script:"event-versions" }}
-<div class="story-studio" data-version="{{ selected_version.id }}">
+<div class="story-studio" data-version="{{ selected_version.id }}" data-format="{{ selected_format|default:'story' }}">
+  {% if internal_preview %}<a class="public-back" href="{% url 'gestao:frames' event.id %}"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar às molduras</a><section class="studio-panel"><h2>Prévia interna das molduras oficiais</h2><p>Confira os estilos e baixe uma prévia nos formatos Story e Feed. A personalização com a foto do piloto é liberada na conta dele após o pagamento. Para a arte de uma equipe, use <a href="{% url 'gestao:team_frame_editor' event.id %}">Equipe confirmada</a>.</p></section>{% endif %}
   {% if after_purchase %}<section class="purchase-art-ready" aria-label="Inscrição confirmada"><h2>Pagamento confirmado. Você está dentro!</h2><p>Sua moldura está liberada. Crie o story e o feed com a mesma foto e baixe os dois. Para liberar o QR Code do evento, conclua o vínculo e o aceite dos termos na sua inscrição.</p><div class="public-actions"><a class="public-button public-button--secondary" href="{% url 'minha_conta:registration_pdf' selected_registration.id %}">Baixar comprovante PDF</a><a class="public-button public-button--secondary" href="{% url 'minha_conta:dashboard' %}">Minhas inscrições e termos</a></div></section>{% endif %}
   <div class="studio-grid">
     <div>
@@ -68,7 +70,7 @@
         <img src="{{ selected_version.logo }}" alt="{{ event.title }}" class="logo-emblem">
         <div><span class="studio-eyebrow">Moldura oficial do evento</span><h1>A trilha começa com <span>você.</span></h1></div>
       </header>
-      <p class="studio-description">Personalize seu story e seu post de feed de <strong>{{ event.title }}</strong>. Escolha uma foto, ajuste o enquadramento e baixe os dois formatos sem enviar a foto novamente.</p>
+      {% if not internal_preview %}<p class="studio-description">Personalize seu story e seu post de feed de <strong>{{ event.title }}</strong>. Escolha uma foto, ajuste o enquadramento e baixe os dois formatos sem enviar a foto novamente.</p>{% endif %}
       <section class="studio-section" aria-label="Estilo do story">
         <h2 class="studio-section-title">1. Escolha seu estilo</h2>
         <div class="version-options">
@@ -78,7 +80,7 @@
         </div>
       </section>
       <section class="studio-section" aria-label="Formato da arte"><h2 class="studio-section-title">2. Escolha o formato</h2><div class="format-options"><button type="button" class="format-option" data-art-format="story" aria-pressed="true"><strong>Story · 9:16</strong><small>1080 × 1920 px</small></button><button type="button" class="format-option" data-art-format="feed" aria-pressed="false"><strong>Feed · 4:5</strong><small>1080 × 1350 px</small></button></div></section>
-      <section class="studio-panel">
+      {% if not internal_preview %}<section class="studio-panel">
         <h2 class="studio-section-title">3. Deixe com a sua cara</h2>
         <div class="studio-field-grid">
           <div class="form-group"><label class="form-label" for="story-registration">Piloto confirmado</label><select id="story-registration" class="form-control">{% for reg in art_registrations %}<option value="{{ reg.id }}" {% if reg.id == selected_registration.id %}selected{% endif %} data-name="{{ reg.person.full_name }}" data-team="{{ reg.team_name|default:'' }}">{% if reg.registration_number %}#{{ reg.registration_number }} · {% endif %} {{ reg.person.full_name }}</option>{% endfor %}</select><input type="hidden" id="pilot-name-input" value="{{ selected_registration.person.full_name }}"></div>
@@ -88,7 +90,7 @@
       <div class="studio-panel studio-tips">
         <div><strong>Escolha sua foto</strong><p>O recorte automático destaca você na moldura. Depois, ajuste a posição e o tamanho na prévia.</p></div>
         <div><strong>Baixe e compartilhe</strong><p>Baixe seu Story (1080 × 1920), alterne para Feed (1080 × 1350) e baixe também. Sua foto permanece no editor.</p></div>
-      </div>
+      </div>{% endif %}
     </div>
     <div>
       <section class="studio-card" aria-label="Editor de story e feed">
@@ -96,17 +98,17 @@
           <img src="{{ selected_version.logo }}" alt="{{ event.title }}" class="logo-emblem" width="46" height="38">
           <div><h2>{{ event.title }}</h2><p id="studio-edition">{{ selected_version.label }} · {{ selected_version.selector_detail }}</p></div><span class="studio-format">9:16</span>
         </div>
-        <div class="canvas-stage"><div class="story-frame"><canvas id="story-canvas" width="1080" height="1920" tabindex="0"></canvas><span class="preview-tag">PRÉVIA DO SEU STORY</span></div></div>
+        <div class="canvas-stage"><div class="story-frame"><canvas data-preview-only="{{ internal_preview|yesno:'true,false' }}" id="story-canvas" width="1080" height="1920" tabindex="0"></canvas><span class="preview-tag">PRÉVIA DO SEU STORY</span></div></div>
         <div class="studio-actions">
-          {% csrf_token %}
+          {% if not internal_preview %}{% csrf_token %}
           <input id="photo-input" class="visually-hidden" type="file" tabindex="-1" accept="image/jpeg,image/png,image/webp">
           <div id="photo-controls" hidden><p id="photo-help">Arraste a foto para ajustar o enquadramento.</p><div class="studio-zoom"><span>−</span><input id="zoom-input" type="range" min="1" max="2.5" step="0.01" value="1" aria-label="Ampliar a foto"><span>+</span></div></div>
-          <div class="studio-upload-actions">
-            <button class="btn btn-primary btn-block btn-lg" id="upload-button" type="button"><i data-lucide="camera" aria-hidden="true"></i><span id="upload-label">Adicionar minha foto</span></button>
+          {% endif %}<div class="studio-upload-actions">
+            {% if not internal_preview %}<button class="btn btn-primary btn-block btn-lg" id="upload-button" type="button"><i data-lucide="camera" aria-hidden="true"></i><span id="upload-label">Adicionar minha foto</span></button>{% endif %}
             <button class="btn btn-success btn-block btn-lg" id="download-button" type="button" disabled><i data-lucide="download" aria-hidden="true"></i><span id="download-label">Baixar meu story</span></button>
           </div>
           <button class="btn btn-secondary btn-sm btn-block" id="retry-cutout-button" type="button" hidden><i data-lucide="refresh-cw" aria-hidden="true"></i> Tentar retirar o fundo novamente</button>
-          <p id="editor-status" role="status" aria-live="polite">Escolha uma foto sua para criar o efeito 3D fora da moldura.</p>
+          <p id="editor-status" role="status" aria-live="polite">{% if internal_preview %}Escolha um estilo e um formato para conferir a moldura. A prévia não é um comprovante de inscrição.{% else %}Escolha uma foto sua para criar o efeito 3D fora da moldura.{% endif %}</p>
           <div class="studio-footer"><span id="export-note">PNG Alta Qualidade · 1080 × 1920</span><div class="studio-footer-actions"><button type="button" id="change-photo-button" class="studio-text-button" hidden>Trocar foto</button><button type="button" id="reset-button" class="studio-text-button" hidden>Recomeçar</button></div></div>
         </div>
       </section>
@@ -122,5 +124,5 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if art_registrations %}<script src="{% static 'js/story_studio.js' %}?v=story-feed20261026"></script>{% endif %}
+{% if art_registrations or internal_preview %}<script src="{% static 'js/story_studio.js' %}?v=internal-preview20261026"></script>{% endif %}
 {% endblock %}
