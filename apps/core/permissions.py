@@ -21,6 +21,7 @@ ACTION_ROLES = {
     "audit": MANAGERS,
 }
 VIEW_ACTIONS = {
+    "usage_guide": "view",
     "dashboard": "view", "event_list": "events", "event_create": "events",
     "event_detail": "events", "event_edit": "events", "event_duplicate": "events", "event_appearance": "content",
     "registration_list": "registrations", "registration_detail": "registrations",

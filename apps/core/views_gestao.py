@@ -42,6 +42,13 @@ def staff_required_custom(view_func):
 
 @staff_required_custom
 @never_cache
+def usage_guide(request):
+    return render(request, "gestao/usage_guide.html", {
+        "guide_events": accessible_events(request.user).order_by("-starts_at"),
+    })
+
+@staff_required_custom
+@never_cache
 def dashboard(request):
     events = accessible_events(request.user).order_by("-starts_at")
     selected_event_id = request.GET.get("event_id")

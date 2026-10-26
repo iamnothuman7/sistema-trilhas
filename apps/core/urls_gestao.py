@@ -11,6 +11,7 @@ from apps.payments import views_management as payment_views
 app_name = "gestao"
 
 urlpatterns = [
+    path("como-usar/", views_gestao.usage_guide, name="usage_guide"),
     # Dashboard Principal
     path("", views_gestao.dashboard, name="dashboard"),
     path("integracoes/mercado-pago/", payment_views.mercadopago_connection, name="mercadopago_connection"),

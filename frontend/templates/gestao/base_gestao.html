@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=glass20261022"><link rel="stylesheet" href="{% static 'css/management.css' %}?v=kitaudit20261024"><link rel="stylesheet" href="{% static 'css/management-children.css' %}?v=kitaudit20261024">
 {% block extra_head %}{% endblock %}
 <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=20261026">
+<script src="{% static 'js/input-masks.js' %}?v=20261026" defer></script>
 </head>
 <body>
 <a class="skip-link" href="#mainContent">Ir para o conteúdo</a>
@@ -18,6 +19,7 @@
 <a class="sidebar-brand" href="{% url 'gestao:dashboard' %}" aria-label="Equipe Morcego — início da gestão"><img class="brand-emblem" src="{% static 'img/logo-nav.webp' %}" width="50" height="57" alt="Emblema Equipe Morcego"><span class="sidebar-brand-copy sidebar-label"><strong>Equipe Morcego</strong><small>Gestão de eventos</small></span></a>
 <nav class="sidebar-nav">
 <div class="sidebar-section-label">Principal</div>
+<a class="sidebar-link {% if current == 'usage_guide' %}is-active{% endif %}"{% if current == 'usage_guide' %} aria-current="page"{% endif %} href="{% url 'gestao:usage_guide' %}{% if ev %}?event_id={{ ev.id }}{% endif %}" title="Como usar"><i data-lucide="book-open" aria-hidden="true"></i><span class="sidebar-label">Como usar</span></a>
 <a class="sidebar-link {% if current == 'dashboard' %}is-active{% endif %}"{% if current == 'dashboard' %} aria-current="page"{% endif %} href="{% url 'gestao:dashboard' %}{% if ev %}?event_id={{ ev.id }}{% endif %}" title="Visão geral"><i data-lucide="layout-dashboard"></i><span class="sidebar-label">Visão geral</span></a>
 {% if management_permissions.events %}<a class="sidebar-link {% if current == 'event_list' or current == 'event_create' %}is-active{% endif %}"{% if current == 'event_list' or current == 'event_create' %} aria-current="page"{% endif %} href="{% url 'gestao:event_list' %}" title="Eventos e edições"><i data-lucide="calendar-days"></i><span class="sidebar-label">Eventos e edições</span></a>{% endif %}
 {% if ev %}

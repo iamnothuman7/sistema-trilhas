@@ -15,8 +15,8 @@
             <div class="registration-grid">
                 <label class="form-label registration-wide">Nome completo *<input name="purchaser_name" class="form-control" autocomplete="name" required value="{{ buyer.name|default:'' }}"></label>
                 <label class="form-label">E-mail *<input type="email" name="purchaser_email" class="form-control" autocomplete="email" required value="{{ buyer.email|default:'' }}"></label>
-                <label class="form-label">WhatsApp com DDD *<input type="tel" name="purchaser_phone" class="form-control" autocomplete="tel" required value="{{ buyer.phone|default:'' }}"></label>
-                <label class="form-label registration-wide">CPF do responsável pelo pagamento *<input name="purchaser_document" class="form-control" inputmode="numeric" required value="{{ buyer.document|default:'' }}"></label>
+                <label class="form-label">WhatsApp com DDD *<input type="tel" name="purchaser_phone" data-mask="phone" placeholder="(88) 99999-9999" inputmode="tel" class="form-control" autocomplete="tel" required value="{{ buyer.phone|default:'' }}"></label>
+                <label class="form-label registration-wide">CPF do responsável pelo pagamento *<input name="purchaser_document" data-mask="cpf" placeholder="000.000.000-00" maxlength="14" class="form-control" inputmode="numeric" required value="{{ buyer.document|default:'' }}"></label>
             </div>
         </section>
         <section class="payment-card"><header class="card-header"><div><h2>2. Quem vai participar</h2><span class="registration-caption">Inscreva você ou mais participantes no mesmo pedido.</span></div><button type="button" id="btnAddParticipant" class="payment-button payment-button-secondary"><i data-lucide="plus" aria-hidden="true"></i> Adicionar participante</button></header>

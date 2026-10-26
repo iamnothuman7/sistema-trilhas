@@ -31,7 +31,7 @@
         <label for="phoneInput">WhatsApp ou telefone</label>
         <div class="auth-input-wrap">
             <i data-lucide="phone" class="auth-input-icon" aria-hidden="true"></i>
-            <input type="tel" name="phone" id="phoneInput" value="{{ request.POST.phone|default:'' }}" placeholder="(88) 99999-9999" autocomplete="tel" inputmode="tel" required>
+            <input type="tel" name="phone" data-mask="phone" id="phoneInput" value="{{ request.POST.phone|default:'' }}" placeholder="(88) 99999-9999" autocomplete="tel" inputmode="tel" required>
         </div>
     </div>
 
@@ -46,7 +46,7 @@
         <div class="auth-field">
             <label for="stateInput">Estado (UF)</label>
             <div class="auth-input-wrap auth-input-wrap-plain">
-                <input type="text" name="state" id="stateInput" value="{{ request.POST.state|default:'CE' }}" maxlength="2" autocomplete="address-level1" autocapitalize="characters" class="auth-state-input">
+                <input type="text" name="state" data-mask="uf" id="stateInput" value="{{ request.POST.state|default:'CE' }}" maxlength="2" autocomplete="address-level1" autocapitalize="characters" class="auth-state-input">
             </div>
         </div>
     </div>
