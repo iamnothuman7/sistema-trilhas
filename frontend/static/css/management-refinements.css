@@ -1,8 +1,9 @@
 /* Shared layout audit: flexible columns, readable forms and local table scrolling. */
 .management-main { width: 100%; max-width: 1800px; padding: clamp(20px, 2.5vw, 40px); padding-bottom: 64px; }
-.management-main :where(section,article,form,fieldset,details,dl,.mg-stack,.dashboard-secondary,.form-group,.mg-inset-card) { min-width: 0; }
+.management-main :where(section,article,form,fieldset,details,dl,.mg-stack,.dashboard-primary,.dashboard-secondary,.form-group,.mg-inset-card) { min-width: 0; }
 .management-main :where(a,code,dd,.badge,.form-help,.form-error,.errorlist,.list-row strong) { overflow-wrap: anywhere; }
-.management-main .form-group { margin-bottom: 0; }
+.management-main :where(.form-grid,.catalog-form-grid,.mg-stack) > .form-group { margin-bottom: 0; }
+.management-main :not(.mg-stack,.form-grid,.catalog-form-grid) > .form-grid + :where(.form-group,.form-grid) { margin-top: 24px; }
 .form-grid, .catalog-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
 .catalog-form-grid .form-group:has(textarea) { grid-column: 1 / -1; }
 .mg-form-sheet { width: 100%; max-width: 1440px; }
@@ -22,16 +23,18 @@
 .card-header .section-title { margin-bottom: 0; }
 .table-responsive { overscroll-behavior-inline: contain; border-radius: 12px; }
 .table { min-width: 600px; }
+.report-grid .table { min-width: 0; }
+.report-grid .table td:first-child { overflow-wrap: anywhere; }
 .table th, .table td { padding: 14px; vertical-align: middle; }
 .table td .badge { white-space: normal; max-width: 26ch; line-height: 1.5; }
 .table td .page-actions { min-width: 120px; }
 .stat-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 20px; }
+.stat-grid.mg-finance-stats { grid-template-columns: repeat(3,minmax(0,1fr)); }
 .stat-value { font-size: clamp(24px,2vw,34px); overflow-wrap: anywhere; }
 .stat-top { align-items: flex-start; }
 .stat-icon { flex: 0 0 36px; }
 .dashboard-grid { grid-template-columns: minmax(0,2fr) minmax(310px,1fr); align-items: start; gap: 24px; }
-.dashboard-grid > .dashboard-secondary { grid-column: 2; grid-row: 1 / span 3; }
-.dashboard-grid > section { grid-column: 1; }
+.dashboard-primary { display: grid; gap: 24px; align-content: start; }
 .dashboard-orders td:first-child { min-width: 170px; }
 .quick-action > span:first-child { flex: 0 0 34px; }
 .quick-action > span:nth-child(2), .list-row > div { min-width: 0; overflow-wrap: anywhere; }
@@ -63,7 +66,8 @@
 .management-main pre { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (min-width: 1500px) { .mp-workspace { grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr); } .mp-workspace .form-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 1250px) { .stat-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .dashboard-grid { grid-template-columns: minmax(0,1.6fr) minmax(280px,1fr); } }
-@media (max-width: 1050px) { .dashboard-grid, .mp-workspace { grid-template-columns: minmax(0,1fr); } .dashboard-grid > .dashboard-secondary, .dashboard-grid > section { grid-column: auto; grid-row: auto; } .dashboard-secondary { grid-template-columns: repeat(2,minmax(0,1fr)); } .mp-status-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .report-exports { grid-template-columns: minmax(0,1fr); } .report-exports > .btn { grid-column: auto; } }
+@media (max-width: 1100px) { .stat-grid.mg-finance-stats { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 1050px) { .dashboard-grid, .mp-workspace { grid-template-columns: minmax(0,1fr); } .dashboard-secondary { grid-template-columns: repeat(2,minmax(0,1fr)); } .dashboard-secondary > :last-child:nth-child(odd) { grid-column: 1 / -1; } .mp-status-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .report-exports { grid-template-columns: minmax(0,1fr); } .report-exports > .btn { grid-column: auto; } }
 @media (max-width: 767px) {
     .management-main { padding: 24px 16px calc(100px + env(safe-area-inset-bottom)); }
     .management-main .card, .event-overview { padding: 20px; }
@@ -74,13 +78,15 @@
     .management-main .btn { white-space: normal; overflow-wrap: anywhere; }
     .stat-grid { gap: 12px; }
     .stat-card { padding: 18px; }
-    .mp-workspace, .dashboard-grid { gap: 20px; }
+    .mp-workspace, .dashboard-grid, .dashboard-primary { gap: 20px; }
     .mp-status-grid { grid-template-columns: minmax(0,1fr); gap: 16px; }
     .mg-check-row { padding: 14px; }
     .report-export-form { grid-template-columns: minmax(0,1fr); }
     .report-exports > .btn { justify-self: stretch; }
     .mg-pagination { align-items: flex-start; }
     .mg-pagination .page-actions { flex-wrap: wrap; }
-    .management-main dialog { max-width: calc(100vw - 24px); max-height: calc(100dvh - 32px); padding: 20px; }
+    .management-main dialog { max-width: calc(100vw - 24px); max-height: calc(100dvh - 32px); }
+    .management-main dialog:not(.mg-dialog) { padding: 20px; }
 }
+@media (max-width: 640px) { .stat-grid.mg-finance-stats { grid-template-columns: minmax(0,1fr); } }
 @media (max-width: 480px) { .stat-grid { grid-template-columns: minmax(0,1fr); } .management-main { padding-inline: 12px; } .management-main .card { padding: 18px; } }

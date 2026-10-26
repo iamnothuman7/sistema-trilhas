@@ -34,7 +34,7 @@ a:hover, .text-link:hover { color: #ffab72; }
 .nav-link.active { color: #ff9956; }
 .nav-link.active::after { content: ''; position: absolute; bottom: 4px; left: 40%; width: 5px; height: 5px; border-radius: 50%; background: #ff8a43; }
 .header-actions .btn { background: #ffffff0c; border-color: #ffffff24; }
-.mobile-menu { position: absolute; top: 104px; left: 0; right: 0; border: 1px solid var(--border); border-radius: 24px; background: #1c1917; box-shadow: 0 20px 45px #0006; }
+.mobile-menu { --mobile-menu-fallback-top: 120px; position: absolute; top: calc(100% + 10px); left: 0; right: 0; max-height: max(0px, calc(100dvh - var(--mobile-menu-viewport-top, var(--mobile-menu-fallback-top)) - max(16px, env(safe-area-inset-bottom)))); overflow-y: auto; overscroll-behavior-y: contain; border: 1px solid var(--border); border-radius: 24px; background: #1c1917; box-shadow: 0 20px 45px #0006; }
 .trail-hero { position: relative; isolation: isolate; overflow: hidden; margin-top: -110px; padding: 174px 0 24px; min-height: 790px; background: #17130f; }
 .trail-hero-art, .trail-hero-shade { position: absolute; z-index: -3; inset: 0; pointer-events: none; }
 .trail-hero-art { overflow: hidden; }
@@ -169,7 +169,7 @@ a:hover, .text-link:hover { color: #ffab72; }
   .brand-logo img { width: 62px; height: 50px; }
   .header-actions .btn { width: auto; font-size: 12px; min-width: 64px; }
   .header-actions .btn .lucide { display: none; }
-  .mobile-menu { top: 86px; }
+  .mobile-menu { --mobile-menu-fallback-top: 96px; }
   .trail-hero { margin-top: -86px; padding: 284px 0 24px; min-height: 810px; }
   .trail-hero-art { height: 500px; }
   .trail-hero-art img { object-position: 72% 0%; }

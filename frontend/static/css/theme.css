@@ -71,6 +71,8 @@ select option { background: var(--ui-panel-solid); color: var(--ui-text); }
 .nav-link:hover, .nav-link.active, .mobile-menu a:hover { color: var(--ui-brand-ink); }
 .footer, .how-section, .sponsor-section { background: var(--ui-bg); border-color: var(--ui-border); }
 .community-callout, .raffle-teaser { background: var(--glass-fill); border-color: var(--ui-border); }
+.community-callout { color: var(--ui-text); }
+.community-callout .eyebrow { color: var(--ui-brand-ink); }
 .raffle-teaser-copy p, .public-prose p, .public-document, .public-note, .public-meta-list { color: var(--ui-muted); }
 .eyebrow, .payment-kicker, .public-eyebrow, .step-number, .trail-date span, .raffle-art, .raffle-art span { color: var(--ui-brand-ink); }
 .public-page { --page-accent: var(--ui-brand-ink); }
@@ -92,6 +94,32 @@ select option { background: var(--ui-panel-solid); color: var(--ui-text); }
 .payment-countdown, .payment-test-notice { background: var(--ui-brand-soft); border-color: var(--ui-border); }
 .payment-countdown span, .payment-countdown strong, .payment-test-notice, .payment-dialog details summary { color: var(--ui-brand-ink); }
 .payment-success small { color: var(--ui-muted); }
+.payment-success-emblem { color: var(--ui-brand-ink); background: var(--ui-brand-soft); border-color: var(--ui-border); }
+.payment-countdown.is-ending strong { color: var(--ui-red); }
+/* Public sections that previously kept fixed dark surfaces must follow their text tokens. */
+.trail-manifesto { background: radial-gradient(ellipse at 0 80%, #7e321312, transparent 50%), var(--ui-bg); border-color: var(--ui-border); }
+.trail-manifesto p.trail-manifesto-lead { color: var(--ui-text); }
+.trail-values span, .trail-coordinate { color: var(--ui-brand-ink); }
+.trail-archive-card { background: var(--glass-fill); border-color: var(--ui-border); color: var(--ui-text); }
+.trail-archive-card:hover { color: var(--ui-text); }
+.trail-archive-card p, .trail-event-hint, .trail-countdown small, .countdown-caption { color: var(--ui-muted); }
+.trail-archive-number, .trail-archive-icon, .trail-past-events small { color: var(--ui-brand-ink); }
+.trail-past-events a { border-color: var(--ui-border); }
+.trail-featured-label { color: #faf5ee; }
+.trail-countdown > span:not(.countdown-caption) { background: var(--ui-hover); border-color: var(--ui-border); }
+.product-card--raffle .product-price strong, .event-subnav a[aria-current="page"] { color: var(--ui-brand-ink); }
+.event-ranking-card { background: var(--glass-fill); color: var(--ui-text); border-color: var(--ui-border); box-shadow: var(--shadow); }
+.event-ranking-list li { background: var(--ui-hover); border-color: var(--ui-border); }
+.event-ranking-heading p, .event-ranking-note, .event-ranking-status,
+.event-ranking-card header > span, .event-ranking-name small,
+.event-ranking-count small, .event-ranking-list li.event-ranking-empty { color: var(--ui-muted); }
+.event-ranking-position { color: var(--ui-text); }
+.event-ranking-card header > svg, .event-ranking-count,
+.event-ranking-list li:first-child .event-ranking-position { color: var(--ui-brand-ink); }
+.story-studio #editor-status[data-state="error"] { color: var(--ui-red); }
+.story-studio #editor-status[data-state="success"] { color: var(--ui-green); }
+.story-studio .studio-text-button { color: var(--ui-brand-ink); }
+.mg-scanner-placeholder, .mg-scanner-placeholder .text-muted { color: #faf5ee; }
 /* The photographic hero keeps a dark scrim and readable white lettering in both modes. */
 html[data-theme="light"] .trail-hero { --text-main: #fff7f0; --text-muted: #e4d7ca; color: #fff7f0; background-color: #171411; }
 html[data-theme="light"] .trail-hero :where(h1,h2,h3) { color: #fff7f0; }
@@ -154,4 +182,7 @@ html[data-theme="light"] :where(.footer a:hover,.text-link:hover,.event-subnav a
   .public-legal-scroll { padding: 16px; }
   .public-actions > * { flex: 1 1 auto; }
   .payment-page .card-header .payment-button { width: 100%; }
+  .trail-countdown { flex-wrap: wrap; }
+  .trail-countdown .countdown-caption { flex-basis: 100%; margin-left: 0; }
+  #registrationTotal { white-space: normal; overflow-wrap: anywhere; }
 }

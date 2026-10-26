@@ -10,8 +10,8 @@
 <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=navie2">
 <link rel="stylesheet" href="{% static 'css/public-pages.css' %}?v=navie2">
 {% block extra_head %}{% endblock %}
-<link rel="stylesheet" href="{% static 'css/trail.css' %}?v=trail20261024-hero">
-<link rel="stylesheet" href="{% static 'css/theme.css' %}?v=20261026-audit">
+<link rel="stylesheet" href="{% static 'css/trail.css' %}?v=trail20261026-audit2">
+<link rel="stylesheet" href="{% static 'css/theme.css' %}?v=20261026-audit2">
 <script src="{% static 'js/input-masks.js' %}?v=20261026" defer></script>
 </head>
 <body>
@@ -29,9 +29,14 @@
 <script>
 document.addEventListener('DOMContentLoaded',function(){
  const button=document.getElementById('mobileMenuBtn'),menu=document.getElementById('mobileMenuDrawer');
- function close(){menu.hidden=true;button.setAttribute('aria-expanded','false');button.setAttribute('aria-label','Abrir menu');}
- button.addEventListener('click',function(){const open=menu.hidden;menu.hidden=!open;button.setAttribute('aria-expanded',String(open));button.setAttribute('aria-label',open?'Fechar menu':'Abrir menu');});
+ let menuFrame=0;
+ function sizeMenu(){menuFrame=0;if(!menu.hidden)menu.style.setProperty('--mobile-menu-viewport-top',Math.max(0,menu.getBoundingClientRect().top)+'px');}
+ function queueMenuSize(){if(!menu.hidden&&!menuFrame)menuFrame=requestAnimationFrame(sizeMenu);}
+ function close(){menu.hidden=true;button.setAttribute('aria-expanded','false');button.setAttribute('aria-label','Abrir menu');if(menuFrame){cancelAnimationFrame(menuFrame);menuFrame=0;}}
+ button.addEventListener('click',function(){const open=menu.hidden;if(!open){close();return;}menu.hidden=false;button.setAttribute('aria-expanded','true');button.setAttribute('aria-label','Fechar menu');sizeMenu();});
  document.addEventListener('keydown',function(event){if(event.key==='Escape'&&!menu.hidden){close();button.focus();}});
+ window.addEventListener('resize',queueMenuSize);
+ window.addEventListener('scroll',queueMenuSize,{passive:true});
  window.matchMedia('(min-width: 961px)').addEventListener('change',function(event){if(event.matches)close();});
 });
 </script><script src="{% static 'js/trail-motion.js' %}?v=trail20261023" defer></script>{% block extra_js %}{% endblock %}
