@@ -20,6 +20,7 @@
             </div>
         </section>
         <section class="payment-card"><header class="card-header"><div><h2>2. Quem vai participar</h2><span class="registration-caption">Até {{ max_participants }} participantes no mesmo pedido. Para grupos maiores, fale com a organização.</span></div><button type="button" id="btnAddParticipant" class="payment-button payment-button-secondary"><i data-lucide="plus" aria-hidden="true"></i> Adicionar participante</button></header>
+            <label class="registration-same-buyer"><input type="checkbox" id="buyerIsParticipant" name="buyer_is_participant"{% if buyer_is_participant %} checked{% endif %}> <span><strong>Eu também vou participar</strong><small class="registration-caption">Usar meus dados acima no primeiro participante. Desmarque se a compra for somente para outra pessoa.</small></span></label><p id="buyerParticipantSummary" class="registration-caption" hidden>Seu nome, CPF, e-mail e WhatsApp serão usados na sua inscrição. Complete abaixo apenas a modalidade, camiseta, equipe e cidade.</p>
             <div id="participantsContainer">{% for participant in participant_rows %}{% include "checkout/_participant_fields.html" %}{% endfor %}</div>
         </section>
         <section class="payment-card"><label class="form-label">Cupom de desconto, se tiver<input name="coupon_code" class="form-control registration-coupon" value="{{ coupon_code }}" autocomplete="off"></label><div class="payment-total"><span>Subtotal das inscrições</span><strong id="registrationTotal" aria-live="polite">Confira a oferta selecionada</strong></div><p class="registration-caption">Descontos válidos são calculados ao continuar. O valor final fica disponível antes de qualquer pagamento.</p></section>
@@ -30,4 +31,4 @@
     {% else %}<section class="payment-card"><h2>Inscrições indisponíveis no momento</h2><p>A organização ainda não disponibilizou uma oferta para esta edição ou as vagas estão esgotadas.</p><a href="{% url 'events:detail' slug=event.slug %}" class="payment-button payment-button-secondary">Voltar ao evento</a></section>{% endif %}
 </div>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'js/registration.js' %}?v=security20261026" defer></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'js/registration.js' %}?v=checkout20261026" defer></script>{% endblock %}

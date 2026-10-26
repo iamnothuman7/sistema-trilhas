@@ -420,3 +420,10 @@ a:hover, .text-link:hover { color: #ffab72; }
 @keyframes trail-camera-drift { 0%,100% { transform: scale(1) translate(0,0); } 50% { transform: scale(1.025) translate(-.3%,.15%); } }
 
 .trail-hero-art::after { content: ''; position: absolute; inset: 70% 0 0; background: linear-gradient(0deg,#11100f,transparent); pointer-events: none; }
+
+/* Event campaign covers preserve the full artwork on every screen. */
+.trail-featured-art.trail-featured-art--cover{padding:0;min-height:0;align-self:start;aspect-ratio:1;display:block}
+.trail-featured-art.trail-featured-art--cover img{display:block;width:100%;height:100%;max-width:none;max-height:none;object-fit:contain}
+.trail-featured-art.trail-featured-art--cover:hover img{transform:none}
+.trail-featured-art--cover .trail-featured-label{bottom:12px;left:12px;font-size:10px}
+.event-preview-media{aspect-ratio:16/9}

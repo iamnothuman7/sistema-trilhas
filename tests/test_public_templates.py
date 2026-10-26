@@ -193,3 +193,12 @@ class EventStoryConfigurationTests(TestCase):
         self.assertEqual(version["departure_time"], "—")
         self.assertNotIn("2027", str(version))
         self.assertTrue(version["logo"].endswith("img/logo_emblem.png"))
+
+    def test_third_trilhao_uses_own_emblem_and_offroad_art_only_for_that_event(self):
+        self.first.subdomain = "3trilhaotiangua"
+        version = get_event_versions(self.first)[0]
+        self.assertTrue(version["logo"].endswith("img/logo_3trilhao_2027.png"))
+        self.assertTrue(version["background_art"].endswith("frames/trilhao-terra-story-v1.webp"))
+        self.assertEqual(version["decorations"]["kind"], "offroad")
+        self.assertIsNone(version["decorations"]["crowd"])
+        self.assertNotIn("background_art", get_event_versions(self.second)[0])

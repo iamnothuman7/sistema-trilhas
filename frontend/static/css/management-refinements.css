@@ -90,3 +90,13 @@
 }
 @media (max-width: 640px) { .stat-grid.mg-finance-stats { grid-template-columns: minmax(0,1fr); } }
 @media (max-width: 480px) { .stat-grid { grid-template-columns: minmax(0,1fr); } .management-main { padding-inline: 12px; } .management-main .card { padding: 18px; } }
+
+/* One coherent connection panel, with paired credential fields on wide screens. */
+.mp-connection-simple{grid-template-columns:minmax(0,1fr);max-width:1120px;margin-inline:auto}
+.mp-connection-simple .mp-connect-form,.mp-connection-simple .mp-recheck{grid-column:1/-1;min-width:0}
+.mp-connection-simple .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.mp-connection-simple .mp-webhook{min-width:0;padding:clamp(16px,3vw,28px);border:1px solid var(--border-color,#7774);border-radius:16px}
+.mp-connection-simple details summary{cursor:pointer;line-height:1.6;padding:8px 0}
+.mp-connection-simple .alert{display:block}
+.mp-connection-simple .form-control{min-width:0;width:100%;box-sizing:border-box}
+@media(max-width:640px){.mp-connection-simple .form-grid{grid-template-columns:minmax(0,1fr)}.mp-connection-simple .mg-form-actions{flex-direction:column;align-items:stretch}}

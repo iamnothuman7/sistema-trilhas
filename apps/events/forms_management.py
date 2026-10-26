@@ -148,10 +148,14 @@ class EventAppearanceForm(forms.ModelForm):
         help_text="PNG, JPG ou WebP, até 15 MB. Prefira uma imagem horizontal; confira o enquadramento no celular.")
     logo_image = SponsorLogoField(label="Logo da edição", required=False,
         help_text="PNG, JPG ou WebP, até 15 MB. Uma imagem com transparência preserva melhor a identidade visual.")
+    cover_image = SponsorLogoField(label="Capa horizontal (16:9)", required=False,
+        help_text="PNG, JPG ou WebP, até 15 MB. Usada na lista de eventos e na prévia ao compartilhar o link.")
+    square_image = SponsorLogoField(label="Capa quadrada (1:1)", required=False,
+        help_text="PNG, JPG ou WebP, até 15 MB. Usada no destaque da página inicial.")
 
     class Meta:
         model = EventTheme
-        fields = ("hero_banner", "logo_image")
+        fields = ("hero_banner", "logo_image", "cover_image", "square_image")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -1,4 +1,6 @@
 {% extends "gestao/base_gestao.html" %}
+{% load static %}
+{% block extra_head %}<script src="{% static 'js/manual-registration.js' %}?v=20261026" defer></script>{% endblock %}
 
 {% block title %}Ficha de Inscrição #{{ reg.registration_number }} | Painel Gestão{% endblock %}
 {% block gestao_header %}Ficha do Participante: #{{ reg.registration_number|default:'---' }} - {{ reg.person.full_name }}{% endblock %}
@@ -29,6 +31,18 @@
     </div>
 </div>
 
+{% if manual_entry %}
+<section class="card mg-stack mg-section-gap" aria-labelledby="manual-heading">
+<div class="card-header"><div><h2 id="manual-heading">Cadastro manual</h2><p>Registrado por {{ manual_entry.created_by.full_name }} em {{ manual_entry.created_at|date:"d/m/Y H:i" }}.</p></div></div>
+<p>{{ manual_entry.notes }}</p>
+{% for evidence in manual_evidences %}<p><strong>Pagamento manual confirmado:</strong> {{ evidence.method_label }} · conferido por {{ evidence.verified_by.full_name }} em {{ evidence.verified_at|date:"d/m/Y H:i" }}.</p>{% endfor %}
+{% if can_confirm_manual %}<a class="btn btn-primary" href="{% url 'gestao:manual_registration_payment' event.id reg.id %}"><i data-lucide="banknote" aria-hidden="true"></i>Confirmar valor recebido</a>{% endif %}
+{% if manual_access_url %}<div class="form-group"><label class="form-label" for="manualAccessUrl">Link de acesso do responsável</label><input class="form-control" type="text" id="manualAccessUrl" value="{{ manual_access_url }}" readonly><small class="form-help">Copie e envie somente ao responsável. Uso único, válido até {{ manual_entry.access_expires_at|date:"d/m/Y H:i" }}.{% if reg.source_order_line.order.status == 'RESERVED' %} A reserva sem pagamento expira em {{ reg.source_order_line.order.expires_at|date:"d/m/Y H:i" }}.{% endif %}</small></div><button class="btn btn-secondary" type="button" data-copy-manual-link="manualAccessUrl"><i data-lucide="copy" aria-hidden="true"></i>Copiar link</button><p class="form-help" id="manual-copy-status" role="status"></p>
+{% else %}<p class="form-help">O link anterior já foi utilizado ou expirou. O participante pode acessar sua conta normalmente. Se precisar, gere um novo link.</p>{% endif %}
+<form method="post" action="{% url 'gestao:manual_registration_renew_link' event.id reg.id %}">{% csrf_token %}<button class="btn btn-secondary" type="submit"><i data-lucide="link" aria-hidden="true"></i>Gerar novo link e invalidar o anterior</button></form>
+<p class="form-help">O pagamento libera a confirmação comercial. O QR Code depende também da titularidade e do aceite pessoal dos termos.</p>
+</section>
+{% endif %}
 <div class="mg-aside-grid">
     <!-- Coluna Esquerda: Dados e Benefícios -->
     <div class="mg-stack">

@@ -2,7 +2,7 @@
 {% load static %}
 {% block title %}Crie Seu Story 3D | {{ event.title }} | Equipe Morcego{% endblock %}
 {% block extra_head %}
-<meta name="description" content="Crie seu story de {{ event.title }} com a moldura oficial da Equipe Morcego.">
+<meta name="description" content="Crie seu story de {{ event.title }} com a moldura oficial desta edição.">
 {% include "events/_social_metadata.html" %}
 <style>
 .story-studio{max-width:1200px;margin:0 auto;padding:clamp(40px,6vw,72px) 24px 80px;font-family:'Poppins',sans-serif;color:var(--text-main,#202221);font-size:16px;line-height:1.7}
@@ -84,7 +84,7 @@
     <div>
       <section class="studio-card" aria-label="Editor do seu story">
         <div class="studio-header">
-          <img src="{% static 'img/logo_emblem.png' %}?v=mor20261022" alt="Equipe Morcego" class="logo-emblem" width="46" height="38">
+          <img src="{{ selected_version.logo }}" alt="{{ event.title }}" class="logo-emblem" width="46" height="38">
           <div><h2>{{ event.title }}</h2><p id="studio-edition">{{ selected_version.label }} · {{ selected_version.selector_detail }}</p></div><span class="studio-format">9:16</span>
         </div>
         <div class="canvas-stage"><div class="story-frame"><canvas id="story-canvas" width="1080" height="1920" tabindex="0"></canvas><span class="preview-tag">PRÉVIA DO SEU STORY</span></div></div>
@@ -107,11 +107,11 @@
 {% else %}
 <div class="public-page public-page--narrow">
   <header class="public-page-heading"><span class="public-eyebrow">{{ event.title }}</span><h1>Seu story de piloto confirmado</h1><p>A arte oficial é exclusiva para quem já tem uma inscrição de piloto com pagamento confirmado nesta edição.</p></header>
-  <section class="public-card"><h2>Já comprou sua inscrição?</h2><p>Entre com a conta usada na compra ou com a conta vinculada à sua inscrição. Pagamentos pendentes, inscrições canceladas e reembolsadas não liberam a arte.</p><div class="public-actions">{% if not user.is_authenticated %}<a class="public-button public-button--primary" href="{% url 'identity:login' %}?next={{ request.path|urlencode }}">Entrar na minha conta</a>{% else %}<a class="public-button public-button--primary" href="{% url 'minha_conta:dashboard' %}">Ver minhas inscrições</a>{% endif %}<a class="public-button public-button--secondary" href="{% url 'events:detail' slug=event.slug %}#inscricao">Ver inscrição no evento</a></div></section>
+  <section class="public-card"><h2>Já comprou sua inscrição?</h2><p>Entre com a conta usada na compra ou com a conta vinculada à sua inscrição. Pagamentos pendentes, inscrições canceladas e reembolsadas não liberam a arte.</p><div class="public-actions">{% if not user.is_authenticated %}<a class="public-button public-button--primary" href="{% url 'identity:login' %}?next={{ request.path|urlencode }}">Entrar na minha conta</a>{% else %}<a class="public-button public-button--primary" href="{% url 'minha_conta:dashboard' %}">Ver minhas inscrições</a>{% endif %}<a class="public-button public-button--secondary" href="{% url 'events:detail' slug=event.slug %}#inscricao">Garantir minha inscrição</a></div></section>
 </div>
 {% endif %}
 {% endblock %}
 
 {% block extra_js %}
-{% if art_registrations %}<script src="{% static 'js/story_studio.js' %}?v=paidpilot20261026"></script>{% endif %}
+{% if art_registrations %}<script src="{% static 'js/story_studio.js' %}?v=trilhaart20261026"></script>{% endif %}
 {% endblock %}

@@ -21,6 +21,9 @@ ACTION_ROLES = {
     "audit": MANAGERS,
 }
 VIEW_ACTIONS = {
+    "manual_registration_create": "registrations",
+    "manual_registration_payment": "finance",
+    "manual_registration_renew_link": "registrations",
     "private_document_download": "finance",
     "catalog_editor": "catalog",
     "usage_guide": "view",

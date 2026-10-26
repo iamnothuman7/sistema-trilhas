@@ -9,6 +9,7 @@ from apps.mediaframes import views_management as frame_views
 from apps.payments import views_management as payment_views
 from apps.catalog import views_management as catalog_views
 from .private_documents import private_document_download
+from apps.registrations import views_manual
 
 app_name = "gestao"
 
@@ -27,6 +28,9 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/duplicar/", views_gestao.event_duplicate, name="event_duplicate"),
 
     # Inscrições
+    path("eventos/<uuid:event_id>/inscricoes/manual/", views_manual.manual_registration_create, name="manual_registration_create"),
+    path("eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/recebimento/", views_manual.manual_registration_payment, name="manual_registration_payment"),
+    path("eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/renovar-acesso/", views_manual.manual_registration_renew_link, name="manual_registration_renew_link"),
     path("eventos/<uuid:event_id>/inscricoes/", views_gestao.registration_list, name="registration_list"),
     path("eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/", views_gestao.registration_detail, name="registration_detail"),
     path("eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/status/", views_gestao.registration_change_status, name="registration_change_status"),

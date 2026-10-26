@@ -41,11 +41,11 @@
             <div class="payment-field"><label id="card-expiration-label">Validade</label><div id="form-checkout__expirationDate" class="payment-secure-field" aria-labelledby="card-expiration-label"></div></div>
             <div class="payment-field"><label id="card-security-label">Código de segurança</label><div id="form-checkout__securityCode" class="payment-secure-field" aria-labelledby="card-security-label"></div></div>
           </div>
-          <div class="payment-field"><label for="form-checkout__cardholderName">Nome no cartão</label><input id="form-checkout__cardholderName" autocomplete="cc-name"></div>
+          <div class="payment-field"><label for="form-checkout__cardholderName">Nome do titular (altere se necessário)</label><input id="form-checkout__cardholderName" autocomplete="cc-name" value="{{ order.purchaser_name }}"></div>
           <div class="payment-field"><label for="form-checkout__cardholderEmail">E-mail do comprador</label><input id="form-checkout__cardholderEmail" type="email" value="{{ order.purchaser_email }}" autocomplete="email" readonly></div>
           <div class="payment-form-row">
             <div class="payment-field"><label for="form-checkout__identificationType">Documento</label><select id="form-checkout__identificationType"></select></div>
-            <div class="payment-field"><label for="form-checkout__identificationNumber">Número do documento</label><input id="form-checkout__identificationNumber" inputmode="numeric" autocomplete="off"></div>
+            <div class="payment-field"><label for="form-checkout__identificationNumber">Número do documento</label><input id="form-checkout__identificationNumber" inputmode="numeric" autocomplete="off" value="{{ order.purchaser_document }}"></div>
           </div>
           <div class="payment-field"><label for="form-checkout__issuer">Banco emissor</label><select id="form-checkout__issuer"></select></div>
           <div class="payment-field"><label for="form-checkout__installments">Parcelas</label><select id="form-checkout__installments"></select></div>

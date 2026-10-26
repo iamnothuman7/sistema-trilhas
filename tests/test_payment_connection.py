@@ -131,7 +131,7 @@ class MercadoPagoConnectionTests(TestCase):
 
     def test_incomplete_draft_does_not_replace_valid_environment_or_send_request(self):
         with override_settings(MP_ACCESS_TOKEN="ENV-private", MP_PUBLIC_KEY="ENV-public", MP_WEBHOOK_SECRET="ENV-webhook", MP_COLLECTOR_ID="5678"):
-            self.assertEqual(self.save_draft(collector_id="").status_code, 302)
+            self.assertEqual(self.save_draft(collector_id="", public_key="TEST-000000").status_code, 302)
             self.assertEqual(MercadoPagoGateway().collector_id, "5678")
             self.assertEqual(MercadoPagoGateway().access_token, "ENV-private")
             response = self.client.post(self.url, {"action": "verify", "version": self.current_version()})
@@ -288,3 +288,43 @@ class MercadoPagoConnectionTests(TestCase):
             with self.assertRaises(RuntimeError):
                 self.save_draft()
         self.assertFalse(MercadoPagoConnection.objects.exists())
+
+    def test_single_panel_connect_discovers_receiver_and_activates_only_after_confirmation(self):
+        data = {"action": "connect", "version": 0, **self.values, "collector_id": ""}
+        self.assertEqual(self.client.post(self.url, data).status_code, 400)
+        self.http.assert_not_called()
+        self.assertFalse(MercadoPagoConnection.objects.exists())
+        self.http.side_effect = None
+        self.http.return_value = Mock(status_code=200)
+        self.http.return_value.json.return_value = {"id": 5678}
+        response = self.client.post(self.url, {**data, "confirm_connection": "on"})
+        self.assertEqual(response.status_code, 302)
+        connection = MercadoPagoConnection.objects.get()
+        self.assertEqual(connection.active_collector_id, "5678")
+        self.assertEqual(decrypt_configuration(connection.active_ciphertext)["collector_id"], "5678")
+        self.assertEqual(self.http.call_args.args[0], "GET")
+        self.assertFalse(ChargeAttempt.objects.exists())
+
+    def test_combined_failure_keeps_keys_current_revision_and_does_not_activate(self):
+        self.http.side_effect = None
+        self.http.return_value = Mock(status_code=401)
+        response = self.client.post(self.url, {"action": "connect", "version": 0, **self.values,
+            "collector_id": "", "confirm_connection": "on"})
+        self.assertEqual(response.status_code, 409)
+        self.assertContains(response, "Access Token foi recusado", status_code=409)
+        connection = MercadoPagoConnection.objects.get()
+        self.assertFalse(connection.active_ciphertext)
+        self.assertTrue(connection.draft_ciphertext)
+        self.assertEqual(response.context["form"]["version"].value(), connection.revision)
+        self.assertNotContains(response, self.values["access_token"], status_code=409)
+
+    def test_environment_switch_cannot_silently_reuse_test_credentials(self):
+        self.save_draft()
+        response = self.save_draft(environment="production", access_token="", public_key="", webhook_secret="", collector_id="")
+        self.assertEqual(response.status_code, 302)
+        values = decrypt_configuration(MercadoPagoConnection.objects.get().draft_ciphertext)
+        for key in ("access_token", "public_key", "webhook_secret", "collector_id"):
+            self.assertEqual(values[key], "")
+        response = self.client.post(self.url, {"action": "verify", "version": self.current_version()})
+        self.assertContains(response, "Falta preencher", status_code=409)
+        self.http.assert_not_called()

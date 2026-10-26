@@ -1,0 +1,13 @@
+{% extends "gestao/base_gestao.html" %}
+{% block title %}Confirmar recebimento | Equipe Morcego{% endblock %}
+{% block gestao_header %}Recebimento da inscrição #{{ reg.registration_number }}{% endblock %}
+{% block content %}<div class="mg-form-sheet">
+<div class="page-heading"><div><h1>Confirmar recebimento</h1><p>{{ reg.person.full_name }} · {{ order.merchant_reference }}</p></div></div>
+<form method="post" class="mg-stack">{% csrf_token %}
+{% if form.non_field_errors %}<div class="mg-field-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+<section class="card mg-stack"><h2>Total do pedido: R$ {{ order.formatted_total }}</h2><p>Confirme somente um valor que já entrou para a equipe. Esta ação ocupa a vaga e registra a receita; o aceite dos termos continua sendo feito pelo participante.</p>
+<div class="form-grid">{% include "gestao/events/_field.html" with field=form.method %}{% include "gestao/events/_field.html" with field=form.amount %}</div>
+{% include "gestao/events/_field.html" with field=form.payment_notes %}
+<label class="form-label" for="{{ form.received_confirmed.id_for_label }}">{{ form.received_confirmed }} {{ form.received_confirmed.label }}</label>{{ form.received_confirmed.errors }}
+</section><div class="mg-form-actions"><a class="btn btn-secondary" href="{{ return_url }}">Voltar à ficha</a><button class="btn btn-primary" type="submit"><i data-lucide="check" aria-hidden="true"></i>Confirmar recebimento integral</button></div>
+</form></div>{% endblock %}

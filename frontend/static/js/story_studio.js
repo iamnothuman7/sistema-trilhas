@@ -215,15 +215,16 @@
 
   function prepareEdition(version, priority = 'high') {
     const decoration = version.decorations;
-    const sources = [version.logo, decoration?.crowd];
+    const sources = [version.logo, decoration?.crowd, version.background_art];
     const cached = editionResourceCache.get(version.id);
     if (cached) return cached;
     const entry = { assets: null, promise: null };
     entry.promise = Promise.all(sources.map(source => loadImage(source, priority)))
-      .then(([logo, crowd]) => {
+      .then(([logo, crowd, artwork]) => {
         entry.assets = {
           logo,
           decorations: {
+            artwork,
             crowd: crowd ? tintSilhouette(crowd, decoration.tone) : null,
           }
         };
@@ -310,13 +311,20 @@
     bg.fillStyle = gradient;
     bg.fillRect(0, 0, WIDTH, HEIGHT);
 
+    if (editionDecorations.artwork) {
+      const art = editionDecorations.artwork;
+      const scale = Math.max(WIDTH / art.naturalWidth, HEIGHT / art.naturalHeight);
+      const width = art.naturalWidth * scale, height = art.naturalHeight * scale;
+      bg.drawImage(art, (WIDTH - width) / 2, (HEIGHT - height) / 2, width, height);
+    }
+
     const light = bg.createRadialGradient(540, 320, 0, 540, 320, 920);
     light.addColorStop(0, 'rgba(255, 145, 0, 0.24)');
     light.addColorStop(1, 'rgba(255, 255, 255, 0)');
     bg.fillStyle = light;
     bg.fillRect(0, 0, WIDTH, HEIGHT);
 
-    drawFireSparks(bg);
+    if (!editionDecorations.artwork) drawFireSparks(bg);
     text(bg, activeVersion.title, WIDTH / 2, 54, 36, '#ffffff', 800, 'center', 960);
     if (editionReady && editionArtwork) {
       drawContained(bg, editionArtwork, layout.logo);

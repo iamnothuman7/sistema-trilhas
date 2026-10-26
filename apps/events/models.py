@@ -173,6 +173,8 @@ class EventTheme(models.Model):
     text_color = models.CharField("Cor do Texto", max_length=10, default="#F8FAFC")
     hero_banner = models.ImageField("Banner Principal", upload_to="events/banners/", blank=True, null=True)
     logo_image = models.ImageField("Logotipo Específico do Evento", upload_to="events/logos/", blank=True, null=True)
+    cover_image = models.ImageField("Capa horizontal e compartilhamento", upload_to="events/covers/", blank=True, null=True)
+    square_image = models.ImageField("Capa quadrada da página inicial", upload_to="events/covers/", blank=True, null=True)
     custom_css = models.TextField("CSS Personalizado Seguro", blank=True, null=True)
     approved_at = models.DateTimeField("Aprovado em", blank=True, null=True)
 
@@ -182,6 +184,24 @@ class EventTheme(models.Model):
 
     def __str__(self):
         return f"Tema de {self.event.title}"
+
+    @property
+    def cover_url(self):
+        if self.cover_image:
+            return self.cover_image.url
+        if self.event.subdomain == "3trilhaotiangua":
+            from django.templatetags.static import static
+            return static("img/events/3trilhao-cover-16x9.jpg")
+        return self.hero_banner.url if self.hero_banner else ""
+
+    @property
+    def square_url(self):
+        if self.square_image:
+            return self.square_image.url
+        if self.event.subdomain == "3trilhaotiangua":
+            from django.templatetags.static import static
+            return static("img/events/3trilhao-cover-square.webp")
+        return ""
 
 
 class EventPageBlock(models.Model):

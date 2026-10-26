@@ -3,15 +3,16 @@ from django import forms
 
 class MercadoPagoDraftForm(forms.Form):
     version = forms.IntegerField(min_value=0, widget=forms.HiddenInput())
-    environment = forms.ChoiceField(label="Ambiente declarado", choices=(("sandbox", "Homologação (sandbox)"), ("production", "Produção (pagamentos reais)")))
-    collector_id = forms.RegexField(label="ID da conta recebedora", regex=r"^[1-9][0-9]{0,29}$", required=False, max_length=30,
-        help_text="ID numérico da conta própria da Equipe Morcego. O teste confronta esse ID com a conta autenticada pelo token.")
+    environment = forms.ChoiceField(label="Como você quer usar a conta?", choices=(("sandbox", "Fazer testes (homologação)"), ("production", "Receber inscrições de verdade (produção)")))
+    collector_id = forms.RegexField(label="ID da conta recebedora (opcional)", regex=r"^[1-9][0-9]{0,29}$", required=False, max_length=30,
+        help_text="Pode deixar vazio: identificamos a conta automaticamente. Não informe o número da aplicação.")
     public_key = forms.CharField(label="Public Key", required=False, max_length=2048,
         widget=forms.PasswordInput(render_value=False), help_text="Da mesma aplicação e ambiente do Access Token. Vazio mantém a chave já salva.")
     access_token = forms.CharField(label="Access Token", required=False, max_length=2048,
         widget=forms.PasswordInput(render_value=False), help_text="Chave privada. Vazio mantém o token já salvo; o painel nunca o exibe.")
     webhook_secret = forms.CharField(label="Assinatura secreta do webhook", required=False, max_length=2048,
         widget=forms.PasswordInput(render_value=False), help_text="Obtida na configuração de Webhooks dessa aplicação. Vazio mantém o segredo já salvo.")
+    confirm_connection = forms.BooleanField(required=False, label="Confirmo que estas chaves são da conta da Equipe Morcego e do ambiente escolhido, configurei o webhook e, para pagamentos reais, já concluí os testes em homologação.")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -21,6 +22,7 @@ class MercadoPagoDraftForm(forms.Form):
                 field.widget.attrs["class"] = "form-control"
         for name in ("access_token", "public_key", "webhook_secret"):
             self.fields[name].widget.attrs.update(autocomplete="new-password", spellcheck="false")
+        self.fields["confirm_connection"].widget.attrs.pop("class", None)
 
     def clean(self):
         cleaned = super().clean()

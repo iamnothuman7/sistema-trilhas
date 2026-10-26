@@ -299,10 +299,12 @@ def registration_list(request, event_id):
     op_filter = request.GET.get("op_status")
 
     if q:
+        cpf_digits = "".join(character for character in q if character.isascii() and character.isdigit())
         regs = regs.filter(
             Q(person__full_name__icontains=q) | Q(person__phone__icontains=q)
             | Q(team_name__icontains=q) | Q(person__city__icontains=q)
             | Q(registration_number__icontains=q)
+            | Q(participant_cpf=cpf_digits if len(cpf_digits) == 11 else "invalid")
         )
     if status_filter:
         regs = regs.filter(commercial_state=status_filter)
@@ -324,6 +326,7 @@ def registration_list(request, event_id):
 
 
 @staff_required_custom
+@never_cache
 def registration_detail(request, event_id, reg_id):
     event = get_object_or_404(Event, id=event_id)
     reg = get_object_or_404(
@@ -336,14 +339,18 @@ def registration_detail(request, event_id, reg_id):
     terms = reg.terms_acceptances.all()
     consumptions = Consumption.objects.filter(entitlement__registration=reg).select_related("operator", "entitlement")
 
-    return render(request, "gestao/registrations/registration_detail.html", {
+    from apps.registrations.views_manual import manual_context
+    response = render(request, "gestao/registrations/registration_detail.html", {
         "event": event,
         "reg": reg,
         "entitlements": entitlements,
         "terms": terms,
         "consumptions": consumptions,
         "credential_available": credential_is_available(reg),
+        **manual_context(request, reg),
     })
+    response["Referrer-Policy"] = "no-referrer"
+    return response
 
 
 @staff_required_custom

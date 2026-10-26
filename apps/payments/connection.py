@@ -62,6 +62,10 @@ def _audit(connection, user, action, **extra):
 def save_draft(cleaned, user):
     connection = _locked(cleaned["version"])
     values = draft_values(connection)
+    if values["environment"] != cleaned["environment"]:
+        # A blank field must never carry test credentials into a real-money setup.
+        for name in ("access_token", "public_key", "webhook_secret", "collector_id"):
+            values[name] = ""
     values.update(environment=cleaned["environment"], collector_id=cleaned["collector_id"])
     for name in ("access_token", "public_key", "webhook_secret"):
         if cleaned[name]:
@@ -86,19 +90,33 @@ def verify_draft(version, user):
     if values["webhook_url"] != configured_webhook_url():
         raise ConnectionConflict("A URL de notificações do servidor mudou. Salve o rascunho novamente antes de testar.")
     gateway = MercadoPagoGateway(configuration=values)
-    if gateway.configuration_issues(card=True):
-        raise GatewayError("INCOMPLETE_DRAFT", "Complete Access Token, Public Key, assinatura do webhook e ID recebedor antes de testar.")
+    issues = [issue for issue in gateway.configuration_issues(card=True) if issue != "MP_COLLECTOR_ID"]
+    if issues:
+        labels = {"MP_ACCESS_TOKEN": "Access Token", "MP_PUBLIC_KEY": "Public Key", "MP_WEBHOOK_SECRET": "assinatura secreta do webhook"}
+        missing = ", ".join(labels.get(issue, "configuração do servidor") for issue in issues)
+        raise GatewayError("INCOMPLETE_DRAFT", f"Falta preencher: {missing}. Cole as credenciais da mesma aplicação e salve novamente.")
     error = None
     try:
         # Fixed official host and path, no redirects, no charge, no returned account PII persisted.
         account = gateway.get_account()
         collector_id = str(account.get("id", ""))
-        if not collector_id.isdecimal() or collector_id != values["collector_id"]:
-            error = GatewayError("ACCOUNT_MISMATCH", "O token pertence a outra conta ou não retornou um ID válido. Confira o ID recebedor e as credenciais da Equipe Morcego.")
+        if not collector_id.isascii() or not collector_id.isdecimal() or len(collector_id) > 30 or collector_id.startswith("0"):
+            error = GatewayError("INVALID_ACCOUNT", "O Mercado Pago não retornou uma conta válida. Confira o Access Token da aplicação.")
+        elif values["collector_id"] and collector_id != values["collector_id"]:
+            error = GatewayError("ACCOUNT_MISMATCH", "O ID informado corresponde a outra conta. Ele não é o número da aplicação. Deixe o ID opcional vazio e clique em Salvar e conferir conta para identificar o recebedor automaticamente.")
     except GatewayError as exc:
-        error = GatewayError(exc.code, "Não foi possível conferir a conta no Mercado Pago. Verifique o token e tente novamente. Nenhuma cobrança foi criada.")
+        reasons = {
+            "HTTP_401": "O Access Token foi recusado. Copie o token completo em Credenciais de produção da aplicação da Equipe Morcego.",
+            "HTTP_403": "O Mercado Pago negou acesso à conta. Confira se as credenciais estão ativadas e se pertencem à aplicação Checkout Transparente via Payments.",
+            "HTTP_429": "O Mercado Pago limitou as consultas. Aguarde alguns minutos e use Testar conta sem cobrar.",
+            "CONNECTION_ERROR": "Não foi possível alcançar o Mercado Pago. As chaves continuam salvas; tente conferir a conta novamente.",
+        }
+        error = GatewayError(exc.code, reasons.get(exc.code, "O Mercado Pago não confirmou a conta agora. Confira o token e tente novamente.") + " Nenhuma cobrança foi criada.")
     with transaction.atomic():
         current = _locked(version)
+        if not error and not values["collector_id"]:
+            values["collector_id"] = collector_id
+            current.draft_ciphertext = encrypt_configuration(values)
         current.verified_at = None if error else timezone.now()
         current.verified_draft_digest = "" if error else hashlib.sha256(current.draft_ciphertext.encode()).hexdigest()
         current.verified_collector_id = "" if error else collector_id

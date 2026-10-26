@@ -1,3 +1,5 @@
+from datetime import timedelta
+from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
@@ -31,11 +33,25 @@ def mercadopago_connection(request):
     if request.method == "POST":
         action = request.POST.get("action")
         try:
-            if action == "save_draft":
+            if action in ("save_draft", "save_verify", "connect"):
                 form = MercadoPagoDraftForm(request.POST)
-                if form.is_valid():
-                    save_draft(form.cleaned_data, request.user)
-                    messages.success(request, "Rascunho salvo com proteção. A configuração em uso não mudou.")
+                valid = form.is_valid()
+                if valid and action == "connect" and not form.cleaned_data.get("confirm_connection"):
+                    form.add_error("confirm_connection", "Confirme a conta, o ambiente e a configuração do webhook para concluir.")
+                    valid = False
+                if valid:
+                    saved = save_draft(form.cleaned_data, request.user)
+                    form = None  # Render the current revision even if verification fails.
+                    if action in ("save_verify", "connect"):
+                        verified = verify_draft(saved.revision, request.user)
+                        if action == "connect":
+                            activate_draft({"version": verified.revision, "confirm_account": True, "confirm_environment": True,
+                                "confirm_webhook": True, "confirm_sandbox": True}, request.user)
+                            messages.success(request, "Conta conectada e configuração ativada. Nenhuma cobrança foi criada. Confira a entrega das notificações em Webhooks no Mercado Pago.")
+                        else:
+                            messages.success(request, "Conta identificada e dados salvos. Confira o recebedor e conclua a ativação abaixo.")
+                    else:
+                        messages.success(request, "Rascunho salvo com proteção. A configuração em uso não mudou.")
                     return redirect("gestao:mercadopago_connection")
                 status = 400
             elif action in ("verify", "activate"):
@@ -72,11 +88,12 @@ def mercadopago_connection(request):
         try:
             draft = draft_values(connection)
             context.update(
-                form=form or MercadoPagoDraftForm(initial={"version": version, "environment": draft["environment"], "collector_id": draft["collector_id"]}),
+                form=form or MercadoPagoDraftForm(initial={"version": version, "environment": draft["environment"]}),
                 operation_form=MercadoPagoOperationForm(initial={"version": version}),
                 activation_form=activation_form or MercadoPagoActivationForm(initial={"version": version}),
                 has_draft=bool(connection and connection.draft_ciphertext),
                 account_verified_at=connection.verified_at if connection else None,
+                verification_current=bool(connection and connection.verified_at and connection.verified_at >= timezone.now() - timedelta(minutes=30)),
                 verified_collector_id=connection.verified_collector_id if connection else "",
                 draft_environment=draft["environment"],
                 access_token_saved=bool(draft["access_token"]), public_key_saved=bool(draft["public_key"]),

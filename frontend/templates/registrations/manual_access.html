@@ -1,0 +1,10 @@
+{% extends "identity/auth_base.html" %}
+{% block title %}Acessar inscrição | Equipe Morcego{% endblock %}
+{% block auth_heading %}Sua inscrição na Equipe Morcego{% endblock %}
+{% block auth_description %}{% if event %}{{ event.title }}. {% endif %}Este acesso foi preparado pela organização para o responsável pela inscrição.{% endblock %}
+{% block auth_form %}
+{% if access_error %}<div class="auth-message auth-message-error" role="alert">{{ access_error }}</div><a class="auth-return" href="{% url 'identity:login' %}">Entrar na minha conta</a>
+{% else %}
+<form method="post" class="auth-form">{% csrf_token %}<p class="auth-description">Abra este link somente no dispositivo do responsável. Ele pode ser usado uma vez. O pagamento e a situação da inscrição serão conferidos na próxima etapa.</p><button class="auth-submit" type="submit">Acessar minha inscrição<i data-lucide="arrow-right" aria-hidden="true"></i></button></form>
+{% endif %}
+{% endblock %}

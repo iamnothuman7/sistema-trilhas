@@ -15,6 +15,8 @@
       {% if theme.logo_image %}<img class="mg-frame-preview" src="{{ theme.logo_image.url }}" alt="Logo atual da edição">{% else %}<p class="text-muted">Sem logo própria. A página usa o emblema da Equipe Morcego.</p>{% endif %}
       {% include "gestao/events/_field.html" with field=form.logo_image %}
     </section>
+    <section class="card"><div class="card-header"><h2>Capa para compartilhar o evento · 16:9</h2></div>{% if theme.cover_url %}<img class="mg-frame-preview" src="{{ theme.cover_url }}" alt="Capa horizontal atual">{% endif %}{% include "gestao/events/_field.html" with field=form.cover_image %}</section>
+    <section class="card"><div class="card-header"><h2>Destaque da página inicial · 1:1</h2></div>{% if theme.square_url %}<img class="mg-frame-preview" src="{{ theme.square_url }}" alt="Capa quadrada atual">{% endif %}{% include "gestao/events/_field.html" with field=form.square_image %}</section>
     <div class="mg-form-actions"><a class="btn btn-secondary" href="{% url 'gestao:dashboard' %}?event_id={{ event.id }}">Voltar ao painel</a><button class="btn btn-primary" type="submit"><i data-lucide="save" aria-hidden="true"></i>Salvar aparência</button></div>
   </form>
 </div>

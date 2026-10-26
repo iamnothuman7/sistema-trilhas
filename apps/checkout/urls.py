@@ -1,9 +1,11 @@
 from django.urls import path
 from . import views
+from apps.registrations.views_manual import manual_access
 
 app_name = "checkout"
 
 urlpatterns = [
+    path("acesso-inscricao/<str:token>/", manual_access, name="manual_access"),
     path("inscricao/<slug:event_slug>/", views.start_registration, name="start_registration"),
     path("pedido/<uuid:order_id>/", views.order_payment, name="order_payment"),
     path("pedido/<uuid:order_id>/pagar/", views.process_payment_attempt, name="process_payment"),

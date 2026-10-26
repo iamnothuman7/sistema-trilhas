@@ -70,6 +70,22 @@ class Registration(models.Model):
         )
 
 
+class ManualRegistration(models.Model):
+    registration = models.OneToOneField(Registration, on_delete=models.PROTECT, related_name="manual_entry")
+    created_by = models.ForeignKey("identity.User", on_delete=models.PROTECT)
+    request_key = models.UUIDField(unique=True)
+    request_hash = models.CharField(max_length=64)
+    notes = models.TextField("Motivo / observação")
+    access_nonce = models.UUIDField(default=uuid.uuid4, editable=False)
+    access_expires_at = models.DateTimeField()
+    access_used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Inscrição manual"
+        verbose_name_plural = "Inscrições manuais"
+
+
 class TermsAcceptance(models.Model):
     """
     Comprovação jurídica e LGPD do aceite pessoal dos termos e regulamento.

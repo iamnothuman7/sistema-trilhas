@@ -1,59 +1,45 @@
 {% extends "gestao/base_gestao.html" %}
 {% block title %}Mercado Pago | Equipe Morcego{% endblock %}
-{% block gestao_header %}Conexão Mercado Pago{% endblock %}
+{% block gestao_header %}Conectar Mercado Pago{% endblock %}
 {% block content %}
-<div class="mp-workspace">
-    <div class="page-heading"><div><h1>Recebimentos da Equipe Morcego</h1><p>Conecte a conta própria da equipe e acompanhe a configuração central usada em todas as edições.</p></div></div>
-    {% if connection_error %}<div class="alert alert-error" role="alert">{{ connection_error }} <a href="{% url 'gestao:mercadopago_connection' %}">Reabrir dados atuais</a></div>{% endif %}
-    <section class="card mp-status" aria-labelledby="connection-status-title">
-        <h2 id="connection-status-title" class="section-title">Configuração em uso</h2>
-        <div class="mg-status-list">
-            <span class="badge {% if connection_complete %}badge-success{% else %}badge-warning{% endif %}">{% if connection_complete %}Configuração completa{% else %}Pagamentos online indisponíveis{% endif %}</span>
-            <span class="badge">{% if connection_source == 'panel' %}Ativada pelo painel{% elif connection_source == 'unavailable' %}Proteção de credenciais indisponível{% else %}Configuração do servidor{% endif %}</span>
-        </div>
-        <dl class="mp-status-grid"><div><dt>Ambiente</dt><dd>{% if active_environment == 'production' %}Produção — pagamentos reais{% elif active_environment == 'sandbox' %}Homologação — exige credenciais de teste{% else %}Pendente{% endif %}</dd></div><div><dt>ID recebedor</dt><dd>{{ active_collector_id|default:"Ainda não configurado" }}</dd></div>{% if activated_at %}<div><dt>Ativada pelo painel em</dt><dd>{{ activated_at|date:"d/m/Y H:i" }}</dd></div>{% endif %}</dl>
-        <p class="text-muted">Este status indica a configuração. Ele não comprova uma cobrança aprovada, recebimento de webhook ou habilitação dos meios de pagamento pela conta.</p>
+<div class="mp-workspace mp-connection-simple">
+  <div class="page-heading"><div><h1>Conectar sua conta Mercado Pago</h1><p>Preencha as chaves da Equipe Morcego e conclua a conexão aqui mesmo.</p></div></div>
+  <section class="card mp-status" aria-labelledby="connection-status-title">
+    <h2 id="connection-status-title" class="section-title">{% if connection_complete %}Configuração ativa{% else %}Falta concluir a conexão{% endif %}</h2>
+    <div class="mg-status-list"><span class="badge {% if connection_complete %}badge-success{% else %}badge-warning{% endif %}">{% if connection_complete %}{% if active_environment == 'production' %}Pagamentos reais configurados{% else %}Ambiente de testes configurado{% endif %}{% else %}Pagamentos online indisponíveis{% endif %}</span></div>
+    <dl class="mp-status-grid"><div><dt>Conta em uso</dt><dd>{{ active_collector_id|default:"Ainda não conectada" }}</dd></div><div><dt>Ambiente em uso</dt><dd>{% if connection_complete %}{% if active_environment == 'production' %}Produção{% else %}Homologação{% endif %}{% else %}Aguardando ativação{% endif %}</dd></div>{% if activated_at %}<div><dt>Última ativação</dt><dd>{{ activated_at|date:"d/m/Y H:i" }}</dd></div>{% endif %}</dl>
+    <p class="text-muted">A conexão identifica a conta e ativa as chaves. A aprovação de uma compra e a entrega do webhook são verificações separadas.</p>
+  </section>
+  {% if connection_error %}<div class="alert alert-error" role="alert"><strong>Não foi possível concluir.</strong> {{ connection_error }} <a href="{% url 'gestao:mercadopago_connection' %}">Atualizar painel</a></div>{% endif %}
+  {% if can_edit_connection and form %}
+  <form method="post" autocomplete="off" class="card mg-stack mp-connect-form">
+    {% csrf_token %}{{ form.version }}
+    <div><h2 class="section-title">Chaves e conexão</h2><p>Você não precisa descobrir o ID recebedor: consultamos a conta automaticamente pelo Access Token.</p></div>
+    {% if form.errors %}<div class="mg-form-errors" role="alert">Revise os campos destacados. {{ form.non_field_errors }}{{ form.version.errors }}</div>{% endif %}
+    {% include "gestao/events/_field.html" with field=form.environment %}
+    <div class="alert alert-info">Para receber inscrições reais, escolha <strong>produção</strong> e use as credenciais de produção da mesma aplicação. Ao trocar de ambiente, preencha as três chaves novamente.</div>
+    <a class="btn btn-secondary" href="https://www.mercadopago.com.br/developers/panel" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i>Abrir minha aplicação no Mercado Pago</a>
+    <p class="text-muted">Entre com a conta da Equipe Morcego. Na aplicação <strong>Checkout Transparente via Payments</strong>, abra Credenciais de produção e ative-as, se solicitado. Copie as duas chaves abaixo.</p>
+    <div class="form-grid">
+      <div>{% include "gestao/events/_field.html" with field=form.public_key %}<span class="badge {% if public_key_saved %}badge-success{% else %}badge-warning{% endif %}">{% if public_key_saved %}Chave salva{% else %}Falta preencher{% endif %}</span></div>
+      <div>{% include "gestao/events/_field.html" with field=form.access_token %}<span class="badge {% if access_token_saved %}badge-success{% else %}badge-warning{% endif %}">{% if access_token_saved %}Token salvo{% else %}Falta preencher{% endif %}</span></div>
+    </div>
+    <section class="mp-webhook mg-stack" aria-labelledby="webhook-help">
+      <div><h3 id="webhook-help">Confirmação automática dos pagamentos</h3><p>O webhook avisa ao sistema quando alguém paga. Configure uma vez na mesma aplicação do Mercado Pago:</p></div>
+      <ol class="mp-steps"><li>Abra <strong>Webhooks</strong> e escolha o ambiente correspondente.</li><li>Cole a URL abaixo, selecione o evento <strong>Pagamentos</strong> e salve.</li><li>Copie a <strong>assinatura secreta</strong> exibida pelo Mercado Pago e cole no último campo deste painel.</li></ol>
+      <label class="form-label" for="mpWebhookUrl">URL pronta para copiar</label><input id="mpWebhookUrl" class="form-control" type="text" readonly value="{{ webhook_url }}">
+      <button class="btn btn-secondary" type="button" onclick="copyToClipboard(document.getElementById('mpWebhookUrl').value, this)"><i data-lucide="copy" aria-hidden="true"></i>Copiar URL do webhook</button>
+      {% include "gestao/events/_field.html" with field=form.webhook_secret %}<span class="badge {% if webhook_secret_saved %}badge-success{% else %}badge-warning{% endif %}">{% if webhook_secret_saved %}Assinatura salva{% else %}Falta preencher a assinatura{% endif %}</span>
+      <p class="text-muted">A assinatura é gerada pelo Mercado Pago; ela não é o Access Token. Salvar a chave aqui não configura a URL na conta externa.</p>
     </section>
-    {% if can_edit_connection %}
-    <section class="card" aria-labelledby="connection-guide-title">
-        <h2 id="connection-guide-title" class="section-title">1. Prepare sua aplicação</h2>
-        <ol class="mp-steps">
-            <li>Entre no <a href="https://www.mercadopago.com.br/developers/panel" target="_blank" rel="noopener noreferrer">Mercado Pago Developers</a> com a conta própria da Equipe Morcego e crie a aplicação para Checkout API/Transparente. Esta integração usa a Payments API.</li>
-            <li>Na aplicação, localize as credenciais do ambiente correto: Public Key e Access Token. Não use credenciais de outros projetos ou clientes. O prefixo da chave, sozinho, não certifica o ambiente.</li>
-            <li>Configure a notificação de <strong>Pagamentos</strong> em Webhooks e copie sua assinatura secreta. Use a URL abaixo no ambiente correspondente.</li>
-        </ol>
-        <div class="mp-webhook"><strong>URL de notificações</strong><code>{{ webhook_url }}</code></div>
-        <p class="text-muted">Homologue primeiro com contas, cartões e credenciais de teste, em uma instalação isolada. Trocar o campo para sandbox não impede uma cobrança real se você fornecer credenciais de produção.</p>
-        <a href="https://www.mercadopago.com.br/developers/pt/docs/checkout-api-payments/integration-test/make-test-purchase" target="_blank" rel="noopener noreferrer">Guia oficial de compra de teste</a>
-    </section>
-    {% if form %}
-    <form method="post" autocomplete="off" class="card mg-stack">
-        {% csrf_token %}<input type="hidden" name="action" value="save_draft">{{ form.version }}
-        <div><h2 class="section-title">2. Salve um rascunho</h2><p>Salvar não troca a configuração ativa. Os campos de credenciais ficam vazios por segurança; deixe-os vazios para preservar o que já está salvo.</p></div>
-        {% if form.errors %}<div class="mg-form-errors" role="alert">Revise os campos abaixo. {{ form.non_field_errors }}{{ form.version.errors }}</div>{% endif %}
-        <div class="form-grid">{% include "gestao/events/_field.html" with field=form.environment %}{% include "gestao/events/_field.html" with field=form.collector_id %}</div>
-        {% include "gestao/events/_field.html" with field=form.public_key %}<p class="text-muted mg-meta">Public Key: {% if public_key_saved %}salva{% else %}pendente{% endif %}.</p>
-        {% include "gestao/events/_field.html" with field=form.access_token %}<p class="text-muted mg-meta">Access Token: {% if access_token_saved %}salvo{% else %}pendente{% endif %}.</p>
-        {% include "gestao/events/_field.html" with field=form.webhook_secret %}<p class="text-muted mg-meta">Assinatura do webhook: {% if webhook_secret_saved %}salva{% else %}pendente{% endif %}.</p>
-        <div class="mg-form-actions"><button class="btn btn-primary" type="submit"><i data-lucide="save" aria-hidden="true"></i>Salvar rascunho</button></div>
-    </form>
-    <section class="card mg-stack" aria-labelledby="connection-verify-title">
-        <h2 id="connection-verify-title" class="section-title">3. Confira a conta recebedora</h2>
-        <p>O botão consulta somente a conta autenticada e compara seu ID com o recebedor informado. Não cria cobrança, não valida a Public Key no navegador e não testa o webhook ou certifica o ambiente.</p>
-        {% if account_verified_at %}<p class="alert alert-success">ID {{ verified_collector_id }} conferido em {{ account_verified_at|date:"d/m/Y H:i" }}. A conferência vale por 30 minutos para este rascunho.</p>{% else %}<p class="text-muted">Rascunho ainda não conferido.</p>{% endif %}
-        <form method="post">{% csrf_token %}<input type="hidden" name="action" value="verify">{{ operation_form.version }}<button class="btn btn-secondary" type="submit" {% if not has_draft %}disabled{% endif %}><i data-lucide="shield-check" aria-hidden="true"></i>Testar conta sem cobrar</button></form>
-    </section>
-    <form method="post" class="card mg-stack">
-        {% csrf_token %}<input type="hidden" name="action" value="activate">{{ activation_form.version }}
-        <div><h2 class="section-title">4. Ative após conferir</h2><p>Rascunho selecionado: <strong>{% if draft_environment == 'production' %}Produção — pagamentos reais{% else %}Homologação — credenciais de teste{% endif %}</strong>. A ativação é uma decisão separada do teste da conta.</p></div>
-        {% if activation_form.errors %}<div class="mg-form-errors" role="alert">Confirme os itens obrigatórios antes de ativar. {{ activation_form.non_field_errors }}{{ activation_form.version.errors }}</div>{% endif %}
-        {% for field in activation_form.visible_fields %}<label class="mg-check-row">{{ field }}<span>{{ field.label }}{% if field.errors %}<span class="mg-field-errors">{{ field.errors }}</span>{% endif %}</span></label>{% endfor %}
-        <p class="text-muted">Para produção, a confirmação de homologação também é obrigatória. Depois da primeira tentativa de pagamento, trocar conta, ambiente, aplicação ou assinatura do webhook exige manutenção coordenada; o painel permite renovar o Access Token da mesma configuração.</p>
-        <div class="mg-form-actions"><button class="btn btn-primary" type="submit" {% if not account_verified_at %}disabled{% endif %}>Ativar configuração conferida</button></div>
-    </form>
-    {% endif %}
-    {% else %}
-    <section class="card"><h2 class="section-title">Consulta financeira</h2><p>Sua conta pode acompanhar este status. Somente o proprietário global ou superusuário pode cadastrar credenciais, testar e ativar a conta recebedora.</p></section>
-    {% endif %}
+    <details{% if form.collector_id.errors %} open{% endif %}><summary>Opção avançada: conferir um ID específico</summary>{% include "gestao/events/_field.html" with field=form.collector_id %}</details>
+    {% if account_verified_at %}<div class="alert {% if verification_current %}alert-success{% else %}alert-info{% endif %}">Conta identificada: <strong>{{ verified_collector_id }}</strong>. Consulta em {{ account_verified_at|date:"d/m/Y H:i" }}. Ao concluir, consultamos novamente.</div>{% endif %}
+    <label class="mg-check-row">{{ form.confirm_connection }}<span>{{ form.confirm_connection.label }}{% if form.confirm_connection.errors %}<span class="mg-field-errors">{{ form.confirm_connection.errors }}</span>{% endif %}</span></label>
+    <div class="mg-form-actions"><button class="btn btn-primary" name="action" value="connect" type="submit"><i data-lucide="plug-zap" aria-hidden="true"></i>Concluir conexão</button><button class="btn btn-secondary" name="action" value="save_verify" type="submit">Salvar e conferir conta</button></div>
+    <p class="text-muted">Concluir salva, consulta a conta e ativa a configuração escolhida. Nenhuma cobrança é criada. No mesmo ambiente, campos de chaves vazios preservam as chaves salvas. Se a verificação falhar, mostramos o motivo acima e mantemos a configuração ativa anterior.</p>
+    <details><summary>Ajuda e verificações adicionais</summary><p>Depois de conectar, abra Webhooks no Mercado Pago e use a simulação de Pagamentos para conferir a entrega. Em produção, confirme o recebimento de uma inscrição real autorizada antes de divulgar as vendas.</p><p>Se já houver tentativas de pagamento, a troca de conta ou aplicação exige manutenção para preservar o histórico. A renovação do token da mesma configuração continua disponível.</p><a href="https://www.mercadopago.com.br/developers/pt/docs/checkout-api-payments/additional-content/your-integrations/notifications/webhooks" target="_blank" rel="noopener noreferrer">Instruções oficiais de Webhooks</a></details>
+  </form>
+  {% if has_draft %}<form method="post" class="mp-recheck">{% csrf_token %}<input type="hidden" name="action" value="verify">{{ operation_form.version }}<button class="btn btn-secondary" type="submit">Testar conta sem cobrar</button></form>{% else %}<p class="text-muted mp-recheck">Testar conta sem cobrar ficará disponível após salvar as chaves.</p>{% endif %}
+  {% elif not can_edit_connection %}<section class="card"><h2 class="section-title">Consulta financeira</h2><p>Somente o proprietário global ou superusuário pode conectar a conta recebedora.</p></section>{% endif %}
 </div>
 {% endblock %}

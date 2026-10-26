@@ -1,0 +1,37 @@
+{% extends "gestao/base_gestao.html" %}
+{% load static %}
+{% block title %}Inscrição manual | {{ event.title }}{% endblock %}
+{% block gestao_header %}Nova inscrição manual{% endblock %}
+{% block extra_head %}<script src="{% static 'js/manual-registration.js' %}?v=20261026" defer></script>{% endblock %}
+{% block content %}
+<div class="mg-form-sheet">
+<div class="page-heading"><div><h1>Inscrição manual</h1><p>Cadastre um piloto de {{ event.title }} com o mesmo controle de vagas e CPF do site.</p></div><a class="btn btn-secondary" href="{% url 'gestao:registration_list' event.id %}"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar às inscrições</a></div>
+<form method="post" class="mg-stack" data-manual-registration>
+{% csrf_token %}{{ form.request_token }}
+{% if form.non_field_errors %}<div class="mg-field-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+<section class="card mg-stack" aria-labelledby="pilot-title"><div class="card-header"><div><h2 id="pilot-title">1. Dados do piloto</h2><p>Confira CPF e contato antes de salvar. Um CPF pode ter apenas uma inscrição ativa ou reservada por evento.</p></div></div>
+<div class="form-grid">{% include "gestao/events/_field.html" with field=form.name %}{% include "gestao/events/_field.html" with field=form.cpf %}{% include "gestao/events/_field.html" with field=form.email %}{% include "gestao/events/_field.html" with field=form.phone %}{% include "gestao/events/_field.html" with field=form.city %}{% include "gestao/events/_field.html" with field=form.state %}</div>
+{% include "gestao/events/_field.html" with field=form.team %}
+</section>
+<section class="card mg-stack" aria-labelledby="package-title"><div class="card-header"><div><h2 id="package-title">2. Pacote e identificação</h2><p>O preço vem do lote e da camiseta escolhidos. Vagas e tamanhos são conferidos novamente ao salvar.</p></div></div>
+<div class="form-grid">{% include "gestao/events/_field.html" with field=form.lot %}{% include "gestao/events/_field.html" with field=form.shirt %}</div>
+<p class="form-help" data-manual-total aria-live="polite">Selecione o pacote para conferir o total.</p>
+{% include "gestao/events/_field.html" with field=form.notes %}
+</section>
+<section class="card mg-stack" aria-labelledby="payment-title"><div class="card-header"><div><h2 id="payment-title">3. Pagamento</h2><p>A reserva sem pagamento dura 35 minutos. Envie o link ao responsável para ele concluir a compra dentro desse prazo.</p></div></div>
+{% include "gestao/events/_field.html" with field=form.payment_state %}
+{% if can_receive %}
+<div class="mg-stack" data-received-fields>
+<div class="form-grid">{% include "gestao/events/_field.html" with field=form.method %}{% include "gestao/events/_field.html" with field=form.amount %}</div>
+{% include "gestao/events/_field.html" with field=form.payment_notes %}
+<div class="form-group"><label class="form-label" for="{{ form.received_confirmed.id_for_label }}">{{ form.received_confirmed }} {{ form.received_confirmed.label }}</label>{{ form.received_confirmed.errors }}</div>
+<p class="form-help">O valor informado precisa ser igual ao total do pacote. O lançamento ficará no financeiro como receita manual, com seu usuário e horário.</p>
+</div>
+{% else %}<p class="form-help">Sua conta pode cadastrar reservas. A confirmação de valores recebidos é feita por quem tem permissão financeira.</p>{% endif %}
+</section>
+<section class="card"><h2>Depois de salvar</h2><p>Entregue o link de acesso ao responsável. Após o pagamento, a conta é preparada automaticamente quando o e-mail ainda não tem cadastro. O participante define a senha, confirma sua titularidade e aceita os termos para liberar o QR Code. O comprovante PDF fica disponível na ficha.</p></section>
+<div class="mg-form-actions"><a class="btn btn-secondary" href="{% url 'gestao:registration_list' event.id %}">Cancelar</a><button type="submit" class="btn btn-primary"><i data-lucide="user-plus" aria-hidden="true"></i>Cadastrar inscrição</button></div>
+</form>
+{{ manual_catalog|json_script:"manual-catalog" }}
+</div>
+{% endblock %}

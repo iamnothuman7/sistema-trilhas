@@ -6,6 +6,33 @@ document.addEventListener('DOMContentLoaded', function () {
     const addButton = document.getElementById('btnAddParticipant');
     const maxParticipants = Number(form.dataset?.maxParticipants) || 20;
     const formatter = new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'});
+    const sameBuyer = document.getElementById('buyerIsParticipant');
+    const buyerSummary = document.getElementById('buyerParticipantSummary');
+    const identityFields = ['name', 'document', 'email', 'phone'];
+    const originalValues = new WeakMap();
+
+    function syncBuyer() {
+        if (!sameBuyer) return;
+        const rows = Array.from(container.querySelectorAll('[data-participant]'));
+        if (buyerSummary) buyerSummary.hidden = !sameBuyer.checked;
+        rows.forEach(function (row, index) {
+            const linked = index === 0 && sameBuyer.checked;
+            row.querySelectorAll('[data-participant-identity]').forEach(function (label) { label.hidden = linked; });
+            identityFields.forEach(function (field) {
+                const input = row.querySelector('[name="participant_' + field + '[]"]');
+                if (linked) {
+                    if (!originalValues.has(input)) originalValues.set(input, input.value);
+                    input.value = form.querySelector('[name="purchaser_' + field + '"]').value;
+                } else if (originalValues.has(input)) {
+                    input.value = originalValues.get(input);
+                    originalValues.delete(input);
+                }
+                if (field === 'name' || field === 'document') input.required = !linked;
+            });
+            row.querySelector('[data-remove-participant]').hidden = rows.length === 1 || linked;
+            row.querySelector('[data-participant-title]').textContent = linked ? 'Sua inscrição' : 'Participante ' + (index + 1);
+        });
+    }
 
     function refresh() {
         let cents = 0;
@@ -30,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 + Number(shirt.selectedOptions[0]?.dataset.extraCents || 0);
         });
         total.textContent = formatter.format(cents / 100);
+        syncBuyer();
     }
 
     addButton.addEventListener('click', function () {
@@ -49,5 +77,12 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
     container.addEventListener('change', refresh);
+    if (sameBuyer) {
+        sameBuyer.addEventListener('change', syncBuyer);
+        form.addEventListener('input', function (event) {
+            if (event.target.name?.startsWith('purchaser_')) syncBuyer();
+        });
+        form.addEventListener('submit', syncBuyer);
+    }
     refresh();
 });
