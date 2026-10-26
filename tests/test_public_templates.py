@@ -202,3 +202,22 @@ class EventStoryConfigurationTests(TestCase):
         self.assertEqual(version["decorations"]["kind"], "offroad")
         self.assertIsNone(version["decorations"]["crowd"])
         self.assertNotIn("background_art", get_event_versions(self.second)[0])
+
+
+    @override_settings(ALLOWED_HOSTS=["testserver", ".equipemorcego.nabio.pro"])
+    def test_horizontal_preview_exists_on_portal_and_both_event_links(self):
+        self.first.subdomain = "3trilhaotiangua"
+        self.first.save()
+        for host, path in [
+            ("testserver", "/"),
+            ("testserver", reverse("events:detail", args=[self.first.slug])),
+            ("3trilhaotiangua.equipemorcego.nabio.pro", "/"),
+        ]:
+            with self.subTest(host=host, path=path):
+                response = self.client.get(path, secure=True, HTTP_HOST=host, HTTP_USER_AGENT="facebookexternalhit/1.1")
+                image = f"https://{host}/static/img/events/3trilhao-cover-16x9.jpg?v=20261026-share2"
+                self.assertContains(response, f'property="og:image" content="{image}"')
+                self.assertContains(response, 'property="og:image:width" content="1672"')
+                self.assertContains(response, 'property="og:image:height" content="941"')
+                self.assertContains(response, f'property="og:url" content="https://{host}{path}"')
+                self.assertContains(response, f'name="twitter:image" content="{image}"')

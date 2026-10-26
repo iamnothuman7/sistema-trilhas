@@ -45,8 +45,9 @@ html[data-theme] {
   background: var(--ui-bg); scrollbar-color: var(--ui-scroll) transparent;
 }
 html[data-theme] body { background-color: var(--ui-bg); background-image: var(--ambient-background); color: var(--ui-text); }
-*, *::before, *::after { scrollbar-width: thin; scrollbar-color: var(--ui-scroll) transparent; }
-*::-webkit-scrollbar { width: 7px; height: 7px; }
+/* Hide the chrome, preserving native touch, wheel and keyboard scrolling. */
+html, html * { scrollbar-width: none !important; }
+html::-webkit-scrollbar, html *::-webkit-scrollbar { display: none; width: 0; height: 0; }
 *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
 *::-webkit-scrollbar-thumb { background: var(--ui-scroll); border: 2px solid transparent; border-radius: 20px; background-clip: padding-box; }
 *::-webkit-scrollbar-thumb:hover { background-color: var(--ui-scroll-hover); }
@@ -63,7 +64,7 @@ html[data-theme] body { background-color: var(--ui-bg); background-image: var(--
 .management-main .card { background: var(--glass-fill); }
 .management-main :where(.table-responsive,.table-container,.table-wrap), .public-table-wrap { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
 .management-main :where(input:not([type=checkbox]):not([type=radio]),select,textarea), .payment-page .form-control { max-width: 100%; }
-.management-main dialog, .payment-dialog { overscroll-behavior: contain; scrollbar-gutter: stable; }
+.management-main dialog, .payment-dialog { overscroll-behavior: contain; scrollbar-gutter: auto; }
 .form-control { background: var(--ui-input); color: var(--ui-text); border-color: var(--ui-border); }
 select option { background: var(--ui-panel-solid); color: var(--ui-text); }
 .nav-container, .mobile-menu { background: var(--glass-fill); border-color: var(--ui-border); color: var(--ui-text); }

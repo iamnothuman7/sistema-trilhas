@@ -36,3 +36,15 @@ def authorized_pilot_art(user, registration_id):
     except (ValueError, TypeError, ValidationError):
         return None
     return reg if reg and is_pilot(reg) else None
+
+
+def purchased_art_url(user, order):
+    """Continue only to an eligible pilot belonging to this exact paid purchase."""
+    from django.urls import reverse
+    from urllib.parse import urlencode
+    for reg in paid_pilot_registrations(user, event=order.event).filter(source_order_line__order=order):
+        if is_pilot(reg):
+            return reverse("events:frames", args=[order.event.slug]) + "?" + urlencode({
+                "inscricao": str(reg.pk), "origem": "compra",
+            })
+    return None

@@ -14,8 +14,8 @@
       <p>{% if provider_verified %}O Mercado Pago aprovou seu pagamento de <strong>R$ {{ order.formatted_total }}</strong>.{% else %}Seu pedido de <strong>R$ {{ order.formatted_total }}</strong> está confirmado no sistema.{% endif %} Seu comprovante já está disponível.</p>
       {% if is_homologation %}<p class="payment-test-notice">Compra de teste aprovada. Nenhum valor real foi cobrado.</p>{% endif %}
       <ul class="payment-list">{% for line in order.lines.all %}{% if line.registration %}<li><strong>{{ line.intended_person_name }}</strong><a class="payment-button" href="{% url 'minha_conta:registration_pdf' line.registration.id %}"><i data-lucide="file-down" aria-hidden="true"></i> Baixar comprovante em PDF</a></li>{% endif %}{% endfor %}</ul>
-      <a class="payment-button payment-button-secondary" href="{% url 'identity:purchase_access' order.id %}">Acessar minha conta</a>
-      <p class="payment-help payment-muted">No primeiro acesso, defina sua senha. Cada participante precisa vincular sua inscrição e aceitar os termos para liberar o QR Code de credenciamento.</p>
+      <a class="payment-button payment-button-secondary" href="{% url 'identity:purchase_access' order.id %}">Continuar após a inscrição</a>
+      <p class="payment-help payment-muted">No primeiro acesso, defina sua senha. A moldura de story e feed abre em seguida para as inscrições de piloto confirmadas. Cada participante precisa vincular sua inscrição e aceitar os termos para liberar o QR Code de credenciamento.</p>
     </div>
   </dialog>
   {% endif %}

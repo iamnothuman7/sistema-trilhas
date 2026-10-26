@@ -1,4 +1,5 @@
 from unittest.mock import patch
+from django.conf import settings
 from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from apps.checkout.models import OrderStatus
@@ -122,7 +123,7 @@ class PurchaseAccountTests(TestCase):
         session.save()
         page = client.get(self.url(), secure=True)
         self.assertEqual(page["Referrer-Policy"], "same-origin")
-        token = client.cookies["csrftoken"].value
+        token = client.cookies[settings.CSRF_COOKIE_NAME].value
         data = {"csrfmiddlewaretoken": token, "new_password1": "Mobile-Test-Access-2027",
                 "new_password2": "Mobile-Test-Access-2027"}
         rejected = client.post(self.url(), data, secure=True, HTTP_ORIGIN="null")

@@ -14,6 +14,7 @@ from apps.core.utils import log_audit
 from apps.core.rate_limits import rate_limit_request, reset_rate_limit
 from .models import CheckoutAccount, User
 from .onboarding import provision_buyer_account
+from apps.mediaframes.access import purchased_art_url
 
 
 @private_checkout
@@ -25,7 +26,7 @@ def purchase_access(request, order_id):
         messages.warning(request, "O acesso da compra fica disponível após a confirmação do pagamento.")
         return redirect("checkout:order_result", order_id=order.pk)
     if request.user.is_authenticated and order.purchaser_user_id == request.user.pk:
-        return redirect("minha_conta:dashboard")
+        return redirect(purchased_art_url(request.user, order) or "minha_conta:dashboard")
     # POST supports legacy paid orders too. GET never creates an account or logs in.
     if request.method == "POST":
         created = provision_buyer_account(order)
@@ -83,4 +84,4 @@ def purchase_access(request, order_id):
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     reset_rate_limit(scope + ":account", order.purchaser_email.lower().strip())
     messages.success(request, "Sua conta está pronta. Acompanhe suas inscrições e conclua os termos de cada participante.")
-    return redirect("minha_conta:dashboard")
+    return redirect(purchased_art_url(request.user, order) or "minha_conta:dashboard")

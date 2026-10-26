@@ -2,6 +2,7 @@ from django.shortcuts import render
 from apps.events.public_catalog import upcoming_events, past_events
 from apps.events.views import event_detail
 from apps.core.models import Organization
+from apps.events.social import social_metadata
 
 def home(request):
     """
@@ -13,9 +14,11 @@ def home(request):
         return event_detail(request, slug=request.current_event.slug)
 
     org = Organization.objects.first()
+    featured = list(upcoming_events()[:6])
 
     return render(request, "core/home.html", {
-        "featured_events": list(upcoming_events()[:6]),
+        "featured_events": featured,
+        "social": social_metadata(request, featured[0]) if featured else None,
         "past_events": past_events()[:4],
         "org": org,
     })

@@ -9,6 +9,8 @@ from .models import Event, EventStatus, EventScheduleItem, Route, Sponsor, Legal
 from apps.catalog.offers import registration_catalog
 from apps.payments.gateway import MercadoPagoGateway
 from .public_catalog import upcoming_events, past_events
+from .social import social_metadata
+from apps.mediaframes.access import available_pilot_art
 from apps.mediaframes.models import FrameTemplate
 from apps.mediaframes.events_config import get_event_versions, select_version
 
@@ -27,6 +29,7 @@ def event_list(request):
         "past_events": past_events(),
     })
 
+@never_cache
 def event_detail(request, slug):
     """Página principal e oficial do evento."""
     event = get_event_resilient(slug, request)
@@ -53,6 +56,8 @@ def event_detail(request, slug):
         "event_versions": versions,
         "selected_version": selected,
         "ranking": get_event_rankings(event),
+        "art_available": bool(available_pilot_art(request.user, event=event)),
+        "social": social_metadata(request, event, selected),
     })
 
 
@@ -93,8 +98,9 @@ def event_frames(request, slug):
     Gerador interativo de Molduras Digitais 3D Pop-Out (Estilo Flávio Folia / NaBio).
     """
     event = get_event_resilient(slug, request)
-    from apps.mediaframes.access import available_pilot_art
     art_registrations = available_pilot_art(request.user, event=event)
+    selected_registration = next((reg for reg in art_registrations if str(reg.pk) == request.GET.get("inscricao")), None)
+    selected_registration = selected_registration or (art_registrations[0] if art_registrations else None)
     templates = FrameTemplate.objects.filter(event=event, is_active=True).order_by("-created_at")
     versions = get_event_versions(event)
     selected = select_version(request.GET.get("versao"), versions)
@@ -103,6 +109,9 @@ def event_frames(request, slug):
         "event": event,
         "templates": templates,
         "art_registrations": art_registrations,
+        "selected_registration": selected_registration,
+        "after_purchase": bool(selected_registration and request.GET.get("origem") == "compra"),
+        "social": social_metadata(request, event, selected),
         "event_versions": versions,
         "selected_version": selected,
     })

@@ -11,7 +11,7 @@
 {% if new_account %}
 {% for field in form %}<div class="auth-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label><div class="auth-input-wrap">{{ field }}</div>{% for error in field.errors %}<p class="auth-message auth-message-error" role="alert">{{ error }}</p>{% endfor %}</div>{% endfor %}
 <p class="auth-description">Use pelo menos 8 caracteres e evite senhas comuns ou parecidas com seus dados pessoais.</p>
-<button class="auth-submit" type="submit" data-submit-button><span data-submit-label>Salvar senha e acessar inscrições</span><i data-lucide="arrow-right" aria-hidden="true"></i></button>
+<button class="auth-submit" type="submit" data-submit-button><span data-submit-label>Salvar senha e continuar</span><i data-lucide="arrow-right" aria-hidden="true"></i></button>
 {% else %}
 <div class="auth-field"><label for="existingPassword">Senha, se já possui conta</label><div class="auth-input-wrap"><input id="existingPassword" type="password" name="password" autocomplete="current-password"></div></div>
 <button class="auth-submit" type="submit" data-submit-button><span data-submit-label>Continuar para minha conta</span><i data-lucide="arrow-right" aria-hidden="true"></i></button>

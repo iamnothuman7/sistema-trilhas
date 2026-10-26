@@ -107,7 +107,7 @@ def get_event_versions(event=None):
     is_third_trilhao = getattr(event, "subdomain", None) == "3trilhaotiangua"
     if is_third_trilhao:
         logo_url = static("img/logo_3trilhao_2027.png")
-    social_url = getattr(theme, "cover_url", "") or logo_url
+    social_url = getattr(theme, "cover_url", "") or (static("img/events/3trilhao-cover-16x9.jpg") if is_third_trilhao else logo_url)
     start = _local_datetime(getattr(event, "starts_at", None), event)
     end = _local_datetime(getattr(event, "ends_at", None), event)
 
@@ -178,6 +178,14 @@ def get_event_versions(event=None):
             version["footer_title"] = venue.upper() or "LOCAL A CONFIRMAR"
             if version["id"] == DEFAULT_VERSION:
                 version["label"] = "Terra & Trilha · 3º Trilhão"
+        version["feed_layout"] = {
+            **deepcopy(version["layout"]),
+            "logo": {"x": 200, "y": 65, "width": 680, "height": 320},
+            "photo": {"x": 185, "y": 460, "width": 710, "height": 490},
+            "pop_out": 65, "banner_y": 940, "banner_scale": 0.78,
+            "stamp_y": 1030, "stamp_height": 54, "stamp_baseline": 1067,
+            "credit_y": 1102, "footer_y": 1120,
+        }
         version["filename"] = f"eu-vou-{event_slug}-{version['id']}.png"
     return versions
 

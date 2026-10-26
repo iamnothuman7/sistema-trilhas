@@ -133,7 +133,7 @@ class PaidPilotArtTests(TestCase):
     def test_paid_buyer_gets_editor_before_terms_and_link_from_registration(self):
         _, _, reg = self.pilot()
         self.assertContains(self.client.get(self.page()), 'id="story-canvas"')
-        self.assertContains(self.client.get(reverse("minha_conta:registration_detail", args=[reg.pk])), "Criar story de piloto confirmado")
+        self.assertContains(self.client.get(reverse("minha_conta:registration_detail", args=[reg.pk])), "Criar story e feed de piloto confirmado")
         self.assertEqual(self.client.get(reverse("mediaframes:story-access", args=[reg.pk])).status_code, 200)
 
     def test_pending_refunded_review_and_canceled_orders_do_not_unlock(self):

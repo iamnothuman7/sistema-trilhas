@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Crie Seu Story 3D | {{ event.title }} | Equipe Morcego{% endblock %}
+{% block title %}Crie seu story e feed | {{ event.title }} | Equipe Morcego{% endblock %}
 {% block extra_head %}
-<meta name="description" content="Crie seu story de {{ event.title }} com a moldura oficial desta edição.">
+<meta name="description" content="Crie seu story e feed de {{ event.title }} com a moldura oficial desta edição.">
 {% include "events/_social_metadata.html" %}
 <style>
 .story-studio{max-width:1200px;margin:0 auto;padding:clamp(40px,6vw,72px) 24px 80px;font-family:'Poppins',sans-serif;color:var(--text-main,#202221);font-size:16px;line-height:1.7}
@@ -33,7 +33,7 @@
 .story-studio .studio-format{margin-left:auto;flex-shrink:0;background:var(--surface-hover,#f4f3ef);color:var(--text-muted,#68716c);border-radius:8px;padding:6px 8px;font-size:12px;font-weight:600}
 .story-studio .canvas-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#171a18;padding:28px 24px;position:relative}
 .story-studio .story-frame{position:relative;border:1px solid #3c413e;border-radius:14px;background:#101210;width:min(270px,100%);box-shadow:0 12px 32px rgb(0 0 0 / 28%);overflow:hidden;line-height:0}
-.story-studio #story-canvas{display:block;width:100%;height:auto;aspect-ratio:9/16;touch-action:pan-y;cursor:grab}.story-studio #story-canvas:active{cursor:grabbing}
+.story-studio #story-canvas{display:block;width:100%;height:auto;aspect-ratio:var(--art-ratio,9/16);touch-action:pan-y;cursor:grab}.story-studio #story-canvas:active{cursor:grabbing}
 .story-studio .preview-tag{position:absolute;left:50%;transform:translateX(-50%);top:10px;background:rgb(17 20 18 / 90%);color:#f6f6f1;font-size:10px;line-height:1.4;letter-spacing:.08em;font-weight:600;border-radius:6px;padding:6px 10px;white-space:nowrap;pointer-events:none}
 .story-studio .studio-actions{padding:28px}.story-studio .studio-upload-actions{display:flex;flex-direction:column;gap:16px}
 .story-studio .studio-actions .btn{min-height:52px;font-size:15px;font-weight:600;white-space:normal;line-height:1.45;border-radius:999px}
@@ -48,19 +48,27 @@
 @media(max-width:1000px){.story-studio .studio-grid{grid-template-columns:minmax(0,1fr) minmax(340px,400px);gap:24px}.story-studio .version-options{grid-template-columns:1fr}.story-studio .version-option{min-height:76px;padding:16px 20px}.story-studio .studio-intro{align-items:flex-start;gap:16px}.story-studio .studio-intro>.logo-emblem{width:72px}}
 @media(max-width:800px){.story-studio .studio-grid{grid-template-columns:1fr}.story-studio .version-options{grid-template-columns:repeat(3,minmax(0,1fr))}.story-studio .studio-card{max-width:560px;margin:8px auto 0}.story-studio .studio-grid>div{width:100%}}
 @media(max-width:560px){.story-studio{padding:36px 16px 56px}.story-studio .version-options,.story-studio .studio-field-grid,.story-studio .studio-tips{grid-template-columns:1fr}.story-studio .studio-panel,.story-studio .studio-actions{padding:28px 20px}.story-studio .studio-header{padding:20px;gap:12px}.story-studio .studio-format{display:none}.story-studio .studio-intro{display:block}.story-studio .studio-intro>.logo-emblem{margin-bottom:24px}}
+.story-studio .format-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0 24px}
+.story-studio .format-option{border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text-main);padding:14px 12px;min-height:70px;cursor:pointer;font:inherit;text-align:left}
+.story-studio .format-option strong,.story-studio .format-option small{display:block}.story-studio .format-option small{font-size:12px;color:var(--text-muted)}
+.story-studio .format-option[aria-pressed="true"]{border-color:var(--primary);background:var(--ui-brand-soft)}
+.story-studio .purchase-art-ready{margin-bottom:28px;padding:24px;border:1px solid var(--ui-green);border-radius:20px;background:var(--ui-panel)}
+.story-studio .purchase-art-ready h2{font-size:24px;margin:0 0 10px}.story-studio .purchase-art-ready p{margin:0 0 14px;color:var(--text-muted)}
+.story-studio .purchase-art-ready .public-actions{gap:12px}
 </style>
 {% endblock %}
 {% block content %}
 {% if art_registrations %}
 {{ event_versions|json_script:"event-versions" }}
 <div class="story-studio" data-version="{{ selected_version.id }}">
+  {% if after_purchase %}<section class="purchase-art-ready" aria-label="Inscrição confirmada"><h2>Pagamento confirmado. Você está dentro!</h2><p>Sua moldura está liberada. Crie o story e o feed com a mesma foto e baixe os dois. Para liberar o QR Code do evento, conclua o vínculo e o aceite dos termos na sua inscrição.</p><div class="public-actions"><a class="public-button public-button--secondary" href="{% url 'minha_conta:registration_pdf' selected_registration.id %}">Baixar comprovante PDF</a><a class="public-button public-button--secondary" href="{% url 'minha_conta:dashboard' %}">Minhas inscrições e termos</a></div></section>{% endif %}
   <div class="studio-grid">
     <div>
       <header class="studio-intro">
-        {% if event.theme.logo_image %}<img src="{{ event.theme.logo_image.url }}" alt="{{ event.title }}" class="logo-emblem">{% else %}<img src="{% static 'img/logo_emblem.png' %}" alt="Equipe Morcego" class="logo-emblem">{% endif %}
+        <img src="{{ selected_version.logo }}" alt="{{ event.title }}" class="logo-emblem">
         <div><span class="studio-eyebrow">Moldura oficial do evento</span><h1>A trilha começa com <span>você.</span></h1></div>
       </header>
-      <p class="studio-description">Personalize seu story de <strong>{{ event.title }}</strong>. Escolha uma foto, ajuste o enquadramento e compartilhe sua participação.</p>
+      <p class="studio-description">Personalize seu story e seu post de feed de <strong>{{ event.title }}</strong>. Escolha uma foto, ajuste o enquadramento e baixe os dois formatos sem enviar a foto novamente.</p>
       <section class="studio-section" aria-label="Estilo do story">
         <h2 class="studio-section-title">1. Escolha seu estilo</h2>
         <div class="version-options">
@@ -69,20 +77,21 @@
           {% endfor %}
         </div>
       </section>
+      <section class="studio-section" aria-label="Formato da arte"><h2 class="studio-section-title">2. Escolha o formato</h2><div class="format-options"><button type="button" class="format-option" data-art-format="story" aria-pressed="true"><strong>Story · 9:16</strong><small>1080 × 1920 px</small></button><button type="button" class="format-option" data-art-format="feed" aria-pressed="false"><strong>Feed · 4:5</strong><small>1080 × 1350 px</small></button></div></section>
       <section class="studio-panel">
-        <h2 class="studio-section-title">2. Deixe com a sua cara</h2>
+        <h2 class="studio-section-title">3. Deixe com a sua cara</h2>
         <div class="studio-field-grid">
-          <div class="form-group"><label class="form-label" for="story-registration">Piloto confirmado</label><select id="story-registration" class="form-control">{% for reg in art_registrations %}<option value="{{ reg.id }}" data-name="{{ reg.person.full_name }}" data-team="{{ reg.team_name|default:'' }}">#{{ reg.registration_number }} · {{ reg.person.full_name }}</option>{% endfor %}</select><input type="hidden" id="pilot-name-input" value="{{ art_registrations.0.person.full_name }}"></div>
-          <div class="form-group"><label class="form-label" for="team-name-input">Equipe ou cidade (opcional)</label><input type="text" id="team-name-input" class="form-control" placeholder="Sua equipe" maxlength="32"></div>
+          <div class="form-group"><label class="form-label" for="story-registration">Piloto confirmado</label><select id="story-registration" class="form-control">{% for reg in art_registrations %}<option value="{{ reg.id }}" {% if reg.id == selected_registration.id %}selected{% endif %} data-name="{{ reg.person.full_name }}" data-team="{{ reg.team_name|default:'' }}">{% if reg.registration_number %}#{{ reg.registration_number }} · {% endif %} {{ reg.person.full_name }}</option>{% endfor %}</select><input type="hidden" id="pilot-name-input" value="{{ selected_registration.person.full_name }}"></div>
+          <div class="form-group"><label class="form-label" for="team-name-input">Equipe ou cidade (opcional)</label><input type="text" id="team-name-input" class="form-control" placeholder="Sua equipe" maxlength="32" value="{{ selected_registration.team_name|default:'' }}"></div>
         </div>
       </section>
       <div class="studio-panel studio-tips">
         <div><strong>Escolha sua foto</strong><p>O recorte automático destaca você na moldura. Depois, ajuste a posição e o tamanho na prévia.</p></div>
-        <div><strong>Baixe e compartilhe</strong><p>Salve sua imagem em alta definição (1080 × 1920) e publique nos Stories.</p></div>
+        <div><strong>Baixe e compartilhe</strong><p>Baixe seu Story (1080 × 1920), alterne para Feed (1080 × 1350) e baixe também. Sua foto permanece no editor.</p></div>
       </div>
     </div>
     <div>
-      <section class="studio-card" aria-label="Editor do seu story">
+      <section class="studio-card" aria-label="Editor de story e feed">
         <div class="studio-header">
           <img src="{{ selected_version.logo }}" alt="{{ event.title }}" class="logo-emblem" width="46" height="38">
           <div><h2>{{ event.title }}</h2><p id="studio-edition">{{ selected_version.label }} · {{ selected_version.selector_detail }}</p></div><span class="studio-format">9:16</span>
@@ -106,12 +115,12 @@
 </div>
 {% else %}
 <div class="public-page public-page--narrow">
-  <header class="public-page-heading"><span class="public-eyebrow">{{ event.title }}</span><h1>Seu story de piloto confirmado</h1><p>A arte oficial é exclusiva para quem já tem uma inscrição de piloto com pagamento confirmado nesta edição.</p></header>
+  <header class="public-page-heading"><span class="public-eyebrow">{{ event.title }}</span><h1>Sua arte de piloto confirmado</h1><p>A arte oficial é exclusiva para quem já tem uma inscrição de piloto com pagamento confirmado nesta edição.</p></header>
   <section class="public-card"><h2>Já comprou sua inscrição?</h2><p>Entre com a conta usada na compra ou com a conta vinculada à sua inscrição. Pagamentos pendentes, inscrições canceladas e reembolsadas não liberam a arte.</p><div class="public-actions">{% if not user.is_authenticated %}<a class="public-button public-button--primary" href="{% url 'identity:login' %}?next={{ request.path|urlencode }}">Entrar na minha conta</a>{% else %}<a class="public-button public-button--primary" href="{% url 'minha_conta:dashboard' %}">Ver minhas inscrições</a>{% endif %}<a class="public-button public-button--secondary" href="{% url 'events:detail' slug=event.slug %}#inscricao">Garantir minha inscrição</a></div></section>
 </div>
 {% endif %}
 {% endblock %}
 
 {% block extra_js %}
-{% if art_registrations %}<script src="{% static 'js/story_studio.js' %}?v=trilhaart20261026"></script>{% endif %}
+{% if art_registrations %}<script src="{% static 'js/story_studio.js' %}?v=story-feed20261026"></script>{% endif %}
 {% endblock %}

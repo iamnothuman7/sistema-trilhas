@@ -11,7 +11,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import RequestDataTooBig, TooManyFilesSent
 from django.core.files.base import ContentFile
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Q
 from django.http import HttpResponse, JsonResponse
 from django.http.multipartparser import MultiPartParserError
 from django.utils.text import slugify
@@ -67,36 +67,43 @@ def _delete_unused_artwork(storage, name):
     if (not name or not name.startswith("frames/generated/") or "\\" in name
             or ".." in name.split("/") or not name.endswith(".png")):
         return
-    if not GeneratedMontage.objects.filter(generated_image=name).exists():
+    if not GeneratedMontage.objects.filter(Q(generated_image=name) | Q(feed_image=name)).exists():
         try:
             storage.delete(name)
         except OSError:
             logger.exception("montage_previous_artwork_cleanup_failed")
 
 
-def _save_artwork(montage, raw, *, version, team_name, downloaded=False):
+def _save_artwork(montage, raw, *, version, team_name, downloaded=False, artwork_format="story"):
     """Serialize metadata/file replacement and remove superseded files on commit."""
+    if artwork_format not in ("story", "feed"):
+        raise InvalidArtwork("Escolha o formato Story ou Feed.")
+    image_field, hash_field, size_field, version_field = (
+        ("feed_image", "feed_sha256", "feed_file_size", "feed_version") if artwork_format == "feed"
+        else ("generated_image", "sha256", "file_size", "version")
+    )
     new_name = None
-    storage = montage.generated_image.storage
+    storage = getattr(montage, image_field).storage
     try:
         with transaction.atomic():
             # Acquire the write lock on SQLite too (select_for_update is a no-op
             # there), before loading the file currently owned by the row.
             GeneratedMontage.objects.filter(pk=montage.pk).update(downloads_count=F("downloads_count"))
             locked = GeneratedMontage.objects.select_for_update().get(pk=montage.pk)
-            old_name = locked.generated_image.name
+            artwork = getattr(locked, image_field)
+            old_name = artwork.name
             digest = hashlib.sha256(raw).hexdigest()
-            locked.version = slugify(version)[:60] or "trilhao-fogo"
+            setattr(locked, version_field, slugify(version)[:60] or "trilhao-fogo")
             locked.pilot_name = montage.registration.person.full_name[:120]
             locked.team_name = team_name.strip()[:120]
             locked.downloads_count += int(downloaded)
-            if digest != locked.sha256 or not old_name or not storage.exists(old_name):
-                locked.generated_image.save(f"{locked.pk}/{digest[:24]}.png", ContentFile(raw), save=False)
-                new_name = locked.generated_image.name
-            locked.sha256 = digest
-            locked.file_size = len(raw)
+            if digest != getattr(locked, hash_field) or not old_name or not storage.exists(old_name):
+                artwork.save(f"{locked.pk}/{artwork_format}-{digest[:24]}.png", ContentFile(raw), save=False)
+                new_name = artwork.name
+            setattr(locked, hash_field, digest)
+            setattr(locked, size_field, len(raw))
             locked.save()
-            if old_name and old_name != locked.generated_image.name:
+            if old_name and old_name != artwork.name:
                 transaction.on_commit(lambda: _delete_unused_artwork(storage, old_name))
         return digest
     except Exception:
@@ -237,11 +244,14 @@ def backup_montage(request, montage_id):
     if limited is not None:
         return limited
     try:
+        artwork_format = request.POST.get("format", "story")
+        if artwork_format not in ("story", "feed"):
+            raise InvalidArtwork("Escolha o formato Story ou Feed.")
         raw = _artwork_upload(request)
     except InvalidArtwork as exc:
         return _error(str(exc), exc.status)
     digest = _save_artwork(montage, raw, version=request.POST.get("version", "trilhao-fogo"),
-        team_name=request.POST.get("team_name", ""))
+        team_name=request.POST.get("team_name", ""), artwork_format=artwork_format)
 
     return JsonResponse({"ok": True, "archive_id": digest})
 
@@ -258,14 +268,17 @@ def deliver_download(request, montage_id):
     if limited is not None:
         return limited
     try:
+        artwork_format = request.POST.get("format", "story")
+        if artwork_format not in ("story", "feed"):
+            raise InvalidArtwork("Escolha o formato Story ou Feed.")
         raw = _artwork_upload(request)
     except InvalidArtwork as exc:
         return _error(str(exc), exc.status)
     _save_artwork(montage, raw, version=request.POST.get("version", "trilhao-fogo"),
-        team_name=request.POST.get("team_name", ""), downloaded=True)
+        team_name=request.POST.get("team_name", ""), artwork_format=artwork_format, downloaded=True)
 
     response = HttpResponse(raw, content_type="image/png")
-    response["Content-Disposition"] = f'attachment; filename="piloto-confirmado-{montage.pk}.png"'
+    response["Content-Disposition"] = f'attachment; filename="piloto-confirmado-{artwork_format}-{montage.pk}.png"'
     response["X-Content-Type-Options"] = "nosniff"
     download_id = request.POST.get("download_id", "")[:120]
     download_id = "".join(character for character in download_id

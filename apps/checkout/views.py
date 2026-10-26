@@ -450,6 +450,10 @@ def order_refresh_payment(request, order_id):
 @private_checkout
 def order_result(request, order_id):
     order = authorized_order(request, order_id)
+    from apps.mediaframes.access import purchased_art_url
+    art_url = purchased_art_url(request.user, order)
+    if art_url:
+        return redirect(art_url)
     provider_verified = order.charge_attempts.filter(transactions__fulfilled_at__isnull=False,
         transactions__provider_status="approved", transactions__posted_refund_cents=0).exists()
     return render(request, "checkout/order_result.html", {

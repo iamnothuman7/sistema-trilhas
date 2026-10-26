@@ -427,3 +427,13 @@ a:hover, .text-link:hover { color: #ffab72; }
 .trail-featured-art.trail-featured-art--cover:hover img{transform:none}
 .trail-featured-art--cover .trail-featured-label{bottom:12px;left:12px;font-size:10px}
 .event-preview-media{aspect-ratio:16/9}
+
+/* Real team photo: preserve the full portrait on mobile and desktop. */
+.trail-team-photo{position:relative;width:min(100%,440px);margin:0 auto;isolation:isolate;overflow:hidden;border-radius:28px;box-shadow:0 24px 64px #0004}
+.trail-team-photo>img{display:block;width:100%;height:auto;aspect-ratio:2/3}
+.trail-team-photo>figcaption{position:absolute;left:18px;right:18px;bottom:18px;padding:16px 18px;color:#fff;background:#14100ed9;border:1px solid #ffffff24;border-radius:18px;backdrop-filter:blur(12px);font-size:16px;font-weight:700}
+.trail-team-photo>figcaption span{display:block;margin-top:4px;font-size:11px;font-weight:400;color:#e4d7cd}
+.team-profile.public-event-card{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1fr);align-items:center}
+.team-profile .public-event-media{aspect-ratio:2/3}
+.team-profile .public-event-media img{height:auto;object-fit:contain}
+@media(max-width:640px){.team-profile.public-event-card{grid-template-columns:minmax(0,1fr)}.trail-team-photo{max-width:400px;border-radius:22px}}

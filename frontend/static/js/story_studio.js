@@ -23,15 +23,18 @@
   const registrationSelect = document.getElementById('story-registration');
 
   const WIDTH = 1080;
-  const HEIGHT = 1920;
+  let HEIGHT = 1920;
+  let activeFormat = 'story';
+  const formatButtons = [...document.querySelectorAll('[data-art-format]')];
   const versionsEl = document.getElementById('event-versions');
   const versions = versionsEl ? JSON.parse(versionsEl.textContent) : [];
   if (!versions.length) return;
 
-  let activeVersion = versions.find(v => v.id === document.body.dataset.version) || versions[0];
+  let activeVersion = versions.find(v => v.id === document.querySelector('.story-studio')?.dataset.version) || versions[0];
   const versionButtons = [...document.querySelectorAll('[data-event-version]')];
   const COLORS = { ...activeVersion.palette };
-  let PHOTO = { ...activeVersion.layout.photo };
+  let activeLayout = activeVersion.layout;
+  let PHOTO = { ...activeLayout.photo };
   let POP_OUT = activeVersion.layout.pop_out;
   let editionArtwork = null;
   let editionDecorations = {};
@@ -66,7 +69,7 @@
     cutoutError: false,
     brandReady: false,
     pilotName: pilotNameInput?.value.trim() || '',
-    teamName: '',
+    teamName: teamNameInput?.value.trim() || '',
     zoom: 1,
     offsetX: 0,
     offsetY: 0,
@@ -98,9 +101,16 @@
     canvas.style.touchAction = hasPhoto ? 'none' : 'pan-y';
     canvas.setAttribute('aria-busy', String(isBusy || !artworkIsReady()));
     const previewTag = document.querySelector('.preview-tag');
-    if (previewTag) previewTag.textContent = editionReady ? 'PRÉVIA DO SEU STORY 3D' : 'Carregando modelo…';
+    if (previewTag) previewTag.textContent = editionReady ? `PRÉVIA DO SEU ${activeFormat.toUpperCase()}` : 'Carregando modelo…';
     if (controls) controls.hidden = !hasPhoto;
     versionButtons.forEach(button => { button.disabled = state.exporting; });
+    formatButtons.forEach(button => {
+      button.disabled = state.exporting;
+      button.setAttribute('aria-pressed', String(button.dataset.artFormat === activeFormat));
+    });
+    if (teamNameInput) teamNameInput.disabled = state.exporting;
+    const formatLabel = document.querySelector('.studio-format');
+    if (formatLabel) formatLabel.textContent = activeFormat === 'feed' ? '4:5' : '9:16';
     if (uploadButton) uploadButton.disabled = isBusy;
     if (changeButton) { changeButton.disabled = isBusy; changeButton.hidden = !hasPhoto; }
     if (resetButton) { resetButton.disabled = state.exporting; resetButton.hidden = !hasPhoto; }
@@ -115,7 +125,7 @@
         ? 'Gerando PNG Alta Definição…'
         : state.cutoutError
         ? 'Tentar Recorte Novamente'
-        : 'Baixar Meu Story 3D';
+        : `Baixar meu ${activeFormat === 'feed' ? 'feed' : 'story'}`;
     }
     if (zoomInput) {
       zoomInput.disabled = isBusy || !hasPhoto;
@@ -136,7 +146,7 @@
     if (exportNote) {
       exportNote.textContent = state.exporting
         ? 'Preparando seu arquivo PNG…'
-        : 'PNG Alta Qualidade · 1080 × 1920 px';
+        : `PNG Alta Qualidade · 1080 × ${HEIGHT} px`;
     }
   }
 
@@ -278,11 +288,11 @@
 
   function drawCredit(ctx, y) {
     if (!state.brandReady) return;
-    const logoWidth = 148;
+    const logoWidth = activeFormat === 'feed' ? 108 : 148;
     const logoHeight = logoWidth * brandLogo.naturalHeight / brandLogo.naturalWidth;
     const gap = 16;
     ctx.save();
-    ctx.font = '600 26px Arial, sans-serif';
+    ctx.font = `600 ${activeFormat === 'feed' ? 20 : 26}px Arial, sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     const label = 'Desenvolvido por';
@@ -303,7 +313,7 @@
     bg.clearRect(0, 0, WIDTH, HEIGHT);
     fg.clearRect(0, 0, WIDTH, HEIGHT);
 
-    const layout = activeVersion.layout;
+    const layout = activeLayout;
     const gradient = bg.createLinearGradient(0, 0, WIDTH * 0.4, HEIGHT);
     activeVersion.background_colors.forEach((color, index, colors) => {
       gradient.addColorStop(index / (colors.length - 1), color);
@@ -356,6 +366,7 @@
     // Tilted 3D Banner ("EU VOU!")
     fg.save();
     fg.translate(540, layout.banner_y);
+    fg.scale(layout.banner_scale || 1, layout.banner_scale || 1);
     fg.rotate(-0.035);
     fg.fillStyle = COLORS.navy;
     fg.beginPath();
@@ -376,12 +387,12 @@
       const stampText = [state.pilotName, state.teamName].filter(Boolean).join(' • ').toUpperCase();
       fg.fillStyle = 'rgba(15, 23, 42, 0.9)';
       fg.beginPath();
-      fg.roundRect(140, 1475, 800, 74, 37);
+      fg.roundRect(140, layout.stamp_y || 1475, 800, layout.stamp_height || 74, 27);
       fg.fill();
       fg.strokeStyle = COLORS.yellow;
       fg.lineWidth = 3;
       fg.stroke();
-      text(fg, stampText, WIDTH / 2, 1524, 34, '#ffffff', 900, 'center');
+      text(fg, stampText, WIDTH / 2, layout.stamp_baseline || 1524, 34, '#ffffff', 900, 'center', 760);
       fg.restore();
     }
 
@@ -616,13 +627,14 @@
       || document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
   }
 
-  async function backupGenerated(blob, montageId, version) {
+  async function backupGenerated(blob, montageId, version, format, teamName) {
     if (!montageId) return false;
     try {
       const form = new FormData();
       form.append('version', version);
+      form.append('format', format);
       form.append('pilot_name', state.pilotName);
-      form.append('team_name', state.teamName);
+      form.append('team_name', teamName);
       form.append('image', blob, 'montagem.png');
       const response = await fetch('/api/montages/' + montageId + '/backup/', {
         method: 'POST',
@@ -639,10 +651,12 @@
     clearTimeout(generatedTimer);
     generatedTimer = setTimeout(async () => {
       try {
+        if (state.montageId !== montageId || state.busy || state.exporting || !editionReady) return;
+        const version = activeVersion.id, format = activeFormat, teamName = state.teamName;
         buildLayers();
         render();
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-        if (blob) await backupGenerated(blob, montageId, activeVersion.id);
+        if (blob) await backupGenerated(blob, montageId, version, format, teamName);
       } catch (_) {}
     }, 600);
   }
@@ -686,7 +700,7 @@
       state.busy = false;
       syncControls();
       render();
-      announce('Pronto! Sua foto saiu da moldura em 3D! Ajuste o zoom e baixe seu Story.');
+      announce('Pronto! Sua foto saiu da moldura em 3D! Ajuste o zoom e baixe seu Story e seu Feed.');
       scheduleGenerated(state.montageId);
     } catch (error) {
       if (request !== state.request) return;
@@ -860,6 +874,7 @@
       if (state.montageId) {
         const form = new FormData();
         form.append('version', activeVersion.id);
+        form.append('format', activeFormat);
         form.append('pilot_name', state.pilotName);
         form.append('team_name', state.teamName);
         form.append('image', blob, 'montagem.png');
@@ -871,12 +886,12 @@
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = activeVersion.filename || 'story-equipe-morcego.png';
+      anchor.download = (activeVersion.filename || 'eu-vou-equipe-morcego.png').replace(/\.png$/i, `-${activeFormat}.png`);
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 60000);
-      announce('Story 3D baixado com sucesso! Poste no Instagram e marque @equipemorcego.');
+      announce(`${activeFormat === 'feed' ? 'Feed' : 'Story'} baixado! Você também pode selecionar ${activeFormat === 'feed' ? 'Story' : 'Feed'} e baixar a outra versão com a mesma foto.`);
     } catch (error) {
       announce(error.message || 'Não foi possível baixar agora. Tente novamente.', true);
     } finally {
@@ -906,12 +921,44 @@
     });
   }
 
+  function framingKey() { return `${activeVersion.id}:${activeFormat}`; }
+
+  function saveFraming() {
+    framingByLayout.set(framingKey(), {zoom: state.zoom, offsetX: state.offsetX, offsetY: state.offsetY});
+  }
+
+  function applyFormatLayout() {
+    activeLayout = activeFormat === 'feed' ? activeVersion.feed_layout : activeVersion.layout;
+    PHOTO = { ...activeLayout.photo };
+    POP_OUT = activeLayout.pop_out;
+    HEIGHT = activeFormat === 'feed' ? 1350 : 1920;
+    frameLayer.height = background.height = foreground.height = canvas.height = HEIGHT;
+    canvas.style.setProperty('--art-ratio', `1080/${HEIGHT}`);
+    const framing = framingByLayout.get(framingKey());
+    state.zoom = framing?.zoom || 1;
+    state.offsetX = framing?.offsetX || 0;
+    state.offsetY = framing?.offsetY || 0;
+    state.drag = null;
+    canvas.classList.remove('is-dragging');
+  }
+
+  formatButtons.forEach(button => button.addEventListener('click', () => {
+    const format = button.dataset.artFormat;
+    if (state.exporting || !['story', 'feed'].includes(format) || format === activeFormat) return;
+    saveFraming();
+    activeFormat = format;
+    applyFormatLayout();
+    buildLayers(); render(); syncControls();
+    if (state.montageId) scheduleGenerated(state.montageId);
+    announce(`${format === 'feed' ? 'Feed' : 'Story'} selecionado. ${state.photo ? 'Sua foto foi mantida. Ajuste e baixe esta versão.' : 'Adicione sua foto para começar.'}`);
+  }));
+
   function selectEdition(identifier) {
     const version = versions.find(item => item.id === identifier);
     if (!version || state.exporting) return;
+    saveFraming();
     activeVersion = version;
-    PHOTO = { ...activeVersion.layout.photo };
-    POP_OUT = activeVersion.layout.pop_out;
+    applyFormatLayout();
     Object.assign(COLORS, activeVersion.palette);
     versionButtons.forEach(button => {
       const active = button.dataset.eventVersion === activeVersion.id;
