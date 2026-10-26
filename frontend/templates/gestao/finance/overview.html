@@ -88,5 +88,5 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if expense_form.errors %}<script>document.addEventListener('DOMContentLoaded', function () { document.getElementById('expenseModal').showModal(); });</script>{% endif %}
+{% if expense_form.errors %}<script>document.getElementById('expenseModal')?.showModal();</script>{% endif %}
 {% endblock %}

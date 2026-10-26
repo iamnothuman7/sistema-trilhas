@@ -1,4 +1,6 @@
 (function () {
+    const lifecycle = new AbortController();
+    window.trilhasOnPageLeave?.(() => lifecycle.abort());
     const sidebar = document.getElementById('managementSidebar');
     const backdrop = document.getElementById('sidebarBackdrop');
     const toggles = document.querySelectorAll('[data-menu-toggle]');
@@ -35,12 +37,12 @@
             if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
             else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
         }
-    });
+    }, {signal:lifecycle.signal});
     function adaptMenu() {
         closeMenu();
         if (!mobile.matches) sidebar.removeAttribute('inert');
     }
-    mobile.addEventListener('change', adaptMenu);
+    mobile.addEventListener('change', adaptMenu, {signal:lifecycle.signal});
     if (mobile.matches) sidebar.setAttribute('inert', '');
     const pin = document.getElementById('sidebarPin');
     try { if (localStorage.getItem('morcego-sidebar-pinned') === 'true') sidebar.classList.add('is-expanded'); } catch (_) {}
@@ -52,6 +54,6 @@
         pin.setAttribute('aria-pressed', String(expanded));
         try { localStorage.setItem('morcego-sidebar-pinned', String(expanded)); } catch (_) {}
     });
-    document.addEventListener('click', event => document.querySelectorAll('.user-menu[open]').forEach(menu => { if (!menu.contains(event.target)) menu.removeAttribute('open'); }));
+    document.addEventListener('click', event => document.querySelectorAll('.user-menu[open]').forEach(menu => { if (!menu.contains(event.target)) menu.removeAttribute('open'); }), {signal:lifecycle.signal});
     document.querySelectorAll('[data-auto-submit]').forEach(select => select.addEventListener('change', () => select.form.requestSubmit()));
 })();

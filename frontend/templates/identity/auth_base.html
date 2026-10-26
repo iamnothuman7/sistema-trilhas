@@ -16,7 +16,7 @@
     <script src="{% static 'js/auth.js' %}" defer></script>
 <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=20261026-art-share">
 <script src="{% static 'js/input-masks.js' %}?v=20261026" defer></script>
-</head>
+{% include "includes/htmx_head.html" %}</head>
 <body class="auth-page {% block auth_mode %}{% endblock %}">
     <a class="auth-skip-link" href="#auth-content">Ir para o formulário</a>
     <div class="auth-layout">

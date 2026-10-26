@@ -68,4 +68,5 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', refresh);
     else refresh();
     window.addEventListener('pageshow', refresh);
+    document.addEventListener('htmx:load', refresh);
 }());

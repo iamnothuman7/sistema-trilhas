@@ -5,7 +5,7 @@
   if (!canvas) return;
 
   const context = canvas.getContext('2d');
-  const previewOnly = canvas.dataset.previewOnly === 'true';
+  const internalEditor = canvas.dataset.internalEditor === 'true';
   const studio = document.querySelector('.story-studio');
   const input = document.getElementById('photo-input');
   const uploadButton = document.getElementById('upload-button');
@@ -19,10 +19,17 @@
   const help = document.getElementById('photo-help');
   const exportNote = document.getElementById('export-note');
   const retryButton = document.getElementById('retry-cutout-button');
+  const originalButton = document.getElementById('original-photo-button');
   const downloadLabel = document.getElementById('download-label');
   const pilotNameInput = document.getElementById('pilot-name-input');
   const teamNameInput = document.getElementById('team-name-input');
   const registrationSelect = document.getElementById('story-registration');
+  const subjectSelect = document.getElementById('artwork-subject');
+  const fitSelect = document.getElementById('photo-fit');
+  const centerButton = document.getElementById('center-photo-button');
+  const rememberPhoto = document.getElementById('remember-photo');
+  const photoDraftKey = () => registrationSelect?.value;
+  const isTeamArtwork = () => internalEditor && subjectSelect?.value === 'team';
 
   const WIDTH = 1080;
   let activeFormat = studio?.dataset.format === 'feed' ? 'feed' : 'story';
@@ -104,7 +111,7 @@
     canvas.style.touchAction = hasPhoto ? 'none' : 'pan-y';
     canvas.setAttribute('aria-busy', String(isBusy || !artworkIsReady()));
     const previewTag = document.querySelector('.preview-tag');
-    if (previewTag) previewTag.textContent = editionReady ? `${previewOnly ? 'MODELO' : 'PRÉVIA DO SEU'} ${activeFormat.toUpperCase()}` : 'Carregando modelo…';
+    if (previewTag) previewTag.textContent = editionReady ? `PRÉVIA DO ${activeFormat.toUpperCase()}` : 'Carregando modelo…';
     if (controls) controls.hidden = !hasPhoto;
     versionButtons.forEach(button => { button.disabled = state.exporting; });
     formatButtons.forEach(button => {
@@ -112,23 +119,26 @@
       button.setAttribute('aria-pressed', String(button.dataset.artFormat === activeFormat));
     });
     if (teamNameInput) teamNameInput.disabled = state.exporting;
+    if (pilotNameInput) pilotNameInput.disabled = state.exporting;
+    if (subjectSelect) subjectSelect.disabled = isBusy;
+    if (fitSelect) fitSelect.disabled = isBusy;
+    if (centerButton) centerButton.disabled = isBusy;
     const formatLabel = document.querySelector('.studio-format');
     if (formatLabel) formatLabel.textContent = activeFormat === 'feed' ? '4:5' : '9:16';
     if (uploadButton) uploadButton.disabled = isBusy;
     if (changeButton) { changeButton.disabled = isBusy; changeButton.hidden = !hasPhoto; }
     if (resetButton) { resetButton.disabled = state.exporting; resetButton.hidden = !hasPhoto; }
-    if (retryButton) { retryButton.hidden = !state.cutoutError; retryButton.disabled = isBusy; }
+    if (retryButton) { retryButton.hidden = internalEditor || !hasPhoto; retryButton.disabled = isBusy; }
+    if (originalButton) { originalButton.hidden = internalEditor || !hasPhoto || (!state.cutout && !state.busy && !state.cutoutError); originalButton.disabled = state.exporting; }
     if (downloadButton) {
-      downloadButton.disabled = (!previewOnly && (!hasPhoto || (!state.cutout && !state.cutoutError))) || isBusy || !artworkIsReady();
+      downloadButton.disabled = !hasPhoto || isBusy || !artworkIsReady();
     }
     if (downloadLabel) {
       downloadLabel.textContent = state.busy && hasPhoto
-        ? 'IA Recortando Foto…'
+        ? (internalEditor ? 'Preparando foto…' : 'IA Recortando Foto…')
         : state.exporting
         ? 'Gerando PNG Alta Definição…'
-        : state.cutoutError
-        ? 'Tentar Recorte Novamente'
-        : previewOnly ? `Baixar prévia ${activeFormat === 'feed' ? 'Feed' : 'Story'}` : `Baixar meu ${activeFormat === 'feed' ? 'feed' : 'story'}`;
+        : `Baixar ${activeFormat === 'feed' ? 'Feed' : 'Story'}`;
     }
     if (zoomInput) {
       zoomInput.disabled = isBusy || !hasPhoto;
@@ -136,14 +146,14 @@
     }
     if (uploadLabel) {
       uploadLabel.textContent = state.busy
-        ? 'IA Retirando o Fundo…'
+        ? (internalEditor ? 'Preparando foto…' : 'IA Retirando o Fundo…')
         : hasPhoto
-        ? 'Trocar Minha Foto'
-        : 'Adicionar Minha Foto';
+        ? 'Trocar foto'
+        : 'Adicionar foto';
     }
     if (help) {
       help.textContent = hasPhoto
-        ? (state.busy ? 'Retirando o fundo da sua foto com IA…' : 'Arraste a foto para ajustar o efeito 3D fora da moldura.')
+        ? (state.busy ? 'Preparando sua foto…' : 'Arraste a foto na prévia ou use o zoom para ajustar.')
         : 'Escolha uma foto sua ou com sua moto para começar.';
     }
     if (exportNote) {
@@ -379,15 +389,20 @@
     fg.beginPath();
     fg.roundRect(-466, -98, 920, 178, 18);
     fg.fill();
-    text(fg, 'EU VOU!', -6, 41, 156, COLORS.blue, 900, 'center');
+    if (isTeamArtwork()) {
+      text(fg, 'EQUIPE', -6, -24, 62, COLORS.blue, 900, 'center', 840);
+      text(fg, 'CONFIRMADA', -6, 52, 88, COLORS.blue, 900, 'center', 840);
+    } else {
+      text(fg, 'EU VOU!', -6, 41, 156, COLORS.blue, 900, 'center');
+    }
     fg.restore();
 
     // Pilot Name / Team Stamp if typed
-    if (state.pilotName || state.teamName) {
+    const stampText = [isTeamArtwork() ? '' : state.pilotName, state.teamName].filter(Boolean).join(' • ').toUpperCase();
+    if (stampText) {
       fg.save();
       fg.shadowColor = 'rgba(0,0,0,0.85)';
       fg.shadowBlur = 14;
-      const stampText = [state.pilotName, state.teamName].filter(Boolean).join(' • ').toUpperCase();
       fg.fillStyle = 'rgba(15, 23, 42, 0.9)';
       fg.beginPath();
       fg.roundRect(140, layout.stamp_y || 1475, 800, layout.stamp_height || 74, 27);
@@ -435,6 +450,31 @@
 
   function getPlacement() {
     const size = imageSize();
+    if (internalEditor) {
+      const contain = fitSelect?.value !== 'cover';
+      // Keep the entire photo above the slanted banner and inside the arch.
+      const visibleHeight = contain ? Math.min(PHOTO.height, activeLayout.banner_y - 130 * (activeLayout.banner_scale || 1) - PHOTO.y) : PHOTO.height;
+      let fit = Math.min((PHOTO.width - 24) / size.width, (visibleHeight - 24) / size.height);
+      if (contain) {
+        let low = 0, high = fit;
+        const radius = Math.min(PHOTO.width / 2, 360);
+        for (let step = 0; step < 12; step++) {
+          const candidate = (low + high) / 2;
+          const top = (visibleHeight - size.height * candidate) / 2;
+          const inset = top < radius ? radius - Math.sqrt(Math.max(0, radius ** 2 - (radius - top) ** 2)) : 0;
+          if (size.width * candidate <= PHOTO.width - 2 * inset - 24) low = candidate;
+          else high = candidate;
+        }
+        fit = low;
+      }
+      const scale = (contain ? fit : Math.max(PHOTO.width / size.width, PHOTO.height / size.height)) * state.zoom;
+      const width = size.width * scale, height = size.height * scale;
+      const baseX = PHOTO.x + (PHOTO.width - width) / 2, baseY = PHOTO.y + (visibleHeight - height) / 2;
+      const maxX = Math.abs(PHOTO.width - width) / 2, maxY = Math.abs(PHOTO.height - height) / 2;
+      state.offsetX = Math.max(-maxX, Math.min(maxX, state.offsetX));
+      state.offsetY = Math.max(-maxY, Math.min(maxY, state.offsetY));
+      return {x: baseX + state.offsetX, y: baseY + state.offsetY, width, height};
+    }
     const bounds = state.subjectBounds;
     const face = bounds && state.face;
     const scale = (face
@@ -467,6 +507,12 @@
       context.clip();
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = 'high';
+      if (internalEditor && fitSelect?.value === 'contain') {
+        const size = imageSize(), scale = Math.max(PHOTO.width / size.width, PHOTO.height / size.height) * 1.15;
+        context.save(); context.filter = 'blur(20px) brightness(0.45)';
+        context.drawImage(state.photo, PHOTO.x + (PHOTO.width - size.width * scale) / 2, PHOTO.y + (PHOTO.height - size.height * scale) / 2, size.width * scale, size.height * scale);
+        context.restore();
+      }
       context.drawImage(state.photo, placement.x, placement.y, placement.width, placement.height);
       context.restore();
     } else {
@@ -710,7 +756,7 @@
       state.busy = false;
       state.cutoutError = true;
       syncControls();
-      announce(error.message || 'Erro ao recortar fundo. Toque para tentar novamente.', true);
+      announce('Não foi possível remover o fundo. Sua foto original continua pronta para baixar; tente o recorte novamente se quiser.', true);
     } finally {
       window.clearTimeout(timeout);
       if (state.controller === controller) state.controller = null;
@@ -725,7 +771,10 @@
     announce('Preparando sua foto…');
     let decoded;
     try {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error('Use uma imagem JPG, PNG ou WebP.');
+      if (file.size > 15 * 1024 * 1024) throw new Error('A imagem deve ter até 15 MB.');
       decoded = await decodePhoto(file);
+      if ((decoded.naturalWidth || decoded.width) * (decoded.naturalHeight || decoded.height) > 40_000_000) throw new Error('A imagem deve ter até 40 megapixels.');
       const blob = await normalizePhoto(decoded);
       releasePhoto(decoded);
       decoded = null;
@@ -745,8 +794,13 @@
       state.offsetX = state.offsetY = 0;
       syncControls();
       render();
-      void detectPortraitFace(photo, request);
-      await removeBackground(request);
+      state.busy = false;
+      syncControls();
+      announce('Foto pronta. Você já pode baixar Story e Feed com o fundo original.');
+      if (rememberPhoto?.checked && photoDraftKey()) {
+        const saved=await window.TrilhasPhotoDraft?.save(photoDraftKey(),blob);
+        if (!saved) announce('Foto pronta para baixar. Este navegador não permitiu guardar o rascunho neste dispositivo.');
+      }
     } catch (error) {
       if (request !== state.request) return;
       state.busy = false;
@@ -759,7 +813,9 @@
   }
 
   function choosePhoto() {
-    if (!state.busy && !state.exporting) { faceEngine(); input.click(); }
+    if (!state.busy && !state.exporting) {
+      input.click();
+    }
   }
 
   function reset() {
@@ -838,10 +894,28 @@
     scheduleRender();
   });
 
+  subjectSelect?.addEventListener('change', () => {
+    document.getElementById('pilot-name-field').hidden = isTeamArtwork();
+    buildLayers(); scheduleRender();
+    announce(isTeamArtwork() ? 'Arte de equipe selecionada. A foto foi mantida.' : 'Arte de piloto selecionada. A foto foi mantida.');
+  });
+
+  function centerPhoto() {
+    state.zoom = 1; state.offsetX = state.offsetY = 0;
+    syncControls(); scheduleRender();
+  }
+  fitSelect?.addEventListener('change', centerPhoto);
+  centerButton?.addEventListener('click', centerPhoto);
+
   input?.addEventListener('change', () => useFile(input.files?.[0]));
   uploadButton?.addEventListener('click', choosePhoto);
+  document.getElementById('photo-upload-shortcut')?.addEventListener('click', choosePhoto);
   changeButton?.addEventListener('click', choosePhoto);
-  resetButton?.addEventListener('click', reset);
+  resetButton?.addEventListener('click', () => {
+    if (photoDraftKey()) window.TrilhasPhotoDraft?.remove(photoDraftKey());
+    if (rememberPhoto) rememberPhoto.checked=false;
+    reset();
+  });
   registrationSelect?.addEventListener('change', () => {
     reset();
     const option = registrationSelect.selectedOptions[0];
@@ -849,22 +923,46 @@
     teamNameInput.value = state.teamName = option?.dataset.team || '';
     buildLayers();
     scheduleRender();
+    if (rememberPhoto) rememberPhoto.checked=false;
+    restorePhoto();
   });
+  rememberPhoto?.addEventListener('change', async () => {
+    if (!photoDraftKey()) return;
+    if (rememberPhoto.checked && state.normalizedPhoto) await window.TrilhasPhotoDraft?.save(photoDraftKey(),state.normalizedPhoto);
+    else if (!rememberPhoto.checked) await window.TrilhasPhotoDraft?.remove(photoDraftKey());
+  });
+  async function restorePhoto() {
+    if (!rememberPhoto || !photoDraftKey()) return;
+    const key=photoDraftKey(), request=state.request;
+    const blob=await window.TrilhasPhotoDraft?.load(key);
+    if (blob && key===photoDraftKey() && request===state.request && !state.photo) {
+      rememberPhoto.checked=true;
+      await useFile(new File([blob],'foto-salva.png',{type:'image/png'}));
+    }
+  }
   retryButton?.addEventListener('click', () => {
-    if (state.normalizedPhoto && !state.busy && !state.exporting) removeBackground(state.request);
+    if (!internalEditor && state.normalizedPhoto && !state.busy && !state.exporting) {
+      void detectPortraitFace(state.photo, state.request);
+      removeBackground(state.request);
+    }
+  });
+  originalButton?.addEventListener('click', () => {
+    if (state.exporting) return;
+    state.request++; state.controller?.abort(); state.controller = null;
+    clearTimeout(generatedTimer); state.montageId = null;
+    releasePhoto(state.cutout); state.cutout = null; state.subjectBounds = state.face = null;
+    state.faceCandidates = []; state.cutoutError = false; state.busy = false;
+    framingByLayout.clear(); centerPhoto();
+    announce('Foto original selecionada. Ajuste e baixe sua arte.');
   });
 
   downloadButton?.addEventListener('click', async () => {
-    if (state.cutoutError && state.normalizedPhoto && !state.busy && !state.exporting) {
-      await removeBackground(state.request);
-      return;
-    }
-    if ((!previewOnly && !state.photo) || state.busy || state.exporting || !artworkIsReady()) return;
+    if (!state.photo || state.busy || state.exporting || !artworkIsReady()) return;
     state.exporting = true;
     syncControls();
     announce('Preparando sua montagem em alta qualidade…');
     try {
-      if (!previewOnly) {
+      if (!internalEditor) {
       const access = await fetch('/api/registrations/' + registrationSelect.value + '/story-access/', {
         credentials: 'same-origin', cache: 'no-store'
       });
@@ -891,12 +989,15 @@
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = (activeVersion.filename || 'eu-vou-equipe-morcego.png').replace(/\.png$/i, `${previewOnly ? '-previa' : ''}-${activeFormat}.png`);
+      const name = (isTeamArtwork() ? state.teamName : state.pilotName).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 64);
+      anchor.download = internalEditor
+        ? `${isTeamArtwork() ? 'equipe-confirmada' : 'piloto'}-${name || 'arte'}-${activeVersion.id}-${activeFormat}.png`
+        : (activeVersion.filename || 'eu-vou-equipe-morcego.png').replace(/\.png$/i, `-${activeFormat}.png`);
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 60000);
-      announce(previewOnly ? 'Prévia baixada. Este modelo não é um comprovante de inscrição.' : `${activeFormat === 'feed' ? 'Feed' : 'Story'} baixado! Você também pode selecionar ${activeFormat === 'feed' ? 'Story' : 'Feed'} e baixar a outra versão com a mesma foto.`);
+      announce(`${activeFormat === 'feed' ? 'Feed' : 'Story'} baixado! Você também pode selecionar ${activeFormat === 'feed' ? 'Story' : 'Feed'} e baixar a outra versão com a mesma foto.`);
     } catch (error) {
       announce(error.message || 'Não foi possível baixar agora. Tente novamente.', true);
     } finally {
@@ -926,7 +1027,7 @@
     });
   }
 
-  function framingKey() { return `${activeVersion.id}:${activeFormat}`; }
+  function framingKey() { return `${activeVersion.id}:${activeFormat}:${fitSelect?.value || 'cover'}`; }
 
   function saveFraming() {
     framingByLayout.set(framingKey(), {zoom: state.zoom, offsetX: state.offsetX, offsetY: state.offsetY});
@@ -955,7 +1056,7 @@
     applyFormatLayout();
     buildLayers(); render(); syncControls();
     if (state.montageId) scheduleGenerated(state.montageId);
-    announce(`${format === 'feed' ? 'Feed' : 'Story'} selecionado. ${previewOnly ? 'Prévia interna atualizada.' : state.photo ? 'Sua foto foi mantida. Ajuste e baixe esta versão.' : 'Adicione sua foto para começar.'}`);
+    announce(`${format === 'feed' ? 'Feed' : 'Story'} selecionado. ${state.photo ? 'Sua foto foi mantida. Ajuste e baixe esta versão.' : 'Adicione sua foto para começar.'}`);
   }));
 
   function selectEdition(identifier) {
@@ -973,7 +1074,7 @@
     const studioEdition = document.getElementById('studio-edition');
     if (studioEdition) studioEdition.textContent = `${activeVersion.label} · ${activeVersion.selector_detail}`;
     loadEditionArtwork();
-    announce(`${version.label} selecionado. ${previewOnly ? 'Confira o modelo nos dois formatos.' : state.photo ? 'Sua foto e recorte 3D foram mantidos!' : 'Adicione sua foto para criar o efeito 3D.'}`);
+    announce(`${version.label} selecionado. ${state.photo ? 'Sua foto foi mantida. Ajuste e baixe esta versão.' : 'Adicione sua foto para começar.'}`);
   }
 
   versionButtons.forEach(button => {
@@ -988,4 +1089,5 @@
   buildLayers();
   render();
   syncControls();
+  restorePhoto();
 })();

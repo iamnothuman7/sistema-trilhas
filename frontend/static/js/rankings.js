@@ -9,7 +9,8 @@
   status.className = 'event-ranking-status';
   status.textContent = 'Atualização automática a cada minuto enquanto esta seção estiver visível.';
   root.appendChild(status);
-  if ('IntersectionObserver' in window) new IntersectionObserver(entries => { visible = entries[0].isIntersecting; }).observe(root);
+  const observer = 'IntersectionObserver' in window ? new IntersectionObserver(entries => { visible = entries[0].isIntersecting; }) : null;
+  observer?.observe(root);
   function node(tag, className, text) {
     const item = document.createElement(tag); item.className = className; item.textContent = text; return item;
   }
@@ -55,6 +56,8 @@
   }
   function start() { window.clearInterval(timer); timer = window.setInterval(update, 60000); }
   start();
-  window.addEventListener('pageshow', start);
-  window.addEventListener('pagehide', () => window.clearInterval(timer));
+  const lifecycle = new AbortController();
+  window.trilhasOnPageLeave?.(() => { lifecycle.abort(); window.clearInterval(timer); observer?.disconnect(); });
+  window.addEventListener('pageshow', start, {signal:lifecycle.signal});
+  window.addEventListener('pagehide', () => window.clearInterval(timer), {signal:lifecycle.signal});
 })();

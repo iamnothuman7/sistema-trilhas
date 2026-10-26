@@ -5,7 +5,7 @@
 <script src="{% static 'js/theme.js' %}?v=20261026"></script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#11100f"><meta name="color-scheme" content="dark light">
 <title>{% block title %}Equipe Morcego | Trilhas e encontros{% endblock %}</title>
-<link rel="icon" type="image/png" sizes="64x64" href="{% static 'img/favicon-64.png' %}?v=trail20261023">
+<link rel="icon" type="image/png" sizes="64x64" href="{% static 'img/favicon-64.png' %}?v=handover20261026">
 <link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=navie2">
 <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=navie2">
 <link rel="stylesheet" href="{% static 'css/public-pages.css' %}?v=navie2">
@@ -13,8 +13,12 @@
 <link rel="stylesheet" href="{% static 'css/trail.css' %}?v=team-photo20261026">
 <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=20261026-art-share">
 <script src="{% static 'js/input-masks.js' %}?v=20261026" defer></script>
+{% include "includes/htmx_head.html" %}
+<script src="{% static 'js/main.js' %}?v=20261026" defer></script>
+<script src="{% static 'vendor/lucide/lucide.min.js' %}" defer></script>
+<script src="{% static 'js/icons.js' %}" defer></script>
 </head>
-<body>
+<body hx-boost="true" hx-ext="head-support" hx-history="false">
 {% if is_homologation %}<aside class="homologation-notice" role="status"><strong>Ambiente de testes</strong> · Inscrições fictícias. Use somente cartões de teste; não transfira dinheiro pelo Pix.</aside>{% endif %}
 <a class="skip-link" href="#main-content">Ir para o conteúdo</a>
 <header class="navbar"><div class="container nav-container">
@@ -25,19 +29,5 @@
 {% if messages %}<div class="container page-messages" role="status">{% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
 <main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>
 <footer class="footer"><div class="container footer-main"><div class="footer-brand"><img src="{% static 'img/logo-nav.webp' %}" alt="Equipe Morcego" class="logo-emblem" width="104" height="86" loading="lazy"><div><strong>O encontro é na trilha.</strong><p>Equipe Morcego · Tianguá, Ceará</p></div></div><div class="footer-links"><a href="{% url 'events:list' %}">Eventos</a><a href="{% url 'core:about' %}">A equipe</a><a href="{% url 'core:contact' %}">Fale com a gente</a><a href="{% url 'core:privacy' %}">Privacidade</a></div></div><div class="container footer-bottom"><span>© {{ current_year }} Equipe Morcego</span><a href="{% url 'minha_conta:dashboard' %}">Área do participante <i data-lucide="user-round" aria-hidden="true"></i></a><a href="{% url 'gestao:dashboard' %}">Acessar painel do sistema <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div></footer>
-<script src="{% static 'js/main.js' %}?v=navie2"></script><script src="{% static 'vendor/lucide/lucide.min.js' %}"></script><script src="{% static 'js/icons.js' %}"></script>
-<script>
-document.addEventListener('DOMContentLoaded',function(){
- const button=document.getElementById('mobileMenuBtn'),menu=document.getElementById('mobileMenuDrawer');
- let menuFrame=0;
- function sizeMenu(){menuFrame=0;if(!menu.hidden)menu.style.setProperty('--mobile-menu-viewport-top',Math.max(0,menu.getBoundingClientRect().top)+'px');}
- function queueMenuSize(){if(!menu.hidden&&!menuFrame)menuFrame=requestAnimationFrame(sizeMenu);}
- function close(){menu.hidden=true;button.setAttribute('aria-expanded','false');button.setAttribute('aria-label','Abrir menu');if(menuFrame){cancelAnimationFrame(menuFrame);menuFrame=0;}}
- button.addEventListener('click',function(){const open=menu.hidden;if(!open){close();return;}menu.hidden=false;button.setAttribute('aria-expanded','true');button.setAttribute('aria-label','Fechar menu');sizeMenu();});
- document.addEventListener('keydown',function(event){if(event.key==='Escape'&&!menu.hidden){close();button.focus();}});
- window.addEventListener('resize',queueMenuSize);
- window.addEventListener('scroll',queueMenuSize,{passive:true});
- window.matchMedia('(min-width: 961px)').addEventListener('change',function(event){if(event.matches)close();});
-});
-</script><script src="{% static 'js/trail-motion.js' %}?v=trail20261023" defer></script>{% block extra_js %}{% endblock %}
+<script src="{% static 'js/trail-motion.js' %}?v=handover20261026" defer></script>{% block extra_js %}{% endblock %}
 </body></html>

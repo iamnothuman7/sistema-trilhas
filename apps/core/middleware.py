@@ -1,6 +1,26 @@
 from django.http import Http404
+from django.utils.cache import patch_vary_headers
 from apps.events.models import Event, EventStatus
 from apps.core.permissions import can_manage_event
+
+
+class HtmxNavigationMiddleware:
+    """Keep login and successful POST redirects as complete navigations."""
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if request.headers.get("HX-Request") == "true":
+            if response.status_code in (301, 302, 303, 307, 308) and response.get("Location"):
+                target = response["Location"]
+                response.status_code = 200
+                response.content = b""
+                del response["Location"]
+                response["HX-Redirect"] = target
+                response["Cache-Control"] = "no-store"
+        patch_vary_headers(response, ["HX-Request"])
+        return response
 
 
 class EventSubdomainMiddleware:

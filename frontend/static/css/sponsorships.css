@@ -14,6 +14,12 @@
 .sp-receipts{display:grid;gap:16px}.sp-receipt{border:1px solid var(--border);border-radius:16px;padding:20px;overflow-wrap:anywhere}.sp-receipt-head strong{font-size:24px;font-variant-numeric:tabular-nums}.sp-receipt p{margin:8px 0}.sp-reversed{border-style:dashed}.sp-receipt .btn{margin-top:12px}
 .sp-event-picker{border-top:1px solid var(--border);padding-top:12px}.sp-event-picker summary{min-height:44px;cursor:pointer;font-weight:600;padding:10px 0}.sp-event-picker>div{display:grid;gap:8px}.sp-event-picker a{display:block;padding:12px;background:var(--input-bg);border-radius:10px;overflow-wrap:anywhere}
 .sp-contact p{margin:8px 0;overflow-wrap:anywhere}.sp-empty{grid-column:1/-1}.mg-sponsor-copy p .lucide{width:14px;height:14px;vertical-align:middle}.sp-detail-grid .form-grid{grid-template-columns:minmax(0,1fr)}
+.sp-hub-filters{grid-template-columns:minmax(0,1.3fr) minmax(0,1.2fr) minmax(0,1fr) auto}
+.sp-hub-grid{align-items:start}.sp-hub-card{min-width:0}.sp-hub-card .page-actions .btn{flex:1;white-space:normal}
+.sp-participations{display:grid;gap:16px}.sp-participation{display:grid;gap:16px;padding:20px;border:1px solid var(--border);border-radius:16px;background:var(--input-bg)}
+.sp-participation h3{font-size:16px;line-height:1.5;margin:0;overflow-wrap:anywhere}.sp-participation .sp-status-line{font-size:12px}.sp-participation .btn{white-space:normal}
+@media(max-width:1100px){.sp-hub-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:767px){.sp-hub-filters{grid-template-columns:minmax(0,1fr)}.sp-participation{padding:16px}}
 @media(min-width:1600px){.sp-detail-grid .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:1000px){.sp-detail-grid{grid-template-columns:minmax(0,1fr)}.sp-detail-grid .mg-sponsor-art{max-width:320px}.sp-summary{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:767px){.sp-filters,.sp-search-only{grid-template-columns:minmax(0,1fr)}.stat-grid.sp-summary{grid-template-columns:minmax(0,1fr)}.sp-balance{grid-template-columns:minmax(0,1fr)}.sp-balance>div{display:flex;justify-content:space-between;gap:12px;align-items:baseline}.sp-balance dt{margin:0}.sp-balance dd{font-size:18px}.sp-detail-grid{gap:20px}.sp-finance-panel{order:-1}.sp-receipt{padding:16px}.sp-receipt-head strong{font-size:22px}.sp-receipt .btn{width:100%}}

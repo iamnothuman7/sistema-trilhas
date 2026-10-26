@@ -67,6 +67,7 @@ MIDDLEWARE = [
     "apps.core.middleware.EventSubdomainMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.core.middleware.HtmxNavigationMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"

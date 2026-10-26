@@ -59,18 +59,18 @@
 </style>
 {% endblock %}
 {% block content %}
-{% if art_registrations or internal_preview %}
+{% if art_registrations or internal_editor %}
 {{ event_versions|json_script:"event-versions" }}
 <div class="story-studio" data-version="{{ selected_version.id }}" data-format="{{ selected_format|default:'story' }}">
-  {% if internal_preview %}<a class="public-back" href="{% url 'gestao:frames' event.id %}"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar às molduras</a><section class="studio-panel"><h2>Prévia interna das molduras oficiais</h2><p>Confira os estilos e baixe uma prévia nos formatos Story e Feed. A personalização com a foto do piloto é liberada na conta dele após o pagamento. Para a arte de uma equipe, use <a href="{% url 'gestao:team_frame_editor' event.id %}">Equipe confirmada</a>.</p></section>{% endif %}
-  {% if after_purchase %}<section class="purchase-art-ready" aria-label="Inscrição confirmada"><h2>Pagamento confirmado. Você está dentro!</h2><p>Sua moldura está liberada. Crie o story e o feed com a mesma foto e baixe os dois. Para liberar o QR Code do evento, conclua o vínculo e o aceite dos termos na sua inscrição.</p><div class="public-actions"><a class="public-button public-button--secondary" href="{% url 'minha_conta:registration_pdf' selected_registration.id %}">Baixar comprovante PDF</a><a class="public-button public-button--secondary" href="{% url 'minha_conta:dashboard' %}">Minhas inscrições e termos</a></div></section>{% endif %}
+  {% if internal_editor %}<a class="public-back" href="{% url 'gestao:frames' event.id %}"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar às molduras</a><section class="studio-panel"><h2>Crie a arte do piloto ou da equipe</h2><p>Adicione a foto, personalize os nomes e ajuste o enquadramento. Baixe Story e Feed com a mesma imagem. Fotos e artes ficam neste dispositivo.</p></section>{% endif %}
+  {% if after_purchase %}<span hidden data-clear-registration-draft="{{ event.id }}"></span><section class="purchase-art-ready" aria-label="Inscrição confirmada"><h2>Pagamento confirmado. Você está dentro!</h2><p>Sua moldura está liberada. Crie o story e o feed com a mesma foto e baixe os dois. Para liberar o QR Code do evento, conclua o vínculo e o aceite dos termos na sua inscrição.</p><div class="public-actions"><button class="public-button public-button--primary" id="photo-upload-shortcut" type="button">Criar minha arte: adicionar foto</button><a class="public-button public-button--secondary" href="{% url 'minha_conta:registration_pdf' selected_registration.id %}">Baixar comprovante PDF</a><a class="public-button public-button--secondary" href="{% url 'minha_conta:dashboard' %}">Minhas inscrições e termos</a></div></section>{% endif %}
   <div class="studio-grid">
     <div>
       <header class="studio-intro">
         <img src="{{ selected_version.logo }}" alt="{{ event.title }}" class="logo-emblem">
         <div><span class="studio-eyebrow">Moldura oficial do evento</span><h1>A trilha começa com <span>você.</span></h1></div>
       </header>
-      {% if not internal_preview %}<p class="studio-description">Personalize seu story e seu post de feed de <strong>{{ event.title }}</strong>. Escolha uma foto, ajuste o enquadramento e baixe os dois formatos sem enviar a foto novamente.</p>{% endif %}
+      {% if not internal_editor %}<p class="studio-description">Personalize seu story e seu post de feed de <strong>{{ event.title }}</strong>. Escolha uma foto, ajuste o enquadramento e baixe os dois formatos sem enviar a foto novamente.</p>{% endif %}
       <section class="studio-section" aria-label="Estilo do story">
         <h2 class="studio-section-title">1. Escolha seu estilo</h2>
         <div class="version-options">
@@ -80,7 +80,15 @@
         </div>
       </section>
       <section class="studio-section" aria-label="Formato da arte"><h2 class="studio-section-title">2. Escolha o formato</h2><div class="format-options"><button type="button" class="format-option" data-art-format="story" aria-pressed="true"><strong>Story · 9:16</strong><small>1080 × 1920 px</small></button><button type="button" class="format-option" data-art-format="feed" aria-pressed="false"><strong>Feed · 4:5</strong><small>1080 × 1350 px</small></button></div></section>
-      {% if not internal_preview %}<section class="studio-panel">
+      {% if internal_editor %}<section class="studio-panel">
+        <h2 class="studio-section-title">3. Personalize a arte</h2>
+        <div class="studio-field-grid">
+          <div class="form-group"><label class="form-label" for="artwork-subject">Tipo de arte</label><select id="artwork-subject" class="form-control"><option value="pilot" {% if artwork_subject == 'pilot' %}selected{% endif %}>Piloto · Eu vou!</option><option value="team" {% if artwork_subject == 'team' %}selected{% endif %}>Equipe confirmada</option></select></div>
+          <div class="form-group" id="pilot-name-field" {% if artwork_subject == 'team' %}hidden{% endif %}><label class="form-label" for="pilot-name-input">Nome do piloto (opcional)</label><input id="pilot-name-input" class="form-control" type="text" maxlength="64" placeholder="Nome para aparecer na arte" autocomplete="off"></div>
+          <div class="form-group"><label class="form-label" for="team-name-input">Nome da equipe ou cidade (opcional)</label><input id="team-name-input" class="form-control" type="text" maxlength="64" placeholder="Ex.: Equipe Morcego" autocomplete="off"></div>
+        </div>
+        <p class="form-help">A arte de equipe usa a faixa “Equipe confirmada”. A foto é mantida inteira por padrão; você pode ampliar, mover ou preencher a moldura.</p>
+      </section>{% else %}<section class="studio-panel">
         <h2 class="studio-section-title">3. Deixe com a sua cara</h2>
         <div class="studio-field-grid">
           <div class="form-group"><label class="form-label" for="story-registration">Piloto confirmado</label><select id="story-registration" class="form-control">{% for reg in art_registrations %}<option value="{{ reg.id }}" {% if reg.id == selected_registration.id %}selected{% endif %} data-name="{{ reg.person.full_name }}" data-team="{{ reg.team_name|default:'' }}">{% if reg.registration_number %}#{{ reg.registration_number }} · {% endif %} {{ reg.person.full_name }}</option>{% endfor %}</select><input type="hidden" id="pilot-name-input" value="{{ selected_registration.person.full_name }}"></div>
@@ -88,27 +96,28 @@
         </div>
       </section>
       <div class="studio-panel studio-tips">
-        <div><strong>Escolha sua foto</strong><p>O recorte automático destaca você na moldura. Depois, ajuste a posição e o tamanho na prévia.</p></div>
+        <div><strong>Escolha sua foto</strong><p>Sua foto fica pronta para baixar com o fundo original. Se quiser o efeito 3D, use a remoção de fundo opcional.</p></div>
         <div><strong>Baixe e compartilhe</strong><p>Baixe seu Story (1080 × 1920), alterne para Feed (1080 × 1350) e baixe também. Sua foto permanece no editor.</p></div>
       </div>{% endif %}
     </div>
     <div>
-      <section class="studio-card" aria-label="Editor de story e feed">
+      <section class="studio-card" id="art-photo-editor" aria-label="Editor de story e feed">
         <div class="studio-header">
           <img src="{{ selected_version.logo }}" alt="{{ event.title }}" class="logo-emblem" width="46" height="38">
           <div><h2>{{ event.title }}</h2><p id="studio-edition">{{ selected_version.label }} · {{ selected_version.selector_detail }}</p></div><span class="studio-format">9:16</span>
         </div>
-        <div class="canvas-stage"><div class="story-frame"><canvas data-preview-only="{{ internal_preview|yesno:'true,false' }}" id="story-canvas" width="1080" height="1920" tabindex="0"></canvas><span class="preview-tag">PRÉVIA DO SEU STORY</span></div></div>
+        <div class="canvas-stage"><div class="story-frame"><canvas data-internal-editor="{{ internal_editor|yesno:'true,false' }}" id="story-canvas" width="1080" height="1920" tabindex="0"></canvas><span class="preview-tag">PRÉVIA DO SEU STORY</span></div></div>
         <div class="studio-actions">
-          {% if not internal_preview %}{% csrf_token %}
+          {% if not internal_editor %}{% csrf_token %}{% endif %}
           <input id="photo-input" class="visually-hidden" type="file" tabindex="-1" accept="image/jpeg,image/png,image/webp">
-          <div id="photo-controls" hidden><p id="photo-help">Arraste a foto para ajustar o enquadramento.</p><div class="studio-zoom"><span>−</span><input id="zoom-input" type="range" min="1" max="2.5" step="0.01" value="1" aria-label="Ampliar a foto"><span>+</span></div></div>
-          {% endif %}<div class="studio-upload-actions">
-            {% if not internal_preview %}<button class="btn btn-primary btn-block btn-lg" id="upload-button" type="button"><i data-lucide="camera" aria-hidden="true"></i><span id="upload-label">Adicionar minha foto</span></button>{% endif %}
+          {% if not internal_editor %}<label class="draft-preferences"><input id="remember-photo" type="checkbox"><span>Manter minha foto neste dispositivo<small>Por até 7 dias. Desmarque para apagar o rascunho salvo.</small></span></label>{% endif %}<p class="form-help">{% if internal_editor %}Foto do piloto, foto da equipe ou PNG com transparência. {% endif %}JPG, PNG ou WebP · até 15 MB.</p>
+          <div id="photo-controls" hidden>{% if internal_editor %}<div class="form-group"><label class="form-label" for="photo-fit">Enquadramento</label><select id="photo-fit" class="form-control"><option value="contain">Mostrar a foto inteira</option><option value="cover">Preencher a moldura</option></select></div>{% endif %}<p id="photo-help">Arraste a foto para ajustar o enquadramento.</p><div class="studio-zoom"><span>−</span><input id="zoom-input" type="range" min="1" max="2.5" step="0.01" value="1" aria-label="Ampliar a foto"><span>+</span></div>{% if internal_editor %}<button type="button" class="studio-text-button" id="center-photo-button">Restaurar enquadramento</button>{% endif %}</div>
+          <div class="studio-upload-actions">
+            <button class="btn btn-primary btn-block btn-lg" id="upload-button" type="button"><i data-lucide="camera" aria-hidden="true"></i><span id="upload-label">{% if internal_editor %}Adicionar foto{% else %}Adicionar minha foto{% endif %}</span></button>
             <button class="btn btn-success btn-block btn-lg" id="download-button" type="button" disabled><i data-lucide="download" aria-hidden="true"></i><span id="download-label">Baixar meu story</span></button>
           </div>
-          <button class="btn btn-secondary btn-sm btn-block" id="retry-cutout-button" type="button" hidden><i data-lucide="refresh-cw" aria-hidden="true"></i> Tentar retirar o fundo novamente</button>
-          <p id="editor-status" role="status" aria-live="polite">{% if internal_preview %}Escolha um estilo e um formato para conferir a moldura. A prévia não é um comprovante de inscrição.{% else %}Escolha uma foto sua para criar o efeito 3D fora da moldura.{% endif %}</p>
+          <button class="btn btn-secondary btn-sm btn-block" id="retry-cutout-button" type="button" hidden><i data-lucide="refresh-cw" aria-hidden="true"></i> Remover fundo (opcional)</button><button class="btn btn-secondary btn-sm btn-block" id="original-photo-button" type="button" hidden>Usar foto original</button>
+          <p id="editor-status" role="status" aria-live="polite">{% if internal_editor %}Adicione a foto do piloto ou da equipe para começar.{% else %}Adicione sua foto. Você pode baixar com o fundo original ou removê-lo depois.{% endif %}</p>
           <div class="studio-footer"><span id="export-note">PNG Alta Qualidade · 1080 × 1920</span><div class="studio-footer-actions"><button type="button" id="change-photo-button" class="studio-text-button" hidden>Trocar foto</button><button type="button" id="reset-button" class="studio-text-button" hidden>Recomeçar</button></div></div>
         </div>
       </section>
@@ -124,5 +133,5 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if art_registrations or internal_preview %}<script src="{% static 'js/story_studio.js' %}?v=internal-preview20261026"></script>{% endif %}
+{% if art_registrations or internal_editor %}<script src="{% static 'js/photo-draft.js' %}?v=20261026"></script><script src="{% static 'js/story_studio.js' %}?v=original-photo20261026"></script>{% endif %}
 {% endblock %}

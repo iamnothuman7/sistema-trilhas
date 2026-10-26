@@ -1,12 +1,13 @@
 /* Motion stays local to visible sections; no scroll handlers or animation library. */
 (() => {
   'use strict';
+  const lifecycle = new AbortController();
   const root = document.documentElement;
   const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
   const countdowns = [...document.querySelectorAll('[data-trail-countdown]')];
   let timer;
   const updatePreference = () => root.classList.toggle('motion-paused', preference.matches);
-  preference.addEventListener('change', updatePreference);
+  preference.addEventListener('change', updatePreference, {signal:lifecycle.signal});
   updatePreference();
 
   function updateCountdowns() {
@@ -32,10 +33,11 @@
   document.addEventListener('visibilitychange', () => {
     root.classList.toggle('page-inactive', document.hidden);
     updateCountdowns();
-  });
+  }, {signal:lifecycle.signal});
   root.classList.toggle('page-inactive', document.hidden);
   updateCountdowns();
 
+  window.trilhasOnPageLeave?.(() => { lifecycle.abort(); clearTimeout(timer); });
   if (!('IntersectionObserver' in window)) return;
   const reveals = new IntersectionObserver(entries => {
     entries.forEach(entry => {
@@ -48,5 +50,6 @@
   const motion = new IntersectionObserver(entries => {
     entries.forEach(entry => entry.target.classList.toggle('motion-outside', !entry.isIntersecting));
   }, { rootMargin: '80px' });
+  window.trilhasOnPageLeave?.(() => { reveals.disconnect(); motion.disconnect(); });
   document.querySelectorAll('[data-trail-motion], .trail-hero, .trail-featured-event').forEach(element => motion.observe(element));
 })();

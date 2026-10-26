@@ -2,7 +2,7 @@
 {% load static %}
 {% block title %}Inscrição manual | {{ event.title }}{% endblock %}
 {% block gestao_header %}Nova inscrição manual{% endblock %}
-{% block extra_head %}<script src="{% static 'js/manual-registration.js' %}?v=20261026" defer></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'js/manual-registration.js' %}?v=20261026" defer></script>{% endblock %}
 {% block content %}
 <div class="mg-form-sheet">
 <div class="page-heading"><div><h1>Inscrição manual</h1><p>Cadastre um piloto de {{ event.title }} com o mesmo controle de vagas e CPF do site.</p></div><a class="btn btn-secondary" href="{% url 'gestao:registration_list' event.id %}"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar às inscrições</a></div>

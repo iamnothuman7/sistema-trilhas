@@ -1,6 +1,6 @@
 {% extends "gestao/base_gestao.html" %}
 {% load static %}
-{% block extra_head %}<script src="{% static 'js/manual-registration.js' %}?v=20261026" defer></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'js/manual-registration.js' %}?v=20261026" defer></script>{% endblock %}
 
 {% block title %}Ficha de Inscrição #{{ reg.registration_number }} | Painel Gestão{% endblock %}
 {% block gestao_header %}Ficha do Participante: #{{ reg.registration_number|default:'---' }} - {{ reg.person.full_name }}{% endblock %}

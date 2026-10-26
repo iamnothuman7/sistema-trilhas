@@ -3,10 +3,11 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods
 from django.views.decorators.cache import never_cache
+from uuid import UUID
+from django.http import Http404
 
 from apps.core.permissions import management_required, accessible_events, can_manage_event
 from apps.core.utils import log_audit
@@ -24,19 +25,67 @@ from apps.finance.sponsorships import record_sponsor_payment, reverse_sponsor_pa
 @require_GET
 @never_cache
 def sponsor_list(request, event_id):
-    event = request.management_event
-    sponsors = [decorate_balance(item) for item in sponsorships_with_balances(event.sponsors.all())]
-    totals = sponsor_totals(sponsors)
+    return _sponsor_hub(request, request.management_event)
+
+
+def _sponsor_hub(request, event=None):
+    """One brand card with scoped event participations and financial access."""
+    events = list(accessible_events(request.user, "sponsors").order_by("-starts_at"))
+    for choice in events:
+        choice.can_content = can_manage_event(request.user, choice, "content")
+        choice.can_finance = can_manage_event(request.user, choice, "finance")
+    if event is None and request.GET.get("event_id"):
+        try:
+            selected = UUID(request.GET["event_id"])
+        except (ValueError, TypeError):
+            raise Http404("Evento não encontrado.")
+        event = next((choice for choice in events if choice.pk == selected), None)
+        if event is None:
+            raise PermissionDenied("Sua conta não tem acesso aos patrocinadores deste evento.")
+    if event:
+        request.management_event = event
+    scopes = {choice.pk: choice for choice in events}
+    sponsors = list(sponsorships_with_balances(Sponsor.objects.filter(event__in=[event] if event else events)))
+    for sponsor in sponsors:
+        decorate_balance(sponsor)
+        sponsor.can_finance = scopes[sponsor.event_id].can_finance
+        sponsor.can_content = scopes[sponsor.event_id].can_content
+    financial_sponsors = [sponsor for sponsor in sponsors if sponsor.can_finance]
     query = request.GET.get("q", "").strip()[:150]
     status = request.GET.get("status", "")
-    can_finance = can_manage_event(request.user, event, "finance")
-    filtered = [s for s in sponsors if (not query or query.casefold() in s.name.casefold()) and
-        (not status or status == "public" and s.is_public or status == "hidden" and not s.is_public or
-         can_finance and s.payment_status == status)]
-    page = Paginator(filtered, 24).get_page(request.GET.get("page"))
-    return render(request, "gestao/sponsors/list.html", {"event": event, "sponsors": page, "page_obj": page,
-        "totals": totals, "q": query, "status": status, "can_finance": can_finance,
-        "can_content": can_manage_event(request.user, event, "content"), "total_count": len(sponsors)})
+    by_profile = {}
+    for sponsor in sponsors:
+        by_profile.setdefault(sponsor.profile_id, []).append(sponsor)
+    cards = []
+    brands = list(available_profiles(request.user).order_by("name", "pk"))
+    # Preserve access to older rows without creating or changing data on a GET.
+    brands.extend(sponsor for sponsor in sponsors if sponsor.profile_id is None)
+    for brand in brands:
+        legacy = isinstance(brand, Sponsor)
+        participations = [brand] if legacy else by_profile.get(brand.pk, [])
+        if event and not participations:
+            continue
+        if query and query.casefold() not in " ".join(str(getattr(brand, field, "") or "") for field in ("name", "contact_name", "contact_email", "contact_phone")).casefold():
+            continue
+        if status:
+            participations = [s for s in participations if
+                (status == "public" and s.is_public) or (status == "hidden" and not s.is_public) or
+                (s.can_finance and s.payment_status == status)]
+            if not participations:
+                continue
+        linked_events = set(brand.participations.filter(event__in=events).values_list("event_id", flat=True)) if not legacy else {brand.event_id}
+        cards.append({"brand": brand, "profile": None if legacy else brand,
+            "can_edit": not legacy and can_edit_profile(request.user, brand), "participations": participations,
+            "link_events": [choice for choice in events if not legacy and choice.can_content and
+                choice.organization_id == brand.organization_id and choice.pk not in linked_events]})
+    page = Paginator(cards, 24).get_page(request.GET.get("page"))
+    return render(request, "gestao/sponsors/bank.html", {"event": event, "events": events,
+        "cards": page, "page_obj": page, "q": query, "status": status,
+        "totals": sponsor_totals(financial_sponsors),
+        "can_finance": any(choice.can_finance for choice in events if event is None or choice.pk == event.pk),
+        "can_create": any(choice.can_content for choice in events),
+        "can_content": event is not None and can_manage_event(request.user, event, "content"),
+        "total_count": len(cards)})
 
 
 def _sponsor_form(request, sponsor):
@@ -98,19 +147,7 @@ def sponsor_edit(request, event_id, sponsor_id):
 @require_GET
 @never_cache
 def sponsor_bank(request):
-    events = accessible_events(request.user, "sponsors")
-    profiles = available_profiles(request.user).annotate(event_count=Count("participations", filter=Q(participations__event__in=events))).order_by("name", "pk")
-    query = request.GET.get("q", "").strip()[:150]
-    if query:
-        profiles = profiles.filter(Q(name__icontains=query) | Q(contact_name__icontains=query) | Q(contact_email__icontains=query))
-    page = Paginator(profiles, 24).get_page(request.GET.get("page"))
-    for profile in page:
-        profile.can_edit = can_edit_profile(request.user, profile)
-    event_choices = list(events.order_by("-starts_at"))
-    for event in event_choices:
-        event.can_content = can_manage_event(request.user, event, "content")
-    return render(request, "gestao/sponsors/bank.html", {"profiles": page, "page_obj": page, "q": query,
-        "can_create": accessible_events(request.user, "content").exists(), "events": event_choices})
+    return _sponsor_hub(request)
 
 
 def _profile_form(request, profile):
@@ -132,7 +169,7 @@ def _profile_form(request, profile):
             sync_profile(saved)
             log_audit(actor=request.user, action="SPONSOR_PROFILE_CREATED" if creating else "SPONSOR_PROFILE_UPDATED",
                 entity_type="SponsorProfile", entity_id=saved.pk, diff={"fields": list(form.changed_data)}, request=request)
-        messages.success(request, "Marca salva no banco de patrocinadores. A imagem e os links foram atualizados nas participações vinculadas.")
+        messages.success(request, "Cadastro salvo em Patrocinadores. A imagem e os links foram atualizados nos eventos vinculados.")
         return redirect("gestao:sponsor_bank")
     participations = profile.participations.filter(event__in=accessible_events(request.user, "sponsors")).select_related("event") if not creating else []
     return render(request, "gestao/sponsors/profile_form.html", {"form": form, "profile": profile, "creating": creating,
