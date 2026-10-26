@@ -1,5 +1,6 @@
 """Apply the organizer's confirmed dates and meeting place to this edition only."""
 import json
+import re
 from zoneinfo import ZoneInfo
 
 from django.core.management.base import BaseCommand, CommandError
@@ -26,9 +27,8 @@ class Command(BaseCommand):
         if (start.year, start.month, end.year, end.month) != (2027, 3, 2027, 3):
             raise CommandError("O calendário mudou; confira o mês e o ano antes de aplicar.")
         description = event.description or ""
-        if "19, 20 e 21 de março de 2027" not in description.casefold():
-            for old in ("20 e 21 de Março de 2027", "20 e 21 de março de 2027"):
-                description = description.replace(old, "19, 20 e 21 de março de 2027")
+        description = re.sub(r"(?:19,\s*)*20 e 21 de março de 2027", "19, 20 e 21 de março de 2027",
+                             description, flags=re.IGNORECASE)
         if "Mix Mateus" not in description:
             description = description.rstrip() + " Concentração no estacionamento do Mix Mateus, em Tianguá–CE."
         desired = {"starts_at": start.replace(day=19), "ends_at": end.replace(day=21),

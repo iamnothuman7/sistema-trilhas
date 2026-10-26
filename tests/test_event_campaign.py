@@ -27,6 +27,7 @@ class EventCampaignTests(TestCase):
         self.assertEqual(self.event.venue,'Estacionamento do Mix Mateus')
         self.assertEqual(self.event.registration_closes_at,original_closes)
         self.assertIn('19, 20 e 21',self.event.description)
+        self.assertEqual(self.event.description.count('19,'),1)
         call_command('configure_third_trilhao_2027',apply=True,stdout=StringIO())
         self.assertEqual(AuditLog.objects.filter(action='EVENT_CONFIRMED_CALENDAR_UPDATED').count(),1)
 
