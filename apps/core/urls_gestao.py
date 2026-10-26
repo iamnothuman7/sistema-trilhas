@@ -7,6 +7,7 @@ from apps.events import views_raffles
 from apps.events import views_rankings
 from apps.mediaframes import views_management as frame_views
 from apps.payments import views_management as payment_views
+from apps.catalog import views_management as catalog_views
 
 app_name = "gestao"
 
@@ -37,6 +38,8 @@ urlpatterns = [
 
     # Catálogo e Lotes
     path("eventos/<uuid:event_id>/catalogo/", views_gestao.catalog_management, name="catalog"),
+    path("eventos/<uuid:event_id>/catalogo/<str:kind>/novo/", catalog_views.catalog_editor, name="catalog_create"),
+    path("eventos/<uuid:event_id>/catalogo/<str:kind>/<str:object_id>/editar/", catalog_views.catalog_editor, name="catalog_edit"),
 
     # Financeiro Gerencial
     path("eventos/<uuid:event_id>/financeiro/", views_gestao.finance_overview, name="finance"),

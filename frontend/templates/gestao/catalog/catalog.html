@@ -6,8 +6,8 @@
 
 {% block content %}
 <div class="mg-page-intro mg-section-gap">
-    <h1>Catálogo e lotes</h1>
-    <p class="text-muted">Consulte modalidades, preços, cupons e itens disponíveis para o evento.</p>
+    <div class="page-heading"><h1>Catálogo e lotes</h1><a class="btn btn-primary" href="{% url 'gestao:catalog_create' event_id=event.id kind='produto' %}"><i data-lucide="plus" aria-hidden="true"></i>Novo produto</a></div>
+    <p class="text-muted">Crie e edite produtos, tamanhos, preços, períodos de venda, vagas e cupons desta edição.</p>
 </div>
 
 <!-- Produtos e Lotes -->
@@ -22,8 +22,9 @@
                 <div class="mg-row mg-space-bottom-sm">
                     <div>
                         <span class="badge badge-warning">{{ prod.get_kind_display }}</span>
-                        <strong>{{ prod.name }}</strong>
+                        <strong>{{ prod.name }}</strong><span class="badge {% if prod.active %}badge-success{% else %}badge-warning{% endif %}">{% if prod.active %}Ativo{% else %}Desativado{% endif %}</span>
                     </div>
+                    <div class="page-actions"><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='produto' object_id=prod.id %}">Editar produto</a><a class="btn btn-primary btn-sm" href="{% url 'gestao:catalog_create' event_id=event.id kind='lote' %}?product={{ prod.id }}">Novo lote</a></div>
                 </div>
 
                 <div class="text-muted mg-space-bottom">
@@ -32,6 +33,10 @@
                     Kit: {% if prod.includes_kit %}Sim{% else %}Não{% endif %}
                 </div>
 
+                <details class="catalog-variants"><summary>Tamanhos de camiseta e acréscimos</summary><div class="mg-stack">
+                    <p class="text-muted">Sem tamanhos personalizados, o checkout usa P, M, G, GG e XG sem acréscimo. Ao personalizar, cadastre todos os tamanhos que deseja oferecer.</p>
+                    {% for variant in prod.variants.all %}{% if variant.kind == 'SHIRT_SIZE' %}<div class="mg-row"><span>{{ variant.code }} · {{ variant.label }} · R$ {{ variant.extra_price_cents|money }} de acréscimo</span><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='tamanho' object_id=variant.id %}">Editar tamanho</a></div>{% endif %}{% endfor %}
+                    <a class="btn btn-secondary" href="{% url 'gestao:catalog_create' event_id=event.id kind='tamanho' %}?product={{ prod.id }}">Adicionar tamanho</a></div></details>
                 <!-- Tabela de Lotes deste produto -->
                 <div class="table-responsive">
                     <table class="table">
@@ -43,7 +48,7 @@
                                 <th scope="col">Fechamento</th>
                                 <th scope="col">Vagas</th>
                                 <th scope="col">Vendidos</th>
-                                <th scope="col">Status</th>
+                                <th scope="col">Status</th><th scope="col">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -60,10 +65,11 @@
                                             {% if lot.is_open %}Aberto{% else %}Fechado{% endif %}
                                         </span>
                                     </td>
+                                    <td><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='lote' object_id=lot.id %}" aria-label="Editar lote {{ lot.title }}">Editar lote</a></td>
                                 </tr>
                             {% empty %}
                                 <tr>
-                                    <td colspan="7" class="text-muted mg-align-center mg-table-empty">Nenhum lote configurado para este produto.</td>
+                                    <td colspan="8" class="text-muted mg-align-center mg-table-empty">Nenhum lote configurado para este produto.</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -79,7 +85,7 @@
 <!-- Cupons de Desconto -->
 <div class="card">
     <div class="card-header">
-        <h2 class="section-title">Cupons de Desconto Configurados</h2>
+        <h2 class="section-title">Cupons de desconto</h2><a class="btn btn-primary btn-sm" href="{% url 'gestao:catalog_create' event_id=event.id kind='cupom' %}">Novo cupom</a>
     </div>
 
     <div class="table-responsive">
@@ -92,7 +98,7 @@
                     <th scope="col">Utilizados</th>
                     <th scope="col">Limite</th>
                     <th scope="col">Validade</th>
-                    <th scope="col">Status</th>
+                    <th scope="col">Status</th><th scope="col">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -113,10 +119,11 @@
                                 {% if cup.is_valid %}Ativo{% else %}Expirado/Esgotado{% endif %}
                             </span>
                         </td>
+                        <td><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='cupom' object_id=cup.id %}">Editar cupom</a></td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="7" class="text-muted mg-align-center mg-table-empty">
+                        <td colspan="8" class="text-muted mg-align-center mg-table-empty">
                             Nenhum cupom de desconto criado para este evento.
                         </td>
                     </tr>

@@ -9,6 +9,95 @@ from apps.checkout.models import Order
 from .selectors import financial_entries, in_period, event_timezone
 
 
+def table_csv(event, name, headers, rows):
+    output = io.StringIO(newline='')
+    output.write('\ufeff')
+    writer = csv.writer(output, delimiter=';')
+    writer.writerow(headers)
+    for row in rows:
+        writer.writerow([format(value, '.2f').replace('.', ',') if isinstance(value, Decimal)
+            else value if isinstance(value, int) else safe_text(value) for value in row])
+    return csv_response(output, f'{name}_{event.slug}.csv')
+
+
+AGGREGATE_REPORTS = {
+    'statuses': ('Situação dos pedidos', 'orders_by_status', ['Situação', 'Pedidos', 'Total (R$)'], ['label', 'count', 'total_cents']),
+    'categories': ('Categorias', 'categories', ['Categoria', 'Inscrições'], ['category_name', 'count']),
+    'shirts': ('Tamanhos de camiseta', 'shirts', ['Tamanho', 'Inscrições ativas'], ['shirt_size', 'count']),
+    'teams': ('Equipes', 'teams', ['Equipe', 'Inscrições ativas'], ['name', 'count']),
+    'cities': ('Cidades', 'cities', ['Cidade', 'UF', 'Inscrições ativas'], ['name', 'state', 'count']),
+    'daily': ('Movimentação diária', 'daily', ['Dia', 'Movimentações', 'Receitas (R$)', 'Resultado (R$)'], ['day', 'count', 'revenue_cents', 'net_cents']),
+}
+
+
+def export_aggregate_csv(event, start=None, end=None, *, section, report=None):
+    from .selectors import get_event_report
+    report = report if report is not None else get_event_report(event, start, end)
+    _, key, headers, fields = AGGREGATE_REPORTS[section]
+    rows = ([Decimal(item.get(field) or 0) / 100 if field.endswith('_cents') else item.get(field) for field in fields] for item in report[key])
+    return table_csv(event, section, headers, rows)
+
+
+def export_expenses_csv(event, start=None, end=None):
+    from apps.finance.models import Expense
+    entries = in_period(Expense.objects.filter(event=event), 'due_at', start, end, date_field=True).select_related('vendor').order_by('due_at', 'pk')
+    return table_csv(event, 'despesas', ['Descrição', 'Categoria', 'Fornecedor', 'Vencimento', 'Pago em', 'Situação', 'Valor (R$)'],
+        ([item.description, item.get_category_display(), item.vendor.name if item.vendor else '', item.due_at, item.paid_at,
+          item.get_status_display(), Decimal(item.amount_cents) / 100] for item in entries.iterator()))
+
+
+def export_checkins_csv(event, start=None, end=None):
+    from apps.operations.models import CheckinRecord
+    entries = in_period(CheckinRecord.objects.filter(event=event), 'occurred_at', start, end, tz=event_timezone(event)).select_related('registration__person', 'operator').order_by('occurred_at', 'pk')
+    return table_csv(event, 'credenciamentos', ['Inscrição', 'Participante', 'Data e hora', 'Forma', 'Operador'],
+        ([item.registration.registration_number, item.registration.person.full_name, timezone.localtime(item.occurred_at, event_timezone(event)).isoformat(),
+          item.get_checkin_type_display(), item.operator.full_name] for item in entries.iterator()))
+
+
+def export_benefits_csv(event, start=None, end=None):
+    from apps.registrations.models import Entitlement
+    entries = in_period(Entitlement.objects.filter(registration__event=event), 'registration__created_at', start, end, tz=event_timezone(event)).select_related('registration__person').order_by('registration__registration_number', 'pk')
+    return table_csv(event, 'beneficios', ['Inscrição', 'Participante', 'Benefício', 'Descrição', 'Camiseta', 'Concedidos', 'Entregues', 'Restantes', 'Situação'],
+        ([item.registration.registration_number, item.registration.person.full_name, item.get_benefit_type_display(), item.title, item.registration.shirt_size,
+          item.quantity_total, item.quantity_used, 0 if item.state == 'REVOKED' else item.remaining, item.get_state_display()] for item in entries.iterator()))
+
+
+def export_deliveries_csv(event, start=None, end=None):
+    from apps.registrations.models import Consumption
+    entries = in_period(Consumption.objects.filter(entitlement__registration__event=event), 'occurred_at', start, end, tz=event_timezone(event)).select_related('entitlement__registration__person', 'operator').order_by('occurred_at', 'pk')
+    return table_csv(event, 'entregas', ['Inscrição', 'Participante', 'Benefício', 'Quantidade', 'Ação', 'Data e hora', 'Operador', 'Local'],
+        ([item.entitlement.registration.registration_number, item.entitlement.registration.person.full_name, item.entitlement.title, item.quantity, item.action,
+          timezone.localtime(item.occurred_at, event_timezone(event)).isoformat(), item.operator.full_name, item.location] for item in entries.iterator()))
+
+
+def export_bundle(event, exporters, start=None, end=None):
+    import tempfile
+    import zipfile
+    from django.http import FileResponse
+    output = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
+    try:
+        with zipfile.ZipFile(output, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+            for name, exporter in exporters.items():
+                archive.writestr(f'{name}.csv', exporter(event, start, end).content)
+            archive.writestr('LEIA-ME.txt', '\n'.join([
+                f'Evento: {event.title}', f'Fuso: {event.timezone}', f'De: {start or "início do histórico"}', f'Até: {end or "fim do histórico"}',
+                'CSV UTF-8 com separador ponto e vírgula; abra no Excel ou LibreOffice.',
+                'Inscrições, pedidos e benefícios: data de criação da inscrição/pedido; situação atual.',
+                'Financeiro: reconhecimento. Despesas: vencimento. Credenciamentos e entregas: data da operação.',
+                'Equipes, cidades e tamanhos correspondem às tabelas do painel de relatórios, não ao ranking público normalizado.',
+                'Inclui todos os relatórios permitidos para esta conta, sem limitar à página atual.',
+                'Arquivos: ' + ', '.join(exporters),
+            ]))
+        output.seek(0)
+        response = FileResponse(output, as_attachment=True, filename=f'relatorios_{event.slug}.zip', content_type='application/zip')
+        response['Cache-Control'] = 'private, no-store'
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
+    except Exception:
+        output.close()
+        raise
+
+
 def safe_text(value):
     """Text fields stay text in Excel, including formulas hidden after whitespace."""
     text = str(value or "")

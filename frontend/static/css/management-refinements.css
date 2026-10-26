@@ -1,0 +1,86 @@
+/* Shared layout audit: flexible columns, readable forms and local table scrolling. */
+.management-main { width: 100%; max-width: 1800px; padding: clamp(20px, 2.5vw, 40px); padding-bottom: 64px; }
+.management-main :where(section,article,form,fieldset,details,dl,.mg-stack,.dashboard-secondary,.form-group,.mg-inset-card) { min-width: 0; }
+.management-main :where(a,code,dd,.badge,.form-help,.form-error,.errorlist,.list-row strong) { overflow-wrap: anywhere; }
+.management-main .form-group { margin-bottom: 0; }
+.form-grid, .catalog-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
+.catalog-form-grid .form-group:has(textarea) { grid-column: 1 / -1; }
+.mg-form-sheet { width: 100%; max-width: 1440px; }
+.form-grid.mg-three-columns { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.report-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.mp-workspace > .alert { grid-column: 1 / -1; }
+.form-help { display: block; margin-top: 8px; color: var(--text-muted); font-size: 12px; line-height: 1.7; }
+.management-main .errorlist { margin: 8px 0 0; padding-left: 20px; }
+.management-main :where(input,select,textarea) { min-width: 0; max-width: 100%; }
+.management-main :where(input[type=checkbox],input[type=radio]) { width: 20px; height: 20px; min-height: 20px; flex: 0 0 20px; accent-color: var(--primary); }
+.mg-check-row { display: flex; align-items: flex-start; gap: 12px; padding: 16px; min-height: 52px; border: 1px solid var(--border); border-radius: 14px; cursor: pointer; line-height: 1.7; }
+.mg-check-row input { margin: 3px 0 0; }
+.mg-check-row > span { min-width: 0; flex: 1; }
+.card > :last-child { margin-bottom: 0; }
+.card-header { align-items: flex-start; flex-wrap: wrap; }
+.card-header > div { min-width: 0; }
+.card-header .section-title { margin-bottom: 0; }
+.table-responsive { overscroll-behavior-inline: contain; border-radius: 12px; }
+.table { min-width: 600px; }
+.table th, .table td { padding: 14px; vertical-align: middle; }
+.table td .badge { white-space: normal; max-width: 26ch; line-height: 1.5; }
+.table td .page-actions { min-width: 120px; }
+.stat-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 20px; }
+.stat-value { font-size: clamp(24px,2vw,34px); overflow-wrap: anywhere; }
+.stat-top { align-items: flex-start; }
+.stat-icon { flex: 0 0 36px; }
+.dashboard-grid { grid-template-columns: minmax(0,2fr) minmax(310px,1fr); align-items: start; gap: 24px; }
+.dashboard-grid > .dashboard-secondary { grid-column: 2; grid-row: 1 / span 3; }
+.dashboard-grid > section { grid-column: 1; }
+.dashboard-orders td:first-child { min-width: 170px; }
+.quick-action > span:first-child { flex: 0 0 34px; }
+.quick-action > span:nth-child(2), .list-row > div { min-width: 0; overflow-wrap: anywhere; }
+.finance-summary { align-items: baseline; flex-wrap: wrap; gap: 8px 20px; }
+.finance-summary > :last-child { margin-left: auto; font-variant-numeric: tabular-nums; }
+.mg-page-intro .page-heading { margin-bottom: 12px; }
+.catalog-variants { margin: 18px 0 24px; border-block: 1px solid var(--border); }
+.catalog-variants summary { padding: 16px 0; cursor: pointer; font-weight: 600; }
+.catalog-variants > div { padding: 0 0 20px; }
+.mp-workspace { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; align-items: start; }
+.mp-workspace > .page-heading, .mp-status { grid-column: 1 / -1; }
+.mp-workspace > .page-heading { margin-bottom: 4px; }
+.mp-workspace .section-title { line-height: 1.4; margin-bottom: 16px; }
+.mp-workspace .mg-stack { gap: 20px; }
+.mp-workspace p { line-height: 1.8; margin-bottom: 16px; }
+.mp-workspace .form-grid { grid-template-columns: 1fr; }
+.mp-status-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 20px; margin: 24px 0; }
+.mp-status-grid dt { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+.mp-status-grid dd { margin: 0; font-weight: 600; }
+.mp-steps { padding-left: 22px; margin: 0 0 24px; }
+.mp-steps li { padding-left: 6px; margin-bottom: 16px; line-height: 1.8; }
+.mp-webhook { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 14px; background: var(--input-bg); margin-bottom: 20px; }
+.mp-webhook code { display: block; font-size: 12px; user-select: all; }
+.report-exports { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.2fr); align-items: end; gap: 20px; }
+.report-exports > .btn { grid-column: 2; justify-self: start; }
+.report-export-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: end; }
+.report-export-form label { grid-column: 1 / -1; margin: 0; }
+.mg-finance-filters { gap: 16px; }
+.management-main pre { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (min-width: 1500px) { .mp-workspace { grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr); } .mp-workspace .form-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 1250px) { .stat-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .dashboard-grid { grid-template-columns: minmax(0,1.6fr) minmax(280px,1fr); } }
+@media (max-width: 1050px) { .dashboard-grid, .mp-workspace { grid-template-columns: minmax(0,1fr); } .dashboard-grid > .dashboard-secondary, .dashboard-grid > section { grid-column: auto; grid-row: auto; } .dashboard-secondary { grid-template-columns: repeat(2,minmax(0,1fr)); } .mp-status-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .report-exports { grid-template-columns: minmax(0,1fr); } .report-exports > .btn { grid-column: auto; } }
+@media (max-width: 767px) {
+    .management-main { padding: 24px 16px calc(100px + env(safe-area-inset-bottom)); }
+    .management-main .card, .event-overview { padding: 20px; }
+    .form-grid, .form-grid.mg-three-columns, .catalog-form-grid, .dashboard-secondary, .report-grid { grid-template-columns: minmax(0,1fr); gap: 20px; }
+    .form-control { font-size: 16px; }
+    .management-main .page-actions { max-width: 100%; }
+    .management-main .page-actions .btn { flex: 1 1 auto; }
+    .management-main .btn { white-space: normal; overflow-wrap: anywhere; }
+    .stat-grid { gap: 12px; }
+    .stat-card { padding: 18px; }
+    .mp-workspace, .dashboard-grid { gap: 20px; }
+    .mp-status-grid { grid-template-columns: minmax(0,1fr); gap: 16px; }
+    .mg-check-row { padding: 14px; }
+    .report-export-form { grid-template-columns: minmax(0,1fr); }
+    .report-exports > .btn { justify-self: stretch; }
+    .mg-pagination { align-items: flex-start; }
+    .mg-pagination .page-actions { flex-wrap: wrap; }
+    .management-main dialog { max-width: calc(100vw - 24px); max-height: calc(100dvh - 32px); padding: 20px; }
+}
+@media (max-width: 480px) { .stat-grid { grid-template-columns: minmax(0,1fr); } .management-main { padding-inline: 12px; } .management-main .card { padding: 18px; } }

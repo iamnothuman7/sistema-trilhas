@@ -1,0 +1,146 @@
+import hashlib
+import json
+from django import forms
+from django.forms.models import model_to_dict
+from apps.events.forms_management import EventDateTimeField
+from apps.finance.forms import parse_amount_cents
+from apps.reporting.selectors import event_timezone
+from apps.checkout.models import OrderLine
+from .models import Product, Lot, ProductVariant, Coupon
+
+
+def edit_version(instance):
+    values = model_to_dict(instance, exclude=['current_sold', 'used_count'])
+    return hashlib.sha256(json.dumps(values, default=str, sort_keys=True).encode()).hexdigest()
+
+
+class CatalogForm(forms.ModelForm):
+    version = forms.CharField(widget=forms.HiddenInput, required=False)
+
+    def __init__(self, *args, event, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.event = event
+        self.original_version = edit_version(self.instance)
+        if not self.instance._state.adding:
+            self.fields['version'].required = True
+            self.initial['version'] = self.original_version
+        for field in self.fields.values():
+            if not field.widget.is_hidden:
+                field.widget.attrs['class'] = 'form-check-input' if isinstance(field.widget, forms.CheckboxInput) else 'form-control'
+            if isinstance(field, EventDateTimeField):
+                field.event_timezone = event_timezone(event)
+
+    def clean(self):
+        data = super().clean()
+        if not self.instance._state.adding and data.get('version') != self.original_version:
+            raise forms.ValidationError('Este cadastro foi alterado em outra sessão. Reabra a página antes de salvar.')
+        for opening, closing in [('opens_at', 'closes_at'), ('valid_from', 'valid_until')]:
+            if data.get(opening) and data.get(closing) and data[closing] <= data[opening]:
+                self.add_error(closing, 'O encerramento precisa ser posterior à abertura.')
+        return data
+
+
+class ProductForm(CatalogForm):
+    class Meta:
+        model = Product
+        fields = ['name', 'kind', 'description', 'includes_shirt', 'includes_meal', 'includes_kit', 'active']
+        widgets = {'description': forms.Textarea(attrs={'rows': 4})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk and OrderLine.objects.filter(product=self.instance).exists():
+            self.fields['kind'].disabled = True
+            self.fields['kind'].help_text = 'Modalidade preservada porque já existem pedidos. Crie outro produto para uma modalidade diferente.'
+
+
+def date_field(label):
+    return EventDateTimeField(label=label, input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%dT%H:%M:%S'],
+        widget=forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'}))
+
+
+class LotForm(CatalogForm):
+    price = forms.CharField(label='Preço em reais', help_text='Exemplo: 120,00. Alterações valem para novos pedidos.', widget=forms.TextInput(attrs={'inputmode': 'decimal'}))
+    opens_at = date_field('Abertura das vendas')
+    closes_at = date_field('Encerramento das vendas')
+    max_quantity = forms.IntegerField(label='Limite de vagas do lote', min_value=1, max_value=2147483647)
+    class Meta:
+        model = Lot
+        fields = ['title', 'price', 'opens_at', 'closes_at', 'max_quantity', 'priority', 'active']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.initial['price'] = self.instance.formatted_price
+        self.fields['max_quantity'].help_text = 'O limite não pode ficar abaixo de vendas e reservas existentes. A capacidade geral do evento também continua valendo.'
+
+    def clean_price(self):
+        return parse_amount_cents(self.cleaned_data['price'])
+
+    def save(self, commit=True):
+        self.instance.price_cents = self.cleaned_data['price']
+        return super().save(commit=commit)
+
+
+class VariantForm(CatalogForm):
+    extra_price = forms.CharField(label='Acréscimo em reais', help_text='Use 0,00 para não cobrar acréscimo.', widget=forms.TextInput(attrs={'inputmode': 'decimal'}))
+    class Meta:
+        model = ProductVariant
+        fields = ['code', 'label', 'extra_price']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.core.utils import cents_to_reais
+        self.initial['extra_price'] = cents_to_reais(self.instance.extra_price_cents)
+
+    def clean_extra_price(self):
+        value = self.cleaned_data['extra_price'].strip()
+        if value in ('0', '0,0', '0.0', '0,00', '0.00'): return 0
+        return parse_amount_cents(value)
+
+    def clean_code(self):
+        value = self.cleaned_data['code'].strip().upper()
+        if ProductVariant.objects.filter(product=self.instance.product, kind=self.instance.kind, code=value).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('Este código já existe neste produto.')
+        return value
+
+    def save(self, commit=True):
+        self.instance.extra_price_cents = self.cleaned_data['extra_price']
+        return super().save(commit=commit)
+
+
+class CouponForm(CatalogForm):
+    amount = forms.CharField(label='Desconto fixo em reais', required=False, widget=forms.TextInput(attrs={'inputmode': 'decimal'}))
+    percent_off = forms.IntegerField(label='Percentual de desconto', min_value=1, max_value=100)
+    valid_from = date_field('Válido a partir de')
+    valid_until = date_field('Válido até')
+    max_uses = forms.IntegerField(label='Limite de usos', min_value=1, max_value=2147483647)
+    class Meta:
+        model = Coupon
+        fields = ['code_upper', 'kind', 'amount', 'percent_off', 'valid_from', 'valid_until', 'max_uses', 'active']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.core.utils import cents_to_reais
+        self.initial['amount'] = cents_to_reais(self.instance.value_cents)
+        self.fields['percent_off'].help_text = 'Usado somente em cupons percentuais.'
+        self.fields['amount'].help_text = 'Usado somente em cupons de valor fixo.'
+        if self.instance.used_count:
+            self.fields['code_upper'].disabled = True
+
+    def clean_code_upper(self):
+        value = self.cleaned_data['code_upper'].strip().upper()
+        if Coupon.objects.filter(event=self.event, code_upper=value).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('Este código já existe nesta edição.')
+        return value
+
+    def clean(self):
+        data = super().clean()
+        if data.get('kind') == 'FIXED':
+            try: data['amount_cents'] = parse_amount_cents(data.get('amount'))
+            except forms.ValidationError as exc: self.add_error('amount', exc)
+        if data.get('max_uses', 0) < self.instance.used_count:
+            self.add_error('max_uses', 'O limite não pode ser menor que os usos já registrados.')
+        return data
+
+    def save(self, commit=True):
+        if self.cleaned_data['kind'] == 'FIXED': self.instance.value_cents = self.cleaned_data['amount_cents']
+        return super().save(commit=commit)

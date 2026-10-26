@@ -130,3 +130,28 @@ html[data-theme="light"] :where(.footer a:hover,.text-link:hover,.event-subnav a
   html[data-theme] { --ui-panel: var(--ui-panel-solid); --glass-filter: none; --auth-glass-filter: none; }
 }
 @media (forced-colors: active) { * { scrollbar-color: auto; } .theme-toggle { border: 1px solid ButtonText; } }
+
+/* Public forms and participant panels use the same spacing and flexible tracks. */
+.payment-page, .story-studio { font-family: inherit; }
+.public-grid { grid-template-columns: repeat(auto-fit,minmax(min(100%,340px),1fr)); }
+.public-grid--three { grid-template-columns: repeat(auto-fit,minmax(min(100%,280px),1fr)); }
+.public-page :where(.public-card-head,.public-heading-row,.public-section-heading) { flex-wrap: wrap; }
+.public-page :where(.public-card-head,.public-heading-row,.public-section-heading) > * { min-width: 0; }
+.public-benefit { flex-wrap: wrap; }
+.payment-form-row { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.registration-page .form-label > input, .registration-page .form-label > select { margin-top: 8px; }
+.registration-caption { display: block; font-weight: 400; line-height: 1.7; margin-top: 8px; }
+.payment-page .card-header { flex-wrap: wrap; gap: 16px; }
+.payment-page .payment-summary { min-width: 0; }
+.payment-page .payment-button { overflow-wrap: anywhere; }
+.public-table-wrap { border-radius: 12px; }
+@media (min-width: 1500px) { .payment-page { max-width: 1280px; } .payment-layout { grid-template-columns: minmax(0,1.7fr) minmax(320px,1fr); } }
+@media (max-width: 600px) {
+  .public-grid, .public-grid--three, .payment-form-row { grid-template-columns: minmax(0,1fr); }
+  .public-card-head, .public-section-heading { align-items: flex-start; gap: 16px; }
+  .public-key-values > div { flex-wrap: wrap; gap: 6px 16px; }
+  .public-key-values dd { text-align: left; }
+  .public-legal-scroll { padding: 16px; }
+  .public-actions > * { flex: 1 1 auto; }
+  .payment-page .card-header .payment-button { width: 100%; }
+}

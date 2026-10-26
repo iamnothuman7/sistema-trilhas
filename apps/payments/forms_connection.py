@@ -15,6 +15,7 @@ class MercadoPagoDraftForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['version'].widget.attrs['id'] = 'mp-draft-version'
         for field in self.fields.values():
             if not field.widget.is_hidden:
                 field.widget.attrs["class"] = "form-control"
@@ -32,6 +33,10 @@ class MercadoPagoDraftForm(forms.Form):
 
 class MercadoPagoOperationForm(forms.Form):
     version = forms.IntegerField(min_value=0, widget=forms.HiddenInput())
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['version'].widget.attrs['id'] = 'mp-' + self.__class__.__name__.lower() + '-version'
 
 
 class MercadoPagoActivationForm(MercadoPagoOperationForm):

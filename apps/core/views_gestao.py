@@ -23,7 +23,7 @@ from apps.reporting.selectors import get_event_kpi_summary
 from apps.reporting.exports import export_participants_csv, export_financial_csv
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from apps.finance.forms import ExpenseForm
 from apps.finance.models import ExpenseStatus
 from apps.finance.services import create_expense, settle_expense, cancel_pending_expense
@@ -594,6 +594,8 @@ def deliver_benefit_api(request, event_id):
 
 
 @staff_required_custom
+@never_cache
+@require_GET
 def catalog_management(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     products = Product.objects.filter(event=event).prefetch_related("lots", "variants")
