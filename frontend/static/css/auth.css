@@ -209,6 +209,73 @@ button, a, input { -webkit-tap-highlight-color: transparent; }
     .auth-form-topbar { padding-bottom: 26px; }.auth-location-grid { grid-template-columns: minmax(0,1fr) 100px; gap: 16px; }
     .auth-form-panel::before { inset-inline: -12px; }
 }
+/* The short login form fits the viewport; longer account forms keep their natural flow. */
+.auth-login .auth-layout { position: relative; }
+.auth-login .auth-brand { min-height: 0; height: auto; }
+.auth-login .auth-form-side { min-height: 0; padding-block: clamp(16px, 3svh, 32px); }
+.auth-login .auth-form-topbar { max-width: 480px; padding-bottom: 20px; }
+.auth-login .auth-form-panel { max-width: 480px; padding: 24px; margin-block: auto; }
+.auth-login .auth-form-panel::before { inset: 0; }
+.auth-login .auth-form-header { margin-bottom: 20px; }
+.auth-login .auth-form { gap: 16px; }
+.auth-login .auth-input-wrap input { min-height: 50px; padding-block: 12px; }
+.auth-login .auth-submit { min-height: 50px; margin-top: 0; padding-block: 12px; }
+.auth-login .auth-login-links { justify-content: space-between; gap: 4px 12px; margin-top: 16px; padding-top: 12px; }
+.auth-login .auth-form-footer { padding-top: 20px; }
+.auth-login .auth-messages { margin-bottom: 16px; }
+@media (max-width: 960px) {
+    .auth-login .auth-layout { grid-template-rows: auto 1fr; }
+    .auth-login .auth-brand { padding: 12px 20px; }
+    .auth-login .auth-logo { width: 58px; }
+    .auth-login .auth-brand-link { gap: 14px; }
+    .auth-login .auth-brand-name { font-size: 19px; }
+    .auth-login .auth-form-side { padding: 12px 16px; }
+    .auth-login .auth-form-topbar { padding-bottom: 12px; }
+    .auth-login .auth-form-panel { padding: 20px; }
+    .auth-login .auth-form-footer { padding-top: 12px; }
+}
+@media (max-height: 700px) {
+    .auth-login .auth-form-side { padding-block: 10px; }
+    .auth-login .auth-form-topbar { padding-bottom: 10px; }
+    .auth-login .auth-form-panel { padding: 16px; }
+    .auth-login .auth-form-header { margin-bottom: 16px; }
+    .auth-login .auth-form-header h1 { font-size: 27px; }
+    .auth-login .auth-description { display: none; }
+    .auth-login .auth-form { gap: 12px; }
+    .auth-login .auth-field { gap: 6px; }
+    .auth-login .auth-input-wrap input { min-height: 46px; padding-block: 10px; }
+    .auth-login .auth-submit { min-height: 46px; padding-block: 10px; }
+    .auth-login .auth-login-links { margin-top: 12px; padding-top: 8px; }
+    .auth-login .auth-messages { margin-bottom: 12px; }
+    .auth-login .auth-message { padding: 10px; font-size: 13px; }
+    .auth-login .auth-form-footer { display: none; }
+    .auth-login .auth-brand-content { padding-block: 24px; }
+}
+@media (max-width: 960px) and (max-height: 700px) {
+    .auth-login .auth-brand { padding-block: 8px; }
+    .auth-login .auth-logo { width: 52px; }
+}
+@media (max-width: 359px) {
+    .auth-login .auth-login-links { font-size: 12px; column-gap: 6px; }
+}
+@media (min-width: 560px) and (max-height: 520px) {
+    .auth-login .auth-layout { grid-template-columns: 35% minmax(0, 1fr); grid-template-rows: 1fr; }
+    .auth-login .auth-brand { justify-content: center; align-items: center; padding: 64px 12px 24px; }
+    .auth-login .auth-brand-link { flex-direction: column; align-self: center; gap: 12px; text-align: center; }
+    .auth-login .auth-logo { width: 76px; }
+    .auth-login .auth-brand-name { font-size: 18px; }
+    .auth-login .auth-brand-content,.auth-login .auth-brand-footer { display: none; }
+    .auth-login .auth-form-side { padding: 8px 12px; }
+    .auth-login .auth-form-topbar { position: absolute; top: 12px; left: 12px; width: calc(35% - 24px); max-width: none; padding: 0; gap: 6px; }
+    .auth-login .auth-return { font-size: 12px; gap: 4px; }
+    .auth-login .auth-form-panel { max-width: 540px; padding: 8px 12px; }
+    .auth-login .auth-form-header { margin-bottom: 10px; }
+    .auth-login .auth-form-header h1 { font-size: 24px; }
+    .auth-login .auth-form { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .auth-login .auth-submit { grid-column: 1 / -1; }
+    .auth-login .auth-login-links { margin-top: 8px; padding-top: 6px; }
+    .auth-login .auth-messages { margin-bottom: 8px; }
+}
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     :root { --auth-panel: var(--auth-solid); --auth-brand-surface: var(--auth-solid); --auth-input: var(--auth-solid); --auth-reflection: none; --auth-glass-border: var(--auth-border); }
 }

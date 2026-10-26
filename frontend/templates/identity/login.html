@@ -1,6 +1,7 @@
 {% extends "identity/auth_base.html" %}
 
 {% block title %}Entrar | Equipe Morcego{% endblock %}
+{% block auth_mode %}auth-login{% endblock %}
 {% block auth_eyebrow %}Sua conta Morcego{% endblock %}
 {% block auth_heading %}Entrar no sistema{% endblock %}
 {% block auth_description %}Acesse sua conta para acompanhar inscrições ou gerenciar os eventos da equipe.{% endblock %}
@@ -35,10 +36,8 @@
         <i data-lucide="arrow-right" aria-hidden="true"></i>
     </button>
 </form>
-<div class="auth-switch"><a href="{% url 'identity:password_reset' %}">Esqueci minha senha</a></div>
-
-<div class="auth-switch">
-    <span>Ainda não tem conta?</span>
+<div class="auth-switch auth-login-links">
+    <a href="{% url 'identity:password_reset' %}">Esqueci minha senha</a>
     <a href="{% url 'identity:register' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}">Criar minha conta <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
 </div>
 {% endblock %}
