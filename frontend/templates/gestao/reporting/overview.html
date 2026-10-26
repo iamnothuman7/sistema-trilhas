@@ -54,6 +54,8 @@
     </table></div>
 </section>
 
+{% include "gestao/sponsors/_finance_summary.html" with finance=report.finance %}
+
 <div class="mg-module-grid report-grid mg-section-gap">
     <section class="card" aria-labelledby="report-orders-title">
         <div class="card-header"><div><h2 class="section-title" id="report-orders-title">Situação dos pedidos</h2><p class="mg-section-description">Valor dos pedidos criados no período, incluindo os ainda não pagos.</p></div></div>

@@ -29,7 +29,7 @@ class SponsorForm(forms.ModelForm):
 
     class Meta:
         model = Sponsor
-        fields = ("name", "tier", "logo_image", "instagram_url", "website", "sort_order")
+        fields = ("name", "tier", "logo_image", "instagram_url", "website", "sort_order", "is_public")
         labels = {"name": "Nome da marca", "tier": "Cota", "website": "Site", "sort_order": "Ordem de exibição"}
         help_texts = {
             "instagram_url": "Use o endereço completo do perfil: https://www.instagram.com/suamarca/.",

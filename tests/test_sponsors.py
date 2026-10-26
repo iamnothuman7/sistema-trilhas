@@ -109,7 +109,7 @@ class SponsorManagementTests(TestCase):
         self.assertEqual(foreign.name, "Não alterar")
 
     def test_wrong_role_cannot_edit_and_has_no_menu_link(self):
-        self.operator(RoleChoices.FINANCE)
+        self.operator(RoleChoices.CHECKIN_AGENT)
         self.assertEqual(self.client.get(self.url()).status_code, 403)
         self.assertEqual(self.client.post(self.url("sponsor_create"), self.data()).status_code, 403)
         self.assertNotContains(self.client.get("/gestao/"), self.url())

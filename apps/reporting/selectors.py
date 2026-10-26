@@ -76,6 +76,8 @@ REVENUE_KINDS = (
     FinancialEntryKind.RECEITA_INSCRICAO,
     FinancialEntryKind.RECEITA_ADICIONAL,
     FinancialEntryKind.RECEITA_MANUAL,
+    FinancialEntryKind.RECEITA_PATROCINIO,
+    FinancialEntryKind.ESTORNO_PATROCINIO,
 )
 
 
@@ -110,6 +112,7 @@ def get_financial_summary(event, start=None, end=None):
         expenses=Sum("amount_cents_signed", filter=Q(kind=FinancialEntryKind.DESPESA)),
         transfers=Sum("amount_cents_signed", filter=Q(kind=FinancialEntryKind.TRANSFERENCIA_BANCO)),
         count=Count("pk"),
+        sponsors=Sum("amount_cents_signed", filter=Q(kind__in=[FinancialEntryKind.RECEITA_PATROCINIO, FinancialEntryKind.ESTORNO_PATROCINIO])),
     )
     pending = in_period(Expense.objects.filter(event=event, status=ExpenseStatus.PENDING), "due_at", start, end, date_field=True)
     pending_values = pending.aggregate(total=Sum("amount_cents"), count=Count("pk"))
@@ -124,9 +127,15 @@ def get_financial_summary(event, start=None, end=None):
         "transfers_cents": values["transfers"] or 0,
         "entry_count": values["count"],
         "pending_expense_count": pending_values["count"],
+        "sponsor_received_cents": values["sponsors"] or 0,
     }
     result["net_cents"] = result["revenue_cents"] - result["refunds_cents"] - result["fees_cents"] - result["paid_expenses_cents"]
     result["expense_reconciliation_delta_cents"] = paid_record_total - result["paid_expenses_cents"]
+    from apps.events.sponsorships import sponsorships_with_balances, decorate_balance, sponsor_totals
+    sponsors = sponsor_totals([decorate_balance(s) for s in sponsorships_with_balances(event.sponsors.all())])
+    result["sponsor_outstanding_cents"] = sponsors["balance_cents"]
+    result["sponsor_agreed_cents"] = sponsors["agreed_cents"]
+    result["sponsor_undefined_count"] = sponsors["undefined_count"]
     for key, value in list(result.items()):
         if key.endswith("_cents"):
             result[key[:-6] + "_formatted"] = cents_to_reais(value)

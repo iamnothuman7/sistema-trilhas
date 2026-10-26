@@ -40,7 +40,7 @@ class PublicCalendarTests(TestCase):
     def test_raffle_and_sponsors_only_appear_within_their_event(self):
         event = self.event("evento-com-parceiros")
         MotorcycleRaffle.objects.create(event=event, is_public=True)
-        Sponsor.objects.create(event=event, name="Parceiro exclusivo da edição")
+        Sponsor.objects.create(event=event, name="Parceiro exclusivo da edição", is_public=True)
         home = self.client.get(reverse("core:home"))
         self.assertNotContains(home, "Parceiro exclusivo da edição")
         self.assertNotContains(home, "/sorteio/")

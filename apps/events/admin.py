@@ -22,6 +22,7 @@ class SponsorInline(admin.TabularInline):
     model = Sponsor
     form = SponsorForm
     extra = 1
+    can_delete = False
 
 class LegalDocumentVersionInline(admin.StackedInline):
     model = LegalDocumentVersion
@@ -30,6 +31,34 @@ class LegalDocumentVersionInline(admin.StackedInline):
 
 
 class SponsorUploadAdminMixin:
+    def _sync_sponsor_brand(self, obj):
+        from .sponsorships import ensure_profile, brand_values, sync_profile
+        if isinstance(obj, Sponsor):
+            profile = ensure_profile(obj)
+            for name, value in brand_values(obj).items():
+                setattr(profile, name, value)
+            profile.save()
+            sync_profile(profile)
+
+    def save_model(self, request, obj, form, change):
+        if isinstance(obj, Sponsor) and change:
+            # Branding edits cannot overwrite receipts/agreements saved meanwhile.
+            obj.save(update_fields=[*[name for name in form.Meta.fields if name != "event"], "logo_preview", "logo_preview_width", "logo_preview_height"])
+        else:
+            super().save_model(request, obj, form, change)
+        self._sync_sponsor_brand(obj)
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model is not Sponsor:
+            return super().save_formset(request, form, formset, change)
+        instances = formset.save(commit=False)
+        for deleted in formset.deleted_objects:
+            deleted.delete()
+        for obj in instances:
+            obj.save(update_fields=["name", "tier", "website", "logo_image", "logo_preview", "logo_preview_width", "logo_preview_height", "instagram_url", "sort_order", "is_public"] if obj.pk else None)
+            self._sync_sponsor_brand(obj)
+        formset.save_m2m()
+
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         if request.method == "POST":
             # Covers standalone sponsor saves, event inlines and admin logging.
@@ -56,6 +85,12 @@ class SponsorAdmin(SponsorUploadAdminMixin, admin.ModelAdmin):
     list_display = ("name", "event", "tier", "sort_order")
     list_filter = ("tier", "event")
     search_fields = ("name", "event__title")
+
+    def get_readonly_fields(self, request, obj=None):
+        return ("event",) if obj else ()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 @admin.register(LegalDocumentVersion)
 class LegalDocumentVersionAdmin(admin.ModelAdmin):

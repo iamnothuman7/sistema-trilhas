@@ -36,7 +36,7 @@ def event_detail(request, slug):
 
     schedule = event.schedule_items.all()[:5]
     routes = event.routes.filter(public_flag=True)
-    sponsors = event.sponsors.all().order_by("tier", "sort_order")
+    sponsors = event.sponsors.filter(is_public=True).order_by("tier", "sort_order")
     versions = get_event_versions(event)
     selected = select_version(request.GET.get("versao"), versions)
 
@@ -84,7 +84,7 @@ def event_rules(request, slug):
 def event_sponsors(request, slug):
     """Patrocinadores e parceiros oficiais."""
     event = get_event_resilient(slug, request)
-    sponsors = event.sponsors.all().order_by("tier", "sort_order")
+    sponsors = event.sponsors.filter(is_public=True).order_by("tier", "sort_order")
     return render(request, "events/sponsors.html", {"event": event, "sponsors": sponsors})
 
 @never_cache

@@ -63,9 +63,17 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/molduras/equipes/", frame_views.team_frame_editor, name="team_frame_editor"),
 
     # Patrocinadores
+    path("patrocinadores/", views_sponsors.sponsor_bank, name="sponsor_bank"),
+    path("patrocinadores/novo/", views_sponsors.sponsor_profile_create, name="sponsor_profile_create"),
+    path("patrocinadores/<int:profile_id>/editar/", views_sponsors.sponsor_profile_edit, name="sponsor_profile_edit"),
     path("eventos/<uuid:event_id>/patrocinadores/", views_sponsors.sponsor_list, name="sponsor_list"),
     path("eventos/<uuid:event_id>/patrocinadores/novo/", views_sponsors.sponsor_create, name="sponsor_create"),
+    path("eventos/<uuid:event_id>/patrocinadores/vincular/", views_sponsors.sponsor_link, name="sponsor_link"),
+    path("eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/", views_sponsors.sponsor_detail, name="sponsor_detail"),
     path("eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/editar/", views_sponsors.sponsor_edit, name="sponsor_edit"),
+    path("eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/acordo/", views_sponsors.sponsor_agreement, name="sponsor_agreement"),
+    path("eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/receber/", views_sponsors.sponsor_receipt, name="sponsor_receipt"),
+    path("eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/recebimentos/<uuid:payment_id>/reverter/", views_sponsors.sponsor_reversal, name="sponsor_reversal"),
     path("eventos/<uuid:event_id>/sorteio/", views_raffles.raffle_management, name="raffle_management"),
 
     # Exportações

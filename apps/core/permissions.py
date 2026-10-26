@@ -18,6 +18,7 @@ ACTION_ROLES = {
     "catalog": MANAGERS,
     "logistics": MANAGERS | {RoleChoices.LOGISTICS},
     "content": MANAGERS | {RoleChoices.CONTENT},
+    "sponsors": MANAGERS | {RoleChoices.CONTENT, RoleChoices.FINANCE},
     "audit": MANAGERS,
 }
 VIEW_ACTIONS = {
@@ -37,7 +38,10 @@ VIEW_ACTIONS = {
     "pay_expense": "finance", "cancel_expense": "finance", "export_financial": "finance",
     "event_reports": "finance", "expedition_management": "logistics", "frame_management": "content",
     "audit_log_view": "audit",
-    "sponsor_list": "content", "sponsor_create": "content", "sponsor_edit": "content",
+    "sponsor_list": "sponsors", "sponsor_create": "content", "sponsor_edit": "content",
+    "sponsor_bank": "sponsors", "sponsor_profile_create": "content", "sponsor_profile_edit": "content",
+    "sponsor_link": "content", "sponsor_detail": "sponsors", "sponsor_agreement": "finance",
+    "sponsor_receipt": "finance", "sponsor_reversal": "finance",
     "raffle_management": "events",
     "team_frame_editor": "content",
     "ranking_management": "registrations",

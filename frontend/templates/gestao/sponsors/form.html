@@ -1,19 +1,9 @@
-{% extends 'gestao/base_gestao.html' %}
-{% block title %}{% if creating %}Adicionar patrocinador{% else %}Editar patrocinador{% endif %} | Equipe Morcego{% endblock %}
-{% block gestao_header %}Patrocinadores{% endblock %}
+{% extends 'gestao/sponsors/base.html' %}
+{% block title %}Patrocinador | {{ event.title }}{% endblock %}
 {% block content %}
-<div class="page-heading"><div><h1>{% if creating %}Adicionar patrocinador{% else %}Editar patrocinador{% endif %}</h1><p>{{ event.title }}</p></div><a href="{% url 'gestao:sponsor_list' event_id=event.id %}" class="btn btn-secondary"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar</a></div>
-<form method="post" enctype="multipart/form-data" class="card mg-form-sheet">
-    {% csrf_token %}
-    {% if form.errors %}<div class="mg-form-errors" role="alert"><strong>Confira os campos abaixo.</strong>{{ form.non_field_errors }}</div>{% endif %}
-    <div class="form-grid">
-        <div class="form-group mg-full-width"><label class="form-label" for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>{{ form.name }}<div class="mg-field-errors">{{ form.name.errors }}</div></div>
-        <div class="form-group"><label class="form-label" for="{{ form.tier.id_for_label }}">{{ form.tier.label }}</label>{{ form.tier }}<div class="mg-field-errors">{{ form.tier.errors }}</div></div>
-        <div class="form-group"><label class="form-label" for="{{ form.sort_order.id_for_label }}">{{ form.sort_order.label }}</label>{{ form.sort_order }}<small class="form-help" id="id_sort_order_helptext">{{ form.sort_order.help_text }}</small><div class="mg-field-errors">{{ form.sort_order.errors }}</div></div>
-        <div class="form-group mg-full-width"><label class="form-label" for="{{ form.logo_image.id_for_label }}">{{ form.logo_image.label }}</label>{% if sponsor.logo_image %}<div class="mg-sponsor-art mg-sponsor-preview"><img src="{{ sponsor.display_logo_url }}" alt="Imagem atual de {{ sponsor.name }}"></div>{% endif %}{{ form.logo_image }}<small class="form-help" id="id_logo_image_helptext">{{ form.logo_image.help_text }}</small><div class="mg-field-errors">{{ form.logo_image.errors }}</div></div>
-        <div class="form-group mg-full-width"><label class="form-label" for="{{ form.instagram_url.id_for_label }}">{{ form.instagram_url.label }}</label>{{ form.instagram_url }}<small class="form-help" id="id_instagram_url_helptext">{{ form.instagram_url.help_text }}</small><div class="mg-field-errors">{{ form.instagram_url.errors }}</div></div>
-        <div class="form-group mg-full-width"><label class="form-label" for="{{ form.website.id_for_label }}">{{ form.website.label }}</label>{{ form.website }}<small class="form-help" id="id_website_helptext">{{ form.website.help_text }}</small><div class="mg-field-errors">{{ form.website.errors }}</div></div>
-    </div>
-    <div class="mg-form-actions"><a href="{% url 'gestao:sponsor_list' event_id=event.id %}" class="btn btn-secondary">Cancelar</a><button type="submit" class="btn btn-primary"><i data-lucide="check" aria-hidden="true"></i>{% if creating %}Cadastrar patrocinador{% else %}Salvar alterações{% endif %}</button></div>
-</form>
+<div class="page-heading"><div><h1>{% if creating %}Novo patrocinador{% else %}Editar patrocinador{% endif %}</h1><p>{{ event.title }}</p></div><a class="btn btn-secondary" href="{% url 'gestao:sponsor_list' event.id %}">Voltar</a></div>
+{% if creating %}<p class="sp-notice">Esta marca será salva no banco de patrocinadores. Já cadastrou antes? <a href="{% url 'gestao:sponsor_link' event.id %}">Vincule uma marca existente</a>.</p>{% elif brand_locked %}<p class="sp-notice">Esta marca também participa de eventos fora do seu acesso. Você pode ajustar a cota e a exibição desta edição; alterações na marca são feitas pela administração.</p>{% else %}<p class="sp-notice">Nome, imagem e links são compartilhados com os eventos vinculados à marca. A cota, a ordem e a autorização de exibição valem só para esta edição.</p>{% endif %}
+<form method="post" enctype="multipart/form-data" class="mg-stack">{% csrf_token %}<section class="card mg-form-sheet"><h2>Marca e exibição</h2>{% if sponsor.logo_image %}<div class="mg-sponsor-art mg-sponsor-preview"><img src="{{ sponsor.display_logo_url }}" alt="Imagem atual de {{ sponsor.name }}"></div>{% endif %}{% include 'gestao/sponsors/_fields.html' %}</section>
+{% if agreement_form %}<section class="card mg-form-sheet"><h2>Acordo desta edição</h2><p class="form-help">O valor combinado é uma previsão. A entrada no caixa acontece somente quando você registrar o recebimento.</p>{% include 'gestao/sponsors/_fields.html' with form=agreement_form %}</section>{% endif %}
+<div class="mg-form-actions"><a href="{% url 'gestao:sponsor_list' event.id %}" class="btn btn-secondary">Cancelar</a><button type="submit" class="btn btn-primary">{% if creating %}Cadastrar patrocinador{% else %}Salvar alterações{% endif %}</button></div></form>
 {% endblock %}

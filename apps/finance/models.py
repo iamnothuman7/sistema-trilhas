@@ -8,6 +8,8 @@ class FinancialEntryKind(models.TextChoices):
     RECEITA_INSCRICAO = "RECEITA_INSCRICAO", "Receita de Inscrição (Mercado Pago)"
     RECEITA_ADICIONAL = "RECEITA_ADICIONAL", "Receita de Item Adicional"
     RECEITA_MANUAL = "RECEITA_MANUAL", "Receita Manual Confirmada (Dinheiro/Pix)"
+    RECEITA_PATROCINIO = "RECEITA_PATROCINIO", "Recebimento de Patrocínio"
+    ESTORNO_PATROCINIO = "ESTORNO_PATROCINIO", "Reversão de Recebimento de Patrocínio"
     TAXA_MERCADO_PAGO = "TAXA_MERCADO_PAGO", "Tarifa de Processamento Mercado Pago"
     REEMBOLSO = "REEMBOLSO", "Estorno / Reembolso de Inscrição"
     DESPESA = "DESPESA", "Despesa Operacional / Fornecedor"
@@ -42,6 +44,37 @@ class FinancialEntry(models.Model):
         val = cents_to_reais(abs(self.amount_cents_signed))
         prefix = "+" if self.amount_cents_signed >= 0 else "-"
         return f"{prefix}R$ {val}"
+
+
+class SponsorPaymentMethod(models.TextChoices):
+    PIX = "PIX", "Pix"
+    TRANSFER = "TRANSFER", "Transferência bancária"
+    CASH = "CASH", "Dinheiro"
+    CARD = "CARD", "Cartão / recebimento externo"
+    OTHER = "OTHER", "Outro recebimento"
+
+
+class SponsorPayment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    sponsorship = models.ForeignKey("events.Sponsor", on_delete=models.PROTECT, related_name="payments")
+    amount_cents = models.PositiveBigIntegerField()
+    received_on = models.DateField()
+    method = models.CharField(max_length=20, choices=SponsorPaymentMethod.choices)
+    reference = models.CharField(max_length=120, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey("identity.User", on_delete=models.SET_NULL, null=True, related_name="sponsor_receipts")
+    created_at = models.DateTimeField(auto_now_add=True)
+    idempotency_key = models.UUIDField(unique=True)
+    submission_hash = models.CharField(max_length=64)
+    ledger_entry = models.OneToOneField(FinancialEntry, on_delete=models.PROTECT, related_name="sponsor_receipt")
+    reversed_at = models.DateTimeField(null=True, blank=True)
+    reversed_by = models.ForeignKey("identity.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="sponsor_reversals")
+    reversal_reason = models.CharField(max_length=500, blank=True)
+    reversal_entry = models.OneToOneField(FinancialEntry, on_delete=models.PROTECT, null=True, blank=True, related_name="sponsor_reversal")
+
+    class Meta:
+        ordering = ["-received_on", "-created_at"]
+        constraints = [models.CheckConstraint(condition=models.Q(amount_cents__gt=0), name="sponsor_receipt_positive")]
 
 
 class Vendor(models.Model):

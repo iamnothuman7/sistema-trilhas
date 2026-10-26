@@ -46,6 +46,26 @@ def export_expenses_csv(event, start=None, end=None):
           item.get_status_display(), Decimal(item.amount_cents) / 100] for item in entries.iterator()))
 
 
+def export_sponsorships_csv(event, start=None, end=None):
+    from apps.events.sponsorships import decorate_balance, sponsorships_with_balances
+    # Agreements are a current-position report, including agreements without a due date.
+    sponsors = (decorate_balance(s) for s in sponsorships_with_balances(event.sponsors.all()))
+    return table_csv(event, 'patrocinios_saldos_atuais',
+        ['Patrocinador', 'Cota', 'Exibição autorizada', 'Combinado (R$)', 'Recebido líquido (R$)', 'A receber (R$)', 'Vencimento', 'Situação atual', 'Observações do acordo'],
+        ([s.name, s.get_tier_display(), 'Sim' if s.is_public else 'Não',
+          Decimal(s.agreed_amount_cents) / 100 if s.agreed_amount_cents is not None else '', Decimal(s.received_cents) / 100,
+          Decimal(s.balance_cents) / 100 if s.balance_cents is not None else '', s.due_at, s.payment_label, s.agreement_notes] for s in sponsors))
+
+
+def export_sponsor_receipts_csv(event, start=None, end=None):
+    from apps.finance.models import SponsorPayment
+    payments = in_period(SponsorPayment.objects.filter(sponsorship__event=event), 'received_on', start, end, date_field=True).select_related('sponsorship', 'created_by', 'reversed_by')
+    return table_csv(event, 'recebimentos_patrocinadores',
+        ['ID da baixa', 'Patrocinador', 'Recebido em', 'Valor original (R$)', 'Forma', 'Referência', 'Situação atual', 'Operador', 'Revertido em', 'Motivo da reversão', 'Observações'],
+        ([str(p.pk), p.sponsorship.name, p.received_on, Decimal(p.amount_cents) / 100, p.get_method_display(), p.reference,
+          'Revertido' if p.reversed_at else 'Confirmado', p.created_by.full_name if p.created_by else '', p.reversed_at.isoformat() if p.reversed_at else '', p.reversal_reason, p.notes] for p in payments.iterator()))
+
+
 def export_checkins_csv(event, start=None, end=None):
     from apps.operations.models import CheckinRecord
     entries = in_period(CheckinRecord.objects.filter(event=event), 'occurred_at', start, end, tz=event_timezone(event)).select_related('registration__person', 'operator').order_by('occurred_at', 'pk')
@@ -84,6 +104,7 @@ def export_bundle(event, exporters, start=None, end=None):
                 'CSV UTF-8 com separador ponto e vírgula; abra no Excel ou LibreOffice.',
                 'Inscrições, pedidos e benefícios: data de criação da inscrição/pedido; situação atual.',
                 'Financeiro: reconhecimento. Despesas: vencimento. Credenciamentos e entregas: data da operação.',
+                'Patrocínios: saldos atuais de todos os acordos, independente do período. Recebimentos de patrocinadores: data do recebimento, com situação atual. Reversões constam no extrato financeiro na data da correção.',
                 'Equipes, cidades e tamanhos correspondem às tabelas do painel de relatórios, não ao ranking público normalizado.',
                 'Inclui todos os relatórios permitidos para esta conta, sem limitar à página atual.',
                 'Arquivos: ' + ', '.join(exporters),
@@ -233,6 +254,9 @@ def export_summary_csv(event, report, start=None, end=None):
         ("Receitas registradas", "revenue_cents"), ("Reembolsos", "refunds_cents"),
         ("Tarifas registradas", "fees_cents"), ("Despesas pagas no razão", "paid_expenses_cents"),
         ("Resultado do período", "net_cents"), ("Despesas a pagar por vencimento", "pending_expenses_cents"),
+        ("Patrocínios recebidos líquidos no período (já incluídos nas receitas)", "sponsor_received_cents"),
+        ("Patrocínios a receber (saldo atual de todos os acordos)", "sponsor_outstanding_cents"),
+        ("Patrocínios combinados (total atual)", "sponsor_agreed_cents"),
     ]:
         writer.writerow([label, decimal_amount(report["finance"][key]), "BRL"])
     return csv_response(output, f"resumo_{event.slug}.csv")

@@ -33,6 +33,8 @@
     <article class="stat-card"><div class="stat-label"><i data-lucide="wallet" aria-hidden="true"></i> Resultado de caixa</div><div class="stat-value {% if finance.net_cents < 0 %}mg-text-danger{% else %}text-success{% endif %}">R$ {{ finance.net_formatted }}</div><p class="stat-foot">Receitas menos estornos, tarifas e despesas pagas</p></article>
 </div>
 
+{% include "gestao/sponsors/_finance_summary.html" %}
+
 {% if finance.expense_reconciliation_delta_cents %}<div class="mg-form-errors" role="status"><strong>Conciliação pendente</strong>Há despesas que precisam de conciliação. O resultado de caixa considera as movimentações registradas no extrato.</div>{% endif %}
 
 <section class="card mg-section-gap" aria-labelledby="expenses-title">
