@@ -43,7 +43,7 @@
             <tbody>
                 {% for exp in expenses %}
                 <tr>
-                    <td class="mg-strong">{{ exp.description }}</td><td>{{ exp.get_category_display }}</td><td>{{ exp.vendor.name|default:"Avulso" }}</td><td class="mg-strong mg-nowrap">R$ {{ exp.amount_cents|money }}</td><td class="mg-nowrap">{{ exp.due_at|date:"d/m/Y" }}</td>
+                    <td class="mg-strong">{{ exp.description }}{% if exp.proof_asset %}<div><a class="btn btn-secondary btn-sm" href="{% url 'gestao:private_document_download' event_id=event.id kind='despesa' document_id=exp.id %}"><i data-lucide="download" aria-hidden="true"></i> Comprovante</a></div>{% endif %}</td><td>{{ exp.get_category_display }}</td><td>{{ exp.vendor.name|default:"Avulso" }}</td><td class="mg-strong mg-nowrap">R$ {{ exp.amount_cents|money }}</td><td class="mg-nowrap">{{ exp.due_at|date:"d/m/Y" }}</td>
                     <td><span class="badge {% if exp.status == 'PAID' %}badge-success{% elif exp.status == 'PENDING' %}badge-warning{% else %}badge-info{% endif %}">{{ exp.get_status_display }}</span></td>
                     <td>{% if exp.status == 'PENDING' %}<div class="mg-finance-actions"><form method="post" action="{% url 'gestao:pay_expense' event_id=event.id expense_id=exp.id %}">{% csrf_token %}<button type="submit" class="btn btn-secondary btn-sm"><i data-lucide="check" aria-hidden="true"></i> Marcar paga</button></form><button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('cancelExpense{{ exp.id }}').showModal()">Cancelar</button></div>{% else %}<span class="text-muted">—</span>{% endif %}</td>
                 </tr>

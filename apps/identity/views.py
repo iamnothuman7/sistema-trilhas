@@ -1,10 +1,15 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.password_validation import validate_password
 from django.contrib import messages
 from django.db import IntegrityError, transaction
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.debug import sensitive_post_parameters
+from django.views.decorators.http import require_http_methods
+from apps.core.rate_limits import rate_limit_request
+from .authentication import normalize_login_identifier
 from .models import User, Person, UserPersonLink
 
 
@@ -16,6 +21,8 @@ def safe_next(request):
         return destination
     return ""
 
+@sensitive_post_parameters("password")
+@require_http_methods(["GET", "POST"])
 def user_login(request):
     """
     Login rápido, responsivo e seguro no padrão NaBio.
@@ -32,12 +39,7 @@ def user_login(request):
         login_input = request.POST.get("email", "").strip().lower()
         password = request.POST.get("password", "")
 
-        # Suporte a atalhos rápidos de login para o administrador (Kelvim)
-        email_to_auth = login_input
-        if login_input in ["kelvim", "admin", "morcego"]:
-            admin_user = User.objects.filter(is_superuser=True).first()
-            if admin_user:
-                email_to_auth = admin_user.email
+        email_to_auth = normalize_login_identifier(login_input)
 
         user = authenticate(request, email=email_to_auth, password=password)
         if user is not None:
@@ -63,6 +65,8 @@ def user_logout(request):
     messages.info(request, "Você encerrou sua sessão com sucesso.")
     return redirect("core:home")
 
+@sensitive_post_parameters("password", "confirm_password")
+@require_http_methods(["GET", "POST"])
 def user_register(request):
     if request.user.is_authenticated:
         return redirect(safe_next(request) or "minha_conta:dashboard")
@@ -75,6 +79,21 @@ def user_register(request):
         state = request.POST.get("state", "CE").strip()
         password = request.POST.get("password", "")
         confirm_password = request.POST.get("confirm_password", "")
+
+        decision = rate_limit_request(request, "signup", ip_limit=20, account=email, account_limit=5)
+        if not decision.allowed:
+            messages.error(request, "Muitas tentativas de cadastro. Aguarde alguns minutos e tente novamente.")
+            response = render(request, "identity/register.html", {"next_url": safe_next(request)}, status=429)
+            response["Retry-After"] = str(decision.retry_after)
+            response["Cache-Control"] = "private, no-store"
+            return response
+
+        password_errors = []
+        if len(password) <= 4096:
+            try:
+                validate_password(password, user=User(email=email, full_name=full_name))
+            except ValidationError as exc:
+                password_errors = exc.messages
 
         try:
             validate_email(email)
@@ -90,8 +109,11 @@ def user_register(request):
             messages.error(request, "Revise seu nome, telefone, cidade e a sigla do estado.")
         elif password != confirm_password:
             messages.error(request, "As senhas digitadas não coincidem.")
-        elif len(password) < 8:
-            messages.error(request, "A senha deve conter no mínimo 8 caracteres.")
+        elif len(password) > 4096:
+            messages.error(request, "A senha é muito longa. Use até 4096 caracteres.")
+        elif password_errors:
+            for error in password_errors:
+                messages.error(request, error)
         elif User.objects.filter(email=email).exists():
             messages.error(request, "Já existe uma conta cadastrada com este e-mail.")
         else:

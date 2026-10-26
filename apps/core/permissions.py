@@ -21,6 +21,7 @@ ACTION_ROLES = {
     "audit": MANAGERS,
 }
 VIEW_ACTIONS = {
+    "private_document_download": "finance",
     "catalog_editor": "catalog",
     "usage_guide": "view",
     "dashboard": "view", "event_list": "events", "event_create": "events",

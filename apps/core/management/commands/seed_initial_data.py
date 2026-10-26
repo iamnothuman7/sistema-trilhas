@@ -1,9 +1,13 @@
 import secrets
+import os
 import qrcode
 import io
 import base64
 from datetime import datetime, timedelta, timezone as dt_timezone
-from django.core.management.base import BaseCommand
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from apps.core.models import Organization
 from apps.core.utils import sha256_text
@@ -22,8 +26,33 @@ from apps.mediaframes.models import FrameTemplate, FrameFormat, AccessPolicy
 class Command(BaseCommand):
     help = "Popula o banco com os dados iniciais completos da Equipe Morcego e do 3º Trilhão Tianguá"
 
+    def ensure_admin_user(self):
+        email = "kelvim@equipemorcego.com.br"
+        existing = User.objects.filter(email=email).first()
+        if existing:
+            self.stdout.write("Administrador existente preservado; senha e permissões não foram alteradas.")
+            return existing
+        password = os.environ.get("MORCEGO_INITIAL_ADMIN_PASSWORD", "")
+        if not password:
+            raise CommandError("Para criar o primeiro administrador, defina MORCEGO_INITIAL_ADMIN_PASSWORD no ambiente. Nenhuma senha padrão será usada.")
+        candidate = User(email=email, full_name="Kelvim Muniz")
+        try:
+            validate_password(password, candidate)
+        except ValidationError as exc:
+            raise CommandError("A senha inicial não atende à política: " + " ".join(exc.messages)) from None
+        user, created = User.objects.get_or_create(email=email, defaults={
+            "full_name": candidate.full_name, "phone": "(88) 99999-9999", "is_staff": True,
+            "is_superuser": True, "password": make_password(password),
+        })
+        if created:
+            EventMembership.objects.get_or_create(user=user, event=None, role_code=RoleChoices.OWNER)
+            self.stdout.write(self.style.SUCCESS("Administrador inicial criado com a senha fornecida no ambiente."))
+        return user
+
     def handle(self, *args, **options):
         self.stdout.write("Iniciando população de dados da Equipe Morcego...")
+        # Validate administrator setup before any seed writes; never reset a live account.
+        admin_user = self.ensure_admin_user()
 
         # 1. Organização
         org, _ = Organization.objects.get_or_create(
@@ -35,29 +64,6 @@ class Command(BaseCommand):
                 "support_email": "contato@equipemorcego.com.br",
                 "phone": "(88) 99999-9999"
             }
-        )
-
-        # 2. Usuário Administrador / Kelvim Muniz
-        admin_user, created_user = User.objects.get_or_create(
-            email="kelvim@equipemorcego.com.br",
-            defaults={
-                "full_name": "Kelvim Muniz",
-                "phone": "(88) 99999-9999",
-                "is_staff": True,
-                "is_superuser": True,
-            }
-        )
-        admin_user.set_password("morcego123")
-        admin_user.is_staff = True
-        admin_user.is_superuser = True
-        admin_user.save()
-        self.stdout.write(self.style.SUCCESS("Administrador configurado com sucesso (kelvim ou kelvim@equipemorcego.com.br / morcego123)"))
-
-        # Papel Global OWNER
-        EventMembership.objects.get_or_create(
-            user=admin_user,
-            event=None,
-            role_code=RoleChoices.OWNER
         )
 
         # 3. Evento Oficial: 3º Trilhão Tianguá Off Road 2027

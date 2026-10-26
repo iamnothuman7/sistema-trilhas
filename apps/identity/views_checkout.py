@@ -11,6 +11,7 @@ from django.views.decorators.http import require_http_methods
 from apps.checkout.models import Order, OrderStatus
 from apps.checkout.views import authorized_order, private_checkout
 from apps.core.utils import log_audit
+from apps.core.rate_limits import rate_limit_request, reset_rate_limit
 from .models import CheckoutAccount, User
 from .onboarding import provision_buyer_account
 
@@ -43,6 +44,15 @@ def purchase_access(request, order_id):
         return render(request, "identity/purchase_access.html", context)
     if request.POST.get("prepare"):
         return redirect("identity:purchase_access", order_id=order.pk)
+    scope = "first-access" if new_account else "login"
+    decision = rate_limit_request(request, scope, ip_limit=40, account=order.purchaser_email.lower().strip(), account_limit=20 if new_account else 10)
+    if not decision.allowed:
+        context["access_error"] = "Muitas tentativas de acesso. Aguarde alguns minutos e tente novamente."
+        if new_account:
+            context["form"] = SetPasswordForm(origin.user)
+        response = render(request, "identity/purchase_access.html", context, status=429)
+        response["Retry-After"] = str(decision.retry_after)
+        return response
     with transaction.atomic():
         locked = Order.objects.select_for_update().get(pk=order.pk)
         if locked.status != OrderStatus.PAID:
@@ -71,5 +81,6 @@ def purchase_access(request, order_id):
         log_audit(actor=user, event_id=order.event_id, action="CHECKOUT_ACCOUNT_ACTIVATED" if new_account else "CHECKOUT_ACCOUNT_LINKED",
                   entity_type="Order", entity_id=order.pk, request=request)
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+    reset_rate_limit(scope + ":account", order.purchaser_email.lower().strip())
     messages.success(request, "Sua conta está pronta. Acompanhe suas inscrições e conclua os termos de cada participante.")
     return redirect("minha_conta:dashboard")

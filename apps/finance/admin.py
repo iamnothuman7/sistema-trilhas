@@ -1,4 +1,5 @@
 from django.contrib import admin
+from apps.core.private_documents import PrivateDocumentAdminMixin
 from .models import FinancialEntry, Vendor, Expense
 
 @admin.register(FinancialEntry)
@@ -20,7 +21,7 @@ class VendorAdmin(admin.ModelAdmin):
     search_fields = ("name", "contact_name", "contact_phone")
 
 @admin.register(Expense)
-class ExpenseAdmin(admin.ModelAdmin):
+class ExpenseAdmin(PrivateDocumentAdminMixin, admin.ModelAdmin):
     list_display = ("description", "event", "vendor", "category", "amount_cents", "status", "due_at", "paid_at")
     list_filter = ("status", "category", "event")
     search_fields = ("description", "vendor__name")

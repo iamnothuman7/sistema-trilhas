@@ -8,7 +8,7 @@
     <header class="registration-intro"><span class="payment-kicker">Inscrição no evento</span><h1>{{ event.title }}</h1><p class="payment-muted">Informe quem vai participar e confira o valor antes de continuar.{% if event.motorcycle_raffle.is_public %} A inscrição não inclui cotas do sorteio.{% endif %}</p></header>
     {% if active_lots %}
     {% if not payments_available %}<div class="payment-alert" role="status">O pagamento online ainda não está disponível. Você pode conferir os dados e o valor da inscrição; nenhuma cobrança será realizada nesta etapa.</div>{% endif %}
-    <form method="post" id="registrationForm">
+    <form method="post" id="registrationForm" data-max-participants="{{ max_participants }}">
         {% csrf_token %}
         <section class="payment-card"><header class="card-header"><div><h2>1. Seus dados</h2><span class="registration-caption">Responsável pela inscrição e pelo comprovante</span></div></header>
             <p class="registration-caption">Não precisa fazer um cadastro separado. Após o pagamento confirmado, sua conta é criada com os dados da compra e você define a senha no primeiro acesso. Se já tiver conta, use sua senha habitual.</p>
@@ -19,7 +19,7 @@
                 <label class="form-label registration-wide">CPF do responsável pelo pagamento *<input name="purchaser_document" data-mask="cpf" placeholder="000.000.000-00" maxlength="14" class="form-control" inputmode="numeric" required value="{{ buyer.document|default:'' }}"></label>
             </div>
         </section>
-        <section class="payment-card"><header class="card-header"><div><h2>2. Quem vai participar</h2><span class="registration-caption">Inscreva você ou mais participantes no mesmo pedido.</span></div><button type="button" id="btnAddParticipant" class="payment-button payment-button-secondary"><i data-lucide="plus" aria-hidden="true"></i> Adicionar participante</button></header>
+        <section class="payment-card"><header class="card-header"><div><h2>2. Quem vai participar</h2><span class="registration-caption">Até {{ max_participants }} participantes no mesmo pedido. Para grupos maiores, fale com a organização.</span></div><button type="button" id="btnAddParticipant" class="payment-button payment-button-secondary"><i data-lucide="plus" aria-hidden="true"></i> Adicionar participante</button></header>
             <div id="participantsContainer">{% for participant in participant_rows %}{% include "checkout/_participant_fields.html" %}{% endfor %}</div>
         </section>
         <section class="payment-card"><label class="form-label">Cupom de desconto, se tiver<input name="coupon_code" class="form-control registration-coupon" value="{{ coupon_code }}" autocomplete="off"></label><div class="payment-total"><span>Subtotal das inscrições</span><strong id="registrationTotal" aria-live="polite">Confira a oferta selecionada</strong></div><p class="registration-caption">Descontos válidos são calculados ao continuar. O valor final fica disponível antes de qualquer pagamento.</p></section>
@@ -30,4 +30,4 @@
     {% else %}<section class="payment-card"><h2>Inscrições indisponíveis no momento</h2><p>A organização ainda não disponibilizou uma oferta para esta edição ou as vagas estão esgotadas.</p><a href="{% url 'events:detail' slug=event.slug %}" class="payment-button payment-button-secondary">Voltar ao evento</a></section>{% endif %}
 </div>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'js/registration.js' %}?v=mor20261022" defer></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'js/registration.js' %}?v=security20261026" defer></script>{% endblock %}

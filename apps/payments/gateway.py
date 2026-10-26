@@ -145,9 +145,12 @@ class MercadoPagoGateway:
             if separator:
                 parts[key.strip().lower()] = value.strip()
         ts, digest = parts.get("ts", ""), parts.get("v1", "")
-        if not ts.isdigit() or not re.fullmatch(r"[a-fA-F0-9]{64}", digest):
+        # Bound input before integer/float conversion. Both Unix seconds and
+        # milliseconds occur in provider notifications; Unicode digits and
+        # unbounded integers must fail authentication, never raise a 500.
+        if not re.fullmatch(r"(?:[0-9]{1,10}|[0-9]{13})", ts) or not re.fullmatch(r"[a-fA-F0-9]{64}", digest):
             return False
-        timestamp = int(ts) / (1000 if len(ts) > 10 else 1)
+        timestamp = int(ts) / (1000 if len(ts) == 13 else 1)
         tolerance = getattr(settings, "MP_WEBHOOK_MAX_AGE_SECONDS", 900)
         if tolerance and abs(time.time() - timestamp) > tolerance:
             return False

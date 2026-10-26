@@ -1,4 +1,5 @@
 from django.contrib import admin
+from apps.core.private_documents import PrivateDocumentAdminMixin
 from .models import ChargeAttempt, ProviderEvent, PaymentAllocation, Refund, ManualPaymentEvidence, FeeStatement, PaymentTransaction
 
 @admin.register(ChargeAttempt)
@@ -25,7 +26,7 @@ class RefundAdmin(admin.ModelAdmin):
     list_filter = ("state",)
 
 @admin.register(ManualPaymentEvidence)
-class ManualPaymentEvidenceAdmin(admin.ModelAdmin):
+class ManualPaymentEvidenceAdmin(PrivateDocumentAdminMixin, admin.ModelAdmin):
     list_display = ("order", "method", "amount_cents", "verified_by", "verified_at")
     list_filter = ("method",)
 

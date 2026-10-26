@@ -2,6 +2,7 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from apps.core.utils import cents_to_reais
+from apps.core.private_storage import private_document_storage
 
 
 class MercadoPagoConnection(models.Model):
@@ -175,7 +176,7 @@ class ManualPaymentEvidence(models.Model):
     order = models.ForeignKey("checkout.Order", on_delete=models.CASCADE, related_name="manual_evidences")
     method = models.CharField("Método Declarado", max_length=50, default="PIX_MANUAL")
     amount_cents = models.PositiveBigIntegerField("Valor (centavos)")
-    proof_asset = models.FileField("Arquivo do Comprovante", upload_to="evidences/", blank=True, null=True)
+    proof_asset = models.FileField("Arquivo do Comprovante", storage=private_document_storage, upload_to="evidences/", blank=True, null=True)
     verified_by = models.ForeignKey("identity.User", on_delete=models.PROTECT, related_name="verified_payments")
     verified_at = models.DateTimeField(default=timezone.now)
     notes = models.TextField("Anotações da Conferência")

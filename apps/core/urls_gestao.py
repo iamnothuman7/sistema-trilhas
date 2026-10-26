@@ -8,6 +8,7 @@ from apps.events import views_rankings
 from apps.mediaframes import views_management as frame_views
 from apps.payments import views_management as payment_views
 from apps.catalog import views_management as catalog_views
+from .private_documents import private_document_download
 
 app_name = "gestao"
 
@@ -42,6 +43,7 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/catalogo/<str:kind>/<str:object_id>/editar/", catalog_views.catalog_editor, name="catalog_edit"),
 
     # Financeiro Gerencial
+    path("eventos/<uuid:event_id>/documentos/<str:kind>/<uuid:document_id>/", private_document_download, name="private_document_download"),
     path("eventos/<uuid:event_id>/financeiro/", views_gestao.finance_overview, name="finance"),
     path("eventos/<uuid:event_id>/financeiro/despesa/nova/", views_gestao.add_expense, name="add_expense"),
     path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/pagar/", views_gestao.pay_expense, name="pay_expense"),

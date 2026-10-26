@@ -12,6 +12,8 @@ if hasattr(sys.stdout, "reconfigure"):
 
 HOST = "31.97.20.100"
 USER = "root"
+if "--initialize-new-installation" not in sys.argv:
+    raise SystemExit("Este instalador é apenas para instalações novas. Atualize instalações existentes por revisão, com backup, sem sobrescrever o ambiente.")
 PASS = os.environ.get("TRILHAS_SSH_PASSWORD") or getpass("Senha SSH: ")
 PRODUCTION_SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 PRODUCTION_DATABASE_URL = os.environ["DATABASE_URL"]
@@ -24,6 +26,14 @@ print(f"=== CONTINUANDO DEPLOY AUTOMÁTICO EM {DOMAIN} ===")
 ssh = paramiko.SSHClient()
 ssh.load_system_host_keys()
 ssh.connect(HOST, username=USER, password=PASS, timeout=30)
+with ssh.open_sftp() as initial_sftp:
+    try:
+        initial_sftp.stat(f"{APP_DIR}/.env")
+    except FileNotFoundError:
+        pass
+    else:
+        ssh.close()
+        raise SystemExit("Instalação existente detectada. Ambiente, credenciais e dados preservados; use a publicação por revisão.")
 
 def run_cmd(cmd, desc=""):
     if desc:
@@ -36,6 +46,8 @@ def run_cmd(cmd, desc=""):
         print(out[:500] + ("..." if len(out) > 500 else ""))
     if err and exit_status != 0:
         print(f"ERRO: {err[:500]}")
+    if exit_status != 0:
+        raise RuntimeError("A etapa de instalação falhou: " + desc)
     return exit_status, out
 
 # 6. Criar virtualenv e instalar dependências
@@ -65,14 +77,13 @@ with sftp.file(f"{APP_DIR}/.env", "w") as f:
 sftp.close()
 print("Arquivo .env de produção gravado com sucesso.")
 
-# 8. Executar migrações, collectstatic e seed
+# 8. Executar migrações e collectstatic
 django_setup_cmd = f"""
 cd {APP_DIR}
 {APP_DIR}/venv/bin/python manage.py migrate --noinput
 {APP_DIR}/venv/bin/python manage.py collectstatic --noinput
-{APP_DIR}/venv/bin/python manage.py seed_initial_data
 """
-run_cmd(django_setup_cmd, "Executando migrações, collectstatic e seed inicial do evento e administrador")
+run_cmd(django_setup_cmd, "Executando migrações e collectstatic sem alterar contas existentes")
 
 # 9. Configurar Systemd Service
 systemd_content = f"""[Unit]
@@ -100,7 +111,9 @@ sftp.close()
 # Ajustar permissões e reiniciar serviço
 permissions_cmd = f"""
 chown -R www-data:www-data {APP_DIR}
-chmod -R 755 {APP_DIR}
+chmod -R go-w {APP_DIR}
+chmod 600 {APP_DIR}/.env
+if [ -f {APP_DIR}/db.sqlite3 ]; then chmod 600 {APP_DIR}/db.sqlite3; fi
 systemctl daemon-reload
 systemctl enable --now equipemorcego.service
 systemctl restart equipemorcego.service
@@ -122,6 +135,10 @@ nginx_conf = f"""server {{
         add_header Cache-Control "public, max-age=2592000, immutable";
     }}
 
+    location ^~ /media/expenses/receipts/ {{ return 404; }}
+    location ^~ /media/evidences/ {{ return 404; }}
+    location ^~ /private-media/ {{ return 404; }}
+    location ^~ /runtime/ {{ return 404; }}
     location /media/ {{
         alias {APP_DIR}/media/;
     }}

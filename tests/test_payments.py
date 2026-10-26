@@ -103,6 +103,25 @@ class GatewayTests(SimpleTestCase):
         with override_settings(MP_WEBHOOK_SECRET=""):
             self.assertFalse(MercadoPagoGateway().verify_webhook_signature("", "request", "123"))
 
+    def test_webhook_accepts_signed_seconds_and_milliseconds_and_rejects_stale_values(self):
+        now = int(time.time())
+        gateway = MercadoPagoGateway()
+        for timestamp, allowed in ((str(now), True), (str(now * 1000), True), (str(now - 901), False), (str(now + 901), False)):
+            digest = hmac.new(MP_TEST_SETTINGS["MP_WEBHOOK_SECRET"].encode(),
+                f"id:123;request-id:unit;ts:{timestamp};".encode(), hashlib.sha256).hexdigest()
+            with self.subTest(timestamp=timestamp):
+                self.assertEqual(gateway.verify_webhook_signature(f"ts={timestamp},v1={digest}", "unit", "123"), allowed)
+                self.assertFalse(gateway.verify_webhook_signature(f"ts={timestamp},v1={digest}", "tampered", "123"))
+
+    def test_malformed_webhook_timestamps_return_401_without_gateway_or_conversion_errors(self):
+        for timestamp in ("9" * 5000, "9" * 309, "²", "１" * 10, "-1", "1e10", "", "1" * 11):
+            with self.subTest(timestamp=timestamp[:20]):
+                result = self.client.post(reverse("payments:webhook") + "?data.id=123", "{}",
+                    content_type="application/json", HTTP_X_REQUEST_ID="unit",
+                    HTTP_X_SIGNATURE=f"ts={timestamp},v1={'a' * 64}")
+                self.assertEqual(result.status_code, 401)
+        self.http.assert_not_called()
+
     def test_check_command_does_not_connect_by_default_or_print_secrets(self):
         output = StringIO()
         call_command("check_mercadopago", stdout=output)

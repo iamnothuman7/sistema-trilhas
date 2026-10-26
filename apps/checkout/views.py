@@ -3,6 +3,7 @@ import secrets
 import re
 from functools import wraps
 from datetime import timedelta
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.db import transaction, IntegrityError
@@ -23,6 +24,7 @@ from apps.payments.gateway import MercadoPagoGateway
 from apps.identity.models import Person
 from apps.identity.documents import normalize_cpf
 from apps.registrations.models import Registration, CommercialState, OperationalState
+from apps.core.rate_limits import client_ip, consume_rate_limit, rate_limit_request
 
 
 def private_checkout(view):
@@ -48,7 +50,7 @@ def _registration_context(request, event, products, active_lots):
         buyer[field] = request.POST.get(f"purchaser_{field}", "") if request.method == "POST" else (
             getattr(request.user, user_field, "") if request.user.is_authenticated and user_field else "")
     rows = []
-    names = request.POST.getlist("participant_name[]") if request.method == "POST" else []
+    names = request.POST.getlist("participant_name[]")[:settings.CHECKOUT_MAX_PARTICIPANTS] if request.method == "POST" else []
     for index, name in enumerate(names):
         row = {"name": name}
         for field in ("document", "email", "phone", "city", "state", "team", "product", "lot", "shirt"):
@@ -72,6 +74,7 @@ def _registration_context(request, event, products, active_lots):
         shirt_options.extend({"product_id": str(product.pk), "code": code, "label": label, "extra_cents": extra} for code, label, extra in sizes)
     return {"event": event, "products": products, "active_lots": active_lots, "shirt_options": shirt_options,
             "buyer": buyer, "participant_rows": rows, "coupon_code": request.POST.get("coupon_code", ""),
+            "max_participants": settings.CHECKOUT_MAX_PARTICIPANTS,
             "payments_available": not MercadoPagoGateway().configuration_issues()}
 
 
@@ -86,6 +89,14 @@ def start_registration(request, event_slug):
     if not event.is_registration_open:
         messages.error(request, "As inscrições para este evento estão fechadas no momento.")
         return redirect("events:detail", slug=event.slug)
+
+    if request.method == "POST":
+        decision = rate_limit_request(request, "registration-submit", ip_limit=30,
+            window_seconds=900, account=request.POST.get("purchaser_email", "").strip().casefold()[:254], account_limit=10)
+        if not decision.allowed:
+            response = HttpResponseBadRequest("Muitas tentativas de inscrição. Aguarde alguns minutos e tente novamente.", status=429)
+            response["Retry-After"] = str(decision.retry_after)
+            return response
 
     # Run outside the reservation transaction: expiry locks Order before resources.
     from apps.payments.services import expire_stale_orders
@@ -125,6 +136,10 @@ def start_registration(request, event_slug):
             participant_products = [request.POST.get("product_id")]
             participant_lots = [request.POST.get("lot_id")]
             participant_shirts = [request.POST.get("shirt_size", "M")]
+
+        if len(participant_names) > settings.CHECKOUT_MAX_PARTICIPANTS:
+            messages.error(request, f"Cada pedido aceita até {settings.CHECKOUT_MAX_PARTICIPANTS} participantes. Divida o grupo em pedidos menores.")
+            return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots), status=400)
 
         if not purchaser_name or not purchaser_email or not purchaser_phone or not participant_names:
             messages.error(request, "Por favor, preencha todos os campos obrigatórios do comprador e dos pilotos.")
@@ -177,6 +192,7 @@ def start_registration(request, event_slug):
             return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots))
 
         num_participants = len(participant_names)
+        reservation_limit = None
 
         with transaction.atomic():
             # One lock also serializes initial capacity creation and registration numbering.
@@ -382,6 +398,25 @@ def start_registration(request, event_slug):
                 amount_cents=net_total,
                 status="PENDING"
             )
+
+            # Spend seats only for a valid reservation. These writes share the
+            # order transaction: denial rolls back the order and both budgets.
+            # Stop at an IP denial instead of charging the buyer unnecessarily.
+            for scope, identity, limit in (
+                ("reservation-seats-ip", client_ip(request), settings.CHECKOUT_PARTICIPANTS_PER_IP_HOUR),
+                ("reservation-seats-buyer", purchaser_email, settings.CHECKOUT_PARTICIPANTS_PER_BUYER_HOUR),
+            ):
+                decision = consume_rate_limit(scope, identity, limit=limit, window_seconds=3600, cost=num_participants)
+                if not decision.allowed:
+                    reservation_limit = decision
+                    transaction.set_rollback(True)
+                    break
+
+        if reservation_limit is not None:
+            messages.error(request, "O limite temporário de reservas foi atingido. Aguarde e tente novamente mais tarde, ou fale com a organização para um grupo maior.")
+            response = render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots), status=429)
+            response["Retry-After"] = str(reservation_limit.retry_after)
+            return response
 
         authorized_ids = request.session.get("checkout_order_ids", [])
         request.session["checkout_order_ids"] = [str(value) for value in authorized_ids[-49:]] + [str(order.id)]

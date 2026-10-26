@@ -16,7 +16,10 @@
         header Cache-Control "public, max-age=31536000, immutable"
     }
 
-    # Mídia Privada e Uploads
+    @private_paths path /media/expenses/receipts/* /media/evidences/* /private-media/* /runtime/*
+    respond @private_paths 404
+
+    # Only public images are served directly. Financial documents use authorized views.
     handle_path /media/* {
         root * /var/www/media
         file_server

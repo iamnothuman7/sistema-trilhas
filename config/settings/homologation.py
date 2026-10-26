@@ -11,6 +11,7 @@ ALLOWED_HOSTS = ["homologacao.equipemorcego.nabio.pro", "localhost", "127.0.0.1"
 CSRF_TRUSTED_ORIGINS = ["https://homologacao.equipemorcego.nabio.pro"]
 DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "homologation.sqlite3", "OPTIONS": {"timeout": 30}}}
 MEDIA_ROOT = BASE_DIR / "homologation-media"
+PRIVATE_MEDIA_ROOT = BASE_DIR / "homologation-private-media"
 SESSION_COOKIE_NAME = "morcego_homologation_session"
 CSRF_COOKIE_NAME = "morcego_homologation_csrf"
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"

@@ -3,11 +3,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!form) return;
     const container = document.getElementById('participantsContainer');
     const total = document.getElementById('registrationTotal');
+    const addButton = document.getElementById('btnAddParticipant');
+    const maxParticipants = Number(form.dataset?.maxParticipants) || 20;
     const formatter = new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'});
 
     function refresh() {
         let cents = 0;
         const participants = Array.from(container.querySelectorAll('[data-participant]'));
+        addButton.disabled = participants.length >= maxParticipants;
         participants.forEach(function (participant, index) {
             participant.querySelector('[data-participant-title]').textContent = 'Participante ' + (index + 1);
             participant.querySelector('[data-remove-participant]').hidden = participants.length === 1;
@@ -29,7 +32,8 @@ document.addEventListener('DOMContentLoaded', function () {
         total.textContent = formatter.format(cents / 100);
     }
 
-    document.getElementById('btnAddParticipant').addEventListener('click', function () {
+    addButton.addEventListener('click', function () {
+        if (container.querySelectorAll('[data-participant]').length >= maxParticipants) return;
         const participant = container.querySelector('[data-participant]').cloneNode(true);
         participant.querySelectorAll('input').forEach(function (input) { input.value = ''; });
         container.appendChild(participant);

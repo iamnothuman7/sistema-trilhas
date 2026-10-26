@@ -5,14 +5,15 @@ from .models import User, Person, UserPersonLink, EventMembership, ConsentPrefer
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     list_display = ("email", "full_name", "phone", "is_staff", "is_active", "date_joined")
-    list_filter = ("is_staff", "is_active", "mfa_enabled")
+    list_filter = ("is_staff", "is_active")
     search_fields = ("email", "full_name", "phone")
     ordering = ("-date_joined",)
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         ("Informações Pessoais", {"fields": ("full_name", "phone")}),
         ("Permissões", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
-        ("Segurança", {"fields": ("mfa_enabled", "last_login", "date_joined")}),
+        ("Segurança", {"fields": ("last_login", "date_joined"),
+                       "description": "Segundo fator ainda não configurado. Não há proteção MFA ativa neste sistema."}),
     )
     add_fieldsets = (
         (None, {

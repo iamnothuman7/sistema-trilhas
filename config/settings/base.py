@@ -63,6 +63,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "apps.identity.middleware.AuthenticationRateLimitMiddleware",
     "apps.core.middleware.EventSubdomainMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -140,6 +141,14 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # Media files
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+PRIVATE_MEDIA_ROOT = Path(os.getenv("PRIVATE_MEDIA_ROOT", str(BASE_DIR / "private-media")))
+FILE_UPLOAD_PERMISSIONS = 0o644
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
+
+# Bound anonymous reservations while preserving purchases for small groups.
+CHECKOUT_MAX_PARTICIPANTS = 20
+CHECKOUT_PARTICIPANTS_PER_IP_HOUR = 60
+CHECKOUT_PARTICIPANTS_PER_BUYER_HOUR = 40
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

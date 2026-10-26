@@ -2,6 +2,13 @@ import uuid
 from django.db import models
 from django.utils import timezone
 
+class RateLimitBucket(models.Model):
+    """Shared, bounded request counters. Keys are HMAC digests, never raw identities."""
+    key = models.CharField(max_length=64, primary_key=True)
+    count = models.PositiveIntegerField(default=0)
+    expires_at = models.DateTimeField(db_index=True)
+
+
 class Organization(models.Model):
     """
     Entidade operacional da Equipe Morcego.

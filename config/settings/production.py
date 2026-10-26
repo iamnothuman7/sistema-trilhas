@@ -1,8 +1,16 @@
 import os
+from django.core.exceptions import ImproperlyConfigured
 from .base import *
 
 DEBUG = False
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]
+if not os.getenv("DJANGO_SECRET_KEY") or len(SECRET_KEY) < 50 or SECRET_KEY.startswith("django-insecure"):
+    raise ImproperlyConfigured("Production requires a nondefault DJANGO_SECRET_KEY of at least 50 characters.")
+if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:
+    raise ImproperlyConfigured("Production requires explicit DJANGO_ALLOWED_HOSTS.")
+if DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3":
+    DATABASES["default"]["NAME"] = Path(os.getenv("SQLITE_DATABASE_PATH", str(BASE_DIR / "db.sqlite3")))
+    DATABASES["default"].setdefault("OPTIONS", {})["timeout"] = 30
 
 # Security headers
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

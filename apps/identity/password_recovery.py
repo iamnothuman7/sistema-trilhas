@@ -7,14 +7,12 @@ from urllib.parse import urlsplit
 from django.conf import settings
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
 from django.contrib.auth.views import INTERNAL_RESET_SESSION_TOKEN, PasswordResetConfirmView
-from django.core.cache import cache
 from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.utils.crypto import salted_hmac
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.debug import sensitive_post_parameters
@@ -22,6 +20,7 @@ from django.views.decorators.http import require_GET, require_http_methods
 
 from apps.checkout.models import Order, OrderStatus
 from apps.core.utils import log_audit
+from apps.core.rate_limits import rate_limit_request
 from apps.registrations.views_minha_conta import private_page
 from .models import CheckoutAccount, User
 
@@ -95,9 +94,10 @@ def reset_request(request):
     origin = recovery_configuration()
     form = RecoveryForm(request.POST if request.method == "POST" else None)
     if request.method == "POST" and origin and form.is_valid():
-        fingerprint = salted_hmac("password-reset-throttle", form.cleaned_data["email"].strip().casefold()).hexdigest()
         # Response does not reveal whether an address exists or is being throttled.
-        if cache.add("password-reset:" + fingerprint, True, timeout=300):
+        decision = rate_limit_request(request, "password-reset", ip_limit=10, window_seconds=300,
+                                      account=form.cleaned_data["email"].strip().casefold(), account_limit=1)
+        if decision.allowed:
             try:
                 form.save(domain_override=origin.netloc, use_https=origin.scheme == "https",
                           from_email=settings.DEFAULT_FROM_EMAIL, request=request,

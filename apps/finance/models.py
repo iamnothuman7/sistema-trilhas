@@ -2,6 +2,7 @@ import uuid
 from django.db import models
 from django.utils import timezone
 from apps.core.utils import cents_to_reais
+from apps.core.private_storage import private_document_storage
 
 class FinancialEntryKind(models.TextChoices):
     RECEITA_INSCRICAO = "RECEITA_INSCRICAO", "Receita de Inscrição (Mercado Pago)"
@@ -94,7 +95,7 @@ class Expense(models.Model):
     status = models.CharField("Situação", max_length=20, choices=ExpenseStatus.choices, default=ExpenseStatus.PAID)
     idempotency_key = models.UUIDField("Identificação do lançamento", unique=True, null=True, blank=True, editable=False)
     submission_hash = models.CharField(max_length=64, blank=True, editable=False)
-    proof_asset = models.FileField("Comprovante / Recibo", upload_to="expenses/receipts/", blank=True, null=True)
+    proof_asset = models.FileField("Comprovante / Recibo", storage=private_document_storage, upload_to="expenses/receipts/", blank=True, null=True)
     notes = models.TextField("Observações", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

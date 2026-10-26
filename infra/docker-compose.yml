@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-morcego_trilhas}
       POSTGRES_USER: ${POSTGRES_USER:-morcego}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-morcego_secure_pass_2026}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Configure POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -37,12 +37,13 @@ services:
     volumes:
       - media_volume:/app/media
       - static_volume:/app/staticfiles
+      - private_media_volume:/app/private-media
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.production
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Configure DJANGO_SECRET_KEY}
       DJANGO_DEBUG: "False"
-      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-*}
-      DATABASE_URL: postgres://${POSTGRES_USER:-morcego}:${POSTGRES_PASSWORD:-morcego_secure_pass_2026}@db:5432/${POSTGRES_DB:-morcego_trilhas}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?Configure DJANGO_ALLOWED_HOSTS}
+      DATABASE_URL: postgres://${POSTGRES_USER:-morcego}:${POSTGRES_PASSWORD:?Configure POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-morcego_trilhas}
       REDIS_URL: redis://redis:6379/1
       MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
       MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
@@ -75,5 +76,6 @@ volumes:
   redis_data:
   static_volume:
   media_volume:
+  private_media_volume:
   caddy_data:
   caddy_config:
