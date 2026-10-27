@@ -15,7 +15,6 @@ from apps.registrations.models import (
 )
 from apps.operations.models import CheckinRecord, CheckinType
 from apps.finance.models import FinancialEntry, Expense, Vendor
-from apps.expeditions.models import ExpeditionDay, Room, RoomAssignment, TransportVehicle
 from apps.mediaframes.models import FrameTemplate
 from apps.core.models import AuditLog
 from apps.core.utils import log_audit, cents_to_reais
@@ -34,7 +33,7 @@ from django.db.models import Q
 from django.http import HttpResponseNotAllowed
 from django.views.decorators.cache import never_cache
 from apps.events.forms_management import EventManagementForm, EventAppearanceForm
-from apps.core.permissions import management_required, accessible_events, can_manage_event, can_create_events, is_administrator
+from apps.core.permissions import management_required, accessible_events, can_manage_event, can_create_events, is_administrator, selected_management_event
 
 def staff_required_custom(view_func):
     """Authorise each action and event before resolving management data."""
@@ -51,19 +50,7 @@ def usage_guide(request):
 @never_cache
 def dashboard(request):
     events = accessible_events(request.user).order_by("-starts_at")
-    selected_event_id = request.GET.get("event_id")
-    event = None
-    if selected_event_id:
-        try:
-            event = events.filter(id=uuid.UUID(selected_event_id)).first()
-        except (ValueError, TypeError):
-            event = None
-    if not event:
-        event = events.first()
-
-    if event:
-        request.session["management_event_id"] = str(event.id)
-        request.management_event = event
+    event = selected_management_event(request)
     kpi = get_event_kpi_summary(event) if event else {}
     show_recent_orders = bool(event and (can_manage_event(request.user, event, "finance") or
                                         can_manage_event(request.user, event, "registrations")))
@@ -700,21 +687,6 @@ def cancel_expense(request, event_id, expense_id):
 
 
 @staff_required_custom
-def expedition_management(request, event_id):
-    event = get_object_or_404(Event, id=event_id)
-    days = ExpeditionDay.objects.filter(event=event).order_by("day_number")
-    rooms = Room.objects.filter(event=event).prefetch_related("assignments", "assignments__registration__person")
-    vehicles = TransportVehicle.objects.filter(event=event).prefetch_related("assignments")
-
-    return render(request, "gestao/expeditions/expeditions.html", {
-        "event": event,
-        "days": days,
-        "rooms": rooms,
-        "vehicles": vehicles,
-    })
-
-
-@staff_required_custom
 def frame_management(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     from apps.mediaframes.events_config import get_event_versions
@@ -777,6 +749,11 @@ def audit_log_view(request):
     logs = AuditLog.objects.all()
     if not is_administrator(request.user):
         logs = logs.filter(event_id__in=accessible_events(request.user, "audit").values("id"))
+    event = None
+    if request.GET.get("event_id") not in (None, "", "all"):
+        event = selected_management_event(request, "audit")
+        logs = logs.filter(event_id=event.pk)
+    request.management_all_events = event is None
     query = request.GET.get("q", "").strip()
     if query:
         logs = logs.filter(Q(action__icontains=query) | Q(actor_email__icontains=query) |
@@ -784,5 +761,6 @@ def audit_log_view(request):
     page = Paginator(logs.order_by("-created_at", "-pk"), 40).get_page(request.GET.get("page"))
     return render(request, "gestao/audit/audit_log.html", {
         "logs": page.object_list, "page_obj": page, "q": query,
-        "pagination_query": urlencode({"q": query}) if query else "",
+        "audit_event": event,
+        "pagination_query": urlencode({"q": query, "event_id": str(event.pk) if event else "all"}),
     })

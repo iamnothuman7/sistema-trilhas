@@ -1,4 +1,24 @@
 /* Shared layout audit: flexible columns, readable forms and local table scrolling. */
+.management-event-context { display: flex; align-items: center; gap: 24px; margin-bottom: 28px; padding: 20px; border: 1px solid var(--border); border-radius: 18px; background: var(--surface); }
+.management-event-switcher { display: grid; gap: 8px; flex: 1 1 420px; min-width: 0; }
+.management-event-switcher label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.management-event-switcher label svg { width: 17px; height: 17px; color: var(--primary); }
+.management-event-control { min-width: 0; }
+.management-event-control select { width: 100%; min-height: 46px; text-overflow: ellipsis; }
+.management-event-context > p { flex: 1 1 260px; margin: 0; color: var(--text-muted); font-size: 12px; line-height: 1.7; max-width: 420px; }
+@media (max-width: 767px) {
+    .management-event-context { display: grid; gap: 12px; padding: 16px; margin-bottom: 22px; }
+    .management-event-control select { font-size: 16px; }
+    .management-main .catalog-lots-table { display: block; min-width: 0; width: 100%; }
+    .catalog-lots-table thead { display: none; }
+    .catalog-lots-table tbody { display: grid; gap: 16px; }
+    .catalog-lots-table tr { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px 12px; padding: 16px 0; border-top: 1px solid var(--border); }
+    .management-main .catalog-lots-table td { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 0; min-width: 0; border: 0; overflow-wrap: anywhere; }
+    .catalog-lots-table td::before { content: attr(data-label); font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); }
+    .catalog-lots-table td:first-child, .catalog-lots-table td:last-child, .catalog-lots-table td[colspan] { grid-column: 1 / -1; }
+    .catalog-lots-table td:last-child .page-actions { width: 100%; }
+    .catalog-lots-table td:last-child .btn { min-height: 44px; flex: 1 1 auto; }
+}
 .management-main { width: 100%; max-width: 1800px; padding: clamp(20px, 2.5vw, 40px); padding-bottom: 64px; }
 .management-main :where(section,article,form,fieldset,details,dl,.mg-stack,.dashboard-primary,.dashboard-secondary,.form-group,.mg-inset-card) { min-width: 0; }
 .management-main :where(a,code,dd,.badge,.form-help,.form-error,.errorlist,.list-row strong) { overflow-wrap: anywhere; }

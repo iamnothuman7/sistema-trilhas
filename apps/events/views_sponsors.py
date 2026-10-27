@@ -34,7 +34,7 @@ def _sponsor_hub(request, event=None):
     for choice in events:
         choice.can_content = can_manage_event(request.user, choice, "content")
         choice.can_finance = can_manage_event(request.user, choice, "finance")
-    if event is None and request.GET.get("event_id"):
+    if event is None and request.GET.get("event_id") not in (None, "", "all"):
         try:
             selected = UUID(request.GET["event_id"])
         except (ValueError, TypeError):
@@ -44,6 +44,8 @@ def _sponsor_hub(request, event=None):
             raise PermissionDenied("Sua conta não tem acesso aos patrocinadores deste evento.")
     if event:
         request.management_event = event
+        request.session["management_event_id"] = str(event.pk)
+    request.management_all_events = event is None
     scopes = {choice.pk: choice for choice in events}
     sponsors = list(sponsorships_with_balances(Sponsor.objects.filter(event__in=[event] if event else events)))
     for sponsor in sponsors:

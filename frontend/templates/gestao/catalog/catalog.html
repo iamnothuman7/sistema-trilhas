@@ -39,7 +39,7 @@
                     <a class="btn btn-secondary" href="{% url 'gestao:catalog_create' event_id=event.id kind='tamanho' %}?product={{ prod.id }}">Adicionar tamanho</a></div></details>
                 <!-- Tabela de Lotes deste produto -->
                 <div class="table-responsive">
-                    <table class="table">
+                    <table class="table catalog-lots-table">
                         <thead>
                             <tr>
                                 <th scope="col">Lote</th>
@@ -54,18 +54,18 @@
                         <tbody>
                             {% for lot in prod.lots.all %}
                                 <tr>
-                                    <td class="mg-strong">{{ lot.title }}</td>
-                                    <td class="mg-strong mg-text-brand">R$ {{ lot.formatted_price }}</td>
-                                    <td class="mg-meta">{{ lot.opens_at|date:"d/m/Y H:i" }}</td>
-                                    <td class="mg-meta">{{ lot.closes_at|date:"d/m/Y H:i" }}</td>
-                                    <td>{{ lot.max_quantity }}</td>
-                                    <td><strong>{{ lot.current_sold }}</strong></td>
-                                    <td>
+                                    <td data-label="Lote" class="mg-strong">{{ lot.title }}</td>
+                                    <td data-label="Preço" class="mg-strong mg-text-brand">R$ {{ lot.formatted_price }}</td>
+                                    <td data-label="Abertura" class="mg-meta">{{ lot.opens_at|date:"d/m/Y H:i" }}</td>
+                                    <td data-label="Fechamento" class="mg-meta">{{ lot.closes_at|date:"d/m/Y H:i" }}</td>
+                                    <td data-label="Vagas">{{ lot.max_quantity }}</td>
+                                    <td data-label="Vendidos"><strong>{{ lot.current_sold }}</strong></td>
+                                    <td data-label="Status">
                                         <span class="badge {% if lot.is_open %}badge-success{% else %}badge-warning{% endif %}">
-                                            {% if lot.is_open %}Aberto{% else %}Fechado{% endif %}
+                                            {% if not lot.active %}Desativado{% elif lot.is_open %}Aberto{% else %}Fechado{% endif %}
                                         </span>
                                     </td>
-                                    <td><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='lote' object_id=lot.id %}" aria-label="Editar lote {{ lot.title }}">Editar lote</a></td>
+                                    <td data-label="Ações"><div class="page-actions"><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='lote' object_id=lot.id %}" aria-label="Editar lote {{ lot.title }}">Editar lote</a><a class="btn btn-secondary btn-sm" href="{% url 'gestao:lot_remove' event_id=event.id lot_id=lot.id %}" aria-label="Remover lote {{ lot.title }}"><i data-lucide="trash-2" aria-hidden="true"></i>Remover lote</a></div></td>
                                 </tr>
                             {% empty %}
                                 <tr>

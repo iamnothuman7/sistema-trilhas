@@ -44,7 +44,7 @@ class ManagementAccessTests(TestCase):
         response = self.client.get(f"/gestao/eventos/{other.id}/credenciamento/")
         self.assertEqual(response.status_code, 403)
         dashboard = self.client.get(f"/gestao/?event_id={other.id}")
-        self.assertEqual(dashboard.context['selected_event'], self.event)
+        self.assertEqual(dashboard.status_code, 403)
 
     def test_dashboard_personal_data_obeys_module_permissions(self):
         user = self.operator(RoleChoices.CONTENT)
@@ -164,9 +164,9 @@ class ManagementAccessTests(TestCase):
         self.assertTrue(response.json()['found'])
         self.assertEqual(self.client.get(f"/gestao/eventos/{self.event.id}/inscricoes/",{'q':'Piloto Teste'}).status_code,200)
 
-    def test_invalid_selected_event_does_not_raise(self):
+    def test_invalid_selected_event_returns_not_found(self):
         self.operator()
-        self.assertEqual(self.client.get('/gestao/?event_id=not-a-uuid').status_code,200)
+        self.assertEqual(self.client.get('/gestao/?event_id=not-a-uuid').status_code,404)
 
     def test_registration_status_change_rolls_back_when_audit_fails(self):
         self.operator(RoleChoices.REGISTRATION_AGENT)

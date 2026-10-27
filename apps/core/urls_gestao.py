@@ -10,10 +10,12 @@ from apps.payments import views_management as payment_views
 from apps.catalog import views_management as catalog_views
 from .private_documents import private_document_download
 from apps.registrations import views_manual
+from .management_navigation import switch_management_event
 
 app_name = "gestao"
 
 urlpatterns = [
+    path("selecionar-evento/", switch_management_event, name="switch_event"),
     path("como-usar/", views_gestao.usage_guide, name="usage_guide"),
     # Dashboard Principal
     path("", views_gestao.dashboard, name="dashboard"),
@@ -43,6 +45,7 @@ urlpatterns = [
 
     # Catálogo e Lotes
     path("eventos/<uuid:event_id>/catalogo/", views_gestao.catalog_management, name="catalog"),
+    path("eventos/<uuid:event_id>/catalogo/lotes/<uuid:lot_id>/remover/", catalog_views.lot_remove, name="lot_remove"),
     path("eventos/<uuid:event_id>/catalogo/<str:kind>/novo/", catalog_views.catalog_editor, name="catalog_create"),
     path("eventos/<uuid:event_id>/catalogo/<str:kind>/<str:object_id>/editar/", catalog_views.catalog_editor, name="catalog_edit"),
 
@@ -54,9 +57,6 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/cancelar/", views_gestao.cancel_expense, name="cancel_expense"),
     path("eventos/<uuid:event_id>/relatorios/", reporting_views.event_reports, name="reports"),
     path("eventos/<uuid:event_id>/ranking/", views_rankings.ranking_management, name="ranking_management"),
-
-    # Expedição
-    path("eventos/<uuid:event_id>/expedicao/", views_gestao.expedition_management, name="expedition"),
 
     # Molduras
     path("eventos/<uuid:event_id>/molduras/", views_gestao.frame_management, name="frames"),

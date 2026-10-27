@@ -1,0 +1,11 @@
+<section class="management-event-context" aria-label="Organizar por evento">
+    <form action="{% url 'gestao:switch_event' %}" method="get" class="management-event-switcher">
+        <input type="hidden" name="module" value="{{ management_switch_module }}">
+        <label for="management-event-select"><i data-lucide="calendar-days" aria-hidden="true"></i>Evento de trabalho</label>
+        <div class="management-event-control"><select id="management-event-select" class="form-control" name="event_id" data-auto-submit aria-describedby="management-scope-note"{% if not management_event_choices %} disabled{% endif %}>
+            {% if management_all_option %}<option value="all"{% if management_all_selected %} selected{% endif %}>Todos os eventos{% if management_switch_module == 'sponsor_bank' %} e cadastros{% endif %}</option>{% endif %}
+            {% for choice in management_event_choices %}<option value="{{ choice.id }}"{% if not management_all_selected and choice.id == management_event.id %} selected{% endif %}>{{ choice.title }} · {{ choice.get_status_display }}</option>{% empty %}<option value="">Nenhum evento disponível</option>{% endfor %}
+        </select><noscript><button class="btn btn-secondary" type="submit">Selecionar</button></noscript></div>
+    </form>
+    <p id="management-scope-note">{{ management_scope_note }}</p>
+</section>

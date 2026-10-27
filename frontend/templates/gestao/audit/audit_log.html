@@ -11,9 +11,10 @@
 
 <section class="card mg-element-gap" aria-label="Filtros do histórico">
     <form method="get" class="mg-finance-filters">
+        <input type="hidden" name="event_id" value="{{ audit_event.id|default:'all' }}">
         <div class="form-group"><label class="form-label" for="audit-search">Buscar no histórico</label><input type="search" class="form-control" name="q" id="audit-search" value="{{ q }}" placeholder="Ação, responsável, entidade ou motivo"></div>
         <button type="submit" class="btn btn-primary">Buscar</button>
-        <a class="btn btn-secondary" href="{% url 'gestao:audit_log' %}">Limpar</a>
+        <a class="btn btn-secondary" href="{% url 'gestao:audit_log' %}?event_id={{ audit_event.id|default:'all' }}">Limpar</a>
     </form>
 </section>
 

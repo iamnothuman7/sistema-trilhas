@@ -16,7 +16,6 @@ ACTION_ROLES = {
     "checkin": MANAGERS | {RoleChoices.CHECKIN_AGENT, RoleChoices.REGISTRATION_AGENT},
     "finance": MANAGERS | {RoleChoices.FINANCE},
     "catalog": MANAGERS,
-    "logistics": MANAGERS | {RoleChoices.LOGISTICS},
     "content": MANAGERS | {RoleChoices.CONTENT},
     "sponsors": MANAGERS | {RoleChoices.CONTENT, RoleChoices.FINANCE},
     "audit": MANAGERS,
@@ -27,6 +26,8 @@ VIEW_ACTIONS = {
     "manual_registration_renew_link": "registrations",
     "private_document_download": "finance",
     "catalog_editor": "catalog",
+    "lot_remove": "catalog",
+    "switch_management_event": "view",
     "usage_guide": "view",
     "dashboard": "view", "event_list": "events", "event_create": "events",
     "event_detail": "events", "event_edit": "events", "event_duplicate": "events", "event_appearance": "content",
@@ -36,7 +37,7 @@ VIEW_ACTIONS = {
     "credenciamento_confirm_api": "checkin", "deliver_benefit_api": "checkin",
     "catalog_management": "catalog", "finance_overview": "finance", "add_expense": "finance",
     "pay_expense": "finance", "cancel_expense": "finance", "export_financial": "finance",
-    "event_reports": "finance", "expedition_management": "logistics", "frame_management": "content",
+    "event_reports": "finance", "frame_management": "content",
     "audit_log_view": "audit",
     "sponsor_list": "sponsors", "sponsor_create": "content", "sponsor_edit": "content",
     "sponsor_bank": "sponsors", "sponsor_profile_create": "content", "sponsor_profile_edit": "content",
@@ -90,6 +91,32 @@ def require_event_access(request, event_id, action="view"):
     return event
 
 
+def selected_management_event(request, action="view"):
+    """Resolve explicit context first; never silently fall back from a forbidden ID."""
+    event = getattr(request, "management_event", None)
+    if event is not None:
+        return event
+    events = accessible_events(request.user, action).order_by("-starts_at", "pk")
+    selected = request.GET.get("event_id")
+    if selected and selected != "all":
+        try:
+            event = require_event_access(request, UUID(selected), action)
+        except (ValueError, TypeError, AttributeError):
+            from django.http import Http404
+            raise Http404("Evento não encontrado.")
+    else:
+        try:
+            remembered = UUID(str(request.session.get("management_event_id")))
+            event = events.filter(pk=remembered).first()
+        except (ValueError, TypeError, AttributeError):
+            event = None
+        event = event or events.first()
+    if event:
+        request.management_event = event
+        request.session["management_event_id"] = str(event.pk)
+    return event
+
+
 def management_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
@@ -102,6 +129,7 @@ def management_required(view_func):
             raise PermissionDenied("Operação sem política de acesso definida.")
         if kwargs.get("event_id"):
             request.management_event = require_event_access(request, kwargs["event_id"], action)
+            request.session["management_event_id"] = str(request.management_event.pk)
         elif view_func.__name__ == "event_create" and not can_create_events(request.user):
             raise PermissionDenied("A criação de eventos exige acesso de administração geral.")
         elif action == "audit" and not (is_administrator(request.user) or active_memberships(request.user, "audit").exists()):
@@ -114,16 +142,7 @@ def management_context(request):
     if not request.user.is_authenticated or not request.path.startswith("/gestao/"):
         return {}
     from apps.payments.connection import can_view_connection, can_manage_connection
-    event = getattr(request, "management_event", None)
-    events = accessible_events(request.user).order_by("-starts_at")
-    if event is None:
-        selected = request.GET.get("event_id") or request.session.get("management_event_id")
-        try:
-            if selected:
-                event = events.filter(id=UUID(str(selected))).first()
-        except (ValueError, TypeError, AttributeError):
-            pass
-        event = event or events.first()
+    event = selected_management_event(request)
     permissions = {action: can_manage_event(request.user, event, action) for action in ACTION_ROLES}
     permissions["events"] = permissions["events"] or can_create_events(request.user)
     role = "Administração" if is_administrator(request.user) else "Equipe do evento"
@@ -134,7 +153,9 @@ def management_context(request):
         membership = active_memberships(request.user).filter(scope).first()
         if membership:
             role = membership.get_role_code_display().split(" / ")[0]
-    return {"management_event": event, "management_permissions": permissions, "management_role_label": role,
+    from .management_navigation import event_switcher_context
+    return {**event_switcher_context(request, event),
+            "management_event": event, "management_permissions": permissions, "management_role_label": role,
             "management_can_create_events": can_create_events(request.user),
             "management_can_view_mp": can_view_connection(request.user),
             "management_can_manage_mp": can_manage_connection(request.user)}

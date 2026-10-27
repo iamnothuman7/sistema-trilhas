@@ -11,9 +11,46 @@ from apps.core.utils import log_audit
 from apps.events.models import Event
 from .models import Product, Lot, ProductVariant, Coupon, CapacityResource
 from .forms_management import ProductForm, LotForm, VariantForm, CouponForm
+from apps.checkout.models import OrderLine
+from .models import CapacityHold
 
 EDITORS = {'produto': (Product, ProductForm, 'produto'), 'lote': (Lot, LotForm, 'lote'),
            'tamanho': (ProductVariant, VariantForm, 'tamanho de camiseta'), 'cupom': (Coupon, CouponForm, 'cupom')}
+
+
+@management_required
+@never_cache
+@require_http_methods(['GET', 'POST'])
+def lot_remove(request, event_id, lot_id):
+    with transaction.atomic():
+        event = get_object_or_404(Event.objects.select_for_update(), pk=event_id)
+        resources = list(CapacityResource.objects.select_for_update().filter(
+            event=event, type='LOT_TOTAL', reference_id=str(lot_id)).order_by('pk'))
+        lot = get_object_or_404(Lot.objects.select_for_update().select_related('product'),
+                                pk=lot_id, event=event)
+        has_history = (bool(lot.current_sold) or OrderLine.objects.filter(lot=lot).exists()
+                       or any(r.reserved_count or r.committed_count for r in resources)
+                       or CapacityHold.objects.filter(resource__in=resources).exists())
+        if request.method == 'POST' and request.POST.get('confirm') == 'yes':
+            lot_pk, title = lot.pk, lot.title
+            if has_history:
+                lot.active = False
+                lot.save(update_fields=['active'])
+                action = 'LOT_DEACTIVATED'
+                message = f'Lote “{title}” desativado para novas vendas. Pedidos, reservas e histórico preservados.'
+            else:
+                lot.delete()
+                CapacityResource.objects.filter(pk__in=[r.pk for r in resources]).delete()
+                action = 'LOT_DELETED'
+                message = f'Lote “{title}” excluído.'
+            log_audit(actor=request.user, request=request, event_id=event.pk, action=action,
+                      entity_type='Lot', entity_id=lot_pk, diff={'title': title, 'history_preserved': has_history})
+            messages.success(request, message)
+            return redirect('gestao:catalog', event_id=event.pk)
+    return render(request, 'gestao/catalog/lot_remove.html', {
+        'event': event, 'lot': lot, 'has_history': has_history,
+        'confirmation_required': request.method == 'POST',
+    }, status=400 if request.method == 'POST' else 200)
 
 
 @management_required
