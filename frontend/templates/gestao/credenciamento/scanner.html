@@ -3,10 +3,13 @@
 
 {% block title %}Scanner de Credenciamento | {{ event.title }}{% endblock %}
 {% block gestao_header %}Credenciamento: {{ event.title }}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/scanner.css' %}?v=scanner20261022">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/scanner.css' %}?v=scanner20261027-htmx">{% endblock %}
 
 {% block content %}
-<div class="mg-scanner-shell">
+<div class="mg-scanner-shell" data-event-scanner="{{ event.id }}"
+     data-lookup-url="{% url 'gestao:credenciamento_lookup' event_id=event.id %}"
+     data-confirm-url="{% url 'gestao:credenciamento_confirm' event_id=event.id %}"
+     data-deliver-url="{% url 'gestao:deliver_benefit' event_id=event.id %}">
     <div class="mg-align-center mg-element-gap">
         <span class="badge badge-success">CREDENCIAMENTO</span>
         <h1>
@@ -77,15 +80,5 @@
 
 {% block extra_js %}
 <script src="{% static 'vendor/jsqr/jsQR.js' %}?v=1.4.0"></script>
-<script src="{% static 'js/scanner.js' %}?v=scanner20261022"></script>
-<script>
-let scannerApp;
-document.addEventListener("DOMContentLoaded", function() {
-    const lookupUrl = "{% url 'gestao:credenciamento_lookup' event_id=event.id %}";
-    const confirmUrl = "{% url 'gestao:credenciamento_confirm' event_id=event.id %}";
-    const deliverUrl = "{% url 'gestao:deliver_benefit' event_id=event.id %}";
-
-    scannerApp = new EventScanner("{{ event.id }}", lookupUrl, confirmUrl, deliverUrl);
-});
-</script>
+<script src="{% static 'js/scanner.js' %}?v=scanner20261027-htmx"></script>
 {% endblock %}

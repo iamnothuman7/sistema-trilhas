@@ -8,7 +8,7 @@
     {% if has_history %}<p class="mg-space-bottom">Este lote já possui pedidos, vendas ou reservas. Ele será desativado para novas compras. As inscrições e o histórico financeiro continuam disponíveis.</p>
     {% else %}<p class="mg-space-bottom">Este lote não possui pedidos nem reservas. A exclusão remove o lote e suas vagas disponíveis.</p>{% endif %}
     {% if confirmation_required %}<p class="alert alert-danger" role="alert">Confirme a ação para continuar.</p>{% endif %}
-    <form method="post" hx-boost="false">{% csrf_token %}<input type="hidden" name="confirm" value="yes">
+    <form method="post">{% csrf_token %}<input type="hidden" name="confirm" value="yes">
         <div class="mg-form-actions"><a class="btn btn-secondary" href="{% url 'gestao:catalog' event_id=event.id %}">Cancelar</a><button class="btn btn-danger" type="submit">{% if has_history %}Desativar lote{% else %}Excluir lote{% endif %}</button></div>
     </form>
 </section>

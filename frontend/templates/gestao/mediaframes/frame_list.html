@@ -1,6 +1,6 @@
 {% extends "gestao/base_gestao.html" %}
 {% load static %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/frame-catalog.css' %}?v=photo-space20261026">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/frame-catalog.css' %}?v=official-only20261027">{% endblock %}
 
 {% block title %}Molduras Digitais: {{ event.title }} | Painel Gestão{% endblock %}
 {% block gestao_header %}Molduras digitais: {{ event.title }}{% endblock %}
@@ -11,76 +11,9 @@
         <h1>Molduras digitais</h1>
         <p class="text-muted">Crie artes de pilotos e equipes com foto, ajuste o enquadramento e baixe Story e Feed.</p>
     </div>
-    <div class="page-actions"><a class="btn btn-primary" href="{% url 'gestao:official_frame_preview' event.id %}"><i data-lucide="user-round" aria-hidden="true"></i>Criar arte de piloto</a><a class="btn btn-secondary" href="{% url 'gestao:official_frame_preview' event.id %}?tipo=equipe"><i data-lucide="users-round" aria-hidden="true"></i>Criar arte de equipe</a><button type="button" class="btn btn-secondary" onclick="document.getElementById('frameModal').showModal()">
-        <i data-lucide="plus" aria-hidden="true"></i> Adicionar moldura
-    </button></div>
+    <div class="page-actions"><a class="btn btn-primary" href="{% url 'gestao:official_frame_preview' event.id %}"><i data-lucide="user-round" aria-hidden="true"></i>Criar arte de piloto</a><a class="btn btn-secondary" href="{% url 'gestao:official_frame_preview' event.id %}?tipo=equipe"><i data-lucide="users-round" aria-hidden="true"></i>Criar arte de equipe</a></div>
 </div>
 
 {% include "gestao/mediaframes/_official_catalog.html" %}
-<h2 class="section-title">Arquivos de molduras adicionados</h2>
-<!-- Arquivos enviados pela organização -->
-<div class="card">
-    <div class="mg-module-grid">
-        {% for t in templates %}
-            <div class="mg-align-center mg-inset-card">
-                <span class="badge badge-warning mg-space-bottom-sm">{{ t.get_format_display }}</span>
-                <h3 class="section-title">{{ t.title }}</h3>
-                <div class="text-muted mg-meta mg-space-bottom">
-                    Dimensões: {{ t.width }}x{{ t.height }} px &bull; Acesso: {{ t.get_access_policy_display }}
-                </div>
-                {% if t.available_asset_url %}
-                    <img src="{{ t.available_asset_url }}" alt="{{ t.title }}" class="mg-space-bottom mg-frame-preview">
-                <a href="{{ t.available_asset_url }}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm btn-block">Ver arquivo PNG <i data-lucide="external-link" aria-hidden="true"></i></a>
-                {% else %}<p class="text-muted">Arquivo indisponível. Os modelos oficiais estão disponíveis acima.</p>{% endif %}
-            </div>
-        {% empty %}
-            <div class="text-muted mg-align-center mg-full-width">
-                <p>Nenhum arquivo adicional enviado. As molduras oficiais já estão disponíveis acima.</p>
-            </div>
-        {% endfor %}
-    </div>
-</div>
-
-<!-- Modal para Adicionar Moldura -->
-<dialog id="frameModal" class="mg-dialog" aria-labelledby="frame-dialog-title">
-    <div class="card mg-dialog-card">
-        <div class="card-header">
-            <h3 class="section-title" id="frame-dialog-title">Cadastrar Nova Moldura</h3>
-            <button type="button" class="btn btn-sm btn-secondary" onclick="document.getElementById('frameModal').close()" aria-label="Fechar formulário"><i data-lucide="x" aria-hidden="true"></i></button>
-        </div>
-
-        <form method="POST" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="form-group">
-                <label class="form-label" for="field-title">Título da Moldura *</label>
-                <input type="text" name="title" class="form-control" required placeholder="Ex: Moldura Oficial Feed 2026" id="field-title">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="field-format">Formato *</label>
-                <select name="format" class="form-control" id="field-format">
-                    <option value="FEED_1080x1350">Instagram Feed (1080 x 1350 px)</option>
-                    <option value="STORY_1080x1920">Instagram Story / Reels (1080 x 1920 px)</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="field-overlay_asset">Arquivo PNG Transparente *</label>
-                <input type="file" name="overlay_asset" accept="image/png" class="form-control" required id="field-overlay_asset">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="field-access_policy">Regra de Acesso *</label>
-                <select name="access_policy" class="form-control" id="field-access_policy">
-                    <option value="PUBLIC">Público (Qualquer pessoa pode gerar)</option>
-                    <option value="REGISTERED_READY">Exclusivo para Inscritos Confirmados</option>
-                </select>
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-block btn-lg mg-space-top">
-                Salvar Modelo
-            </button>
-        </form>
-    </div>
-</dialog>
 {% endblock %}
+{% block extra_js %}<script src="{% static 'js/story_studio.js' %}?v=workspace20261027"></script>{% endblock %}

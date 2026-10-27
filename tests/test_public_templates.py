@@ -158,8 +158,9 @@ class EventStoryConfigurationTests(TestCase):
             self.assertNotIn("2027", str(b))
             self.assertEqual(a["layout"], style["layout"])
             self.assertEqual(b["palette"], style["palette"])
+        original_x = first[0]["layout"]["photo"]["x"]
         first[0]["layout"]["photo"]["x"] = 999
-        self.assertEqual(get_event_versions(self.first)[0]["layout"]["photo"]["x"], 185)
+        self.assertEqual(get_event_versions(self.first)[0]["layout"]["photo"]["x"], original_x)
 
     def test_event_timezone_controls_calendar_date_and_canvas_time(self):
         self.second.timezone = "America/Manaus"
@@ -194,14 +195,17 @@ class EventStoryConfigurationTests(TestCase):
         self.assertNotIn("2027", str(version))
         self.assertTrue(version["logo"].endswith("img/logo_emblem.png"))
 
-    def test_third_trilhao_uses_own_emblem_and_offroad_art_only_for_that_event(self):
+    def test_events_share_offroad_theme_but_keep_their_own_emblems(self):
         self.first.subdomain = "3trilhaotiangua"
         version = get_event_versions(self.first)[0]
         self.assertTrue(version["logo"].endswith("img/logo_3trilhao_2027.png"))
         self.assertTrue(version["background_art"].endswith("frames/trilhao-terra-story-v1.webp"))
         self.assertEqual(version["decorations"]["kind"], "offroad")
         self.assertIsNone(version["decorations"]["crowd"])
-        self.assertNotIn("background_art", get_event_versions(self.second)[0])
+        second = get_event_versions(self.second)[0]
+        self.assertEqual(second["background_art"], version["background_art"])
+        self.assertNotEqual(second["logo"], version["logo"])
+        self.assertTrue(second["logo"].endswith("events/logos/agosto.png"))
 
 
     @override_settings(ALLOWED_HOSTS=["testserver", ".equipemorcego.nabio.pro"])

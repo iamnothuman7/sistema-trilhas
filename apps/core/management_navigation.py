@@ -26,7 +26,7 @@ PARENTS = {
     "event_create": "event_list", "catalog_create": "catalog", "catalog_edit": "catalog",
     "lot_remove": "catalog", "registration_detail": "registration_list",
     "manual_registration_create": "registration_list", "manual_registration_payment": "registration_list",
-    "official_frame_preview": "frames",
+    "official_frame_preview": "frames", "team_frame_editor": "frames",
     **{name: "sponsor_bank" for name in (
         "sponsor_list", "sponsor_create", "sponsor_edit", "sponsor_detail", "sponsor_link",
         "sponsor_agreement", "sponsor_receipt", "sponsor_reversal",

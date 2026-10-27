@@ -1,5 +1,5 @@
 /** Credenciamento e entregas. Dados de participantes são inseridos como texto. */
-class EventScanner {
+window.EventScanner = class EventScanner {
     constructor(eventId, lookupUrl, confirmUrl, deliverUrl) {
         Object.assign(this, { eventId, lookupUrl, confirmUrl, deliverUrl });
         this.video = document.getElementById('scannerVideo');
@@ -47,9 +47,17 @@ class EventScanner {
         this.manualInput?.addEventListener('keydown', event => {
             if (event.key === 'Enter') { event.preventDefault(); this.searchManual(); }
         });
-        window.addEventListener('pagehide', () => this.stopCamera());
+        const lifecycle = new AbortController();
+        window.trilhasOnPageLeave?.(() => { this.lookupSequence++; this.stopCamera(); lifecycle.abort(); });
+        window.addEventListener('pagehide', () => this.stopCamera(), {signal:lifecycle.signal});
         document.addEventListener?.('visibilitychange', () => {
             if (document.hidden) this.stopCamera('Câmera pausada ao sair da tela. Toque em Iniciar câmera para continuar.');
+        }, {signal:lifecycle.signal});
+        window.trilhasWorkspace?.register('scanner', {
+            capture: () => ({code:this.currentCode, registration:this.currentReg?.registration_id}),
+            restore: saved => {
+                if (saved.registration || saved.code) this.lookupCode(saved.code || '', saved.registration || '');
+            }
         });
     }
     node(tag, className, text) {
@@ -475,3 +483,16 @@ class EventScanner {
         return match ? decodeURIComponent(match[1]) : '';
     }
 }
+
+;(() => {
+    function initializeScanner() {
+        const host = document.querySelector?.('[data-event-scanner]');
+        if (host && !host.dataset.scannerReady) {
+            host.dataset.scannerReady = 'true';
+            new window.EventScanner(host.dataset.eventScanner, host.dataset.lookupUrl,
+                host.dataset.confirmUrl, host.dataset.deliverUrl);
+        }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeScanner, {once: true});
+    else initializeScanner();
+})();

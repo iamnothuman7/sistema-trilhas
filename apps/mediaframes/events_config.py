@@ -38,32 +38,7 @@ EVENT_VERSIONS = [
         "layout": deepcopy(BASE_LAYOUT),
         "palette": {"yellow": "#ff9d00", "blue": "#1a0602", "green": "#ea580c", "navy": "#140502"},
         "background_colors": ["#c22506", "#5e0c02", "#160401"],
-        "decorations": {
-            "kind": "party", "crowd": "/static/assets/party-crowd-silhouette-v1.webp",
-            "flag": None, "tone": "#3d0802",
-        },
-    },
-    {
-        "id": "trilhao-carbon",
-        "label": "Dark Carbon",
-        "layout": deepcopy(BASE_LAYOUT),
-        "palette": {"yellow": "#f59e0b", "blue": "#090d16", "green": "#10b981", "navy": "#070b12"},
-        "background_colors": ["#1e293b", "#0f172a", "#05070c"],
-        "decorations": {
-            "kind": "party", "crowd": "/static/assets/party-crowd-silhouette-v1.webp",
-            "flag": None, "tone": "#09101d",
-        },
-    },
-    {
-        "id": "trilhao-amber",
-        "label": "Laranja Racing",
-        "layout": deepcopy(BASE_LAYOUT),
-        "palette": {"yellow": "#ffdd12", "blue": "#1c0902", "green": "#ea580c", "navy": "#260b02"},
-        "background_colors": ["#f97316", "#c2410c", "#431407"],
-        "decorations": {
-            "kind": "party", "crowd": "/static/assets/party-crowd-silhouette-v1.webp",
-            "flag": None, "tone": "#7c2d12",
-        },
+        "decorations": {"kind": "offroad", "crowd": None},
     },
 ]
 
@@ -171,9 +146,8 @@ def get_event_versions(event=None):
     }
     for version in versions:
         version.update(details)
+        version["background_art"] = static("img/frames/trilhao-terra-story-v1.webp")
         if is_third_trilhao:
-            version["background_art"] = static("img/frames/trilhao-terra-story-v1.webp")
-            version["decorations"] = {"kind": "offroad", "crowd": None}
             version["layout"]["logo"] = {"x": 190, "y": 90, "width": 700, "height": 410}
             version["footer_title"] = venue.upper() or "LOCAL A CONFIRMAR"
             if version["id"] == DEFAULT_VERSION:

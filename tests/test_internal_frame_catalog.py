@@ -16,29 +16,39 @@ class InternalFrameCatalogTests(TestCase):
     def url(self, event=None):
         return reverse("gestao:official_frame_preview", args=[(event or self.event).pk])
 
-    def test_catalog_displays_built_in_styles_without_uploaded_templates(self):
+    def test_catalog_displays_one_official_theme_in_both_formats(self):
         self.operator()
         self.event.subdomain = "3trilhaotiangua"
         self.event.save()
         self.assertFalse(FrameTemplate.objects.exists())
         response = self.client.get(reverse("gestao:frames", args=[self.event.pk]))
-        for label in ["Terra &amp; Trilha", "Dark Carbon", "Laranja Racing", "Criar Story", "Criar Feed", "Criar arte de piloto", "Criar arte de equipe"]:
+        for label in ["Terra &amp; Trilha", "Criar Story", "Criar Feed", "Criar arte de piloto", "Criar arte de equipe"]:
             self.assertContains(response, label)
+        for label in ['Dark Carbon', 'Laranja Racing', 'Arquivos de molduras adicionados', 'Adicionar moldura']:
+            self.assertNotContains(response, label)
         self.assertContains(response, "logo_3trilhao_2027.png")
+        self.assertContains(response, 'data-frame-preview data-format="story"', count=1)
+        self.assertContains(response, 'data-frame-preview data-format="feed"', count=1)
+        self.assertContains(response, 'id="frame-catalog-version"', count=1)
         self.assertNotContains(response, "O gerador público utilizará o layout padrão")
 
     def test_missing_legacy_file_does_not_render_broken_image_or_link(self):
         self.operator()
         FrameTemplate.objects.create(event=self.event, title="Arquivo antigo", overlay_asset="frames/overlays/missing.png")
         response = self.client.get(reverse("gestao:frames", args=[self.event.pk]))
-        self.assertContains(response, "Arquivo indisponível")
+        self.assertNotContains(response, "Arquivo antigo")
+        self.assertNotContains(response, "Arquivos de molduras adicionados")
+        self.assertEqual(self.client.post(reverse('gestao:frames', args=[self.event.pk]), {}).status_code, 405)
         self.assertNotContains(response, 'src="/media/frames/overlays/missing.png"')
+        self.assertTrue(FrameTemplate.objects.filter(title="Arquivo antigo").exists())
 
     def test_internal_editor_accepts_photos_without_requiring_organizer_purchase(self):
         self.operator()
         response = self.client.get(self.url(), {"versao": "trilhao-carbon", "formato": "feed"})
         self.assertContains(response, 'data-internal-editor="true"')
-        self.assertContains(response, 'data-version="trilhao-carbon" data-format="feed"')
+        self.assertContains(response, 'data-version="trilhao-fogo" data-format="feed"')
+        self.assertEqual(len(response.context['event_versions']), 1)
+        self.assertNotContains(response, 'Escolha seu estilo')
         self.assertContains(response, "management-sidebar")
         self.assertContains(response, "story_studio.js")
         self.assertContains(response, 'id="photo-input"')

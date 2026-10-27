@@ -1,17 +1,15 @@
 <section class="official-frames" aria-labelledby="official-frames-title">
-  <div class="page-heading"><div><span class="eyebrow">Arte oficial desta edição</span><h2 id="official-frames-title">Molduras do {{ event.title }}</h2><p>Escolha um estilo, adicione a foto do piloto ou da equipe e baixe a arte em Story e Feed.</p></div><span class="badge badge-success">Editor completo</span></div>
+  {{ official_version|json_script:"frame-catalog-version" }}
+  <div class="page-heading"><div><span class="eyebrow">Um tema oficial por evento</span><h2 id="official-frames-title">{{ event.title }}</h2><p>As duas proporções usam a identidade oficial desta edição. Adicione a foto do piloto ou da equipe no editor.</p></div><span class="badge badge-success">{{ official_version.label }}</span></div>
   <div class="official-frame-grid">
-    {% for version in official_versions %}
-    <article class="card official-frame-card" style="--frame-accent:{{ version.palette.yellow }};--frame-dark:{{ version.palette.navy }}">
-      <a class="official-frame-thumb" href="{% url 'gestao:official_frame_preview' event.id %}?versao={{ version.id }}&amp;formato=story" aria-label="Criar arte com {{ version.label }}">
-        {% if version.background_art %}<img class="official-frame-landscape" src="{{ version.background_art }}" alt="" loading="lazy" aria-hidden="true">{% endif %}
-        <img class="official-frame-logo" src="{{ version.logo }}" alt="{{ event.title }}" loading="lazy">
-        <div class="official-frame-person" aria-hidden="true"><i data-lucide="user-round"></i><span>SUA FOTO AQUI</span></div>
-        <strong class="official-frame-banner">EU VOU!</strong><span class="official-frame-date">{{ version.selector_detail }}</span>
+    {% for format in frame_formats %}
+    <article class="card official-frame-card" style="--frame-accent:{{ official_version.palette.yellow }};--frame-dark:{{ official_version.palette.navy }}">
+      <a class="official-frame-thumb official-frame-thumb--{{ format.id }}" href="{% url 'gestao:official_frame_preview' event.id %}?formato={{ format.id }}" aria-label="Criar {{ format.label }} de {{ event.title }}">
+        <canvas data-frame-preview data-format="{{ format.id }}" width="1080" height="{% if format.id == 'feed' %}1350{% else %}1920{% endif %}" role="img" aria-label="Prévia oficial de {{ format.label }}: {{ event.title }}" aria-busy="true">Moldura oficial de {{ event.title }} — {{ format.label }}</canvas>
       </a>
-      <div class="official-frame-copy"><h3>{{ version.label }}</h3><p>Story 1080 × 1920 · Feed 1080 × 1350</p><div class="official-frame-actions"><a class="btn btn-primary" href="{% url 'gestao:official_frame_preview' event.id %}?versao={{ version.id }}&amp;formato=story"><i data-lucide="smartphone" aria-hidden="true"></i>Criar Story</a><a class="btn btn-secondary" href="{% url 'gestao:official_frame_preview' event.id %}?versao={{ version.id }}&amp;formato=feed"><i data-lucide="image" aria-hidden="true"></i>Criar Feed</a></div></div>
+      <div class="official-frame-copy"><h3>{{ format.label }} · {{ format.ratio }}</h3><p>{{ format.dimensions }} px · Tema oficial do evento</p><div class="official-frame-actions"><a class="btn btn-primary" href="{% url 'gestao:official_frame_preview' event.id %}?formato={{ format.id }}"><i data-lucide="user-round" aria-hidden="true"></i>Criar {{ format.label }}</a><a class="btn btn-secondary" href="{% url 'gestao:official_frame_preview' event.id %}?formato={{ format.id }}&amp;tipo=equipe"><i data-lucide="users-round" aria-hidden="true"></i>Equipe confirmada</a></div></div>
     </article>
     {% endfor %}
   </div>
-  <p class="text-muted">A organização pode criar artes de pilotos e equipes diretamente aqui. Fotos e imagens geradas ficam no dispositivo. No site público, a personalização continua disponível após a inscrição paga.</p>
+  <p class="text-muted">Use o seletor no topo para ver as molduras de outro evento. Fotos e artes ficam no dispositivo. No site público, a personalização é liberada após o pagamento da inscrição.</p>
 </section>

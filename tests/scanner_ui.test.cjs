@@ -40,11 +40,11 @@ function setup(fetch = async () => { throw new TypeError('offline'); }, override
       cookie: 'csrftoken=test-token'
     },
     window: { addEventListener() {}, renderTrilhasIcons() {}, location: { href: 'https://example.test/gestao/' } },
-    fetch, FormData, URL, Error, SyntaxError, TypeError, setTimeout, clearTimeout, crypto: webcrypto,
+    fetch, FormData, URL, Error, SyntaxError, TypeError, AbortController, setTimeout, clearTimeout, crypto: webcrypto,
     ...overrides,
   });
   const source = fs.readFileSync(path.join(__dirname, '../frontend/static/js/scanner.js'), 'utf8');
-  vm.runInContext(source + '\nglobalThis.Scanner = EventScanner;', context);
+  vm.runInContext(source + '\nglobalThis.Scanner = window.EventScanner;', context);
   return { scanner: new context.Scanner('event', '/lookup', '/confirm', '/deliver'), elements, context };
 }
 

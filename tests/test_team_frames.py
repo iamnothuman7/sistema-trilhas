@@ -78,7 +78,7 @@ class TeamFrameTests(TestCase):
         self.operator()
         response = self.client.get(self.url())
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "teamArtConfig")
+        self.assertContains(response, 'id="confirmed-teams"')
         self.assertContains(response, "Equipe Serra")
         self.assertContains(response, "1 inscrição ativa")
         self.assertNotContains(response, "Pessoa privada")
@@ -94,19 +94,19 @@ class TeamFrameTests(TestCase):
         teams = confirmed_teams(self.event)
         self.assertEqual([(team["name"], team["count"]) for team in teams], [("Trilheiros", 2)])
 
-    def test_empty_state_does_not_offer_false_confirmation_or_export(self):
+    def test_empty_edition_can_prepare_art_but_requires_a_photo_to_export(self):
         self.operator()
         response = self.client.get(self.url())
-        self.assertContains(response, "Nenhuma equipe confirmada nesta edição")
-        self.assertNotContains(response, 'id="downloadTeamArt"')
-        self.assertNotContains(response, 'id="teamArtConfig"')
+        self.assertContains(response, 'id="download-button" type="button" disabled')
+        self.assertContains(response, '<option value="team" selected>Equipe confirmada</option>', html=True)
+        self.assertNotContains(response, 'id="teamArtCanvas"')
 
     def test_team_name_is_escaped_in_html_and_json(self):
         self.registration('</script><script>alert("nome")</script>')
         self.operator()
         response = self.client.get(self.url())
         self.assertNotContains(response, '<script>alert("nome")</script>')
-        self.assertContains(response, r'\u003C/script\u003E')
+        self.assertContains(response, '&lt;/script&gt;&lt;script&gt;')
 
     def test_get_and_rejected_post_do_not_create_public_templates_or_archives(self):
         self.registration("Equipe somente interna")

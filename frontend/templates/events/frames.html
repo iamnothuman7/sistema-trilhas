@@ -71,25 +71,17 @@
         <div><span class="studio-eyebrow">Moldura oficial do evento</span><h1>A trilha começa com <span>você.</span></h1></div>
       </header>
       {% if not internal_editor %}<p class="studio-description">Personalize seu story e seu post de feed de <strong>{{ event.title }}</strong>. Escolha uma foto, ajuste o enquadramento e baixe os dois formatos sem enviar a foto novamente.</p>{% endif %}
-      <section class="studio-section" aria-label="Estilo do story">
-        <h2 class="studio-section-title">1. Escolha seu estilo</h2>
-        <div class="version-options">
-          {% for version in event_versions %}
-          <button type="button" class="version-option {% if version.id == selected_version.id %}active-version{% endif %}" data-event-version="{{ version.id }}" aria-pressed="{% if version.id == selected_version.id %}true{% else %}false{% endif %}"><strong>{{ version.label }}</strong><span>{{ version.selector_detail }}</span></button>
-          {% endfor %}
-        </div>
-      </section>
-      <section class="studio-section" aria-label="Formato da arte"><h2 class="studio-section-title">2. Escolha o formato</h2><div class="format-options"><button type="button" class="format-option" data-art-format="story" aria-pressed="true"><strong>Story · 9:16</strong><small>1080 × 1920 px</small></button><button type="button" class="format-option" data-art-format="feed" aria-pressed="false"><strong>Feed · 4:5</strong><small>1080 × 1350 px</small></button></div></section>
+      <section class="studio-section" aria-label="Formato da arte"><h2 class="studio-section-title">1. Escolha o formato</h2><div class="format-options"><button type="button" class="format-option" data-art-format="story" aria-pressed="true"><strong>Story · 9:16</strong><small>1080 × 1920 px</small></button><button type="button" class="format-option" data-art-format="feed" aria-pressed="false"><strong>Feed · 4:5</strong><small>1080 × 1350 px</small></button></div></section>
       {% if internal_editor %}<section class="studio-panel">
-        <h2 class="studio-section-title">3. Personalize a arte</h2>
+        <h2 class="studio-section-title">2. Personalize a arte</h2>
         <div class="studio-field-grid">
           <div class="form-group"><label class="form-label" for="artwork-subject">Tipo de arte</label><select id="artwork-subject" class="form-control"><option value="pilot" {% if artwork_subject == 'pilot' %}selected{% endif %}>Piloto · Eu vou!</option><option value="team" {% if artwork_subject == 'team' %}selected{% endif %}>Equipe confirmada</option></select></div>
           <div class="form-group" id="pilot-name-field" {% if artwork_subject == 'team' %}hidden{% endif %}><label class="form-label" for="pilot-name-input">Nome do piloto (opcional)</label><input id="pilot-name-input" class="form-control" type="text" maxlength="64" placeholder="Nome para aparecer na arte" autocomplete="off"></div>
-          <div class="form-group"><label class="form-label" for="team-name-input">Nome da equipe ou cidade (opcional)</label><input id="team-name-input" class="form-control" type="text" maxlength="64" placeholder="Ex.: Equipe Morcego" autocomplete="off"></div>
+          <div class="form-group"><label class="form-label" for="team-name-input">Nome da equipe ou cidade (opcional)</label><input id="team-name-input" class="form-control" type="text" maxlength="64" placeholder="Ex.: Equipe Morcego" autocomplete="off" list="confirmed-teams"><datalist id="confirmed-teams">{% for team in confirmed_teams %}<option value="{{ team.name }}">{{ team.count }} {% if team.count == 1 %}inscrição ativa{% else %}inscrições ativas{% endif %}</option>{% endfor %}</datalist></div>
         </div>
         <p class="form-help">A arte de equipe usa a faixa “Equipe confirmada”. A foto é mantida inteira por padrão; você pode ampliar, mover ou preencher a moldura.</p>
       </section>{% else %}<section class="studio-panel">
-        <h2 class="studio-section-title">3. Deixe com a sua cara</h2>
+        <h2 class="studio-section-title">2. Deixe com a sua cara</h2>
         <div class="studio-field-grid">
           <div class="form-group"><label class="form-label" for="story-registration">Piloto confirmado</label><select id="story-registration" class="form-control">{% for reg in art_registrations %}<option value="{{ reg.id }}" {% if reg.id == selected_registration.id %}selected{% endif %} data-name="{{ reg.person.full_name }}" data-team="{{ reg.team_name|default:'' }}">{% if reg.registration_number %}#{{ reg.registration_number }} · {% endif %} {{ reg.person.full_name }}</option>{% endfor %}</select><input type="hidden" id="pilot-name-input" value="{{ selected_registration.person.full_name }}"></div>
           <div class="form-group"><label class="form-label" for="team-name-input">Equipe ou cidade (opcional)</label><input type="text" id="team-name-input" class="form-control" placeholder="Sua equipe" maxlength="32" value="{{ selected_registration.team_name|default:'' }}"></div>
@@ -133,5 +125,5 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if art_registrations or internal_editor %}<script src="{% static 'js/photo-draft.js' %}?v=20261026"></script><script src="{% static 'js/story_studio.js' %}?v=original-photo20261026"></script>{% endif %}
+{% if art_registrations or internal_editor %}<script src="{% static 'js/photo-draft.js' %}?v=20261026"></script><script src="{% static 'js/story_studio.js' %}?v=workspace20261027"></script>{% endif %}
 {% endblock %}

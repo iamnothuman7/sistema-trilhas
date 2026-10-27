@@ -1,42 +1,45 @@
 (() => {
   'use strict';
 
-  const canvas = document.getElementById('story-canvas');
+  function initializeStudio(previewCanvas = null) {
+  const previewOnly = Boolean(previewCanvas);
+  const element = id => previewOnly ? null : document.getElementById(id);
+  const canvas = previewCanvas || element('story-canvas');
   if (!canvas) return;
 
   const context = canvas.getContext('2d');
   const internalEditor = canvas.dataset.internalEditor === 'true';
-  const studio = document.querySelector('.story-studio');
-  const input = document.getElementById('photo-input');
-  const uploadButton = document.getElementById('upload-button');
-  const downloadButton = document.getElementById('download-button');
-  const changeButton = document.getElementById('change-photo-button');
-  const resetButton = document.getElementById('reset-button');
-  const zoomInput = document.getElementById('zoom-input');
-  const controls = document.getElementById('photo-controls');
-  const status = document.getElementById('editor-status');
-  const uploadLabel = document.getElementById('upload-label');
-  const help = document.getElementById('photo-help');
-  const exportNote = document.getElementById('export-note');
-  const retryButton = document.getElementById('retry-cutout-button');
-  const originalButton = document.getElementById('original-photo-button');
-  const downloadLabel = document.getElementById('download-label');
-  const pilotNameInput = document.getElementById('pilot-name-input');
-  const teamNameInput = document.getElementById('team-name-input');
-  const registrationSelect = document.getElementById('story-registration');
-  const subjectSelect = document.getElementById('artwork-subject');
-  const fitSelect = document.getElementById('photo-fit');
-  const centerButton = document.getElementById('center-photo-button');
-  const rememberPhoto = document.getElementById('remember-photo');
+  const studio = previewCanvas || document.querySelector('.story-studio');
+  const input = element('photo-input');
+  const uploadButton = element('upload-button');
+  const downloadButton = element('download-button');
+  const changeButton = element('change-photo-button');
+  const resetButton = element('reset-button');
+  const zoomInput = element('zoom-input');
+  const controls = element('photo-controls');
+  const status = element('editor-status');
+  const uploadLabel = element('upload-label');
+  const help = element('photo-help');
+  const exportNote = element('export-note');
+  const retryButton = element('retry-cutout-button');
+  const originalButton = element('original-photo-button');
+  const downloadLabel = element('download-label');
+  const pilotNameInput = element('pilot-name-input');
+  const teamNameInput = element('team-name-input');
+  const registrationSelect = element('story-registration');
+  const subjectSelect = element('artwork-subject');
+  const fitSelect = element('photo-fit');
+  const centerButton = element('center-photo-button');
+  const rememberPhoto = element('remember-photo');
   const photoDraftKey = () => registrationSelect?.value;
   const isTeamArtwork = () => internalEditor && subjectSelect?.value === 'team';
 
   const WIDTH = 1080;
   let activeFormat = studio?.dataset.format === 'feed' ? 'feed' : 'story';
   let HEIGHT = activeFormat === 'feed' ? 1350 : 1920;
-  const formatButtons = [...document.querySelectorAll('[data-art-format]')];
-  const versionsEl = document.getElementById('event-versions');
-  const versions = versionsEl ? JSON.parse(versionsEl.textContent) : [];
+  const formatButtons = previewOnly ? [] : [...document.querySelectorAll('[data-art-format]')];
+  const versionsEl = document.getElementById(previewOnly ? 'frame-catalog-version' : 'event-versions');
+  const versions = versionsEl ? (previewOnly ? [JSON.parse(versionsEl.textContent)] : JSON.parse(versionsEl.textContent)) : [];
   if (!versions.length) return;
 
   let activeVersion = versions.find(v => v.id === studio?.dataset.version) || versions[0];
@@ -106,7 +109,7 @@
     const hasPhoto = Boolean(state.photo);
     const isBusy = state.busy || state.exporting;
     if (registrationSelect) registrationSelect.disabled = isBusy;
-    document.body.classList.toggle('has-photo', hasPhoto);
+    if (!previewOnly) document.body.classList.toggle('has-photo', hasPhoto);
     canvas.classList.toggle('is-editable', hasPhoto);
     canvas.style.touchAction = hasPhoto ? 'none' : 'pan-y';
     canvas.setAttribute('aria-busy', String(isBusy || !artworkIsReady()));
@@ -846,6 +849,12 @@
     return { x: (event.clientX - bounds.left) * WIDTH / bounds.width, y: (event.clientY - bounds.top) * HEIGHT / bounds.height };
   }
 
+  if (previewOnly) {
+    initializeArtwork();
+    window.trilhasOnPageLeave?.(() => { editionRequest++; cancelAnimationFrame(state.frame); });
+    return;
+  }
+
   canvas.addEventListener('pointerdown', (event) => {
     if (!state.photo || state.busy || state.exporting || (event.pointerType === 'mouse' && event.button !== 0)) return;
     const point = canvasPoint(event);
@@ -1081,13 +1090,42 @@
     button.addEventListener('click', () => selectEdition(button.dataset.eventVersion));
   });
 
-  brandLogo.onload = () => { state.brandReady = true; buildLayers(); render(); syncControls(); };
-  brandLogo.onerror = () => { state.brandReady = false; buildLayers(); render(); syncControls(); };
-  brandLogo.src = '/static/assets/nabio-white.webp';
+  function initializeArtwork() {
+    brandLogo.onload = () => { state.brandReady = true; buildLayers(); render(); syncControls(); };
+    brandLogo.onerror = () => { state.brandReady = false; buildLayers(); render(); syncControls(); };
+    brandLogo.src = '/static/assets/nabio-white.webp';
 
-  loadEditionArtwork();
-  buildLayers();
-  render();
-  syncControls();
+    loadEditionArtwork();
+    buildLayers();
+    render();
+    syncControls();
+    document.fonts?.ready.then(() => { if (canvas.isConnected) { buildLayers(); render(); } });
+  }
+  initializeArtwork();
   restorePhoto();
+  if (internalEditor) {
+    window.trilhasWorkspace?.register('story-editor', {
+      capture() {
+        saveFraming();
+        const fields=['photo','cutout','subjectBounds','face','faceCandidates','framingTouched','normalizedPhoto','cutoutError','pilotName','teamName','zoom','offsetX','offsetY'];
+        return {format:activeFormat,subject:subjectSelect?.value,fit:fitSelect?.value,
+          fields:Object.fromEntries(fields.map(key=>[key,state[key]])),framing:[...framingByLayout]};
+      },
+      restore(saved) {
+        if(subjectSelect)subjectSelect.value=saved.subject;
+        if(fitSelect)fitSelect.value=saved.fit;
+        activeFormat=saved.format;
+        framingByLayout.clear();saved.framing.forEach(([key,value])=>framingByLayout.set(key,value));
+        applyFormatLayout();Object.assign(state,saved.fields);
+        if(pilotNameInput)pilotNameInput.value=state.pilotName;
+        if(teamNameInput)teamNameInput.value=state.teamName;
+        buildLayers();render();syncControls();
+        if(state.photo)announce('Sua foto e os ajustes foram mantidos. Continue a arte de onde parou.');
+      }
+    });
+    window.trilhasOnPageLeave?.(()=>{state.controller?.abort();state.request++;editionRequest++;clearTimeout(generatedTimer);cancelAnimationFrame(state.frame);});
+  }
+  }
+  document.querySelectorAll('[data-frame-preview]').forEach(canvas => initializeStudio(canvas));
+  initializeStudio();
 })();

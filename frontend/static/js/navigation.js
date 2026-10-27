@@ -12,9 +12,11 @@
   }
   function clearCompletedDraft() {const marker=document.querySelector('[data-clear-registration-draft]');if(marker)clearDrafts(marker.dataset.clearRegistrationDraft);}
   document.addEventListener('DOMContentLoaded',clearCompletedDraft);
-  const nativePath = path => /^\/(checkout|login|logout|cadastro|compra|recuperar-senha|senha-atualizada|admin|api|integracoes)(\/|$)/.test(path)
+  const nativePath = path => (path.startsWith('/gestao/')
+    ? /\/(exportar|documentos)(\/|$)/.test(path)
+    : /^\/(checkout|login|logout|cadastro|compra|recuperar-senha|senha-atualizada|admin|api|integracoes)(\/|$)/.test(path)
     || /\/(credenciamento|molduras|equipes-confirmadas|mercadopago|mercado-pago|exportar|documentos|comprovante)(\/|$)/.test(path)
-    || /\.(pdf|csv|zip|png|jpe?g|webp)$/i.test(path);
+    ) || /\.(pdf|csv|zip|png|jpe?g|webp)$/i.test(path);
   function prepare(root = document.body) {
     if (!root?.querySelectorAll) return;
     const nativePage = nativePath(location.pathname);
@@ -29,6 +31,7 @@
         element.setAttribute('hx-boost', 'false');
       }
       if (isForm && element.enctype === 'multipart/form-data') element.setAttribute('hx-encoding', 'multipart/form-data');
+      if (!nativePage && location.pathname.startsWith('/gestao/') && isForm && element.method.toLowerCase() === 'get') element.setAttribute('hx-push-url', 'true');
     });
   }
   document.addEventListener('htmx:beforeProcessNode', event => prepare(event.detail.elt));

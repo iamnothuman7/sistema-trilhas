@@ -1,11 +1,12 @@
 from django.http import Http404
+from urllib.parse import urlsplit
 from django.utils.cache import patch_vary_headers
 from apps.events.models import Event, EventStatus
 from apps.core.permissions import can_manage_event
 
 
 class HtmxNavigationMiddleware:
-    """Keep login and successful POST redirects as complete navigations."""
+    """Keep management redirects inside HTMX; authentication stays a full navigation."""
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -17,7 +18,10 @@ class HtmxNavigationMiddleware:
                 response.status_code = 200
                 response.content = b""
                 del response["Location"]
-                response["HX-Redirect"] = target
+                destination = urlsplit(target)
+                internal = (request.path.startswith('/gestao/') and target.startswith('/gestao/')
+                            and not destination.netloc and not destination.scheme)
+                response["HX-Location" if internal else "HX-Redirect"] = target
                 response["Cache-Control"] = "no-store"
         patch_vary_headers(response, ["HX-Request"])
         return response

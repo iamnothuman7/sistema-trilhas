@@ -58,7 +58,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .management-sidebar:hover .sidebar-label,.management-sidebar:focus-within .sidebar-label,.management-sidebar.is-expanded .sidebar-label { opacity: 1; }
 .sidebar-link:hover { color: var(--text); background: var(--surface-hover); }
 .sidebar-link.is-active { background: var(--brand-soft); color: var(--brand-ink); font-weight: 650; }
-.sidebar-link.is-active::before { content: ""; position: absolute; left: 0; height: 22px; width: 3px; border-radius: 0 3px 3px 0; background: var(--primary); }
+.sidebar-link { position: relative; }
+.sidebar-link.is-active::before { content: ""; position: absolute; left: -11px; top: 50%; transform: translateY(-50%); height: 22px; width: 3px; border-radius: 0 3px 3px 0; background: var(--primary); }
 .sidebar-footer { flex-shrink: 0; width: var(--sidebar-expanded); border-top: 1px solid var(--border); padding: 12px; }
 .sidebar-footer .sidebar-link { margin: 0; }
 .sidebar-pin,.sidebar-close { border: 0; background: transparent; text-align: left; }

@@ -12,7 +12,7 @@
         document.body.classList.remove('menu-open');
         toggles.forEach(button => button.setAttribute('aria-expanded', 'false'));
         if (mobile.matches) sidebar.setAttribute('inert', '');
-        if (opener) { opener.focus(); opener = null; }
+        if (opener) { opener.focus({preventScroll: true}); opener = null; }
     }
     function openMenu(button) {
         opener = button;
@@ -21,7 +21,7 @@
         backdrop.classList.add('is-visible');
         document.body.classList.add('menu-open');
         toggles.forEach(control => control.setAttribute('aria-expanded', 'true'));
-        sidebar.querySelector('a').focus();
+        sidebar.querySelector('a').focus({preventScroll: true});
     }
     toggles.forEach(button => button.addEventListener('click', () => sidebar.classList.contains('is-open') ? closeMenu() : openMenu(button)));
     backdrop.addEventListener('click', closeMenu);

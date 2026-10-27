@@ -14,7 +14,8 @@ class HtmxNavigationTests(SimpleTestCase):
         original.set_cookie("sessionid", "test-session", httponly=True, secure=True)
         response = self.response(original, htmx=True)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response["HX-Redirect"], "/gestao/patrocinadores/")
+        self.assertEqual(response["HX-Location"], "/gestao/patrocinadores/")
+        self.assertNotIn("HX-Redirect", response)
         self.assertEqual(response["Cache-Control"], "no-store")
         self.assertEqual(response.cookies["sessionid"].value, "test-session")
         self.assertTrue(response.cookies["sessionid"]["httponly"])
@@ -27,6 +28,12 @@ class HtmxNavigationTests(SimpleTestCase):
         self.assertEqual(response["Location"], "/login/")
         self.assertNotIn("HX-Redirect", response)
         self.assertIn("HX-Request", response["Vary"])
+
+    def test_authentication_and_external_redirects_keep_native_navigation(self):
+        for target in ['/login/?next=/gestao/', 'https://example.com/', '//example.com/gestao/']:
+            response = self.response(HttpResponseRedirect(target), htmx=True)
+            self.assertEqual(response['HX-Redirect'], target)
+            self.assertNotIn('HX-Location', response)
 
     def test_validation_and_permission_failures_are_not_silenced(self):
         for status in (200, 400, 403, 404, 422, 500):

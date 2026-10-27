@@ -687,40 +687,18 @@ def cancel_expense(request, event_id, expense_id):
 
 
 @staff_required_custom
+@never_cache
+@require_GET
 def frame_management(request, event_id):
-    event = get_object_or_404(Event, id=event_id)
+    event = request.management_event
     from apps.mediaframes.events_config import get_event_versions
-    templates = list(FrameTemplate.objects.filter(event=event))
-    for template in templates:
-        template.available_asset_url = (template.overlay_asset.url if template.overlay_asset
-            and template.overlay_asset.storage.exists(template.overlay_asset.name) else "")
-
-    if request.method == "POST":
-        title = request.POST.get("title")
-        fmt = request.POST.get("format")
-        overlay = request.FILES.get("overlay_asset")
-        access = request.POST.get("access_policy")
-
-        width = 1080
-        height = 1350 if fmt == "FEED_1080x1350" else 1920
-
-        if overlay:
-            FrameTemplate.objects.create(
-                event=event,
-                title=title,
-                format=fmt,
-                width=width,
-                height=height,
-                overlay_asset=overlay,
-                access_policy=access,
-            )
-            messages.success(request, "Modelo de moldura adicionado com sucesso!")
-            return redirect("gestao:frames", event_id=event.id)
-
     return render(request, "gestao/mediaframes/frame_list.html", {
         "event": event,
-        "templates": templates,
-        "official_versions": get_event_versions(event),
+        "official_version": get_event_versions(event)[0],
+        "frame_formats": [
+            {"id": "story", "label": "Story", "dimensions": "1080 × 1920", "ratio": "9:16"},
+            {"id": "feed", "label": "Feed", "dimensions": "1080 × 1350", "ratio": "4:5"},
+        ],
     })
 
 
