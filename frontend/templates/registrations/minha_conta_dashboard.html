@@ -1,31 +1,36 @@
 {% extends "base.html" %}
-{% block title %}Área do Piloto | Minhas Inscrições | Equipe Morcego{% endblock %}
+{% block title %}Meu perfil e minhas inscrições | Equipe Morcego{% endblock %}
 {% block content %}
-<div class="public-page">
+<div class="public-page participant-page">
   <header class="public-heading-row">
-    <div class="public-intro"><span class="public-eyebrow">Área do piloto</span><h1>Olá, {{ request.user.full_name }}.</h1><p>Suas inscrições, documentos e credenciais em um só lugar.</p></div>
-    <div class="public-actions"><a href="{% url 'events:list' %}" class="public-button public-button--primary"><i data-lucide="plus" aria-hidden="true"></i> Nova inscrição</a><a href="{% url 'identity:logout' %}" class="public-button public-button--secondary"><i data-lucide="log-out" aria-hidden="true"></i> Sair da conta</a></div>
+    <div class="public-intro"><span class="public-eyebrow">Meu perfil</span><h1>Minhas inscrições</h1><p>Olá{% if request.user.full_name %}, {{ request.user.full_name }}{% endif %}! Acompanhe sua inscrição, pegue seu QR Code e crie sua arte aqui.</p></div>
+    <div class="public-actions"><a href="{% url 'events:list' %}" class="public-button public-button--secondary"><i data-lucide="ticket" aria-hidden="true"></i> Ver eventos</a><a href="{% url 'identity:logout' %}" class="public-button public-button--secondary"><i data-lucide="log-out" aria-hidden="true"></i> Sair</a></div>
   </header>
-  <section class="public-section" aria-labelledby="registrations-title">
-    <div class="public-section-heading"><h2 id="registrations-title">Minhas inscrições</h2></div>
+  <section class="public-section" aria-label="Suas inscrições">
     {% if registrations %}
-    <div class="public-grid">
+    <div class="participant-grid">
       {% for reg in registrations %}
-      <article class="public-card public-registration-card">
-        <div class="public-card-head"><span class="public-tag {% if reg.commercial_state == 'ACTIVE' %}public-tag--positive{% else %}public-tag--warning{% endif %}">{{ reg.get_commercial_state_display }}</span><span class="public-registration-number">#{{ reg.registration_number|default:"---" }}</span></div>
-        <h3>{{ reg.event.title }}</h3>
-        <dl class="public-key-values"><div><dt>Participante</dt><dd>{{ reg.person.full_name }}</dd></div><div><dt>Modalidade</dt><dd>{{ reg.category_name }}</dd></div><div><dt>Camiseta</dt><dd>{{ reg.shirt_size }}</dd></div><div><dt>Data</dt><dd>{{ reg.event.starts_at|date:"d/m/Y \à\s H:i" }}</dd></div></dl>
-        <p class="public-note {% if reg.operational_state == 'READY' or reg.operational_state == 'CHECKED_IN' %}public-note--success{% else %}public-note--warning{% endif %}">
-          {% if reg.operational_state == 'CHECKED_IN' %}<i data-lucide="circle-check" aria-hidden="true"></i> Presença confirmada no evento
-          {% elif reg.operational_state == 'READY' %}<i data-lucide="circle-check" aria-hidden="true"></i> Apto para credenciamento
-          {% else %}<i data-lucide="circle-help" aria-hidden="true"></i> Consulte as pendências da inscrição{% endif %}
-        </p>
-        <div class="public-actions"><a href="{% url 'minha_conta:registration_detail' registration_id=reg.id %}" class="public-button public-button--secondary">Ver detalhes <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>{% if reg.is_eligible_for_qr and reg.credential.is_valid %}<a href="{% url 'minha_conta:credential_view' registration_id=reg.id %}" class="public-button public-button--primary"><i data-lucide="qr-code" aria-hidden="true"></i> Ver QR Code</a>{% endif %}</div>
-        <div class="public-actions"><a href="{% url 'minha_conta:registration_pdf' registration_id=reg.id %}" class="public-button public-button--secondary"><i data-lucide="download" aria-hidden="true"></i> Baixar documento PDF</a></div>
+      <article class="public-card participant-registration">
+        <div class="participant-summary">
+        <div class="public-card-head"><span class="public-eyebrow">{{ reg.category_name }}</span>{% if reg.registration_number %}<span class="public-registration-number">#{{ reg.registration_number }}</span>{% endif %}</div>
+        <h2>{{ reg.event.title }}</h2>
+        <p class="participant-name">{{ reg.person.full_name }}</p>
+        <p class="public-muted public-small">{{ reg.event.starts_at|date:"d/m/Y" }} · {{ reg.event.venue|default:reg.event.city }}</p>
+        </div>
+        <div class="participant-options">
+        <div class="participant-next participant-next--{{ reg.journey.tone }}"><i data-lucide="{{ reg.journey.icon }}" aria-hidden="true"></i><div><strong>{{ reg.journey.title }}</strong><p>{{ reg.journey.message }}</p></div></div>
+        <div class="participant-actions">
+          <a href="{{ reg.journey.url }}" class="public-button public-button--primary" data-registration-next hx-boost="false"><i data-lucide="{{ reg.journey.icon }}" aria-hidden="true"></i> {{ reg.journey.label }}</a>
+          {% if reg.pilot_art_available %}<a href="{% url 'events:frames' slug=reg.event.slug %}?inscricao={{ reg.id }}" class="public-button public-button--secondary" hx-boost="false"><i data-lucide="image" aria-hidden="true"></i> Criar story e feed</a>{% endif %}
+          {% if reg.commercial_state == 'ACTIVE' and reg.source_order_line.order.status == 'PAID' %}<a href="{% url 'minha_conta:registration_pdf' registration_id=reg.id %}" class="public-button public-button--secondary" hx-boost="false"><i data-lucide="download" aria-hidden="true"></i> Comprovante PDF</a>{% endif %}
+        </div>
+        {% url 'minha_conta:registration_detail' registration_id=reg.id as detail_url %}
+        {% if reg.journey.url != detail_url %}<a href="{{ detail_url }}" class="participant-detail-link">Detalhes da inscrição e do kit <i data-lucide="arrow-right" aria-hidden="true"></i></a>{% endif %}
+        </div>
       </article>
       {% endfor %}
     </div>
-    {% else %}<div class="public-empty"><span class="public-icon"><i data-lucide="ticket" aria-hidden="true"></i></span><h3>Você ainda não possui inscrições</h3><p>Conheça as próximas edições da Equipe Morcego e escolha o evento do qual quer participar.</p><a href="{% url 'events:list' %}" class="public-button public-button--primary">Explorar eventos <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>{% endif %}
+    {% else %}<div class="public-empty"><span class="public-icon"><i data-lucide="ticket" aria-hidden="true"></i></span><h2>Sua próxima trilha começa aqui</h2><p>Escolha um evento e garanta sua inscrição. Depois, seu comprovante, QR Code e arte ficam disponíveis nesta página.</p><a href="{% url 'events:list' %}" class="public-button public-button--primary">Encontrar meu evento <i data-lucide="arrow-right" aria-hidden="true"></i></a></div>{% endif %}
   </section>
 </div>
 {% endblock %}

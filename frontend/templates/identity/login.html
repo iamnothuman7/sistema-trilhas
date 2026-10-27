@@ -3,8 +3,8 @@
 {% block title %}Entrar | Equipe Morcego{% endblock %}
 {% block auth_mode %}auth-login{% endblock %}
 {% block auth_eyebrow %}Sua conta Morcego{% endblock %}
-{% block auth_heading %}Entrar no sistema{% endblock %}
-{% block auth_description %}Acesse sua conta para acompanhar inscrições ou gerenciar os eventos da equipe.{% endblock %}
+{% block auth_heading %}Entrar na conta{% endblock %}
+{% block auth_description %}Use o e-mail da inscrição para acessar seu QR Code, comprovante e artes.{% endblock %}
 
 {% block auth_form %}
 <form method="post" action="{% url 'identity:login' %}{% if request.GET.next %}?next={{ request.GET.next|urlencode }}{% endif %}" class="auth-form" id="loginForm" data-auth-form>
@@ -32,7 +32,7 @@
     </div>
 
     <button type="submit" class="auth-submit" data-submit-button>
-        <span data-submit-label>Acessar sistema</span>
+        <span data-submit-label>Entrar</span>
         <i data-lucide="arrow-right" aria-hidden="true"></i>
     </button>
 </form>

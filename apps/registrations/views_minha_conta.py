@@ -63,14 +63,63 @@ def _terms_context(reg, user):
     }
 
 
+def registration_journey(reg, user, terms=None):
+    """Explain the next safe action without changing payment or admission state."""
+    from apps.events.models import EventStatus
+    from .models import CommercialState, OperationalState
+    terms = terms if terms is not None else _terms_context(reg, user)
+    order = reg.source_order_line.order
+    detail_url = reverse("minha_conta:registration_detail", args=[reg.pk])
+    journey = {"title": "Confira sua inscrição", "message": "Consulte os detalhes ou fale com a organização.",
+               "url": detail_url, "label": "Ver inscrição", "icon": "arrow-right", "tone": "warning"}
+    if reg.event.status in (EventStatus.CANCELED, EventStatus.ARCHIVED):
+        journey.update(title="Evento indisponível", message="Este evento está cancelado ou arquivado.")
+    elif reg.commercial_state in (CommercialState.CANCELED, CommercialState.TRANSFERRED):
+        journey.update(title=reg.get_commercial_state_display(), message="Esta inscrição não libera acesso ao evento.")
+    elif order.status in (OrderStatus.RESERVED, OrderStatus.AWAITING_PAYMENT):
+        if order.is_expired():
+            journey.update(title="Reserva expirada", message="Se você já pagou, fale com a organização antes de tentar novamente.")
+        else:
+            journey.update(title="Aguardando pagamento", message="Sua inscrição será confirmada quando o pagamento for aprovado.")
+            if order.purchaser_user_id == user.pk:
+                journey.update(url=reverse("checkout:order_payment", args=[order.pk]), label="Continuar pagamento", icon="credit-card")
+            else:
+                journey["message"] = "O comprador precisa concluir o pagamento deste pedido."
+    elif order.status != OrderStatus.PAID or reg.commercial_state != CommercialState.ACTIVE:
+        journey.update(title=order.get_status_display(), message="Consulte a situação do pedido com a organização.")
+    elif terms["credential_available"]:
+        journey.update(title="Tudo pronto para o evento", message="Apresente seu QR Code e um documento na retirada do kit.",
+                       url=reverse("minha_conta:credential_view", args=[reg.pk]), label="Ver meu QR Code", icon="qr-code", tone="success")
+        if reg.operational_state == OperationalState.CHECKED_IN:
+            journey.update(title="Presença confirmada", message="Seu credenciamento foi realizado. Consulte os benefícios nos detalhes da inscrição.")
+    elif terms["can_share_claim"]:
+        journey.update(title="Pagamento confirmado", message="Vincule esta inscrição à conta de quem vai participar para liberar o aceite dos termos.",
+                       url=detail_url + "#participante", label="Vincular participante", icon="user-round")
+    elif not terms["required_docs"]:
+        journey.update(title="Pagamento confirmado", message="A organização está preparando os termos. Seu QR Code será liberado após o aceite.")
+    elif not terms["all_accepted"]:
+        journey.update(title="Pagamento confirmado", message="Falta aceitar os termos do evento para liberar seu QR Code.",
+                       url=detail_url + "#termos", label="Liberar meu QR Code", icon="qr-code")
+        if not terms["is_holder"]:
+            journey.update(message="O participante precisa aceitar os termos na própria conta.", label="Ver termos do participante", icon="file-check")
+    else:
+        journey.update(title="Pagamento e termos confirmados", message="A liberação do QR Code precisa ser conferida pela organização.")
+    return journey
+
+
 @private_page
 @login_required
 @require_GET
 @never_cache
 def dashboard(request):
+    from apps.mediaframes.access import available_pilot_art
+    art_ids = {reg.pk for reg in available_pilot_art(request.user)}
     registrations = visible_registrations(request.user).select_related(
-        "event", "event__theme", "person", "credential"
+        "event", "event__theme", "person", "credential", "source_order_line__order"
     ).order_by("-event__starts_at", "pk")
+    for reg in registrations:
+        reg.journey = registration_journey(reg, request.user)
+        reg.pilot_art_available = reg.pk in art_ids
     return render(request, "registrations/minha_conta_dashboard.html", {"registrations": registrations})
 
 
@@ -83,6 +132,7 @@ def registration_detail(request, registration_id):
     from apps.mediaframes.access import authorized_pilot_art
     context = {"reg": reg, "entitlements": reg.entitlements.all(), **_terms_context(reg, request.user),
                "pilot_art_available": bool(authorized_pilot_art(request.user, reg.pk))}
+    context["journey"] = registration_journey(reg, request.user, context)
     return render(request, "registrations/registration_detail.html", context)
 
 
@@ -103,8 +153,11 @@ def accept_terms(request, registration_id):
         except (ValueError, TypeError, AttributeError):
             submitted = set()
         if not documents or submitted != {doc.pk for doc in documents}:
+            from apps.mediaframes.access import authorized_pilot_art
             context = {"reg": reg, "entitlements": reg.entitlements.all(), **_terms_context(reg, request.user),
+                       "pilot_art_available": bool(authorized_pilot_art(request.user, reg.pk)),
                        "terms_error": "Leia e confirme todos os documentos vigentes. Se a versão mudou, atualize esta página."}
+            context["journey"] = registration_journey(reg, request.user, context)
             return render(request, "registrations/registration_detail.html", context, status=400)
         try:
             ip = str(ipaddress.ip_address(request.META.get("REMOTE_ADDR", "")))
@@ -128,7 +181,7 @@ def accept_terms(request, registration_id):
                       entity_id=reg.pk, diff={"documents": new_documents}, request=request)
     messages.success(request, "Aceite registrado. Sua credencial está disponível." if ready else
                      "Aceite registrado. A liberação também depende da confirmação do pagamento e da situação da inscrição.")
-    return redirect("minha_conta:registration_detail", registration_id=reg.pk)
+    return redirect("minha_conta:credential_view" if ready else "minha_conta:registration_detail", registration_id=reg.pk)
 
 
 @private_page

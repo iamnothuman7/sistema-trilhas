@@ -1,0 +1,26 @@
+/* The account entry stays visible outside the mobile menu. */
+.nav-account{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border:1px solid var(--border);border-radius:999px;background:var(--surface-active);color:var(--text-main);font:600 13px/1.3 Inter,sans-serif;white-space:nowrap;flex-shrink:0}
+.nav-account svg{width:18px;height:18px;flex-shrink:0}
+.nav-account:hover,.nav-account[aria-current="page"]{color:var(--text-main);border-color:var(--primary);background:var(--surface-hover)}
+.nav-account:focus-visible,.participant-page a:focus-visible{outline:3px solid var(--primary);outline-offset:4px}
+.participant-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:24px;align-items:start}
+.participant-registration{display:flex;flex-direction:column;height:100%;min-width:0}
+.participant-grid>.participant-registration{margin-top:0}
+.participant-registration h2{font-size:clamp(23px,2.4vw,30px);line-height:1.25;margin:8px 0 16px;overflow-wrap:anywhere}
+.participant-registration .public-card-head{gap:12px;margin-bottom:16px}
+.participant-registration .public-eyebrow{margin:0}
+.participant-registration .participant-name{font-weight:600;margin:0 0 8px;overflow-wrap:anywhere}
+.participant-options{min-width:0;margin-top:auto}
+.participant-next{display:flex;gap:14px;align-items:flex-start;padding:20px;margin:24px 0;border:1px solid var(--border);border-radius:18px;background:var(--surface-active);color:var(--text-main)}
+.participant-next>svg{width:22px;height:22px;flex-shrink:0;margin-top:2px;color:var(--page-accent,var(--primary))}
+.participant-next strong{font-size:15px;line-height:1.5}
+.participant-next p,.public-page .participant-next p{margin:6px 0 0;color:var(--text-muted);font-size:13px;line-height:1.7}
+.participant-actions{display:grid;gap:12px;margin-top:auto}
+.participant-actions .public-button{width:100%;min-height:48px;white-space:normal;text-align:center}
+.participant-detail-link{display:flex;align-items:center;justify-content:center;gap:10px;min-height:44px;margin-top:16px;color:var(--text-muted);font-size:13px;text-align:center}
+.participant-detail-link svg{width:16px;height:16px;flex-shrink:0}
+#termos,#participante{scroll-margin-top:130px}
+@media(min-width:961px){.participant-registration:only-child{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:start}.participant-registration:only-child .participant-options{margin-top:0}.participant-registration:only-child .participant-next{margin-top:0}}
+@media(min-width:961px) and (max-width:1100px){.desktop-navigation{gap:20px}.nav-container{gap:18px}}
+@media(max-width:700px){.nav-account{padding:10px 12px;font-size:12px;gap:6px}.nav-container{gap:8px;padding-inline:12px}.header-actions{gap:6px}.participant-page .public-heading-row .public-actions{margin-top:16px}.participant-next{padding:16px}.participant-grid{gap:20px}}
+@media(max-width:360px){.nav-account{padding-inline:10px}.nav-account svg{display:none}.nav-container .brand-logo img{width:54px;height:46px}}

@@ -12,6 +12,7 @@
 {% block extra_head %}{% endblock %}
 <link rel="stylesheet" href="{% static 'css/trail.css' %}?v=team-photo20261026">
 <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=20261026-art-share">
+<link rel="stylesheet" href="{% static 'css/participant.css' %}?v=20261027">
 <script src="{% static 'js/input-masks.js' %}?v=20261026" defer></script>
 {% include "includes/htmx_head.html" %}
 <script src="{% static 'js/main.js' %}?v=20261026" defer></script>
@@ -24,7 +25,10 @@
 <header class="navbar"><div class="container nav-container">
 <a href="{% url 'core:home' %}" class="brand-logo" aria-label="Equipe Morcego, início"><img src="{% static 'img/logo-nav.webp' %}" alt="" class="logo-emblem" width="96" height="80"></a>
 <nav class="desktop-navigation" aria-label="Navegação principal"><a href="{% url 'core:home' %}" class="nav-link{% if request.resolver_match.url_name == 'home' %} active{% endif %}">Início</a><a href="{% url 'events:list' %}" class="nav-link{% if request.resolver_match.app_name == 'events' %} active{% endif %}">Eventos</a><a href="{% url 'core:about' %}" class="nav-link">A equipe</a><a href="{% url 'core:contact' %}" class="nav-link">Contato</a></nav>
-<div class="header-actions">{% include "includes/theme_toggle.html" %}<button type="button" id="mobileMenuBtn" class="icon-button mobile-menu-button" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileMenuDrawer"><i data-lucide="menu" aria-hidden="true"></i></button></div>
+<div class="header-actions">
+{% url 'minha_conta:dashboard' as profile_url %}
+<a class="nav-account" href="{% if request.user.is_authenticated %}{{ profile_url }}{% else %}{% url 'identity:login' %}?next={{ profile_url|urlencode }}{% endif %}" hx-boost="false" {% if request.resolver_match.app_name == 'minha_conta' %}aria-current="page"{% endif %} aria-label="{% if request.user.is_authenticated %}Meu perfil e minhas inscrições{% else %}Entrar para ver minhas inscrições{% endif %}"><i data-lucide="user-round" aria-hidden="true"></i><span>{% if request.user.is_authenticated %}Meu perfil{% else %}Entrar{% endif %}</span></a>
+{% include "includes/theme_toggle.html" %}<button type="button" id="mobileMenuBtn" class="icon-button mobile-menu-button" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobileMenuDrawer"><i data-lucide="menu" aria-hidden="true"></i></button></div>
 </div><nav id="mobileMenuDrawer" class="mobile-menu" aria-label="Navegação móvel" hidden><a href="{% url 'core:home' %}">Início</a><a href="{% url 'events:list' %}">Eventos</a><a href="{% url 'core:about' %}">A equipe</a><a href="{% url 'core:contact' %}">Contato</a></nav></header>
 {% if messages %}<div class="container page-messages" role="status">{% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}</div>{% endif %}
 <main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>

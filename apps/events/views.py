@@ -104,6 +104,7 @@ def event_frames(request, slug):
     templates = FrameTemplate.objects.filter(event=event, is_active=True).order_by("-created_at")
     versions = get_event_versions(event)
     selected = select_version(request.GET.get("versao"), versions)
+    from apps.registrations.views_minha_conta import registration_journey
 
     return render(request, "events/frames.html", {
         "event": event,
@@ -111,6 +112,7 @@ def event_frames(request, slug):
         "art_registrations": art_registrations,
         "selected_registration": selected_registration,
         "after_purchase": bool(selected_registration and request.GET.get("origem") == "compra"),
+        "registration_journey": registration_journey(selected_registration, request.user) if selected_registration else None,
         "social": social_metadata(request, event, selected),
         "event_versions": versions,
         "selected_version": selected,

@@ -3,17 +3,16 @@
 {% block content %}
 <div class="public-page public-page--narrow">
   <a class="public-back" href="{% url 'minha_conta:dashboard' %}"><i data-lucide="arrow-left" aria-hidden="true"></i> Minhas inscrições</a>
-  <header class="public-intro"><span class="public-eyebrow">Inscrição #{{ reg.registration_number|default:"Pendente" }}</span><h1>{{ reg.person.full_name }}</h1><p>{{ reg.event.title }} · {{ reg.event.starts_at|date:"d/m/Y H:i" }}</p>{% if credential_available %}<div class="public-actions"><a class="public-button public-button--primary" href="{% url 'minha_conta:credential_view' registration_id=reg.id %}"><i data-lucide="qr-code" aria-hidden="true"></i> Ver credencial</a></div>{% endif %}</header>
+  <header class="public-intro"><span class="public-eyebrow">Inscrição #{{ reg.registration_number|default:"Pendente" }}</span><h1>{{ reg.person.full_name }}</h1><p>{{ reg.event.title }} · {{ reg.event.starts_at|date:"d/m/Y H:i" }}</p></header>
+  {% if journey %}<div class="participant-next"><i data-lucide="{{ journey.icon }}" aria-hidden="true"></i><div><strong>{{ journey.title }}</strong><p>{{ journey.message }}</p>{% url 'minha_conta:registration_detail' registration_id=reg.id as detail_url %}{% if journey.url != detail_url %}<div class="public-actions"><a class="public-button public-button--primary" href="{{ journey.url }}" hx-boost="false">{{ journey.label }}</a></div>{% endif %}</div></div>{% endif %}
   <section class="public-card">
     <h2>Situação da inscrição</h2>
-    {% if pilot_art_available %}<div class="public-actions"><a class="public-button public-button--primary" href="{% url 'events:frames' slug=reg.event.slug %}?inscricao={{ reg.id }}"><i data-lucide="image" aria-hidden="true"></i> Criar story e feed de piloto confirmado</a></div>{% else %}<p class="public-note">A arte de piloto confirmado será liberada após a confirmação do pagamento da inscrição de piloto.</p>{% endif %}
-    <p class="public-note">Baixe o documento com a situação atual. Uma inscrição pendente ou cancelada não é uma confirmação de participação.</p>
-    <div class="public-actions"><a class="public-button public-button--secondary" href="{% url 'minha_conta:registration_pdf' registration_id=reg.id %}"><i data-lucide="download" aria-hidden="true"></i> Baixar documento PDF</a></div>
+    <div class="public-actions">{% if pilot_art_available %}<a class="public-button public-button--secondary" href="{% url 'events:frames' slug=reg.event.slug %}?inscricao={{ reg.id }}" hx-boost="false"><i data-lucide="image" aria-hidden="true"></i> Criar story e feed de piloto confirmado</a>{% endif %}<a class="public-button public-button--secondary" href="{% url 'minha_conta:registration_pdf' registration_id=reg.id %}" hx-boost="false"><i data-lucide="download" aria-hidden="true"></i> {% if reg.commercial_state == 'ACTIVE' and reg.source_order_line.order.status == 'PAID' %}Baixar comprovante PDF{% else %}Baixar documento PDF{% endif %}</a></div>
     <div class="public-status-row"><span class="public-tag {% if reg.commercial_state == 'ACTIVE' %}public-tag--positive{% else %}public-tag--warning{% endif %}">{{ reg.get_commercial_state_display }}</span><span class="public-tag">{{ reg.get_operational_state_display }}</span></div>
     <dl class="public-key-values"><div><dt>Modalidade</dt><dd>{{ reg.category_name }}</dd></div><div><dt>Camiseta</dt><dd>{{ reg.shirt_size }}</dd></div><div><dt>Equipe</dt><dd>{{ reg.team_name|default:"Não informada" }}</dd></div></dl>
-    {% if can_share_claim %}<p class="public-note">Esta inscrição ainda precisa ser vinculada à conta do participante para o aceite pessoal dos termos.</p><form method="post" action="{% url 'minha_conta:create_claim' registration_id=reg.id %}">{% csrf_token %}<button class="public-button public-button--secondary" type="submit"><i data-lucide="link" aria-hidden="true"></i> Gerar link para o participante</button></form>{% endif %}
+    {% if can_share_claim %}<div id="participante"><p class="public-note">Se esta inscrição é sua, gere o link e abra-o para confirmar a titularidade. Se comprou para outra pessoa, envie o link para ela acessar a própria conta e aceitar os termos.</p><form method="post" action="{% url 'minha_conta:create_claim' registration_id=reg.id %}">{% csrf_token %}<button class="public-button public-button--secondary" type="submit"><i data-lucide="link" aria-hidden="true"></i> Gerar link de acesso</button></form></div>{% endif %}
   </section>
-  <section class="public-card">
+  <section class="public-card" id="termos">
     <h2>Regulamento e termos do evento</h2>
     {% if terms_error %}<p class="public-note public-note--error" role="alert">{{ terms_error }}</p>{% endif %}
     {% if all_accepted %}<p class="public-note public-note--success">O titular registrou o aceite dos documentos vigentes. A credencial também depende do pagamento confirmado e da situação da inscrição.</p>
@@ -22,7 +21,7 @@
     {% else %}<p class="public-muted">Leia os documentos abaixo e confirme seu aceite pessoal em cada um.</p>{% endif %}
     {% if is_holder and required_docs and not all_accepted %}<form method="post" action="{% url 'minha_conta:accept_terms' registration_id=reg.id %}">{% csrf_token %}{% endif %}
     {% for doc in required_docs %}<article class="public-terms-item"><h3 id="document-title-{{ doc.id }}">{{ doc.get_kind_display }} · versão {{ doc.version_number }}</h3><div class="public-legal-scroll" tabindex="0" role="region" aria-labelledby="document-title-{{ doc.id }}">{{ doc.content }}</div>{% if is_holder and not all_accepted %}<label class="public-checkbox"><input type="checkbox" name="document_version_id" value="{{ doc.id }}" required {% if doc.id in accepted_doc_ids %}checked{% endif %}><span>Li e concordo com este documento.</span></label>{% endif %}</article>{% endfor %}
-    {% if is_holder and required_docs and not all_accepted %}<div class="public-actions"><button class="public-button public-button--primary" type="submit">Registrar meu aceite</button></div></form>{% endif %}
+    {% if is_holder and required_docs and not all_accepted %}<div class="public-actions"><button class="public-button public-button--primary" type="submit"><i data-lucide="file-check" aria-hidden="true"></i> Aceitar termos e continuar</button></div></form>{% endif %}
   </section>
   <section class="public-card">
     <h2>Kits e benefícios</h2>
