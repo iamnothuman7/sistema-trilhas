@@ -10,5 +10,6 @@ urlpatterns = [
     path("inscricao/<uuid:registration_id>/credencial/", views_minha_conta.credential_view, name="credential_view"),
     path("inscricao/<uuid:registration_id>/comprovante.pdf", views_minha_conta.registration_pdf, name="registration_pdf"),
     path("inscricao/<uuid:registration_id>/compartilhar/", views_minha_conta.create_claim, name="create_claim"),
+    path("inscricao/<uuid:registration_id>/confirmar-titular/", views_minha_conta.claim_own_registration, name="claim_own_registration"),
     path("reivindicar/<str:token>/", views_minha_conta.claim_ticket, name="claim_ticket"),
 ]

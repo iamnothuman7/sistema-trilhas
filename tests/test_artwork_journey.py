@@ -41,7 +41,7 @@ class ArtworkJourneyTests(TestCase):
         self.assertContains(response, reverse("minha_conta:registration_pdf", args=[reg.pk]))
         self.assertEqual(response.context["selected_registration"], reg)
         self.assertContains(response, reverse("minha_conta:registration_detail", args=[reg.pk]) + "#participante")
-        self.assertContains(response, "Vincular participante")
+        self.assertContains(response, "Confirmar participante")
 
     def test_unpaid_or_companion_does_not_redirect_to_editor(self):
         _, order, _ = self.pilot(kind="ACOMPANHANTE")

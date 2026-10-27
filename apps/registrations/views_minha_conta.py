@@ -93,8 +93,8 @@ def registration_journey(reg, user, terms=None):
         if reg.operational_state == OperationalState.CHECKED_IN:
             journey.update(title="Presença confirmada", message="Seu credenciamento foi realizado. Consulte os benefícios nos detalhes da inscrição.")
     elif terms["can_share_claim"]:
-        journey.update(title="Pagamento confirmado", message="Vincule esta inscrição à conta de quem vai participar para liberar o aceite dos termos.",
-                       url=detail_url + "#participante", label="Vincular participante", icon="user-round")
+        journey.update(title="Pagamento confirmado", message="Confirme se esta inscrição é sua ou envie o acesso para quem vai participar.",
+                       url=detail_url + "#participante", label="Confirmar participante", icon="user-round")
     elif not terms["required_docs"]:
         journey.update(title="Pagamento confirmado", message="A organização está preparando os termos. Seu QR Code será liberado após o aceite.")
     elif not terms["all_accepted"]:
@@ -231,6 +231,34 @@ def _private_claim_response(request, template, context, status=200):
     response["Referrer-Policy"] = "same-origin"
     response["Cache-Control"] = "private, no-store"
     return response
+
+
+@private_page
+@login_required
+@require_POST
+@never_cache
+def claim_own_registration(request, registration_id):
+    """The authenticated buyer can personally claim an unowned paid ticket in place."""
+    with transaction.atomic():
+        reg = get_object_or_404(Registration.objects.select_for_update(of=("self",)).select_related(
+            "source_order_line__order"), pk=registration_id,
+            source_order_line__order__purchaser_user=request.user)
+        Person.objects.select_for_update().get(pk=reg.person_id)
+        if UserPersonLink.objects.filter(person_id=reg.person_id).exclude(user=request.user).exists():
+            return HttpResponseForbidden("Esta inscrição já pertence a outro participante.")
+        if request.POST.get("confirm_holder") != "yes":
+            messages.error(request, "Marque a confirmação de que você é o participante desta inscrição.")
+            return redirect(reverse("minha_conta:registration_detail", args=[reg.pk]) + "#participante")
+        if reg.commercial_state != "ACTIVE" or reg.source_order_line.order.status != OrderStatus.PAID:
+            return HttpResponseForbidden("A confirmação depende de uma inscrição ativa e de um pagamento aprovado.")
+        _, created = UserPersonLink.objects.get_or_create(user=request.user, person_id=reg.person_id,
+            defaults={"method": "BUYER_PERSONAL_CONFIRMATION", "verified_at": timezone.now()})
+        ClaimToken.objects.filter(registration=reg, used_at__isnull=True).update(expires_at=timezone.now())
+        if created:
+            log_audit(actor=request.user, event_id=reg.event_id, action="REGISTRATION_CLAIMED",
+                      entity_type="Registration", entity_id=reg.pk, diff={"method": "buyer_personal_confirmation"}, request=request)
+    messages.success(request, "Inscrição vinculada. Agora leia e aceite os termos para liberar seu QR Code.")
+    return redirect(reverse("minha_conta:registration_detail", args=[reg.pk]) + "#termos")
 
 
 @private_page
