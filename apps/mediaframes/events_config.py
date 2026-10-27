@@ -16,12 +16,12 @@ DEFAULT_VERSION = "trilhao-fogo"
 
 BASE_LAYOUT = {
     "kind": "event",
-    "photo": {"x": 185, "y": 705, "width": 710, "height": 680},
+    "photo": {"x": 130, "y": 620, "width": 820, "height": 765},
     "pop_out": 105,
     "banner_y": 1358,
     "credit_y": 1605,
     "footer_y": 1680,
-    "logo": {"x": 60, "y": 80, "width": 960, "height": 580},
+    "logo": {"x": 150, "y": 80, "width": 780, "height": 420},
     "footer_columns": {
         "date_x": 220,
         "concentration_x": 540,
@@ -174,14 +174,14 @@ def get_event_versions(event=None):
         if is_third_trilhao:
             version["background_art"] = static("img/frames/trilhao-terra-story-v1.webp")
             version["decorations"] = {"kind": "offroad", "crowd": None}
-            version["layout"]["logo"] = {"x": 110, "y": 120, "width": 860, "height": 520}
+            version["layout"]["logo"] = {"x": 190, "y": 90, "width": 700, "height": 410}
             version["footer_title"] = venue.upper() or "LOCAL A CONFIRMAR"
             if version["id"] == DEFAULT_VERSION:
                 version["label"] = "Terra & Trilha · 3º Trilhão"
         version["feed_layout"] = {
             **deepcopy(version["layout"]),
-            "logo": {"x": 200, "y": 65, "width": 680, "height": 320},
-            "photo": {"x": 185, "y": 460, "width": 710, "height": 490},
+            "logo": {"x": 265, "y": 65, "width": 550, "height": 250},
+            "photo": {"x": 130, "y": 400, "width": 820, "height": 550},
             "pop_out": 65, "banner_y": 940, "banner_scale": 0.78,
             "stamp_y": 1030, "stamp_height": 54, "stamp_baseline": 1067,
             "credit_y": 1102, "footer_y": 1120,
