@@ -3,11 +3,11 @@
 {% block gestao_header %}Aparência da edição{% endblock %}
 {% block content %}
 <div class="mg-form-sheet">
-  <div class="page-heading"><div><h1>Deixe a edição com sua identidade</h1><p>Personalize o banner e a logo de {{ event.title }}. O site mantém o tema escuro e a paleta da Equipe Morcego.</p></div><div class="page-actions"><a class="btn btn-secondary" href="{% url 'events:detail' slug=event.slug %}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i>Conferir página</a></div></div>
+  <div class="page-heading"><div><h1>Aparência de {{ event.title }}</h1><p>As imagens abaixo pertencem somente a este evento. O topo da página institucional da Equipe Morcego mantém a arte original, com versões próprias para celular e computador.</p></div><div class="page-actions"><a class="btn btn-secondary" href="{% url 'events:detail' slug=event.slug %}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i>Conferir evento</a></div></div>
   <form method="post" enctype="multipart/form-data" class="mg-stack">
     {% csrf_token %}
     {% if form.errors %}<div class="mg-form-errors" role="alert"><strong>Revise a imagem indicada abaixo.</strong>{{ form.non_field_errors }}</div>{% endif %}
-    <section class="card"><div class="card-header"><div><h2>Banner principal</h2><p>A imagem acompanha o título na página da edição. Evite textos essenciais nas bordas: o enquadramento muda no celular.</p></div></div>
+    <section class="card"><div class="card-header"><div><h2>Topo da página deste evento</h2><p>Fica atrás do título ao abrir este evento. Não muda o topo institucional. Evite textos essenciais nas bordas: o enquadramento muda no celular.</p></div></div>
       {% if theme.hero_banner %}<img class="mg-frame-preview" src="{{ theme.hero_banner.url }}" alt="Banner atual da edição">{% else %}<p class="text-muted">Sem banner próprio. A página usa a arte padrão da equipe.</p>{% endif %}
       {% include "gestao/events/_field.html" with field=form.hero_banner %}
     </section>
@@ -15,8 +15,8 @@
       {% if theme.logo_image %}<img class="mg-frame-preview" src="{{ theme.logo_image.url }}" alt="Logo atual da edição">{% else %}<p class="text-muted">Sem logo própria. A página usa o emblema da Equipe Morcego.</p>{% endif %}
       {% include "gestao/events/_field.html" with field=form.logo_image %}
     </section>
-    <section class="card"><div class="card-header"><h2>Capa para compartilhar o evento · 16:9</h2></div>{% if theme.cover_url %}<img class="mg-frame-preview" src="{{ theme.cover_url }}" alt="Capa horizontal atual">{% endif %}{% include "gestao/events/_field.html" with field=form.cover_image %}</section>
-    <section class="card"><div class="card-header"><h2>Destaque da página inicial · 1:1</h2></div>{% if theme.square_url %}<img class="mg-frame-preview" src="{{ theme.square_url }}" alt="Capa quadrada atual">{% endif %}{% include "gestao/events/_field.html" with field=form.square_image %}</section>
+    <section class="card"><div class="card-header"><div><h2>Catálogo e compartilhamento deste evento · 16:9</h2><p>Aparece no catálogo de eventos e na prévia ao compartilhar o link deste evento. É independente do banner do topo e do card quadrado.</p></div></div>{% if theme.cover_url %}<img class="mg-frame-preview" src="{{ theme.cover_url }}" alt="Capa horizontal atual deste evento">{% endif %}{% include "gestao/events/_field.html" with field=form.cover_image %}</section>
+    <section class="card"><div class="card-header"><div><h2>Card deste evento na agenda · 1:1</h2><p>Aparece no destaque da agenda da página inicial. O fundo do topo institucional continua sendo a arte original da equipe.</p></div></div>{% if theme.square_url %}<img class="mg-frame-preview" src="{{ theme.square_url }}" alt="Imagem quadrada atual do card deste evento">{% endif %}{% include "gestao/events/_field.html" with field=form.square_image %}</section>
     <div class="mg-form-actions"><a class="btn btn-secondary" href="{% url 'gestao:dashboard' %}?event_id={{ event.id }}">Voltar ao painel</a><button class="btn btn-primary" type="submit"><i data-lucide="save" aria-hidden="true"></i>Salvar aparência</button></div>
   </form>
 </div>

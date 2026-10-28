@@ -4,7 +4,7 @@
 {% block content %}
 <div class="mp-workspace mp-connection-simple">
 {% include "gestao/payments/_tabs.html" %}
-  <div class="page-heading"><div><h1>Conectar sua conta Mercado Pago</h1><p>Preencha as chaves da Equipe Morcego e conclua a conexão aqui mesmo.</p></div></div>
+  <div class="page-heading"><div><h1>Conectar sua conta Mercado Pago</h1><p>Conecte uma conta, troque o recebedor ou renove as chaves neste painel.</p></div></div>
   <section class="card mp-status" aria-labelledby="connection-status-title">
     <h2 id="connection-status-title" class="section-title">{% if connection_complete %}Configuração ativa{% else %}Falta concluir a conexão{% endif %}</h2>
     <div class="mg-status-list"><span class="badge {% if connection_complete %}badge-success{% else %}badge-warning{% endif %}">{% if connection_complete %}{% if active_environment == 'production' %}Pagamentos reais configurados{% else %}Ambiente de testes configurado{% endif %}{% else %}Pagamentos online indisponíveis{% endif %}</span></div>
@@ -17,7 +17,9 @@
     {% csrf_token %}{{ form.version }}
     <div><h2 class="section-title">Chaves e conexão</h2><p>Você não precisa descobrir o ID recebedor: consultamos a conta automaticamente pelo Access Token.</p></div>
     {% if form.errors %}<div class="mg-form-errors" role="alert">Revise os campos destacados. {{ form.non_field_errors }}{{ form.version.errors }}</div>{% endif %}
+    {% include "gestao/events/_field.html" with field=form.operation_mode %}
     {% include "gestao/events/_field.html" with field=form.environment %}
+    <p class="text-muted">Este painel está separado para {% if deployment_environment == 'production' %}<strong>produção</strong>. Faça testes de pagamento no servidor de homologação{% else %}<strong>homologação</strong>. Contas reais devem ser conectadas no painel de produção{% endif %}.</p>
     <div class="alert alert-info">Para receber inscrições reais, escolha <strong>produção</strong> e use as credenciais de produção da mesma aplicação. Ao trocar de ambiente, preencha as três chaves novamente.</div>
     <a class="btn btn-secondary" href="https://www.mercadopago.com.br/developers/panel" target="_blank" rel="noopener noreferrer"><i data-lucide="external-link" aria-hidden="true"></i>Abrir minha aplicação no Mercado Pago</a>
     <p class="text-muted">Entre com a conta da Equipe Morcego. Na aplicação <strong>Checkout Transparente via Payments</strong>, abra Credenciais de produção e ative-as, se solicitado. Copie as duas chaves abaixo.</p>
@@ -38,11 +40,14 @@
     {% if account_verified_at %}<div class="alert {% if verification_current %}alert-success{% else %}alert-info{% endif %}">Conta identificada: <strong>{{ verified_collector_id }}</strong>. Consulta em {{ account_verified_at|date:"d/m/Y H:i" }}. Ao concluir, consultamos novamente.</div>{% endif %}
     <label class="mg-check-row">{{ form.confirm_connection }}<span>{{ form.confirm_connection.label }}{% if form.confirm_connection.errors %}<span class="mg-field-errors">{{ form.confirm_connection.errors }}</span>{% endif %}</span></label>
     <div class="mg-form-actions"><button class="btn btn-primary" name="action" value="connect" type="submit"><i data-lucide="plug-zap" aria-hidden="true"></i>Concluir conexão</button><button class="btn btn-secondary" name="action" value="save_verify" type="submit">Salvar e conferir conta</button></div>
-    <p class="text-muted">Concluir salva, consulta a conta e ativa a configuração escolhida. Nenhuma cobrança é criada. No mesmo ambiente, campos de chaves vazios preservam as chaves salvas. Se a verificação falhar, mostramos o motivo acima e mantemos a configuração ativa anterior.</p>
-    <details><summary>Ajuda e verificações adicionais</summary><p>Depois de conectar, abra Webhooks no Mercado Pago e use a simulação de Pagamentos para conferir a entrega. Em produção, confirme o recebimento de uma inscrição real autorizada antes de divulgar as vendas.</p><p>Se já houver tentativas de pagamento, a troca de conta ou aplicação exige manutenção para preservar o histórico. A renovação do token da mesma configuração continua disponível.</p><a href="https://www.mercadopago.com.br/developers/pt/docs/checkout-api-payments/additional-content/your-integrations/notifications/webhooks" target="_blank" rel="noopener noreferrer">Instruções oficiais de Webhooks</a></details>
+    <p class="text-muted">Concluir salva, consulta a conta e ativa a configuração escolhida. Nenhuma cobrança é criada. Ao renovar chaves, campos vazios preservam as chaves salvas. Ao adicionar outra conta ou aplicação, preencha todas as chaves. Se a verificação falhar, a configuração ativa anterior continua em uso.</p>
+    <div class="alert alert-info"><strong>Como funciona a troca:</strong> novas cobranças usam a conta recém-ativada. Pix, cartões e devoluções de compras anteriores continuam associados à conta em que foram criados. O histórico e os números já confirmados são preservados.</div>
+    <details><summary>Ajuda e verificações adicionais</summary><p>Depois de conectar, abra Webhooks no Mercado Pago e use a simulação de Pagamentos para conferir a entrega. Em produção, confirme o recebimento de uma inscrição real autorizada antes de divulgar as vendas.</p><p>Mantenha o webhook e o acesso da conta anterior ativos para receber atualizações das compras antigas. Revogar o token antigo no Mercado Pago impede consultas dessa conta; trocar a conta aqui não transfere saldos nem pagamentos antigos.</p><p>Para renovar somente o Access Token da conta atual, escolha renovar chaves e preencha apenas o novo token. Para mudar de aplicação ou conta, escolha adicionar outra conta e informe as três chaves.</p><a href="https://www.mercadopago.com.br/developers/pt/docs/checkout-api-payments/additional-content/your-integrations/notifications/webhooks" target="_blank" rel="noopener noreferrer">Instruções oficiais de Webhooks</a></details>
   </form>
   {% if has_draft %}<form method="post" class="mp-recheck">{% csrf_token %}<input type="hidden" name="action" value="verify">{{ operation_form.version }}<button class="btn btn-secondary" type="submit">Testar conta sem cobrar</button></form>{% else %}<p class="text-muted mp-recheck">Testar conta sem cobrar ficará disponível após salvar as chaves.</p>{% endif %}
   {% elif not can_edit_connection %}<section class="card"><h2 class="section-title">Consulta financeira</h2><p>Somente o proprietário global ou superusuário pode conectar a conta recebedora.</p></section>{% endif %}
+
+  {% if historical_accounts %}<section class="card mg-stack"><div><h2 class="section-title">Contas e aplicações preservadas</h2><p class="text-muted">Configurações protegidas para consultar cobranças antigas. Somente uma conta recebe novas compras por vez.</p></div><div class="mg-status-list">{% for account in historical_accounts %}<span class="badge {% if account.collector_id == active_collector_id %}badge-success{% else %}badge-neutral{% endif %}">Conta {{ account.collector_id }} · {% if account.environment == 'production' %}Produção{% else %}Homologação{% endif %}</span>{% endfor %}</div></section>{% endif %}
 
 </div>
 {% endblock %}

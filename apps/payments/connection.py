@@ -14,6 +14,7 @@ from .gateway import MercadoPagoGateway, GatewayError
 from .gateway_config import (
     API_BASE, configured_webhook_url, environment_configuration,
     encrypt_configuration, decrypt_configuration,
+    deployment_environment, retain_configuration,
 )
 from .models import MercadoPagoConnection, ChargeAttempt
 
@@ -62,7 +63,7 @@ def _audit(connection, user, action, **extra):
 def save_draft(cleaned, user):
     connection = _locked(cleaned["version"])
     values = draft_values(connection)
-    if values["environment"] != cleaned["environment"]:
+    if values["environment"] != cleaned["environment"] or cleaned.get("operation_mode") == "replace":
         # A blank field must never carry test credentials into a real-money setup.
         for name in ("access_token", "public_key", "webhook_secret", "collector_id"):
             values[name] = ""
@@ -87,6 +88,8 @@ def verify_draft(version, user):
     if not connection or connection.revision != version or not connection.draft_ciphertext:
         raise ConnectionConflict("Salve o rascunho atual antes de testar a conexão.")
     values = decrypt_configuration(connection.draft_ciphertext)
+    if values["environment"] != deployment_environment():
+        raise ConnectionConflict("Este servidor está separado para " + ("pagamentos reais" if deployment_environment() == "production" else "homologação") + ". Use o painel do ambiente correspondente; trocar a seleção não transforma credenciais reais em credenciais de teste.")
     if values["webhook_url"] != configured_webhook_url():
         raise ConnectionConflict("A URL de notificações do servidor mudou. Salve o rascunho novamente antes de testar.")
     gateway = MercadoPagoGateway(configuration=values)
@@ -100,6 +103,17 @@ def verify_draft(version, user):
         # Fixed official host and path, no redirects, no charge, no returned account PII persisted.
         account = gateway.get_account()
         collector_id = str(account.get("id", ""))
+        tags = account.get("tags")
+        test_account = isinstance(tags, list) and "test_user" in tags
+        test_token = values["access_token"].startswith("TEST-")
+        test_public = values["public_key"].startswith("TEST-")
+        app_pair = all(values[key].startswith("APP_USR-") for key in ("access_token", "public_key"))
+        if test_token != test_public:
+            error = GatewayError("CREDENTIAL_PAIR_MISMATCH", "A Public Key e o Access Token pertencem a ambientes diferentes. Copie o par completo da mesma aplicação. Nenhuma cobrança foi criada.")
+        elif values["environment"] == "sandbox" and not ((test_token and test_public) or (app_pair and test_account)):
+            error = GatewayError("ACCOUNT_ENVIRONMENT_MISMATCH", "Não foi possível comprovar credenciais de teste. Use o par TEST da aplicação ou o par APP_USR de um usuário de teste identificado pelo Mercado Pago. Nenhuma cobrança foi criada.")
+        elif values["environment"] == "production" and (not app_pair or test_account):
+            error = GatewayError("ACCOUNT_ENVIRONMENT_MISMATCH", "Esta credencial não corresponde a uma conta real em produção. Copie o par de produção da conta recebedora. Nenhuma cobrança foi criada.")
         if not collector_id.isascii() or not collector_id.isdecimal() or len(collector_id) > 30 or collector_id.startswith("0"):
             error = GatewayError("INVALID_ACCOUNT", "O Mercado Pago não retornou uma conta válida. Confira o Access Token da aplicação.")
         elif values["collector_id"] and collector_id != values["collector_id"]:
@@ -138,6 +152,8 @@ def activate_draft(cleaned, user):
     if not connection.verified_at or connection.verified_at < timezone.now() - timedelta(minutes=30) or not hmac.compare_digest(digest, connection.verified_draft_digest):
         raise ConnectionConflict("Teste novamente este rascunho antes de ativar. A conferência da conta vale por 30 minutos.")
     values = decrypt_configuration(connection.draft_ciphertext)
+    if values["environment"] != deployment_environment():
+        raise ConnectionConflict("O ambiente desta conta não corresponde ao ambiente do servidor.")
     gateway = MercadoPagoGateway(configuration=values)
     if gateway.configuration_issues(card=True) or connection.verified_collector_id != values["collector_id"] or values["webhook_url"] != configured_webhook_url():
         raise ConnectionConflict("A configuração está incompleta ou não corresponde à conta conferida.")
@@ -149,9 +165,24 @@ def activate_draft(cleaned, user):
     # Checkout locks this same singleton before Order and reloads the gateway while holding it.
     # Thus activation cannot race with creation of the first ChargeAttempt.
     previous_complete = not MercadoPagoGateway(configuration=previous).configuration_issues(card=True)
-    changed_identity = any(previous.get(key) != values[key] for key in ("collector_id", "environment", "public_key", "webhook_secret", "webhook_url"))
-    if ChargeAttempt.objects.filter(provider="mercadopago").exists() and (not previous_complete or changed_identity):
-        raise ConnectionConflict("Há tentativas de pagamento anteriores. A troca de conta, ambiente, aplicação ou assinatura do webhook exige manutenção coordenada para preservar cobranças e notificações em andamento. O painel permite renovar o Access Token da mesma configuração.")
+    unbound = ChargeAttempt.objects.filter(provider="mercadopago", account_configuration__isnull=True)
+    if unbound.exists():
+        if not previous_complete or previous["environment"] != values["environment"]:
+            raise ConnectionConflict("Existem cobranças antigas sem uma configuração recuperável. Restaure a configuração anterior neste mesmo ambiente antes de trocar a conta.")
+        historical = retain_configuration(previous)
+        unbound.update(account_configuration=historical)
+    account = retain_configuration(values)
+    token_rotation = all(previous.get(key) == values[key] for key in ("collector_id", "environment", "public_key", "webhook_secret", "webhook_url"))
+    # Configurations with an older webhook secret still share this token's
+    # account/application, including when switching back to a previous account.
+    # Preserve each secret while updating that application's verified token.
+    from .models import MercadoPagoAccountConfiguration
+    for historical in MercadoPagoAccountConfiguration.objects.filter(collector_id=values["collector_id"], environment=values["environment"]):
+        historical_values = decrypt_configuration(historical.credentials_ciphertext)
+        if historical_values["public_key"] == values["public_key"] and historical_values["access_token"] != values["access_token"]:
+            historical_values["access_token"] = values["access_token"]
+            historical.credentials_ciphertext = encrypt_configuration(historical_values)
+            historical.save(update_fields=["credentials_ciphertext", "updated_at"])
     connection.active_ciphertext = connection.draft_ciphertext
     connection.active_environment = values["environment"]
     connection.active_collector_id = values["collector_id"]
@@ -160,5 +191,5 @@ def activate_draft(cleaned, user):
     connection.updated_by = user
     connection.save()
     _audit(connection, user, "MP_CONNECTION_ACTIVATED", environment=values["environment"], collector_id=values["collector_id"],
-           sandbox_confirmed=bool(cleaned.get("confirm_sandbox")))
+           sandbox_confirmed=bool(cleaned.get("confirm_sandbox")), operation="TOKEN_ROTATION" if token_rotation else "ACCOUNT_OR_APPLICATION_SWITCH", account_snapshot=str(account.pk))
     return connection

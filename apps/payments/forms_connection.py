@@ -3,6 +3,9 @@ from django import forms
 
 class MercadoPagoDraftForm(forms.Form):
     version = forms.IntegerField(min_value=0, widget=forms.HiddenInput())
+    operation_mode = forms.ChoiceField(label="O que deseja fazer?", required=False,
+        choices=(("update", "Renovar chaves da conta atual"), ("replace", "Adicionar outra conta ou aplicação e passar a usá-la")),
+        initial="update", help_text="Ao adicionar outra conta/aplicação, preencha as três chaves. As cobranças anteriores continuam na conta original.")
     environment = forms.ChoiceField(label="Como você quer usar a conta?", choices=(("sandbox", "Fazer testes (homologação)"), ("production", "Receber inscrições de verdade (produção)")))
     collector_id = forms.RegexField(label="ID da conta recebedora (opcional)", regex=r"^[1-9][0-9]{0,29}$", required=False, max_length=30,
         help_text="Pode deixar vazio: identificamos a conta automaticamente. Não informe o número da aplicação.")

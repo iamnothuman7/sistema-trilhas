@@ -259,6 +259,7 @@ def _payment_context(order, installments=1):
     from django.core import signing
     from django.urls import reverse
     gateway = MercadoPagoGateway()
+    from apps.payments.gateway_config import checkout_identity
     from apps.payments.fees import policy, quote_for
     fee_policy = policy()
     try:
@@ -274,7 +275,7 @@ def _payment_context(order, installments=1):
         "payments_available": order.total_cents > 0 and not gateway.configuration_issues(),
         "card_available": order.total_cents > 0 and not gateway.configuration_issues(card=True),
         "zero_total": order.total_cents <= 0,
-        "attempt_key": signing.dumps({"order": str(order.id), "key": str(uuid.uuid4())}, salt="checkout-payment"),
+        "attempt_key": signing.dumps({"order": str(order.id), "key": str(uuid.uuid4()), "account": checkout_identity(gateway)}, salt="checkout-payment"),
         "mp_config": {
             "publicKey": gateway.public_key,
             "amount": format(Decimal(card_quote.total) / 100, ".2f"),
@@ -349,10 +350,16 @@ def process_payment_attempt(request, order_id):
         connection, _ = MercadoPagoConnection.objects.get_or_create(pk=1)
         MercadoPagoConnection.objects.select_for_update().get(pk=connection.pk)
         try:
-            MercadoPagoGateway().require_configuration(card=method == PaymentMethod.CREDIT_CARD)
+            locked_gateway = MercadoPagoGateway()
+            locked_gateway.require_configuration(card=method == PaymentMethod.CREDIT_CARD)
         except GatewayError as exc:
             messages.error(request, str(exc))
             return redirect("checkout:order_payment", order_id=order.id)
+        from apps.payments.gateway_config import checkout_identity, retain_configuration, CONFIG_KEYS
+        if method == PaymentMethod.CREDIT_CARD and submitted.get("account") and submitted["account"] != checkout_identity(locked_gateway):
+            messages.error(request, "A conta recebedora mudou enquanto você preenchia os dados. Atualize o formulário do cartão e tente novamente. Nenhuma cobrança foi criada.")
+            return redirect("checkout:order_payment", order_id=order.id)
+        account_configuration = retain_configuration({name: getattr(locked_gateway, name) for name in CONFIG_KEYS})
         order = Order.objects.select_for_update().select_related("event").get(pk=order_id)
         if order.status not in {OrderStatus.RESERVED, OrderStatus.AWAITING_PAYMENT}:
             return redirect("checkout:order_result", order_id=order.id)
@@ -395,6 +402,7 @@ def process_payment_attempt(request, order_id):
             order.expires_at = max(order.expires_at, expiry + timedelta(minutes=2))
             CapacityHold.objects.filter(order_id=order.id, status=HoldStatus.ACTIVE).update(expires_at=order.expires_at)
         charge = ChargeAttempt.objects.create(order=order, idempotency_key=key, payment_method=method,
+            account_configuration=account_configuration,
             state=ChargeState.SENT, amount_cents=order.total_cents,
             passed_fee_cents=quote.fee, fee_snapshot=asdict(quote),
             pix_expiration=expiry if method == PaymentMethod.PIX else None)
@@ -458,7 +466,8 @@ def order_refresh_payment(request, order_id):
     charge = order.charge_attempts.first()
     message = "A situação do pedido está atualizada."
     if order.status in {OrderStatus.RESERVED, OrderStatus.AWAITING_PAYMENT} and charge:
-        if MercadoPagoGateway().configuration_issues():
+        from apps.payments.gateway_config import charge_gateway
+        if charge_gateway(charge).configuration_issues():
             message = "A consulta ao Mercado Pago está indisponível. Fale com a organização e não pague novamente."
         else:
             now = timezone.now()

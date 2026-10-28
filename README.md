@@ -88,9 +88,7 @@ Acesse:
 * **Painel de Gestão:** [http://127.0.0.1:8000/gestao/](http://127.0.0.1:8000/gestao/)
 * **Área do Piloto:** [http://127.0.0.1:8000/minha-conta/](http://127.0.0.1:8000/minha-conta/)
 
-> **Credenciais de Administrador (Kelvim Muniz):**
-> * **E-mail:** `kelvim@equipemorcego.com.br`
-> * **Senha:** `morcego2026!`
+> O primeiro administrador é criado com a senha informada em `MORCEGO_INITIAL_ADMIN_PASSWORD`. Não existe senha padrão. Um administrador existente mantém sua senha e suas permissões ao executar a carga inicial.
 
 ---
 
@@ -158,3 +156,11 @@ As saídas aceitam comprovante privado PDF/JPG/PNG/WebP de até 15 MB, na criaç
 Inscrições aguardando pagamento não ocupam vagas do evento ou lote. Somente confirmações comprometem essas capacidades; a aprovação confere novamente o limite. Pagamento recebido quando já não há capacidade exige conciliação e não libera QR nem participação. A reserva de estoque dos produtos extras e números extras permanece separada das vagas de inscrição. O CPF continua limitado a uma inscrição ou pedido vigente por evento.
 
 O cartão de credenciamento pode ser baixado em PDF ou PNG, com o mesmo QR revogável e os números confirmados. O aceite pessoal dos termos continua obrigatório para liberar a credencial; a organização não aprova manualmente inscrições pagas.
+
+## Contas Mercado Pago e imagens dos eventos
+
+Em Mercado Pago → Conexão, escolha renovar as chaves atuais ou adicionar outra conta/aplicação. Para substituir, informe Public Key, Access Token e assinatura do webhook da mesma aplicação; configure a URL e o evento Pagamentos no Mercado Pago e conclua a conexão. A conferência identifica o recebedor sem criar cobrança. Uma falha conserva a configuração ativa anterior. Homologação aceita apenas credenciais de teste, e produção aceita apenas credenciais reais.
+
+Cada cobrança fica vinculada a uma configuração criptografada da conta que a criou. Ativar outra conta afeta novas cobranças; consultas e webhooks das anteriores continuam usando a configuração original. Preserve o acesso e o webhook antigos enquanto houver pagamentos a acompanhar. Renovar o token atualiza a mesma aplicação; trocar de conta não transfere saldo nem executa reembolsos. Somente proprietário global ou superusuário pode fazer essa alteração.
+
+O banner institucional e sua prévia de compartilhamento são independentes das artes de cada evento. No editor de aparência, o banner muda o topo daquele evento, a capa 16:9 muda seu catálogo e compartilhamento, e a imagem 1:1 muda seu card na agenda. O resumo da compra de números mostra quantidade, preço unitário e subtotal. O PDF do globo inclui integralmente a seleção de números confirmados, com paginação e quantidade auditada.

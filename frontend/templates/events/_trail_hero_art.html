@@ -1,7 +1,7 @@
 {% load static %}
-<div class="trail-hero-art{% if hero_event.theme.hero_banner %} trail-hero-art--custom{% endif %}" aria-hidden="true">
-  {% if hero_event.theme.hero_banner %}
-  <img src="{{ hero_event.theme.hero_banner.url }}" alt="" width="1536" height="1024" fetchpriority="high" decoding="async">
+<div class="trail-hero-art{% if hero_banner %} trail-hero-art--custom{% endif %}" aria-hidden="true">
+  {% if hero_banner %}
+  <img src="{{ hero_banner.url }}" alt="" width="1536" height="1024" fetchpriority="high" decoding="async">
   {% else %}
   <picture><source media="(max-width: 700px)" srcset="{% static 'img/trail-hero-mobile-v2.webp' %}" width="768" height="1152"><img src="{% static 'img/trail-hero-desktop-v2.webp' %}" alt="" width="1536" height="1024" fetchpriority="high" decoding="async"></picture>
   {% endif %}

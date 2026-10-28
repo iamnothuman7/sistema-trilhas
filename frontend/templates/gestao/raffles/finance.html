@@ -1,6 +1,6 @@
 {% extends 'gestao/base_gestao.html' %}{% load static trilhas_ui %}
 {% block title %}Financeiro do sorteio | {{ event.title }}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/raffle.css' %}?v=20261028">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/raffle.css' %}?v=20261028-audit">{% endblock %}
 {% block gestao_header %}Financeiro do sorteio{% endblock %}
 {% block content %}
 <header class="page-heading"><div><h1>Financeiro do sorteio</h1><p>{{ raffle.title }} · {{ event.title }}</p></div><a class="btn btn-secondary" href="{% url 'gestao:finance' event.id %}">Financeiro geral</a></header>

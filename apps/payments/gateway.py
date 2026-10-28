@@ -18,6 +18,22 @@ class GatewayError(Exception):
         self.uncertain = uncertain
 
 
+def webhook_signature_parts(signature):
+    parts = {}
+    for part in str(signature).split(","):
+        key, separator, value = part.strip().partition("=")
+        if separator:
+            parts[key.strip().lower()] = value.strip()
+    ts, digest = parts.get("ts", ""), parts.get("v1", "")
+    if not re.fullmatch(r"(?:[0-9]{1,10}|[0-9]{13})", ts) or not re.fullmatch(r"[a-fA-F0-9]{64}", digest):
+        return None
+    timestamp = int(ts) / (1000 if len(ts) == 13 else 1)
+    tolerance = getattr(settings, "MP_WEBHOOK_MAX_AGE_SECONDS", 900)
+    if tolerance and abs(time.time() - timestamp) > tolerance:
+        return None
+    return ts, digest
+
+
 class MercadoPagoGateway:
     """Pix and tokenized cards use the same /v1/payments contract."""
     def __init__(self, configuration=None):
@@ -40,7 +56,8 @@ class MercadoPagoGateway:
         url = urlparse(self.webhook_url)
         if url.scheme != "https" or not url.netloc or url.username or url.fragment:
             issues.append("MP_WEBHOOK_URL (HTTPS)")
-        if self.environment not in ("sandbox", "production"):
+        from .gateway_config import deployment_environment
+        if self.environment not in ("sandbox", "production") or self.environment != deployment_environment():
             issues.append("MP_ENVIRONMENT")
         if self.api_base != "https://api.mercadopago.com":
             issues.append("MP_API_BASE")
@@ -90,6 +107,7 @@ class MercadoPagoGateway:
                 "external_reference": order.merchant_reference,
                 "notification_url": self.webhook_url,
                 "metadata": {"order_id": str(order.id), "charge_attempt_id": str(charge.id),
+                    "environment": self.environment, "collector_id": self.collector_id,
                     "items_cents": charge.amount_cents-charge.passed_fee_cents, "payment_fee_cents": charge.passed_fee_cents},
                 "payer": {"email": order.purchaser_email}}
 
@@ -143,21 +161,13 @@ class MercadoPagoGateway:
     def verify_webhook_signature(self, x_signature, x_request_id, data_id):
         if not self.webhook_secret or self.webhook_secret == "test_webhook_secret_morcego" or not x_signature or not x_request_id or not data_id:
             return False
-        parts = {}
-        for part in x_signature.split(","):
-            key, separator, value = part.strip().partition("=")
-            if separator:
-                parts[key.strip().lower()] = value.strip()
-        ts, digest = parts.get("ts", ""), parts.get("v1", "")
+        parts = webhook_signature_parts(x_signature)
         # Bound input before integer/float conversion. Both Unix seconds and
         # milliseconds occur in provider notifications; Unicode digits and
         # unbounded integers must fail authentication, never raise a 500.
-        if not re.fullmatch(r"(?:[0-9]{1,10}|[0-9]{13})", ts) or not re.fullmatch(r"[a-fA-F0-9]{64}", digest):
+        if parts is None:
             return False
-        timestamp = int(ts) / (1000 if len(ts) == 13 else 1)
-        tolerance = getattr(settings, "MP_WEBHOOK_MAX_AGE_SECONDS", 900)
-        if tolerance and abs(time.time() - timestamp) > tolerance:
-            return False
+        ts, digest = parts
         manifest = f"id:{str(data_id).lower()};request-id:{x_request_id};ts:{ts};"
         expected = hmac.new(self.webhook_secret.encode(), manifest.encode(), hashlib.sha256).hexdigest()
         return hmac.compare_digest(digest.lower(), expected)

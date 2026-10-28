@@ -11,8 +11,8 @@ from django.views.decorators.http import require_http_methods
 from .connection import can_manage_connection, can_view_connection, draft_values, save_draft, verify_draft, activate_draft, ConnectionConflict
 from .forms_connection import MercadoPagoDraftForm, MercadoPagoOperationForm, MercadoPagoActivationForm
 from .gateway import MercadoPagoGateway, GatewayError
-from .gateway_config import CredentialStorageError, configured_webhook_url
-from .models import MercadoPagoConnection, PaymentFeePolicy, FeeStatement
+from .gateway_config import CredentialStorageError, configured_webhook_url, deployment_environment
+from .models import MercadoPagoConnection, MercadoPagoAccountConfiguration, PaymentFeePolicy, FeeStatement
 from .fees import PaymentFeeForm, policy, OFFICIAL_FEE_SOURCE
 
 
@@ -84,6 +84,8 @@ def mercadopago_connection(request):
         "active_environment": gateway.environment, "active_collector_id": gateway.collector_id,
         "activated_at": connection.activated_at if connection else None,
         "webhook_url": configured_webhook_url(),
+        "deployment_environment": deployment_environment(),
+        "historical_accounts": MercadoPagoAccountConfiguration.objects.filter(environment=deployment_environment()).order_by("-updated_at"),
     }
     if can_edit:
         try:

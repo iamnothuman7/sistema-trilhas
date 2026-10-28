@@ -63,6 +63,8 @@ def _validate(payment, charge, gateway):
         raise PaymentValidationError("collector_mismatch")
     if payment.get("live_mode") is not (gateway.environment == "production"):
         raise PaymentValidationError("environment_mismatch")
+    if ("environment" in metadata and metadata["environment"] != gateway.environment) or ("collector_id" in metadata and str(metadata["collector_id"]) != gateway.collector_id):
+        raise PaymentValidationError("metadata_account_mismatch")
     if payment.get("currency_id") != order.currency or order.currency != "BRL":
         raise PaymentValidationError("currency_mismatch")
     amount = money_cents(payment.get("transaction_amount"))
@@ -294,8 +296,6 @@ def _suspend_registrations(order, *, canceled=False):
 @transaction.atomic
 def reconcile_payment(payment, *, charge_id=None):
     """Only call with a response obtained through an authenticated MP API request."""
-    gateway = MercadoPagoGateway()
-    gateway.require_configuration()
     metadata = payment.get("metadata") or {}
     try:
         attempt_id = uuid.UUID(str(charge_id or metadata.get("charge_attempt_id", "")))
@@ -306,6 +306,9 @@ def reconcile_payment(payment, *, charge_id=None):
     order = Order.objects.select_for_update().select_related("event").get(pk=initial_charge.order_id)
     charge = ChargeAttempt.objects.select_for_update().get(pk=attempt_id)
     charge.order = order
+    from .gateway_config import charge_gateway
+    gateway = charge_gateway(charge)
+    gateway.require_configuration()
     payment_id, amount, updated_at = _validate(payment, charge, gateway)
     status = payment.get("status", "")
     if status not in {"approved", "pending", "in_process", "authorized", "rejected", "cancelled", "refunded", "charged_back", "in_mediation"}:
@@ -443,7 +446,8 @@ def reconcile_payment(payment, *, charge_id=None):
 
 @sensitive_variables()
 def submit_charge(charge, **card_data):
-    gateway = MercadoPagoGateway()
+    from .gateway_config import charge_gateway
+    gateway = charge_gateway(charge)
     try:
         payment = gateway.create_pix_payment(charge) if charge.payment_method == PaymentMethod.PIX else gateway.create_card_payment(charge, **card_data)
         return reconcile_payment(payment, charge_id=charge.id)
@@ -461,7 +465,8 @@ def submit_charge(charge, **card_data):
 
 
 def refresh_charge(charge):
-    gateway = MercadoPagoGateway()
+    from .gateway_config import charge_gateway
+    gateway = charge_gateway(charge)
     if charge.provider_payment_ref:
         return reconcile_payment(gateway.get_payment(charge.provider_payment_ref), charge_id=charge.id)
     results = gateway.find_payments(charge)

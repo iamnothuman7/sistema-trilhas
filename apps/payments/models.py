@@ -38,6 +38,20 @@ class ChargeState(models.TextChoices):
     CANCELED = "CANCELED", "Cancelado"
 
 
+class MercadoPagoAccountConfiguration(models.Model):
+    """Protected credential snapshot retained for payments created by this account."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    identity_digest = models.CharField(max_length=64, unique=True, editable=False)
+    credentials_ciphertext = models.TextField(editable=False)
+    collector_id = models.CharField(max_length=30, editable=False)
+    environment = models.CharField(max_length=20, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Conta {self.collector_id} ({self.environment})"
+
+
 class PaymentFeePolicy(models.Model):
     id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
     revision = models.PositiveIntegerField(default=0)
@@ -85,6 +99,8 @@ class ChargeAttempt(models.Model):
     amount_cents = models.PositiveBigIntegerField("Valor da Tentativa (centavos)")
     passed_fee_cents = models.PositiveBigIntegerField(default=0)
     fee_snapshot = models.JSONField(default=dict, blank=True)
+    account_configuration = models.ForeignKey(MercadoPagoAccountConfiguration, on_delete=models.PROTECT,
+        null=True, blank=True, editable=False, related_name="charge_attempts")
 
     # Dados específicos do Pix
     pix_qr_code = models.TextField("QR Code Imagem (Base64)", blank=True, null=True)

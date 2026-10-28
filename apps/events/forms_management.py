@@ -144,14 +144,14 @@ class EventManagementForm(forms.ModelForm):
 
 
 class EventAppearanceForm(forms.ModelForm):
-    hero_banner = SponsorLogoField(label="Banner da edição", required=False,
-        help_text="PNG, JPG ou WebP, até 15 MB. Prefira uma imagem horizontal; confira o enquadramento no celular.")
+    hero_banner = SponsorLogoField(label="Banner do topo deste evento", required=False,
+        help_text="PNG, JPG ou WebP, até 15 MB. Aparece somente no topo da página deste evento. Não altera o banner institucional da Equipe Morcego. Prefira uma imagem horizontal e confira o enquadramento no celular.")
     logo_image = SponsorLogoField(label="Logo da edição", required=False,
         help_text="PNG, JPG ou WebP, até 15 MB. Uma imagem com transparência preserva melhor a identidade visual.")
-    cover_image = SponsorLogoField(label="Capa horizontal (16:9)", required=False,
-        help_text="PNG, JPG ou WebP, até 15 MB. Usada na lista de eventos e na prévia ao compartilhar o link.")
-    square_image = SponsorLogoField(label="Capa quadrada (1:1)", required=False,
-        help_text="PNG, JPG ou WebP, até 15 MB. Usada no destaque da página inicial.")
+    cover_image = SponsorLogoField(label="Capa deste evento para compartilhar (16:9)", required=False,
+        help_text="PNG, JPG ou WebP, até 15 MB. Usada no catálogo e na prévia do link deste evento. Não substitui o banner do topo nem a capa quadrada. Sem uma capa própria, usamos a arte oficial disponível ou o banner deste evento.")
+    square_image = SponsorLogoField(label="Imagem do card deste evento (1:1)", required=False,
+        help_text="PNG, JPG ou WebP, até 15 MB. Usada no card do evento em destaque na agenda da página inicial. Não altera a imagem de fundo do topo institucional nem a capa de compartilhamento.")
 
     class Meta:
         model = EventTheme

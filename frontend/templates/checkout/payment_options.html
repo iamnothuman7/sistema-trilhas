@@ -13,7 +13,7 @@
       <small>Pedido {{ order.merchant_reference }} · R$ {{ order.formatted_total }}</small>
     </div>
   </dialog>
-  <span class="payment-kicker">Sua inscrição · Pagamento</span>
+  <span class="payment-kicker">{% if order.is_raffle_purchase %}Números extras do sorteio · Pagamento{% else %}Seu pedido · Pagamento{% endif %}</span>
   <h1>Escolha como pagar</h1>
   <p class="payment-muted">{{ order.event.title }} · Pedido <span class="payment-reference">{{ order.merchant_reference }}</span></p>
   <div class="payment-layout">
@@ -73,8 +73,8 @@
       {% endif %}
     </div>
     <aside class="payment-card payment-summary" aria-label="Resumo do pedido">
-      <h2>Seu pedido</h2>
-      <ul class="payment-list">{% for line in order.lines.all %}<li><strong>{{ line.intended_person_name }}</strong><small class="payment-muted">{{ line.item_snapshot_json.product_name }}</small></li>{% endfor %}</ul>
+      <h2>{% if order.is_raffle_purchase %}Seus números extras{% else %}Seu pedido{% endif %}</h2>
+      <ul class="payment-list">{% for line in order.lines.all %}<li><strong>{{ line.intended_person_name }}</strong><small class="payment-muted">{{ line.item_snapshot_json.product_name }}</small><small class="payment-muted">{{ line.quantity }}{% if line.raffle_id %} número{{ line.quantity|pluralize }} extra{{ line.quantity|pluralize }}{% endif %} × R$ {{ line.unit_cents|money }} por unidade</small><small>Subtotal: R$ {{ line.net_cents|money }}</small></li>{% endfor %}</ul>
       {% if order.discount_cents %}<p class="payment-muted">Desconto aplicado: R$ {{ order.formatted_discount }}</p>{% endif %}
       <div class="payment-total"><span>Valor dos itens</span><strong>R$ {{ order.formatted_base_total }}</strong></div><p class="payment-muted">A tarifa e o total de cada meio de pagamento estão detalhados ao lado, antes da confirmação.</p>
       <p class="payment-help payment-muted">Reserva até {{ order.expires_at|date:"d/m H:i" }}. O pagamento está vinculado a este pedido.</p>

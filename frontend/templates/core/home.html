@@ -5,7 +5,7 @@
 {% block content %}
 {% with featured=featured_events.0 %}
 <section class="trail-hero trail-hero--home" aria-labelledby="home-heading" data-trail-motion>
-  {% include 'events/_trail_hero_art.html' with hero_event=featured %}
+  {% include 'events/_trail_hero_art.html' only %}
   <div class="container trail-hero-content spotlight-layout">
     <div class="trail-hero-copy">
       <h1 id="home-heading"><span>A VIDA É</span> <br><span>MELHOR</span> <br><em>NA TERRA.</em></h1>
@@ -14,7 +14,7 @@
     </div>
     <div class="trail-location-stamp" aria-hidden="true"><span>OFF-ROAD É O NOSSO LUGAR</span><strong>SERRA DA<br>IBIAPABA</strong><small>CEARÁ · BRASIL</small></div>
   </div>
-  <div class="container trail-hero-foot"><span><i data-lucide="route" aria-hidden="true"></i> O asfalto fica pra trás.</span>{% if not featured.theme.hero_banner %}<small>Arte ilustrativa</small>{% endif %}</div>
+  <div class="container trail-hero-foot"><span><i data-lucide="route" aria-hidden="true"></i> O asfalto fica pra trás.</span><small>Arte ilustrativa</small></div>
 </section>
 <div class="trail-band" aria-label="Trilha, amizade e aventura" data-trail-motion><div class="trail-band-track" aria-hidden="true">{% for item in '12' %}<span>TRILHA <i data-lucide="move-up-right"></i> AMIZADE <i data-lucide="move-up-right"></i> AVENTURA <i data-lucide="move-up-right"></i> EQUIPE MORCEGO <i data-lucide="move-up-right"></i></span>{% endfor %}</div></div>
 <section id="eventos" class="section-space trail-meetup"><div class="container">

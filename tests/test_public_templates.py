@@ -57,14 +57,26 @@ class PublicEventTemplateTests(SimpleTestCase):
         self.assertNotIn("cartaz_trilhao_2027", html)
         self.assertNotIn("2027", html)
 
-    def test_home_prefers_the_registered_banner(self):
+    def test_home_keeps_institutional_art_and_registered_event_logo(self):
         event = self.event(theme=SimpleNamespace(
             hero_banner=SimpleNamespace(url="/media/events/banners/april.jpg"),
             logo_image=SimpleNamespace(url="/media/events/logos/april.png"),
         ))
         html = render_to_string("core/home.html", {"featured_events": [event]})
-        self.assertIn('/media/events/banners/april.jpg', html)
+        self.assertNotIn('/media/events/banners/april.jpg', html)
+        self.assertIn('img/trail-hero-desktop-v2.webp', html)
+        self.assertIn('img/trail-hero-mobile-v2.webp', html)
         self.assertIn('/media/events/logos/april.png', html)
+
+    def test_event_detail_uses_only_its_own_registered_banner(self):
+        event = self.event(theme=SimpleNamespace(
+            hero_banner=SimpleNamespace(url="/media/events/banners/april.jpg"),
+            logo_image=None,
+        ))
+        html = render_to_string("events/detail.html", {"event": event, "products": []})
+        self.assertIn('/media/events/banners/april.jpg', html)
+        self.assertNotIn('img/trail-hero-desktop-v2.webp', html)
+        self.assertNotIn('img/trail-hero-mobile-v2.webp', html)
 
     def test_detail_uses_actual_dates_and_safe_description_fallback(self):
         html = render_to_string("events/detail.html", {"event": self.event(), "products": []})
@@ -209,11 +221,10 @@ class EventStoryConfigurationTests(TestCase):
 
 
     @override_settings(ALLOWED_HOSTS=["testserver", ".equipemorcego.nabio.pro"])
-    def test_horizontal_preview_exists_on_portal_and_both_event_links(self):
+    def test_event_horizontal_preview_exists_on_detail_and_microsite_links(self):
         self.first.subdomain = "3trilhaotiangua"
         self.first.save()
         for host, path in [
-            ("testserver", "/"),
             ("testserver", reverse("events:detail", args=[self.first.slug])),
             ("3trilhaotiangua.equipemorcego.nabio.pro", "/"),
         ]:
@@ -225,3 +236,15 @@ class EventStoryConfigurationTests(TestCase):
                 self.assertContains(response, 'property="og:image:height" content="941"')
                 self.assertContains(response, f'property="og:url" content="https://{host}{path}"')
                 self.assertContains(response, f'name="twitter:image" content="{image}"')
+
+    def test_portal_shares_its_own_identity_even_without_published_events(self):
+        for published in (True, False):
+            if not published:
+                Event.objects.all().update(status="DRAFT")
+            with self.subTest(published_events=published):
+                response = self.client.get(reverse("core:home"), secure=True, HTTP_USER_AGENT="facebookexternalhit/1.1")
+                self.assertContains(response, 'property="og:title" content="Equipe Morcego | A vida é melhor na terra"')
+                self.assertContains(response, 'property="og:image" content="https://testserver/static/img/trail-hero-desktop-v2.webp"')
+                self.assertContains(response, 'property="og:image:width" content="1536"')
+                self.assertContains(response, 'property="og:image:height" content="1024"')
+                self.assertContains(response, 'name="twitter:image" content="https://testserver/static/img/trail-hero-desktop-v2.webp"')

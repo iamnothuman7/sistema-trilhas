@@ -76,7 +76,7 @@
 .public-note--warning { background: #fff5e9; color: #80531f; }
 .public-note--success { background: #eef7f1; color: #376747; }
 .public-note--error { background: #fff1f1; color: #933d3d; }
-.public-event-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--page-line); border-radius: 24px; background: #fff; transition: transform .2s ease, box-shadow .2s ease; }
+.public-event-card { display: flex; flex-direction: column; min-width: 0; overflow: hidden; border: 1px solid var(--page-line); border-radius: 24px; background: var(--page-surface); transition: transform .2s ease, box-shadow .2s ease; }
 .public-event-card:hover { transform: translateY(-3px); box-shadow: 0 14px 36px rgba(32, 32, 40, .07); }
 .public-event-media { display: block; aspect-ratio: 16/10; overflow: hidden; background: var(--page-soft); }
 .public-event-media img { width: 100%; height: 100%; display: block; object-fit: cover; }
@@ -93,7 +93,7 @@
 .public-event-body .public-actions { margin-top: auto; }
 .public-event-body .public-actions .public-button:first-child { flex: 1; }
 .public-timeline { display: grid; gap: 16px; padding: 0; list-style: none; }
-.public-timeline-item { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 28px; padding: 28px; background: #fff; border: 1px solid var(--page-line); border-radius: 24px; }
+.public-timeline-item { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 28px; padding: 28px; background: var(--page-surface); border: 1px solid var(--page-line); border-radius: 24px; }
 .public-time { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; color: var(--page-muted); font-size: 13px; }
 .public-time strong { font-size: 27px; line-height: 1.2; letter-spacing: -.04em; }
 .public-location { display: flex; gap: 7px; align-items: center; color: var(--page-accent); font-size: 14px; }
@@ -122,7 +122,7 @@
 .public-field-label { display: block; margin: 24px 0 10px; color: var(--page-ink); font-size: 14px; font-weight: 650; }
 .public-textarea { display: block; width: 100%; min-height: 104px; resize: vertical; padding: 16px; background: var(--page-soft); border: 1px solid var(--page-line); border-radius: 16px; color: var(--page-ink); font: inherit; font-size: 16px; line-height: 1.6; overflow-wrap: anywhere; }
 .public-credential { max-width: 520px; margin: 0 auto; text-align: center; }
-.public-credential-header { padding-bottom: 24px; margin-bottom: 28px; border-bottom: 1px dashed #d8d8de; }
+.public-credential-header { padding-bottom: 24px; margin-bottom: 28px; border-bottom: 1px dashed var(--page-line); }
 .public-credential-header h1 { font-size: 26px; }
 .public-credential-number { font-size: 42px; line-height: 1.2; letter-spacing: -.05em; font-weight: 750; color: var(--page-accent); margin-bottom: 12px; }
 .public-credential-name { font-size: 23px; line-height: 1.3; font-weight: 700; margin-bottom: 8px; }
@@ -149,3 +149,11 @@
   .public-actions > .public-button { flex: 1 1 auto; }
 }
 @media (prefers-reduced-motion: reduce) { .public-page * { transition: none; scroll-behavior: auto; } }
+
+.public-button:disabled, .public-button[aria-disabled="true"] {
+  opacity: .65;
+  cursor: not-allowed;
+  transform: none;
+}
+.public-page :where(.public-card,.public-note,.public-registration-card,.public-timeline-item) > :last-child { margin-bottom: 0; }
+.public-page :where(.public-button,.public-back) { max-width: 100%; overflow-wrap: anywhere; }

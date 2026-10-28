@@ -108,11 +108,13 @@ def raffle_print(request, event_id):
     raffle=get_object_or_404(MotorcycleRaffle,event=request.management_event)
     globo=request.GET.get('formato')=='globo'
     tickets=tickets_for_event(raffle).filter(state='SOLD') if globo else raffle.tickets.filter(source='PAPER').exclude(state='VOID')
-    tickets=tickets.order_by('number')[:10000]
+    # Every confirmed entry must reach the draw. Loading only the two fields
+    # used by the PDF avoids carrying buyer/registration data for large batches.
+    tickets=list(tickets.order_by('number').select_related(None).only('number','source'))
     from .raffle_pdf import build_tickets_pdf
-    content=build_tickets_pdf(raffle,list(tickets),globo=globo)
+    content=build_tickets_pdf(raffle,tickets,globo=globo)
     log_audit(actor=request.user,event_id=event_id,action='RAFFLE_TICKETS_EXPORTED',entity_type='MotorcycleRaffle',entity_id=raffle.pk,
-        diff={'format':'globo' if globo else 'paper'},request=request)
+        diff={'format':'globo' if globo else 'paper','ticket_count':len(tickets)},request=request)
     response=HttpResponse(content,content_type='application/pdf')
     response['Content-Disposition']=f'attachment; filename="bilhetes-{raffle.event.slug}-{ "globo" if globo else "papel" }.pdf"'
     return response

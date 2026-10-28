@@ -11,7 +11,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .gateway import MercadoPagoGateway, GatewayError
+from .gateway import GatewayError, webhook_signature_parts
 from .models import ProviderEvent
 from .services import reconcile_payment, PaymentValidationError
 
@@ -27,13 +27,17 @@ def mercadopago_webhook(request):
         response = render(request, "payments/webhook_info.html")
         response["X-Robots-Tag"] = "noindex, nofollow"
         return response
-    gateway = MercadoPagoGateway()
-    if gateway.configuration_issues():
-        return JsonResponse({"error": "integration_unavailable"}, status=503)
+    from .gateway_config import webhook_gateways
     payment_id = request.GET.get("data.id", "")
     signature = request.headers.get("x-signature", "")
     request_id = request.headers.get("x-request-id", "")
-    if not re.fullmatch(r"[0-9]{1,30}", payment_id) or not gateway.verify_webhook_signature(signature, request_id, payment_id):
+    if not re.fullmatch(r"[0-9]{1,30}", payment_id) or not request_id or len(request_id) > 512 or webhook_signature_parts(signature) is None:
+        return JsonResponse({"error": "invalid_signature"}, status=401)
+    gateways = list(webhook_gateways(payment_id))
+    if not gateways:
+        return JsonResponse({"error": "integration_unavailable"}, status=503)
+    authenticated = [gateway for gateway in gateways if gateway.verify_webhook_signature(signature, request_id, payment_id)]
+    if not authenticated:
         return JsonResponse({"error": "invalid_signature"}, status=401)
     if len(request.body) > 65536:
         return JsonResponse({"error": "invalid_notification"}, status=400)
@@ -61,7 +65,21 @@ def mercadopago_webhook(request):
     if event.processed_at:
         return JsonResponse({"status": "already_processed"})
     try:
-        payment = gateway.get_payment(payment_id)
+        payment = None
+        last_error = None
+        for gateway in authenticated:
+            try:
+                candidate = gateway.get_payment(payment_id)
+            except GatewayError as exc:
+                last_error = exc
+                continue
+            if str(candidate.get("collector_id", "")) == gateway.collector_id and candidate.get("live_mode") is (gateway.environment == "production"):
+                payment = candidate
+                break
+        if payment is None:
+            if last_error:
+                raise last_error
+            raise PaymentValidationError("account_mismatch")
         if str(payment.get("id", "")) != payment_id:
             raise PaymentValidationError("resource_mismatch")
         with transaction.atomic():

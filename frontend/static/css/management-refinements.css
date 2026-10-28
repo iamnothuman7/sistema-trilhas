@@ -130,3 +130,76 @@
 .mp-connection-simple .alert{display:block}
 .mp-connection-simple .form-control{min-width:0;width:100%;box-sizing:border-box}
 @media(max-width:640px){.mp-connection-simple .form-grid{grid-template-columns:minmax(0,1fr)}.mp-connection-simple .mg-form-actions{flex-direction:column;align-items:stretch}}
+
+/* Keep shared forms usable inside cards as well as across the full workspace. */
+.management-main .mg-stack > label:not(.mg-check-row),
+.management-main .form-grid > label:not(.mg-check-row) {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+    min-width: 0;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.6;
+}
+.management-main .form-grid > .btn { align-self: end; }
+.management-main .form-control[type=file] {
+    padding: 8px;
+    font-weight: 400;
+    line-height: 1.6;
+    text-overflow: ellipsis;
+}
+.management-main .form-control[type=file]::file-selector-button {
+    min-height: 36px;
+    max-width: 100%;
+    margin-right: 10px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface-hover);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+.management-main .form-group:has(input[type=file]) {
+    overflow-wrap: anywhere;
+}
+.management-main :where(.form-help,.mg-section-description) a,
+.management-main .form-group > a {
+    color: var(--brand-ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+.management-main :where(.form-help,.mg-section-description) a:hover {
+    color: var(--text);
+}
+.management-main details.card > summary {
+    min-height: 44px;
+    padding-block: 10px;
+    cursor: pointer;
+    font-weight: 650;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+.management-main details.card[open] > summary { margin-bottom: 20px; }
+.management-main .alert { align-items: flex-start; }
+.management-main .alert > svg { flex-shrink: 0; margin-top: 2px; }
+.management-main .alert > :not(svg) { min-width: 0; }
+.management-main .mg-field-errors:empty { display: none; }
+.management-main .mg-form-errors:empty { display: none; }
+.management-main .mg-form-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
+.management-main .mg-form-grid > .form-group { margin-bottom: 0; }
+.management-main :where(.mg-form-grid,.form-grid) > .form-group:has(textarea,input[type=file],input[type=checkbox]) { grid-column: 1 / -1; }
+.management-main .form-grid > .mg-full-width { grid-column: 1 / -1; }
+.management-main .table td { overflow-wrap: anywhere; }
+.management-main .table td.table-number,
+.management-main .table td.mg-nowrap { overflow-wrap: normal; }
+@media (max-width: 1050px) {
+    /* A pair of cards cannot each support another two-column form on tablets. */
+    .management-main .form-grid:has(> .card) { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 767px), (pointer: coarse) {
+    .management-main .form-control[type=file]::file-selector-button { min-height: 44px; }
+}
+@media (max-width: 767px) { .management-main .mg-form-grid { grid-template-columns: minmax(0,1fr); gap: 20px; } }

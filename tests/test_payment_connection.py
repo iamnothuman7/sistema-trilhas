@@ -190,8 +190,9 @@ class MercadoPagoConnectionTests(TestCase):
         self.assertEqual(MercadoPagoGateway().access_token, self.values["access_token"])
         self.assertEqual(MercadoPagoGateway().collector_id, "1234")
 
+    @override_settings(MP_ENVIRONMENT="production")
     def test_activation_requires_confirmation_and_production_requires_homologation(self):
-        self.save_draft(environment="production", access_token="APP_USR-unit-private")
+        self.save_draft(environment="production", access_token="APP_USR-unit-private", public_key="APP_USR-unit-public")
         self.verify()
         self.assertEqual(self.activate(confirm_account="").status_code, 400)
         self.assertEqual(self.activate().status_code, 409)
@@ -248,19 +249,21 @@ class MercadoPagoConnectionTests(TestCase):
             with self.assertRaises(CredentialStorageError):
                 decrypt_configuration(MercadoPagoConnection.objects.get().active_ciphertext)
 
-    def test_existing_charge_blocks_receiver_or_environment_switch_but_not_token_rotation(self):
+    def test_existing_charge_pins_previous_receiver_before_switch_and_token_rotation(self):
         self.save_draft()
         self.verify()
         self.activate()
         order = Order.objects.create(event=self.event, merchant_reference="CONNECTION-HISTORY", purchaser_name="Comprador teste",
             purchaser_email="buyer@example.test", total_cents=12000, expires_at=timezone.now()+timedelta(hours=1))
-        ChargeAttempt.objects.create(order=order, amount_cents=12000, idempotency_key="history-connection")
+        charge = ChargeAttempt.objects.create(order=order, amount_cents=12000, idempotency_key="history-connection")
         self.save_draft(collector_id="5678")
         self.verify(account_id=5678)
-        self.assertEqual(self.activate().status_code, 409)
-        self.assertEqual(MercadoPagoGateway().collector_id, "1234")
-        self.save_draft(access_token="TEST-rotated-own-token")
-        self.verify()
+        self.assertEqual(self.activate().status_code, 302)
+        self.assertEqual(MercadoPagoGateway().collector_id, "5678")
+        charge.refresh_from_db()
+        self.assertEqual(charge.account_configuration.collector_id, "1234")
+        self.save_draft(access_token="TEST-rotated-own-token", collector_id="5678")
+        self.verify(account_id=5678)
         self.assertEqual(self.activate().status_code, 302)
         self.assertEqual(MercadoPagoGateway().access_token, "TEST-rotated-own-token")
 
@@ -268,13 +271,20 @@ class MercadoPagoConnectionTests(TestCase):
         self.save_draft()
         self.verify()
         self.activate()
-        for changed in ({"collector_id": "5678"}, {"environment": "production"},
-                        {"public_key": "another-application-public"}, {"webhook_secret": "another-webhook-secret"}):
+        for changed in ({"collector_id": "5678"},
+                        {"public_key": "TEST-another-application-public"}, {"webhook_secret": "another-webhook-secret"}):
             self.save_draft(**changed)
             self.verify(account_id=int(changed.get("collector_id", "1234")))
             self.assertEqual(self.activate(confirm_sandbox="on").status_code, 302)
         self.assertEqual(MercadoPagoGateway().collector_id, "1234")
         self.assertFalse(ChargeAttempt.objects.exists())
+
+    def test_deployment_environment_cannot_be_changed_from_panel(self):
+        self.save_draft(environment="production")
+        result = self.verify()
+        self.assertEqual(result.status_code, 409)
+        self.assertContains(result, "Este servidor está separado", status_code=409)
+        self.http.assert_not_called()
 
     def test_environment_can_be_replaced_before_first_charge_with_explicit_activation(self):
         with override_settings(MP_ACCESS_TOKEN="ENV-private", MP_PUBLIC_KEY="ENV-public", MP_WEBHOOK_SECRET="ENV-webhook", MP_COLLECTOR_ID="5678"):
@@ -328,3 +338,35 @@ class MercadoPagoConnectionTests(TestCase):
         response = self.client.post(self.url, {"action": "verify", "version": self.current_version()})
         self.assertContains(response, "Falta preencher", status_code=409)
         self.http.assert_not_called()
+
+    def test_sandbox_accepts_test_pair_for_main_account_and_app_pair_for_verified_test_user(self):
+        cases = (("TEST-private", "TEST-public", ["normal"], True),
+            ("TEST-private", "TEST-public", None, True),
+            ("APP_USR-private", "APP_USR-public", ["test_user"], True),
+            ("APP_USR-private", "APP_USR-public", ["normal"], False),
+            ("APP_USR-private", "APP_USR-public", None, False),
+            ("TEST-private", "APP_USR-public", ["test_user"], False))
+        for token, public, tags, accepted in cases:
+            with self.subTest(token=token, tags=tags):
+                self.save_draft(access_token=token, public_key=public)
+                self.http.side_effect = None
+                self.http.return_value = Mock(status_code=200)
+                self.http.return_value.json.return_value = {"id": 1234, **({"tags": tags} if tags is not None else {})}
+                result = self.client.post(self.url, {"action": "verify", "version": self.current_version()})
+                self.assertEqual(result.status_code, 302 if accepted else 409)
+                self.assertFalse(MercadoPagoConnection.objects.get().active_ciphertext)
+                self.assertFalse(ChargeAttempt.objects.exists())
+
+    @override_settings(MP_ENVIRONMENT="production")
+    def test_production_rejects_test_credentials_and_accepts_main_app_pair_without_tags(self):
+        for token, public, tags, accepted in (("APP_USR-private", "APP_USR-public", None, True),
+            ("APP_USR-private", "APP_USR-public", ["test_user"], False),
+            ("TEST-private", "TEST-public", ["normal"], False)):
+            with self.subTest(token=token, tags=tags):
+                self.save_draft(environment="production", access_token=token, public_key=public)
+                self.http.side_effect = None
+                self.http.return_value = Mock(status_code=200)
+                self.http.return_value.json.return_value = {"id": 1234, **({"tags": tags} if tags is not None else {})}
+                result = self.client.post(self.url, {"action": "verify", "version": self.current_version()})
+                self.assertEqual(result.status_code, 302 if accepted else 409)
+                self.assertFalse(ChargeAttempt.objects.exists())

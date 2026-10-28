@@ -1,4 +1,47 @@
-{% extends 'base.html' %}{% load static %}
+{% extends 'base.html' %}
+{% load static %}
 {% block title %}Seus números do sorteio | Equipe Morcego{% endblock %}
-{% block extra_head %}{% include 'checkout/_payment_styles.html' %}{% endblock %}
-{% block content %}<div class="payment-page"><header class="registration-intro"><span class="payment-kicker">Pedido {{ order.merchant_reference }}</span><h1>{% if is_paid %}Seus números estão confirmados!{% else %}{{ order.get_status_display }}{% endif %}</h1><p>{{ order.event.title }}</p></header><section class="payment-card"><p>Números extras: R$ {{ order.formatted_base_total }} · Taxa: R$ {{ order.formatted_payment_fee }}</p><div class="payment-total"><span>Total</span><strong>R$ {{ order.formatted_total }}</strong></div>{% if is_paid %}<h2>Seus números deste pedido</h2><p>{% for ticket in tickets %}<strong>{{ ticket.number }}</strong>{% if not forloop.last %} · {% endif %}{% endfor %}</p><p>Os números estão vinculados à sua inscrição. O cartão com QR e o PDF já mostram a participação atualizada.</p>{% for reg in registrations %}<div class="payment-actions"><a class="payment-button" href="{% url 'minha_conta:credential_view' reg.pk %}">Ver meu cartão com QR</a><a class="payment-button payment-button-secondary" href="{% url 'minha_conta:registration_pdf' reg.pk %}" hx-boost="false">Baixar PDF atualizado</a>{% if reg.download_ready %}<a class="payment-button payment-button-secondary" href="{% url 'minha_conta:credential_image' reg.pk %}" hx-boost="false">Salvar cartão como imagem</a>{% endif %}</div>{% endfor %}{% else %}<p>Números somente são confirmados após aprovação do pagamento. Pedidos cancelados ou reembolsados não participam.</p>{% endif %}<a class="payment-button payment-button-secondary" href="{% url 'minha_conta:dashboard' %}">Minhas inscrições</a></section></div>{% endblock %}
+{% block extra_head %}{% include 'checkout/_payment_styles.html' %}
+<style>
+.raffle-result-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:12px}
+.raffle-result-actions .payment-button{width:100%}
+.raffle-result-return{display:flex;justify-content:center;margin-top:28px;padding-top:24px;border-top:1px solid var(--border,#e4e6e1)}
+@media(max-width:560px){.raffle-result-return .payment-button{width:100%}}
+</style>{% endblock %}
+{% block content %}
+<div class="payment-page">
+  <header class="registration-intro">
+    <span class="payment-kicker">Pedido {{ order.merchant_reference }}</span>
+    <h1>{% if is_paid %}Seus números estão confirmados!{% else %}{{ order.get_status_display }}{% endif %}</h1>
+    <p>{{ order.event.title }}</p>
+  </header>
+  <section class="payment-card">
+    <p>Números extras: R$ {{ order.formatted_base_total }} · Taxa: R$ {{ order.formatted_payment_fee }}</p>
+    <div class="payment-total"><span>Total</span><strong>R$ {{ order.formatted_total }}</strong></div>
+    {% if is_paid %}
+    <h2>Seus números deste pedido</h2>
+    <p>{% for ticket in tickets %}<strong>{{ ticket.number }}</strong>{% if not forloop.last %} · {% endif %}{% endfor %}</p>
+    <p>A compra foi confirmada e os números estão vinculados à sua inscrição. O PDF atualizado já inclui todos os seus números confirmados.</p>
+    {% for reg in registrations %}
+      {% if reg.download_ready %}
+      <p>Seu cartão com QR também está atualizado. Use o mesmo QR da inscrição no credenciamento.</p>
+      <div class="payment-actions raffle-result-actions" role="group" aria-label="Cartão e comprovantes atualizados">
+        <a class="payment-button" href="{% url 'minha_conta:credential_view' reg.pk %}">Ver meu cartão com QR</a>
+        <a class="payment-button payment-button-secondary" href="{% url 'minha_conta:registration_pdf' reg.pk %}" hx-boost="false">Baixar PDF com meus números</a>
+        <a class="payment-button payment-button-secondary" href="{% url 'minha_conta:credential_image' reg.pk %}" hx-boost="false">Salvar cartão como imagem</a>
+      </div>
+      {% else %}
+      <p class="payment-alert" role="status">Seus números já estão garantidos. Para liberar o QR de credenciamento, conclua as pendências da inscrição, como confirmar o participante e aceitar os termos pessoais. O PDF pode ser baixado agora, ainda sem o QR.</p>
+      <div class="payment-actions raffle-result-actions" role="group" aria-label="Pendências e comprovante">
+        <a class="payment-button" href="{% url 'minha_conta:registration_detail' reg.pk %}">Concluir pendências e liberar QR</a>
+        <a class="payment-button payment-button-secondary" href="{% url 'minha_conta:registration_pdf' reg.pk %}" hx-boost="false">Baixar PDF com meus números</a>
+      </div>
+      {% endif %}
+    {% endfor %}
+    {% else %}
+    <p>Números somente são confirmados após aprovação do pagamento. Pedidos cancelados ou reembolsados não participam.</p>
+    {% endif %}
+    <div class="raffle-result-return"><a class="payment-button payment-button-secondary" href="{% url 'minha_conta:dashboard' %}">Minhas inscrições</a></div>
+  </section>
+</div>
+{% endblock %}

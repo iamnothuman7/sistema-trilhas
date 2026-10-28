@@ -39,7 +39,7 @@
     if (event.detail.requestConfig?.boosted) document.documentElement.classList.add('is-navigating');
   });
   document.addEventListener('htmx:beforeSwap', event => {
-    if ([400, 422].includes(event.detail.xhr.status)) { event.detail.shouldSwap = true; event.detail.isError = false; }
+    if ([400, 409, 422].includes(event.detail.xhr.status)) { event.detail.shouldSwap = true; event.detail.isError = false; }
     if (event.detail.shouldSwap && event.detail.target === document.body) {
       cleanups.forEach(cleanup => { try { cleanup(); } catch (_) {} }); cleanups = [];
       document.body.className = '';

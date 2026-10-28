@@ -1,6 +1,6 @@
 {% extends 'gestao/base_gestao.html' %}{% load static %}
 {% block title %}Sorteio da moto | {{ event.title }}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/raffle.css' %}?v=20261028">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/raffle.css' %}?v=20261028-audit">{% endblock %}
 {% block gestao_header %}Sorteio da moto{% endblock %}
 {% block content %}
 <header class="page-heading"><div><h1>Sorteio da moto</h1><p>Apresentação, numeração e controle de {{ event.title }}.</p></div><a class="btn btn-secondary" href="{% url 'events:raffle' event.slug %}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i>Ver página do sorteio</a></header>

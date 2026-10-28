@@ -1,6 +1,7 @@
 """Load an explicitly activated snapshot; never fall back after decryption failure."""
 import base64
 import json
+import hashlib
 from dataclasses import dataclass, field
 
 from cryptography.fernet import Fernet, InvalidToken
@@ -75,3 +76,84 @@ def load_gateway_configuration():
         # Falling back to environment here could silently redirect money to another account.
         return GatewayConfiguration({key: "" for key in CONFIG_KEYS}, source="unavailable")
     return GatewayConfiguration(values, source="panel")
+
+
+def deployment_environment():
+    """Server-controlled separation: the panel cannot turn homologation into production."""
+    value = str(getattr(settings, "MP_ENVIRONMENT", "sandbox")).strip()
+    return value if value in ("sandbox", "production") else ""
+
+
+@sensitive_variables()
+def configuration_identity(values):
+    # Token rotation preserves the account/application identity. Signature rotation
+    # retains its predecessor so delayed notifications can still authenticate.
+    payload = {key: values[key] for key in CONFIG_KEYS if key != "access_token"}
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+
+
+def checkout_identity(gateway):
+    return hashlib.sha256(json.dumps({"collector_id": gateway.collector_id, "environment": gateway.environment,
+        "public_key": gateway.public_key}, sort_keys=True).encode()).hexdigest()
+
+
+@sensitive_variables()
+def retain_configuration(values):
+    """Call under the central connection lock before exposing a new active account."""
+    from .models import MercadoPagoAccountConfiguration
+    account, created = MercadoPagoAccountConfiguration.objects.get_or_create(
+        identity_digest=configuration_identity(values), defaults={
+            "credentials_ciphertext": encrypt_configuration(values),
+            "collector_id": values["collector_id"], "environment": values["environment"],
+        })
+    if not created:
+        previous = decrypt_configuration(account.credentials_ciphertext)
+        if previous["access_token"] != values["access_token"]:
+            account.credentials_ciphertext = encrypt_configuration(values)
+            account.save(update_fields=["credentials_ciphertext", "updated_at"])
+    return account
+
+
+@sensitive_variables()
+def charge_gateway(charge):
+    """Legacy unbound attempts use the current account until atomically pinned on switch."""
+    from .gateway import MercadoPagoGateway
+    from .models import ChargeAttempt, MercadoPagoAccountConfiguration
+    # Read the active configuration before the FK. Activation pins all legacy
+    # attempts before publishing the new account in the same transaction. This
+    # read order avoids a null-FK/just-switched-active-account race without
+    # reversing the checkout lock order (Connection -> Order -> Charge).
+    current = load_gateway_configuration()
+    # An object fetched before activation may still have a stale null FK even
+    # though activation pinned it in the database while this request was in flight.
+    account_id = ChargeAttempt.objects.values_list("account_configuration_id", flat=True).get(pk=charge.pk)
+    if not account_id:
+        return MercadoPagoGateway(configuration=current.values)
+    try:
+        ciphertext = MercadoPagoAccountConfiguration.objects.only("credentials_ciphertext").get(pk=account_id).credentials_ciphertext
+        values = decrypt_configuration(ciphertext)
+    except CredentialStorageError:
+        values = {key: "" for key in CONFIG_KEYS}
+    return MercadoPagoGateway(configuration=values)
+
+
+@sensitive_variables()
+def webhook_gateways(payment_id):
+    """Prefer the pinned payment account; include historical signature rotations."""
+    from .gateway import MercadoPagoGateway
+    from .models import ChargeAttempt, MercadoPagoAccountConfiguration
+    known = ChargeAttempt.objects.filter(provider="mercadopago", provider_payment_ref=payment_id).select_related("account_configuration").first()
+    candidates = [charge_gateway(known)] if known else []
+    candidates.append(MercadoPagoGateway())
+    for account in MercadoPagoAccountConfiguration.objects.filter(environment=deployment_environment()).order_by("-updated_at"):
+        try:
+            candidates.append(MercadoPagoGateway(configuration=decrypt_configuration(account.credentials_ciphertext)))
+        except CredentialStorageError:
+            continue
+    seen = set()
+    for gateway in candidates:
+        identity = (gateway.collector_id, gateway.environment, gateway.webhook_secret, gateway.access_token)
+        if identity in seen or gateway.environment != deployment_environment() or gateway.configuration_issues():
+            continue
+        seen.add(identity)
+        yield gateway
