@@ -130,8 +130,9 @@ class VariantForm(CatalogForm):
 
 
 class CouponForm(CatalogForm):
-    amount = forms.CharField(label='Desconto fixo em reais', required=False, widget=forms.TextInput(attrs={'inputmode': 'decimal'}))
-    percent_off = forms.IntegerField(label='Percentual de desconto', min_value=1, max_value=100)
+    amount = forms.CharField(label='Desconto fixo em reais', required=False, widget=forms.TextInput(attrs={'inputmode': 'decimal', 'placeholder': 'Ex.: 20,00'}))
+    percent_off = forms.IntegerField(label='Percentual de desconto', required=False,
+        widget=forms.NumberInput(attrs={'min': 1, 'max': 100, 'inputmode': 'numeric', 'placeholder': 'Ex.: 10'}))
     valid_from = date_field('Válido a partir de')
     valid_until = date_field('Válido até')
     max_uses = forms.IntegerField(label='Limite de usos', min_value=1, max_value=2147483647)
@@ -143,10 +144,26 @@ class CouponForm(CatalogForm):
         super().__init__(*args, **kwargs)
         from apps.core.utils import cents_to_reais
         self.initial['amount'] = cents_to_reais(self.instance.value_cents)
-        self.fields['percent_off'].help_text = 'Usado somente em cupons percentuais.'
-        self.fields['amount'].help_text = 'Usado somente em cupons de valor fixo.'
-        if self.instance.used_count:
-            self.fields['code_upper'].disabled = True
+        self.selected_kind = self.data.get(self.add_prefix('kind'), self.instance.kind) if self.is_bound else self.instance.kind
+        self.fields['percent_off'].required = self.selected_kind == 'PERCENT'
+        self.fields['percent_off'].disabled = self.selected_kind == 'FIXED'
+        self.fields['amount'].required = self.selected_kind == 'FIXED'
+        self.fields['amount'].disabled = self.selected_kind == 'PERCENT'
+        self.fields['percent_off'].help_text = 'Informe de 1 a 100. Ex.: 10 significa 10% de desconto.'
+        self.fields['amount'].help_text = 'Valor em reais por pedido. Ex.: 20,00 desconta R$ 20,00.'
+        self.fields['kind'].help_text = 'Escolha um desconto em reais ou em porcentagem. Só o valor do tipo selecionado é utilizado.'
+        self.fields['max_uses'].help_text = f'{self.instance.used_count} uso(s) já registrado(s). O limite não pode ficar abaixo desse total.'
+        self.fields['code_upper'].help_text = 'Você pode renomear mesmo após o uso. O novo código vale para novas compras; os pedidos anteriores mantêm o código e o desconto registrados na compra.'
+
+    def clean_percent_off(self):
+        if self.selected_kind != 'PERCENT':
+            # Fixed coupons can have legacy zero/unused percentage values. They
+            # are not a second discount and must not prevent editing the coupon.
+            return self.instance.percent_off
+        value = self.cleaned_data.get('percent_off')
+        if value is not None and not 1 <= value <= 100:
+            raise forms.ValidationError('Informe um percentual entre 1 e 100.')
+        return value
 
     def clean_code_upper(self):
         value = self.cleaned_data['code_upper'].strip().upper()
@@ -156,7 +173,7 @@ class CouponForm(CatalogForm):
 
     def clean(self):
         data = super().clean()
-        if data.get('kind') == 'FIXED':
+        if data.get('kind') == 'FIXED' and 'amount' in data:
             try: data['amount_cents'] = parse_amount_cents(data.get('amount'))
             except forms.ValidationError as exc: self.add_error('amount', exc)
         if data.get('max_uses', 0) < self.instance.used_count:

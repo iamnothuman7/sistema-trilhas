@@ -19,7 +19,7 @@
         <div class="form-group"><label class="form-label" for="{{ date_form.date_start.id_for_label }}">Data inicial</label>{{ date_form.date_start }}{% if date_form.date_start.errors %}<div class="mg-field-errors">{{ date_form.date_start.errors }}</div>{% endif %}</div>
         <div class="form-group"><label class="form-label" for="{{ date_form.date_end.id_for_label }}">Data final</label>{{ date_form.date_end }}{% if date_form.date_end.errors %}<div class="mg-field-errors">{{ date_form.date_end.errors }}</div>{% endif %}</div>
         <button type="submit" class="btn btn-primary"><i data-lucide="list-filter" aria-hidden="true"></i> Aplicar período</button>
-        <a href="{% url 'gestao:finance' event_id=event.id %}" class="btn btn-secondary">Limpar</a>
+        <a href="{% url 'gestao:finance' event_id=event.id %}" class="btn btn-secondary" data-workspace-reset>Limpar</a>
     </form>
     {% if date_form.non_field_errors %}<div class="mg-field-errors" role="alert">{{ date_form.non_field_errors }}</div>{% endif %}
 </section>
@@ -36,6 +36,9 @@
 {% include "gestao/sponsors/_finance_summary.html" %}
 
 {% if finance.expense_reconciliation_delta_cents %}<div class="mg-form-errors" role="status"><strong>Conciliação pendente</strong>Há despesas que precisam de conciliação. O resultado de caixa considera as movimentações registradas no extrato.</div>{% endif %}
+
+{% include 'gestao/finance/_addon_orders.html' %}
+{% include 'gestao/finance/_refund_channels.html' %}
 
 <section class="card mg-section-gap" aria-labelledby="expenses-title">
     <div class="card-header"><div><h2 id="expenses-title" class="section-title">Despesas e fornecedores</h2><p class="mg-section-description">Registre compromissos e acompanhe cada pagamento.</p></div><span class="badge badge-info">{% if expenses_page %}{{ expenses_page.paginator.count }}{% else %}{{ expenses|length }}{% endif %} registros</span></div>

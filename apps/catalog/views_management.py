@@ -105,4 +105,5 @@ def catalog_editor(request, event_id, kind, object_id=None):
                 messages.success(request, f'{label.capitalize()} salvo. Os pedidos existentes mantêm os valores e benefícios contratados.')
                 return redirect('gestao:catalog', event_id=event.pk)
     return render(request, 'gestao/catalog/editor.html', {'event': event, 'form': form, 'item': instance,
+        'editor_kind': kind, 'editing': bool(object_id),
         'editor_title': ('Editar ' if object_id else 'Novo ') + label}, status=400 if request.method == 'POST' else 200)

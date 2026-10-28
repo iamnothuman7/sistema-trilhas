@@ -26,6 +26,7 @@
     <p class="payment-muted">{{ order.event.title }}</p>
     <section class="payment-card" style="text-align:left">
       <span class="payment-kicker">Pedido {{ order.merchant_reference }}</span>
+      {% if order.applied_coupon_code %}<p class="payment-muted">Cupom usado nesta compra: <strong>{{ order.applied_coupon_code }}</strong> · Desconto: R$ {{ order.formatted_discount }}</p>{% endif %}
       <p class="payment-muted">Itens: R$ {{ order.formatted_base_total }} · Taxa do pagamento: R$ {{ order.formatted_payment_fee }}</p><div class="payment-total"><span>Valor do pedido</span><strong>R$ {{ order.formatted_total }}</strong></div>
       {% if is_paid %}
         <p>{% if provider_verified %}O Mercado Pago confirmou o pagamento.{% else %}O pedido consta como pago no sistema.{% endif %} Confira abaixo as inscrições vinculadas ao pedido.</p>

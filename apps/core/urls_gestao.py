@@ -62,6 +62,8 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/catalogo/<str:kind>/<str:object_id>/editar/", catalog_views.catalog_editor, name="catalog_edit"),
 
     # Financeiro Gerencial
+    path('eventos/<uuid:event_id>/financeiro/devolucoes/<uuid:refund_id>/conferir/',registration_views.refund_channel_review,name='refund_channel_review'),
+    path('eventos/<uuid:event_id>/financeiro/adicionais/<uuid:order_id>/devolucao/',registration_views.addon_order_refund,name='addon_order_refund'),
     path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/editar/", finance_views.expense_editor, name="expense_edit"),
     path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/comprovante/", finance_views.expense_editor, {'operation':'proof'}, name="expense_proof"),
     path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/pagamento/", finance_views.expense_editor, {'operation':'pay'}, name="expense_pay"),

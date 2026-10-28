@@ -40,6 +40,10 @@ class RegistrationEditForm(forms.Form):
 
 
 class RegistrationRefundForm(forms.Form):
+    channel=forms.ChoiceField(label='Onde o dinheiro foi devolvido?',choices=[('', 'Selecione o canal'),
+        ('EXTERNAL','Fora do Mercado Pago — Pix externo, transferência ou dinheiro'),
+        ('MERCADO_PAGO','Dentro do Mercado Pago — consultar e conferir o estorno')],
+        help_text='Mercado Pago apenas consulta um estorno já feito. Nenhuma opção envia dinheiro automaticamente.')
     request_key=forms.UUIDField(widget=forms.HiddenInput,initial=uuid.uuid4)
     amount=forms.CharField(label='Valor integral já devolvido (R$)',widget=forms.TextInput(attrs={'inputmode':'decimal'}))
     returned_on=forms.DateField(label='Data da devolução realizada',input_formats=['%Y-%m-%d'],initial=timezone.localdate,
@@ -57,3 +61,17 @@ class RegistrationRefundForm(forms.Form):
             if not isinstance(field.widget,forms.CheckboxInput):field.widget.attrs.setdefault('class','form-control')
 
     def clean_amount(self):return parse_amount_cents(self.cleaned_data['amount'])
+
+
+class LegacyRefundChannelForm(forms.Form):
+    channel=forms.ChoiceField(label='O que a conferência comprovou?',choices=[('', 'Selecione'),
+        ('EXTERNAL','Houve uma devolução real fora do Mercado Pago'),
+        ('MERCADO_PAGO','É o mesmo estorno realizado no Mercado Pago'),
+        ('TEST_NOTE','Era um registro de teste, sem devolução real — apenas anotar')])
+    reason=forms.CharField(label='Explicação da conferência',min_length=10,max_length=1000,widget=forms.Textarea(attrs={'rows':4}))
+    confirmed=forms.BooleanField(label='Conferi os comprovantes e confirmo esta informação. A opção de teste somente anota o histórico; não apaga ou ajusta valores.')
+
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        for field in self.fields.values():
+            if not isinstance(field.widget,forms.CheckboxInput):field.widget.attrs['class']='form-control'

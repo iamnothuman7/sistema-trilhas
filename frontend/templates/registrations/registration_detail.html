@@ -1,12 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Inscrição #{{ reg.registration_number|default:'' }} | Equipe Morcego{% endblock %}
 {% block content %}
-<div class="public-page public-page--narrow">
+<div class="public-page public-page--narrow participant-page">
   <a class="public-back" href="{% url 'minha_conta:dashboard' %}"><i data-lucide="arrow-left" aria-hidden="true"></i> Minhas inscrições</a>
   <header class="public-intro"><span class="public-eyebrow">Inscrição #{{ reg.registration_number|default:"Pendente" }}</span><h1>{{ reg.person.full_name }}</h1><p>{{ reg.event.title }} · {{ reg.event.starts_at|date:"d/m/Y H:i" }}</p></header>
   {% if journey %}<div class="participant-next"><i data-lucide="{{ journey.icon }}" aria-hidden="true"></i><div><strong>{{ journey.title }}</strong><p>{{ journey.message }}</p>{% url 'minha_conta:registration_detail' registration_id=reg.id as detail_url %}{% if journey.url != detail_url %}<div class="public-actions"><a class="public-button public-button--primary" href="{{ journey.url }}" hx-boost="false">{{ journey.label }}</a></div>{% endif %}</div></div>{% endif %}
   <section class="public-card">
     <h2>Situação da inscrição</h2>
+    {% if reg.source_order_line.order.applied_coupon_code %}<p class="public-note">Cupom usado na compra: <strong>{{ reg.source_order_line.order.applied_coupon_code }}</strong> · Desconto no pedido: R$ {{ reg.source_order_line.order.formatted_discount }}. O código mostrado é o registrado no momento da compra.</p>{% endif %}
     {% if reg.raffle_ticket.state == 'SOLD' and reg.commercial_state == 'ACTIVE' and reg.source_order_line.order.status == 'PAID' %}<p class="public-note public-note--success">A inscrição inclui o número <strong>{{ reg.raffle_ticket.number }}</strong> no sorteio anunciado para este evento.</p>{% endif %}
     {% if reg.confirmed_raffle_numbers %}<p class="public-note">Todos os seus números confirmados: {{ reg.confirmed_raffle_numbers|join:' · ' }}.</p>{% endif %}
     {% if can_buy_addons and reg.event.motorcycle_raffle.purchase_available %}<div class="public-actions"><a class="public-button public-button--primary" href="{% url 'checkout:raffle_numbers' reg.pk %}"><i data-lucide="tickets" aria-hidden="true"></i>Comprar números extras do sorteio</a></div>{% endif %}

@@ -22,6 +22,8 @@ ACTION_ROLES = {
     "team": MANAGERS,
 }
 VIEW_ACTIONS = {
+    'refund_channel_review':'finance',
+    'addon_order_refund':'finance',
     'raffle_order_refund':'finance',
     "expense_editor": "finance", "raffle_finance": "finance", "registration_edit": "registrations", "registration_refund": "finance",
     "team_management": "team", "team_revoke": "team",

@@ -48,7 +48,7 @@ class RaffleCardAndManagementTests(TestCase):
         activate_registration_if_eligible(self.registration);self.registration.refresh_from_db()
 
     def refund_data(self,**changes):
-        data=dict(request_key=uuid.uuid4(),amount=18001,returned_on=timezone.localdate(),reference='PIX-DEVOLUCAO-TESTE',
+        data=dict(request_key=uuid.uuid4(),channel='EXTERNAL',amount=18001,returned_on=timezone.localdate(),reference='PIX-DEVOLUCAO-TESTE',
             reason='Devolução realizada a pedido do participante',confirmed=True,proof_asset=None)
         data.update(changes);return data
 

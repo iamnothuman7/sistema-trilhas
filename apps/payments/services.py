@@ -9,6 +9,7 @@ from decimal import Decimal, InvalidOperation
 
 import qrcode
 from django.db import transaction
+from django.db.models import Q,Sum
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.debug import sensitive_variables
@@ -22,7 +23,7 @@ from apps.registrations.models import (
     Entitlement, EntitlementState,
 )
 from .gateway import MercadoPagoGateway, GatewayError
-from .models import ChargeAttempt, ChargeState, PaymentAllocation, PaymentMethod, PaymentTransaction, Refund, RefundState
+from .models import ChargeAttempt, ChargeState, PaymentAllocation, PaymentMethod, PaymentTransaction, Refund, RefundState, RefundChannel
 
 
 class PaymentValidationError(Exception):
@@ -94,8 +95,15 @@ def _holds_and_resources(order):
 
 
 def _commit_capacity(order, approved_at):
+    from apps.events.models import Event
+    order.event=Event.objects.select_for_update().get(pk=order.event_id)
     if order.event.status in {"CANCELED", "ARCHIVED", "FINISHED"}:
         return False
+    # Extra purchases and base cancellation share this lock. Take it before
+    # inventory locks, matching reservation's Registration -> Resource order.
+    linked_ids=set(order.lines.filter(Q(addon__isnull=False)|Q(raffle__isnull=False)).values_list('linked_registration_id',flat=True))
+    if linked_ids:
+        list(Registration.objects.select_for_update().filter(pk__in=linked_ids).order_by('pk').values_list('pk',flat=True))
     holds, resources = _holds_and_resources(order)
     if not holds or any(hold.status != HoldStatus.ACTIVE or approved_at > hold.expires_at for hold in holds):
         return False
@@ -175,6 +183,9 @@ def _release_capacity(order, *, include_committed=False, expired=False):
         for lot in Lot.objects.select_for_update().filter(pk__in=lot_quantities).order_by("pk"):
             lot.current_sold = max(0, lot.current_sold-lot_quantities[lot.pk])
             lot.save(update_fields=["current_sold"])
+    if not include_committed:
+        from apps.checkout.coupons import release_unpaid_coupon_usage
+        release_unpaid_coupon_usage(order)
 
 
 @transaction.atomic
@@ -318,6 +329,7 @@ def reconcile_payment(payment, *, charge_id=None):
         "provider_updated_at": updated_at, "amount_cents": amount})
     if snapshot.charge_attempt_id != charge.pk:
         raise PaymentValidationError("payment_already_assigned")
+    previously_received = bool(snapshot.posted_revenue_cents)
     if not created and updated_at < snapshot.provider_updated_at:
         return order
     # Terminal reversals and settled funds never regress to a pending/approved delivery.
@@ -345,7 +357,18 @@ def reconcile_payment(payment, *, charge_id=None):
             from .models import FeeStatement
             FeeStatement.objects.update_or_create(provider_order_id=payment_id, fee_type='CHECKOUT_PASS_THROUGH', defaults={
                 'expected_cents': charge.passed_fee_cents, 'actual_cents': fee, 'reconciled_at': timezone.now()})
-    if refund > snapshot.posted_refund_cents:
+    unknown_returns=list(order.refunds.filter(state=RefundState.MANUAL_COMPLETED,channel=RefundChannel.UNKNOWN).values_list('pk',flat=True))
+    refund_channel_review=bool(refund>snapshot.posted_refund_cents and unknown_returns)
+    if refund_channel_review:
+        # The provider proves a refund, but does not prove whether an old manual
+        # entry represents that same movement or an independent external return.
+        # Preserve the existing ledger until an authorized person classifies it.
+        from apps.core.utils import log_audit
+        if charge.error_code!='REFUND_CHANNEL_REVIEW' or updated_at>snapshot.provider_updated_at:
+            log_audit(event_id=order.event_id,action='REFUND_CHANNEL_REVIEW_REQUIRED',entity_type='Order',entity_id=order.pk,
+                diff={'provider_payment_id':payment_id,'provider_refund_cents':refund,
+                    'posted_provider_refund_cents':snapshot.posted_refund_cents,'unknown_refund_ids':[str(pk) for pk in unknown_returns]})
+    if refund > snapshot.posted_refund_cents and not refund_channel_review:
         refund_delta = refund-snapshot.posted_refund_cents
         refund_kind=FinancialEntryKind.ESTORNO_SORTEIO if order.lines.filter(raffle__isnull=False).exists() else FinancialEntryKind.REEMBOLSO
         _ledger(order, payment_id, refund_kind, -(refund - snapshot.posted_refund_cents),
@@ -353,7 +376,7 @@ def reconcile_payment(payment, *, charge_id=None):
         snapshot.posted_refund_cents = refund
         Refund.objects.get_or_create(request_key=f"MP-{payment_id}-REFUND-{refund}", defaults={
             "order": order, "charge_attempt": charge, "amount_cents": refund_delta,
-            "state": RefundState.SUCCEEDED, "provider_ref": payment_id,
+            "state": RefundState.SUCCEEDED, "channel":RefundChannel.MERCADO_PAGO, "provider_ref": payment_id,
             "reason_code": "CHARGEBACK" if status == "charged_back" else "PROVIDER_REFUND",
             "reason_notes": "Atualização autenticada do Mercado Pago; conferência por inscrição necessária para devolução parcial.",
             "completed_at": timezone.now()})
@@ -367,7 +390,7 @@ def reconcile_payment(payment, *, charge_id=None):
         if order.status != OrderStatus.REFUNDED and not manually_refunded:
             Registration.objects.filter(source_order_line__order=order, archived_at__isnull=False).update(archived_at=None)
         charge.state = ChargeState.SUCCEEDED
-        if manually_refunded and not snapshot.fulfilled_at:
+        if manually_refunded and not snapshot.fulfilled_at and not previously_received:
             order.status=OrderStatus.PAID_NEEDS_REVIEW
             charge.error_code='FULFILLMENT_REVIEW'
             charge.error_message='Novo pagamento recebido em pedido já devolvido. Confira o recebimento antes de qualquer liberação.'
@@ -406,15 +429,24 @@ def reconcile_payment(payment, *, charge_id=None):
         charge.state = ChargeState.CANCELED
         full = refund == amount
         other_fulfilled = PaymentTransaction.objects.filter(charge_attempt__order=order, fulfilled_at__isnull=False).exclude(pk=snapshot.pk).exists()
-        if not snapshot.fulfilled_at and other_fulfilled:
+        if refund_channel_review:
+            order.status=OrderStatus.PAID_NEEDS_REVIEW
+            charge.error_code='REFUND_CHANNEL_REVIEW'
+            charge.error_message='O Mercado Pago confirmou uma devolução. Confira o canal dos registros antigos no financeiro antes de conciliar outro valor. A credencial permanece bloqueada.'
+            _suspend_registrations(order,canceled=full)
+            if full:_release_capacity(order,include_committed=True)
+            ReceivableDue.objects.filter(order=order,due_type='FULL').update(allocated_paid_cents=amount-refund,status='CANCELED' if full else 'PARTIAL')
+        elif not snapshot.fulfilled_at and other_fulfilled:
             # Refunding an accidental duplicate must not revoke the original paid ticket.
             order.status = OrderStatus.PAID_NEEDS_REVIEW
         else:
-            order.status = OrderStatus.REFUNDED if full else OrderStatus.PARTIALLY_REFUNDED
-            _suspend_registrations(order, canceled=full)
-            if full:
+            external_returned=order.refunds.filter(channel=RefundChannel.EXTERNAL,state=RefundState.MANUAL_COMPLETED).aggregate(n=Sum('amount_cents'))['n'] or 0
+            commercially_refunded=refund+external_returned>=amount
+            order.status = OrderStatus.REFUNDED if commercially_refunded else OrderStatus.PARTIALLY_REFUNDED
+            _suspend_registrations(order, canceled=commercially_refunded)
+            if commercially_refunded:
                 _release_capacity(order, include_committed=True)
-            ReceivableDue.objects.filter(order=order, due_type="FULL").update(allocated_paid_cents=amount-refund, status="CANCELED" if full else "PARTIAL")
+            ReceivableDue.objects.filter(order=order, due_type="FULL").update(allocated_paid_cents=max(0,amount-refund-external_returned), status="CANCELED" if commercially_refunded else "PARTIAL")
     elif status == "in_mediation":
         charge.state = ChargeState.UNKNOWN
         order.status = OrderStatus.PAID_NEEDS_REVIEW

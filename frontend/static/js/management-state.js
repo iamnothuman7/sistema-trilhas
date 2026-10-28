@@ -100,6 +100,15 @@
   document.addEventListener('click',event=>{
     const link=event.target.closest('a[href]');if(!link)return;
     if(new URL(link.href).pathname==='/logout/')window.trilhasWorkspace.clear();
+    if(current&&link.hasAttribute('data-workspace-reset')&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!(event.button>0)){
+      const destination=new URL(link.href,location.href);
+      if(destination.origin===location.origin){
+        // Explicit reload/clear actions must use fresh server fields and versions.
+        pages.delete(pageKey(current));pages.delete(`${current.user}|${canonical(destination.href)}`);
+        tabs.delete(tabKey(current));skipCapture=true;
+      }
+      return;
+    }
     if(!current||!link.dataset.workspaceTab||event.ctrlKey||event.metaKey||event.shiftKey||event.button>0)return;
     capture();
     const saved=tabs.get(tabKey(current,link.dataset.workspaceTab));
@@ -131,6 +140,8 @@
     }
   });
   document.addEventListener('htmx:afterSettle',event=>{if(event.detail.target===document.body)mount();});
+  document.addEventListener('htmx:afterRequest',event=>{if(event.detail.failed)skipCapture=false;});
+  ['htmx:sendError','htmx:timeout'].forEach(name=>document.addEventListener(name,()=>{skipCapture=false;}));
   document.addEventListener('htmx:historyRestore',mount);
   window.addEventListener('popstate',capture);
   document.addEventListener('DOMContentLoaded',mount,{once:true});

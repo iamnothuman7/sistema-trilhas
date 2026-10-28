@@ -21,13 +21,19 @@
 </div>
 
 <!-- Filtros de Busca -->
-<div class="alert" role="note"><span>Pagamento aprovado confirma a inscrição automaticamente. “Pendente Termos” indica apenas o aceite pessoal do participante; a organização não precisa aprovar a inscrição.</span></div>
+<div class="alert" role="note"><span>Pagamento aprovado confirma automaticamente. “Pendente Termos” depende apenas do aceite do participante.</span></div>
 <div class="card mg-element-gap">
-    <form method="GET" class="mg-filter-grid">
+    <form method="GET" class="mg-registration-filters">
+        <div class="mg-search-row">
         <div>
             <label class="form-label mg-meta" for="field-q">Buscar participante</label>
             <input type="text" name="q" class="form-control" value="{{ q }}" placeholder="Nome, CPF, número, cidade ou equipe" id="field-q">
         </div>
+        <button type="submit" class="btn btn-primary">Buscar</button>
+        </div>
+        <details class="mg-optional-filters"{% if status_filter or op_filter or show_removed %} open data-active="true"{% endif %}>
+        <summary>Mais filtros{% if status_filter or op_filter or show_removed %} · ativos{% endif %}</summary>
+        <div class="mg-filter-grid">
         <div>
             <label class="form-label mg-meta" for="field-status">Situação da inscrição</label>
             <select name="status" class="form-control" id="field-status">
@@ -47,14 +53,16 @@
             </select>
         </div>
         <label class="mg-check-row"><input type="checkbox" name="removed" value="1"{% if show_removed %} checked{% endif %}>Mostrar inscrições removidas</label>
-        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <button type="submit" class="btn btn-secondary">Aplicar filtros</button>
+        </div>
+        </details>
     </form>
 </div>
 
 <!-- Tabela de Inscrições -->
 <div class="card">
     <div class="table-responsive">
-        <table class="table">
+        <table class="table" data-mobile-cards data-mobile-primary="1" aria-label="Inscrições do evento">
             <thead>
                 <tr>
                     <th scope="col">#</th>
@@ -89,13 +97,13 @@
                             </span>
                         </td>
                         <td>
-                            <span class="badge {% if reg.commercial_state == 'ACTIVE' %}badge-success{% elif reg.commercial_state == 'RESERVED' %}badge-warning{% else %}badge-danger{% endif %}">
-                                {{ reg.get_commercial_state_display }}
+                            <span class="badge {% if reg.commercial_state == 'ACTIVE' %}badge-success{% elif reg.commercial_state == 'RESERVED' %}badge-warning{% else %}badge-danger{% endif %}" title="{{ reg.get_commercial_state_display }}">
+                                {% if reg.commercial_state == 'ACTIVE' %}Confirmada{% elif reg.commercial_state == 'RESERVED' %}Aguardando pagamento{% else %}Cancelada{% endif %}
                             </span>
                         </td>
                         <td>
-                            <span class="badge {% if reg.operational_state == 'CHECKED_IN' %}badge-success{% elif reg.operational_state == 'READY' %}badge-info{% else %}badge-warning{% endif %}">
-                                {{ reg.get_operational_state_display }}
+                            <span class="badge {% if reg.operational_state == 'CHECKED_IN' %}badge-success{% elif reg.operational_state == 'READY' %}badge-info{% else %}badge-warning{% endif %}" title="{{ reg.get_operational_state_display }}">
+                                {% if reg.operational_state == 'CHECKED_IN' %}Credenciado{% elif reg.operational_state == 'READY' %}QR liberado{% else %}Aceite pendente{% endif %}
                             </span>
                         </td>
                         <td>

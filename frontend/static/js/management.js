@@ -4,7 +4,30 @@
     const sidebar = document.getElementById('managementSidebar');
     const backdrop = document.getElementById('sidebarBackdrop');
     const toggles = document.querySelectorAll('[data-menu-toggle]');
-    const mobile = window.matchMedia('(max-width: 767px)');
+    const mobile = window.matchMedia('(max-width: 767px), (max-width: 1024px) and (max-height: 500px) and (pointer: coarse)');
+    // A row becomes a labelled record on phones, without changing the desktop table.
+    const recordTables = document.querySelectorAll('[data-mobile-cards], .dashboard-orders, .catalog-coupons-table, table[aria-label="Despesas da edição"], table[aria-label="Movimentações financeiras"], table[aria-label="Pedidos de produtos extras"], [data-workspace-module^="raffle_"] table.table');
+    recordTables.forEach(table => {
+        const headings = [...table.querySelectorAll('thead th')].map(cell => cell.textContent.trim());
+        if (!headings.length) return;
+        const primary = Number(table.dataset.mobilePrimary || 0);
+        table.classList.add('mg-record-table');
+        table.setAttribute('role', 'table');
+        table.querySelectorAll('thead,tbody').forEach(group => group.setAttribute('role', 'rowgroup'));
+        table.querySelectorAll('tr').forEach(row => row.setAttribute('role', 'row'));
+        table.querySelectorAll('thead th').forEach(cell => cell.setAttribute('role', 'columnheader'));
+        table.querySelectorAll('tbody tr').forEach(row => [...row.cells].forEach((cell, index) => {
+            cell.setAttribute('role', 'cell');
+            if (cell.colSpan > 1) return;
+            cell.dataset.label = headings[index] || '';
+            cell.classList.toggle('mg-record-primary', index === primary);
+            cell.classList.toggle('mg-record-actions', /aç[õo]es/i.test(headings[index] || ''));
+        }));
+        table.dataset.mobileCardsReady = 'true';
+    });
+    document.querySelectorAll('.mg-optional-filters').forEach(details => {
+        if (!mobile.matches || details.dataset.active === 'true') details.open = true;
+    });
     let opener = null;
     function closeMenu() {
         sidebar.classList.remove('is-open');

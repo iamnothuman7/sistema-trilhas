@@ -30,6 +30,7 @@ from apps.reporting.forms import DateRangeForm
 from apps.reporting.selectors import financial_entries, get_financial_summary, in_period
 from urllib.parse import urlencode
 from django.db.models import Q
+from django.db.models import Count
 from django.http import HttpResponseNotAllowed
 from django.views.decorators.cache import never_cache
 from apps.events.forms_management import EventManagementForm, EventAppearanceForm
@@ -72,7 +73,12 @@ def dashboard(request):
 
 @staff_required_custom
 def event_list(request):
-    events = accessible_events(request.user, "events").order_by("-starts_at")
+    events = accessible_events(request.user, "events").annotate(
+        confirmed_count=Count("registrations", filter=Q(
+            registrations__commercial_state=CommercialState.ACTIVE,
+            registrations__archived_at__isnull=True,
+        )),
+    ).order_by("-starts_at")
     return render(request, "gestao/events/event_list.html", {"events": events})
 
 
@@ -337,6 +343,7 @@ def registration_detail(request, event_id, reg_id):
         "consumptions": consumptions,
         "credential_available": credential_is_available(reg),
         "recorded_refunds": reg.source_order_line.order.refunds.all(),
+        "addon_orders": Order.objects.filter(event=event,lines__addon__isnull=False,lines__linked_registration_id=reg.pk).distinct().prefetch_related('lines','refunds').order_by('-created_at','-pk'),
         **manual_context(request, reg),
     })
     response["Referrer-Policy"] = "no-referrer"
@@ -626,6 +633,7 @@ def finance_overview(request, event_id):
 
 
 def _finance_context(request, event, expense_form=None):
+    from apps.payments.models import Refund,RefundChannel,RefundState,ChargeAttempt
     date_form = DateRangeForm(request.GET)
     valid = date_form.is_valid()
     start = date_form.cleaned_data.get("date_start") if valid else None
@@ -635,12 +643,17 @@ def _finance_context(request, event, expense_form=None):
     form = expense_form if expense_form is not None else ExpenseForm(event=event)
     entries_page = Paginator(entries, 30).get_page(request.GET.get("entries_page"))
     expenses_page = Paginator(expenses, 20).get_page(request.GET.get("expenses_page"))
+    addon_orders = in_period(Order.objects.filter(event=event,lines__addon__isnull=False).distinct(), 'created_at', start, end).prefetch_related('lines','refunds').order_by('-created_at','-pk') if valid else Order.objects.none()
+    addon_orders_page = Paginator(addon_orders,20).get_page(request.GET.get('addon_orders_page'))
     return {
         "event": event, "kpi": get_event_kpi_summary(event),
         "finance": get_financial_summary(event, start, end) if valid else {},
         "entries": entries_page.object_list, "expenses": expenses_page.object_list,
         "entries_page": entries_page,
         "expenses_page": expenses_page,
+        "addon_orders": addon_orders_page, "addon_orders_page": addon_orders_page,
+        "legacy_refunds":Refund.objects.filter(order__event=event).filter(Q(channel=RefundChannel.UNKNOWN,state=RefundState.MANUAL_COMPLETED)|Q(order__charge_attempts__error_code='REFUND_CHANNEL_REVIEW')).distinct().select_related('order').order_by('-created_at')[:50],
+        "refund_channel_pending":ChargeAttempt.objects.filter(order__event=event,error_code='REFUND_CHANNEL_REVIEW').exists(),
         "vendors": Vendor.objects.filter(organization=event.organization).order_by("name"),
         "date_form": date_form, "expense_form": form, "expense_form_errors": form.errors,
         "today": timezone.localdate().isoformat(),

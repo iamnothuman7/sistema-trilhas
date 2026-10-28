@@ -75,11 +75,13 @@ class PublicEventTemplateTests(SimpleTestCase):
         ))
         html = render_to_string("events/detail.html", {"event": event, "products": []})
         self.assertIn('/media/events/banners/april.jpg', html)
+        self.assertIn('trail-hero--event-artwork', html)
         self.assertNotIn('img/trail-hero-desktop-v2.webp', html)
         self.assertNotIn('img/trail-hero-mobile-v2.webp', html)
 
     def test_detail_uses_actual_dates_and_safe_description_fallback(self):
         html = render_to_string("events/detail.html", {"event": self.event(), "products": []})
+        self.assertNotIn('trail-hero--event-artwork', html)
         self.assert_current_event(html)
         self.assertIn('<title>Expedição Serra em Abril | Equipe Morcego Oficial</title>', html)
         self.assertIn('<meta name="description"', html)

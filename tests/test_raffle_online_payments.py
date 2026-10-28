@@ -103,7 +103,7 @@ class OnlineRaffleTests(TestCase):
 
     def test_manual_return_of_extra_order_and_base_return_dependency(self):
         self.prepare();order=self.reserve();self.approve(order)
-        data=dict(request_key=uuid.uuid4(),amount=self.order.total_cents,returned_on=timezone.localdate(),reference='DEV-QA',reason='Devolução fictícia para teste local',confirmed=True)
+        data=dict(request_key=uuid.uuid4(),channel='EXTERNAL',amount=self.order.total_cents,returned_on=timezone.localdate(),reference='DEV-QA',reason='Devolução fictícia para teste local',confirmed=True)
         with self.assertRaises(ValidationError):cancel_paid_order(event=self.event,order_id=self.order.pk,data=data,actor=self.user)
         data.update(amount=1500)
         cancel_paid_order(event=self.event,order_id=order.pk,data=data,actor=self.user)
@@ -118,7 +118,7 @@ class OnlineRaffleTests(TestCase):
 
     def test_refunded_base_blocks_later_extra_payment_from_releasing_numbers(self):
         self.prepare();order=self.reserve()
-        data=dict(request_key=uuid.uuid4(),amount=self.order.total_cents,returned_on=timezone.localdate(),reference='DEV-QA',reason='Devolução fictícia para teste local',confirmed=True)
+        data=dict(request_key=uuid.uuid4(),channel='EXTERNAL',amount=self.order.total_cents,returned_on=timezone.localdate(),reference='DEV-QA',reason='Devolução fictícia para teste local',confirmed=True)
         cancel_paid_order(event=self.event,order_id=self.order.pk,data=data,actor=self.user)
         self.approve(order);self.assertEqual(order.status,'PAID_NEEDS_REVIEW')
         self.assertFalse(RaffleTicket.objects.filter(source='ONLINE').exists())

@@ -3,11 +3,11 @@ from datetime import datetime,time
 import hashlib,json
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Sum,Q
 from django.utils import timezone
 from apps.checkout.models import Order,OrderStatus,ReceivableDue
 from apps.identity.models import Person,UserPersonLink
-from apps.payments.models import Refund,RefundState
+from apps.payments.models import Refund,RefundState,RefundChannel,PaymentTransaction
 from apps.payments.services import _release_capacity,_suspend_registrations
 from apps.finance.models import FinancialEntry,FinancialEntryKind
 from apps.finance.receipts import save_receipt,with_receipt_cleanup,receipt_digest
@@ -62,9 +62,33 @@ def refundable_amount(order):
     return max(0,order.total_cents-returned)
 
 
+def refundable_extra_review(order):
+    """A single authenticated late receipt can be returned without pretending fulfilment.
+
+    Ambiguous/duplicate receipts and disputed deliveries remain under review.
+    Call again while holding Order's lock before changing any financial state.
+    """
+    if order.status!=OrderStatus.PAID_NEEDS_REVIEW or not order.total_cents:return False
+    lines=list(order.lines.all())
+    if not lines or not (all(line.addon_id for line in lines) or all(line.raffle_id for line in lines)):
+        return False
+    if Registration.objects.filter(source_order_line__order=order).exists() or order.manual_evidences.exists():return False
+    if order.charge_attempts.count()!=1 or order.refunds.filter(state__in=[RefundState.SUCCEEDED,RefundState.MANUAL_COMPLETED]).exists():return False
+    snapshots=list(PaymentTransaction.objects.filter(charge_attempt__order=order).select_related('charge_attempt'))
+    if len(snapshots)!=1:return False
+    snapshot=snapshots[0]
+    if (snapshot.provider_status!='approved' or snapshot.fulfilled_at or snapshot.posted_refund_cents or
+            snapshot.amount_cents!=order.total_cents or snapshot.posted_revenue_cents!=order.total_cents or
+            snapshot.charge_attempt.amount_cents!=order.total_cents):return False
+    receipts=list(order.financial_entries.filter(kind__in=[FinancialEntryKind.RECEITA_ADICIONAL,FinancialEntryKind.RECEITA_SORTEIO]))
+    return len(receipts)==1 and receipts[0].amount_cents_signed==order.total_cents
+
+
 @with_receipt_cleanup
 @transaction.atomic
 def cancel_paid_order(*,event,order_id,data,actor,request=None,_saved_receipts):
+    if data.get('channel')!=RefundChannel.EXTERNAL:
+        raise ValidationError('Selecione Fora do Mercado Pago somente para uma devolução externa real. Estornos do Mercado Pago precisam da consulta autenticada, sem lançamento manual.')
     order=Order.objects.select_for_update().get(pk=order_id,event=event)
     key=f"MANUAL-CANCEL-{data['request_key']}"
     existing=Refund.objects.filter(request_key=key).first()
@@ -74,15 +98,18 @@ def cancel_paid_order(*,event,order_id,data,actor,request=None,_saved_receipts):
         if not same:raise ValidationError('Este formulário já foi usado com outros dados. Reabra a operação.')
         save_receipt(existing,data.get('proof_asset'),_saved_receipts)
         return existing,False
-    if order.status not in [OrderStatus.PAID,OrderStatus.PARTIALLY_REFUNDED]:raise ValidationError('O pedido não está pago ou já foi devolvido. Confira a situação atual.')
+    if order.status not in [OrderStatus.PAID,OrderStatus.PARTIALLY_REFUNDED] and not refundable_extra_review(order):
+        raise ValidationError('O pedido não tem um recebimento integral único liberado para devolução ou já foi devolvido. Confira pagamentos e possíveis duplicidades antes de continuar.')
     amount=refundable_amount(order)
-    base_regs=Registration.objects.filter(source_order_line__order=order)
-    if Order.objects.filter(lines__raffle__isnull=False,lines__linked_registration_id__in=base_regs.values('pk'),status='PAID').exists():
-        raise ValidationError('Há números extras pagos vinculados a esta inscrição. Registre primeiro a devolução desses pedidos no financeiro do sorteio.')
+    base_reg_ids=list(Registration.objects.select_for_update().filter(source_order_line__order=order).order_by('pk').values_list('pk',flat=True))
+    if Order.objects.filter(Q(lines__raffle__isnull=False)|Q(lines__addon__isnull=False),
+            lines__linked_registration_id__in=base_reg_ids,status__in=[OrderStatus.PAID,OrderStatus.PARTIALLY_REFUNDED]).exists():
+        raise ValidationError('Há compras extras pagas ou parcialmente devolvidas vinculadas a esta inscrição. Registre primeiro a devolução dos produtos extras no financeiro da edição e dos números extras no financeiro do sorteio. A inscrição permanece ativa.')
     if not data.get('confirmed') or not amount or data['amount']!=amount:raise ValidationError('Confirme a devolução integral do saldo exibido, já realizada ao comprador.')
     if data['returned_on']>timezone.localdate() or not data['reference'].strip() or len(data['reason'].strip())<10:raise ValidationError('Revise a data, a referência e o motivo da devolução.')
     completed=timezone.make_aware(datetime.combine(data['returned_on'],time(hour=12)))
     refund=Refund.objects.create(order=order,request_key=key,amount_cents=amount,state=RefundState.MANUAL_COMPLETED,
+        channel=RefundChannel.EXTERNAL,
         provider_ref=data['reference'],reason_code='ADMIN_CANCELLATION',reason_notes=data['reason'],approved_by=actor,completed_at=completed)
     save_receipt(refund,data.get('proof_asset'),_saved_receipts)
     raffle_id=order.lines.filter(raffle__isnull=False).values_list('raffle_id',flat=True).first()

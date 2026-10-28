@@ -17,14 +17,14 @@
 
 <div class="card">
     <div class="table-responsive">
-        <table class="table">
+        <table class="table" data-mobile-cards aria-label="Eventos e edições">
             <thead>
                 <tr>
                     <th scope="col">Edição</th>
                     <th scope="col">Tipo</th>
                     <th scope="col">Local</th>
                     <th scope="col">Data do evento</th>
-                    <th scope="col">Inscrições</th>
+                    <th scope="col">Inscrições confirmadas</th>
                     <th scope="col">Situação</th>
                     <th scope="col">Ações</th>
                 </tr>
@@ -43,7 +43,7 @@
                         <td>{{ ev.venue }} - {{ ev.city }}/{{ ev.state }}</td>
                         <td>{{ ev.starts_at|date:"d/m/Y H:i" }}</td>
                         <td>
-                            <strong>{{ ev.registrations.count }}</strong> / {{ ev.max_attendees }}
+                            <strong>{{ ev.confirmed_count }}</strong> / {{ ev.max_attendees }}
                         </td>
                         <td>
                             <span class="badge {% if ev.status == 'PUBLISHED' %}badge-success{% elif ev.status == 'DRAFT' %}badge-warning{% else %}badge-info{% endif %}">

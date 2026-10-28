@@ -32,6 +32,7 @@
     </div>
 </div>
 
+{% if management_permissions.finance and reg.source_order_line.order.applied_coupon_code %}<section class="card mg-section-gap"><h2>Cupom usado na compra</h2><p><strong>{{ reg.source_order_line.order.applied_coupon_code }}</strong> · Desconto no pedido: R$ {{ reg.source_order_line.order.formatted_discount }}. O código histórico é preservado mesmo se o cupom for renomeado no catálogo.</p></section>{% endif %}
 {% if manual_entry %}
 <section class="card mg-stack mg-section-gap" aria-labelledby="manual-heading">
 <div class="card-header"><div><h2 id="manual-heading">Cadastro manual</h2><p>Registrado por {{ manual_entry.created_by.full_name }} em {{ manual_entry.created_at|date:"d/m/Y H:i" }}.</p></div></div>
@@ -45,6 +46,7 @@
 </section>
 {% endif %}
 {% if recorded_refunds and management_permissions.finance %}<section class="card mg-section-gap"><h2>Devoluções registradas</h2>{% for refund in recorded_refunds %}<p>{{ refund.get_state_display }} · {{ refund.completed_at|date:'d/m/Y' }} · {{ refund.provider_ref|default:'Sem referência' }}{% if refund.proof_asset %} <a class="btn btn-secondary btn-sm" href="{% url 'gestao:private_document_download' event.id 'reembolso' refund.pk %}" hx-boost="false">Baixar comprovante</a>{% endif %}</p>{% endfor %}</section>{% endif %}
+{% if management_permissions.finance and addon_orders %}{% include 'gestao/finance/_addon_orders.html' %}{% endif %}
 <div class="mg-aside-grid">
     <!-- Coluna Esquerda: Dados e Benefícios -->
     <div class="mg-stack">

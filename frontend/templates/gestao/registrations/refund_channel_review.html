@@ -1,0 +1,10 @@
+{% extends 'gestao/base_gestao.html' %}{% load trilhas_ui %}
+{% block title %}Conferir canal da devolução{% endblock %}{% block gestao_header %}Financeiro{% endblock %}
+{% block content %}
+<header class="page-heading"><div><h1>Conferir canal da devolução</h1><p>{{ refund.order.merchant_reference }} · {{ event.title }}</p></div><a href="{% url 'gestao:finance' event.id %}" class="btn btn-secondary">Voltar ao financeiro</a></header>
+<section class="card mg-stack"><h2>Registro preservado · R$ {{ refund.amount_cents|money }}</h2><p>{{ refund.get_state_display }} · {{ refund.get_channel_display }} · {{ refund.provider_ref|default:'Sem referência' }}</p><p>{{ refund.reason_notes|linebreaksbr }}</p>
+<div class="alert alert-warning"><span>Conferir o canal não envia dinheiro. Marque Mercado Pago somente se os comprovantes mostrarem que este registro corresponde ao mesmo estorno da conta original. Uma devolução externa e um estorno posterior podem ser dois movimentos reais e precisam aparecer separadamente.</span></div>
+{% if can_classify %}<form method="post" data-workspace-private>{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<div class="form-group"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}<button class="btn btn-primary" type="submit">Salvar conferência do canal</button></form>{% else %}<p>Este registro já tem canal conferido. Seu histórico financeiro não pode ser reclassificado por este formulário.</p>{% endif %}
+<p class="form-help">“Registro de teste” apenas adiciona uma nota e mantém o canal desconhecido. Não remove, cancela, devolve nem corrige valores no financeiro. Registros antigos não são classificados automaticamente.</p>
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="refresh"><button class="btn btn-secondary" type="submit">Consultar novamente os estornos no Mercado Pago</button></form>
+</section>{% endblock %}

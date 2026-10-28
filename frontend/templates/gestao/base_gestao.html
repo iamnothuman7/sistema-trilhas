@@ -6,13 +6,13 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#191512">
 <title>{% block title %}Gestão | Equipe Morcego{% endblock %}</title>
 <link rel="icon" type="image/png" href="{% static 'img/favicon-64.png' %}?v=glass20261022"><link rel="apple-touch-icon" href="{% static 'img/favicon-64.png' %}">
-<link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=glass20261022"><link rel="stylesheet" href="{% static 'css/management.css' %}?v=20261027-navigation"><link rel="stylesheet" href="{% static 'css/management-children.css' %}?v=20261027-navigation">
+<link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=glass20261022"><link rel="stylesheet" href="{% static 'css/management.css' %}?v=20261028-mobile-records"><link rel="stylesheet" href="{% static 'css/management-children.css' %}?v=20261028-mobile-records">
 {% block extra_head %}{% endblock %}
 <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=20261026-art-share">
 <script src="{% static 'js/input-masks.js' %}?v=20261026" defer></script>
-<link rel="stylesheet" href="{% static 'css/management-refinements.css' %}?v=20261028-audit">
+<link rel="stylesheet" href="{% static 'css/management-refinements.css' %}?v=20261028-mobile-density">
 {% include "includes/htmx_head.html" %}
-<script src="{% static 'js/management-state.js' %}?v=20261028-fees"></script>
+<script src="{% static 'js/management-state.js' %}?v=20261028-workspace-reset"></script>
 <script src="{% static 'js/main.js' %}?v=20261026" defer></script>
 <script src="{% static 'vendor/lucide/lucide.min.js' %}" defer></script>
 <script src="{% static 'js/icons.js' %}" defer></script>
@@ -56,6 +56,6 @@
 </div>
 <nav class="mobile-nav" aria-label="Navegação rápida"><a class="{% if current == 'dashboard' %}is-active{% endif %}"{% if current == 'dashboard' %} aria-current="page"{% endif %} data-workspace-tab="dashboard" href="{% url 'gestao:dashboard' %}{% if ev %}?event_id={{ ev.id }}{% endif %}"><i data-lucide="layout-dashboard"></i><span>Início</span></a>{% if ev and management_permissions.registrations %}<a class="{% if management_switch_module == 'registration_list' %}is-active{% endif %}"{% if management_switch_module == 'registration_list' %} aria-current="page"{% endif %} data-workspace-tab="registration_list" href="{% url 'gestao:registration_list' event_id=ev.id %}"><i data-lucide="users-round"></i><span>Inscrições</span></a>{% endif %}{% if ev and management_permissions.checkin %}<a class="{% if current == 'credenciamento' %}is-active{% endif %}"{% if current == 'credenciamento' %} aria-current="page"{% endif %} data-workspace-tab="credenciamento" href="{% url 'gestao:credenciamento' event_id=ev.id %}"><i data-lucide="scan-line"></i><span>Scanner</span></a>{% endif %}{% if ev and management_permissions.finance %}<a class="{% if management_switch_module == 'finance' %}is-active{% endif %}"{% if management_switch_module == 'finance' %} aria-current="page"{% endif %} data-workspace-tab="finance" href="{% url 'gestao:finance' event_id=ev.id %}"><i data-lucide="wallet"></i><span>Financeiro</span></a>{% endif %}<button type="button" data-menu-toggle aria-label="Abrir todos os módulos" aria-controls="managementSidebar" aria-expanded="false"><i data-lucide="menu"></i><span>Mais</span></button></nav>
 {% endwith %}
-<script src="{% static 'js/management.js' %}?v=20261027-navigation"></script>
+<script src="{% static 'js/management.js' %}?v=20261028-mobile-records"></script>
 {% block extra_js %}{% endblock %}
 </body></html>

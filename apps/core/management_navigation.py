@@ -24,6 +24,8 @@ MODULES = {
     "team_management": ("team", True),
 }
 PARENTS = {
+    'refund_channel_review':'finance',
+    'addon_order_refund':'finance',
     'raffle_order_refund':'raffle_finance',
     "expense_edit": "finance", "expense_proof": "finance", "expense_pay": "finance", "expense_void": "finance",
     "registration_edit": "registration_list", "registration_refund": "registration_list",

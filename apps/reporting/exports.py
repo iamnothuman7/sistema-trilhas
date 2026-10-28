@@ -241,14 +241,14 @@ def export_orders_csv(event, start=None, end=None):
     output = io.StringIO("", newline="")
     output.write("\ufeff")
     writer = csv.writer(output, delimiter=";")
-    writer.writerow(["Pedido", "Criado em", "Comprador", "E-mail", "Situação", "Bruto (R$)", "Desconto (R$)", "Itens após desconto (R$)", "Tarifas repassadas (R$)", "Total do pedido (R$)"])
-    orders = in_period(Order.objects.filter(event=event), "created_at", start, end, tz=event_timezone(event)).order_by("created_at", "pk")
+    writer.writerow(["Pedido", "Criado em", "Comprador", "E-mail", "Situação", "Bruto (R$)", "Desconto (R$)", "Itens após desconto (R$)", "Tarifas repassadas (R$)", "Total do pedido (R$)", "Cupom usado na compra"])
+    orders = in_period(Order.objects.filter(event=event).select_related('applied_coupon__coupon'), "created_at", start, end, tz=event_timezone(event)).order_by("created_at", "pk")
     for order in orders.iterator():
         writer.writerow([
             safe_text(order.merchant_reference), timezone.localtime(order.created_at, event_timezone(event)).strftime("%d/%m/%Y %H:%M"),
             safe_text(order.purchaser_name), safe_text(order.purchaser_email), safe_text(order.get_status_display()),
             decimal_amount(order.gross_cents), decimal_amount(order.discount_cents), decimal_amount(order.base_total_cents),
-            decimal_amount(order.payment_fee_cents), decimal_amount(order.total_cents),
+            decimal_amount(order.payment_fee_cents), decimal_amount(order.total_cents), safe_text(order.applied_coupon_code),
         ])
     return csv_response(output, f"pedidos_{event.slug}.csv")
 

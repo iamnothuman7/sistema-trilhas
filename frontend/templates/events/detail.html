@@ -3,7 +3,7 @@
 {% block title %}{{ event.title }} | Equipe Morcego Oficial{% endblock %}
 {% block extra_head %}<meta name="description" content="{{ event.description|default:'Confira a programação e as modalidades desta edição da Equipe Morcego.'|striptags|truncatewords:28 }}">{% include "events/_social_metadata.html" %}<link rel="stylesheet" href="{% static 'css/rankings.css' %}?v=20261023">{% endblock %}
 {% block content %}{% timezone event.timezone %}
-<section class="trail-hero trail-hero--event">
+<section class="trail-hero trail-hero--event{% if event.theme.hero_banner %} trail-hero--event-artwork{% endif %}">
 {% include 'events/_trail_hero_art.html' with hero_banner=event.theme.hero_banner only %}
 <div class="container trail-hero-content spotlight-layout"><div class="trail-hero-copy">
 <a href="{% url 'events:list' %}" class="back-link"><i data-lucide="arrow-left" aria-hidden="true"></i> Todos os eventos</a><br>

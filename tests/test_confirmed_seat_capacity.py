@@ -9,6 +9,7 @@ from apps.payments.services import reconcile_payment
 from apps.registrations.models import Registration
 from apps.reporting.selectors import get_event_kpi_summary
 from tests import test_payments as fixtures
+from tests import test_system as system_fixtures
 
 
 @override_settings(**fixtures.MP_TEST_SETTINGS)
@@ -44,3 +45,26 @@ class ConfirmedSeatCapacityTests(TestCase):
         for kind in ['ADDON_TOTAL','RAFFLE_TOTAL']:
             resource=CapacityResource(type=kind,capacity_total=10,reserved_count=4,committed_count=2)
             self.assertEqual(resource.available_count,4)
+
+
+class EventListConfirmedSeatTests(TestCase):
+    setUp = system_fixtures.SistemaTrilhasTests.setUp
+
+    def test_event_list_counts_only_active_unarchived_registrations(self):
+        from django.urls import reverse
+        from django.utils import timezone
+        for index, (state, archived) in enumerate([
+            ('ACTIVE', False), ('RESERVED', False), ('CANCELED', False), ('ACTIVE', True),
+        ]):
+            order = Order.objects.create(event=self.event, merchant_reference=f'SEAT-LIST-{index}',
+                purchaser_name='Piloto fictício', purchaser_email=f'seat-{index}@example.test',
+                status='PAID' if state == 'ACTIVE' else 'RESERVED', expires_at=timezone.now()+timedelta(hours=1))
+            line = OrderLine.objects.create(order=order, product=self.product, unit_cents=12000, net_cents=12000)
+            Registration.objects.create(event=self.event, source_order_line=line,
+                person=Person.objects.create(full_name='Piloto fictício'), commercial_state=state,
+                archived_at=timezone.now() if archived else None)
+        self.client.force_login(self.user)
+        result = self.client.get(reverse('gestao:event_list'))
+        self.assertEqual(result.status_code, 200)
+        self.assertEqual(result.context['events'].get(pk=self.event.pk).confirmed_count, 1)
+        self.assertContains(result, 'Inscrições confirmadas')

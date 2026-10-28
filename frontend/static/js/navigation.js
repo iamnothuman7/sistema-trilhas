@@ -33,6 +33,13 @@
       if (isForm && element.enctype === 'multipart/form-data') element.setAttribute('hx-encoding', 'multipart/form-data');
       if (!nativePage && location.pathname.startsWith('/gestao/') && isForm && (element.getAttribute('method') || 'get').toLowerCase() === 'get') element.setAttribute('hx-push-url', 'true');
     });
+    root.querySelectorAll('.event-subnav').forEach(nav => {
+      const current=nav.querySelector('[aria-current="page"]');
+      if (!current || !nav.clientWidth) return;
+      const bounds=nav.getBoundingClientRect(), selected=current.getBoundingClientRect();
+      if (selected.left < bounds.left) nav.scrollLeft += selected.left - bounds.left - 12;
+      else if (selected.right > bounds.right) nav.scrollLeft += selected.right - bounds.right + 12;
+    });
   }
   document.addEventListener('htmx:beforeProcessNode', event => prepare(event.detail.elt));
   document.addEventListener('htmx:beforeRequest', event => {
@@ -42,7 +49,11 @@
     if ([400, 409, 422].includes(event.detail.xhr.status)) { event.detail.shouldSwap = true; event.detail.isError = false; }
     if (event.detail.shouldSwap && event.detail.target === document.body) {
       cleanups.forEach(cleanup => { try { cleanup(); } catch (_) {} }); cleanups = [];
-      document.body.className = '';
+      // Boosted navigation swaps the body's contents, not its attributes.
+      // Keep the destination's layout scope instead of losing it after the first click.
+      const response=event.detail.serverResponse || event.detail.xhr.responseText || '';
+      document.body.className = /<body(?:\s|>)/i.test(response)
+        ? new DOMParser().parseFromString(response, 'text/html').body.className : '';
     }
   });
   document.addEventListener('htmx:afterRequest', () => document.documentElement.classList.remove('is-navigating'));

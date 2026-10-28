@@ -287,3 +287,30 @@ button, a, input { -webkit-tap-highlight-color: transparent; }
     .auth-page *, .auth-page *::before, .auth-page *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
     .auth-submit:hover, .auth-submit:active { transform: none; }
 }
+
+/* Compact portrait login. Natural height remains available when the keyboard opens. */
+@media (max-width: 700px) and (orientation: portrait) {
+    .auth-login .auth-brand { padding-top: max(10px, env(safe-area-inset-top)); padding-bottom: 10px; }
+    .auth-login .auth-logo { width: 50px; }
+    .auth-login .auth-brand-name { font-size: 17px; }
+    .auth-login .auth-brand-link { gap: 12px; }
+    .auth-login .auth-form-side { padding: 10px 16px max(12px, env(safe-area-inset-bottom)); }
+    .auth-login .auth-form-topbar { padding-bottom: 16px; }
+    .auth-login .auth-return { min-height: 44px; font-size: 12px; }
+    .auth-login .auth-form-panel { padding: 20px; margin-top: clamp(4px, 5svh, 42px); margin-bottom: auto; }
+    .auth-login .auth-form-header { margin-bottom: 18px; }
+    .auth-login .auth-form-header h1 { font-size: 26px; }
+    .auth-login .auth-description { margin-top: 10px; font-size: 13px; }
+    .auth-login .auth-form { gap: 14px; }
+    .auth-login .auth-field { gap: 6px; }
+    .auth-login .auth-input-wrap input { min-height: 48px; padding-block: 11px; font-size: 16px; }
+    .auth-login .auth-password-toggle { width: 44px; height: 44px; }
+    .auth-login .auth-submit { min-height: 48px; padding-block: 11px; }
+    .auth-login .auth-login-links { margin-top: 14px; padding-top: 10px; gap: 0 10px; font-size: 12px; }
+    .auth-login .auth-login-links a { min-height: 44px; }
+    .auth-login .auth-form-footer { padding-top: 18px; font-size: 11px; }
+}
+@media (max-width: 700px) and (max-height: 700px) and (orientation: portrait) {
+    .auth-login .auth-form-panel { margin-top: 0; padding: 16px; }
+    .auth-login .auth-form-topbar { padding-bottom: 10px; }
+}

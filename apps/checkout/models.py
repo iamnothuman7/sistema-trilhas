@@ -1,4 +1,5 @@
 import uuid
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from apps.core.utils import cents_to_reais
@@ -81,6 +82,13 @@ class Order(models.Model):
         return cents_to_reais(self.total_cents)
 
     @property
+    def applied_coupon_code(self):
+        try:
+            return self.applied_coupon.display_code
+        except OrderCoupon.DoesNotExist:
+            return ''
+
+    @property
     def is_raffle_purchase(self):
         return self.lines.filter(raffle__isnull=False).exists()
 
@@ -152,12 +160,28 @@ class OrderLine(models.Model):
 class OrderCoupon(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="applied_coupon")
     coupon = models.ForeignKey("catalog.Coupon", on_delete=models.PROTECT)
+    coupon_code_snapshot = models.CharField('Código do cupom na compra', max_length=50, blank=True, default='', editable=False)
+    usage_released_at = models.DateTimeField('Uso devolvido por reserva sem pagamento', blank=True, null=True, editable=False)
     discount_applied_cents = models.PositiveBigIntegerField("Desconto Aplicado (centavos)")
     applied_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Cupom Aplicado no Pedido"
         verbose_name_plural = "Cupons Aplicados nos Pedidos"
+
+    @property
+    def display_code(self):
+        return self.coupon_code_snapshot or self.coupon.code_upper
+
+    def save(self, *args, **kwargs):
+        previous = None if self._state.adding else type(self).objects.filter(pk=self.pk).values_list('coupon_code_snapshot', flat=True).first()
+        if previous and previous != self.coupon_code_snapshot:
+            raise ValidationError('O código registrado na compra é histórico e não pode ser alterado.')
+        if not self.coupon_code_snapshot:
+            self.coupon_code_snapshot = self.coupon.code_upper
+            if kwargs.get('update_fields') is not None:
+                kwargs['update_fields'] = set(kwargs['update_fields']) | {'coupon_code_snapshot'}
+        super().save(*args, **kwargs)
 
 
 class DueType(models.TextChoices):

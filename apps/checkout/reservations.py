@@ -16,6 +16,7 @@ from .models import Order, OrderLine, OrderStatus, OrderCoupon, ReceivableDue, D
 
 @transaction.atomic
 def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_code="", manual=False, check_budget=None):
+    coupon_code = str(coupon_code or '').strip().upper()
     num_participants = len(participants)
     participant_cpfs = {participant["cpf"] for participant in participants}
     if not num_participants or len(participant_cpfs) != num_participants:
@@ -178,7 +179,9 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
     discount_total = 0
     if coupon_code:
         coupon = Coupon.objects.select_for_update().filter(event=event, code_upper=coupon_code).first()
-        if coupon and coupon.is_valid():
+        if not coupon or not coupon.is_valid():
+            raise ValidationError('Este cupom não existe, está desativado, fora da validade ou esgotado. Revise o código ou remova o cupom para continuar sem desconto.')
+        else:
             if coupon.kind == "PERCENT":
                 discount_total = min(gross_total, gross_total * coupon.percent_off // 100)
             else:
@@ -190,6 +193,7 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
             OrderCoupon.objects.create(
                 order=order,
                 coupon=coupon,
+                coupon_code_snapshot=coupon.code_upper,
                 discount_applied_cents=discount_total
             )
 

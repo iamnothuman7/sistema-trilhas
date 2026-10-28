@@ -174,7 +174,7 @@ class ManagementAccessTests(TestCase):
         with patch("apps.registrations.management.log_audit", side_effect=RuntimeError("audit unavailable")):
             with self.assertRaises(RuntimeError):
                 self.client.post(f"/gestao/eventos/{self.event.id}/inscricoes/{reg.id}/devolucao/",
-                    {'request_key':uuid.uuid4(),'amount':'180,00','returned_on':timezone.localdate().isoformat(),
+                    {'request_key':uuid.uuid4(),'channel':'EXTERNAL','amount':'180,00','returned_on':timezone.localdate().isoformat(),
                     'reference':'PIX-TESTE','reason':'Solicitação do participante','confirmed':'on'})
         reg.refresh_from_db()
         self.assertEqual(reg.commercial_state, CommercialState.ACTIVE)
@@ -189,7 +189,7 @@ class ManagementAccessTests(TestCase):
         self.assertTrue(self.client.post(delivery_url, {"entitlement_id": ent.pk, "idempotency_key": uuid.uuid4()}).json()["success"])
         EventMembership.objects.filter(user__email='operator@example.test').update(role_code=RoleChoices.EVENT_MANAGER)
         response = self.client.post(f"/gestao/eventos/{self.event.id}/inscricoes/{reg.id}/devolucao/",
-            {'request_key':uuid.uuid4(),'amount':'180,00','returned_on':timezone.localdate().isoformat(),
+            {'request_key':uuid.uuid4(),'channel':'EXTERNAL','amount':'180,00','returned_on':timezone.localdate().isoformat(),
             'reference':'PIX-TESTE','reason':'Solicitação do participante','confirmed':'on'})
         self.assertEqual(response.status_code, 302)
         reg.refresh_from_db()

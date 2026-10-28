@@ -3,12 +3,40 @@
 {% block gestao_header %}Catálogo e lotes{% endblock %}
 {% block content %}
 <div class="mg-form-sheet">
-<header class="page-heading"><div><span class="eyebrow">{{ event.title }}</span><h1>{{ editor_title|capfirst }}</h1><p>{% if item.product_id %}Produto: {{ item.product.name }}. {% endif %}Horários no fuso {{ event.timezone }}.</p></div><a class="btn btn-secondary" href="{% url 'gestao:catalog' event_id=event.id %}">Voltar ao catálogo</a></header>
-<form method="post" class="card mg-stack">
+<header class="page-heading"><div><span class="eyebrow">{{ event.title }}</span><h1>{{ editor_title|capfirst }}</h1><p>{% if item.product_id %}Produto: {{ item.product.name }}. {% endif %}Horários no fuso {{ event.timezone }}.</p></div><div class="page-actions">{% if editing %}<a class="btn btn-secondary" href="{{ request.path }}" data-workspace-reset>Reabrir dados atuais</a>{% endif %}<a class="btn btn-secondary" href="{% url 'gestao:catalog' event_id=event.id %}">Voltar ao catálogo</a></div></header>
+<form method="post" class="card mg-stack"{% if editor_kind == 'cupom' %} data-coupon-editor{% endif %}>
 {% csrf_token %}{% for field in form.hidden_fields %}{{ field }}{% if field.errors %}<div class="mg-field-errors">{{ field.errors }}</div>{% endif %}{% endfor %}
 {% if form.errors %}<div class="mg-form-errors" role="alert">Não foi possível salvar. Revise os campos abaixo. {{ form.non_field_errors }}</div>{% endif %}
-<div class="catalog-form-grid">{% for field in form.visible_fields %}{% if field.field.widget.input_type == 'checkbox' %}<label class="mg-check-row">{{ field }}<span>{{ field.label }}{% if field.errors %}<span class="mg-field-errors">{{ field.errors }}</span>{% endif %}</span></label>{% else %}{% include "gestao/events/_field.html" %}{% endif %}{% endfor %}</div>
+<div class="catalog-form-grid">{% for field in form.visible_fields %}{% if editor_kind == 'cupom' and field.name == 'amount' %}<div data-coupon-discount="FIXED"{% if field.field.disabled %} hidden{% endif %}>{% include "gestao/events/_field.html" %}</div>{% elif editor_kind == 'cupom' and field.name == 'percent_off' %}<div data-coupon-discount="PERCENT"{% if field.field.disabled %} hidden{% endif %}>{% include "gestao/events/_field.html" %}</div>{% elif field.field.widget.input_type == 'checkbox' %}<label class="mg-check-row">{{ field }}<span>{{ field.label }}{% if field.errors %}<span class="mg-field-errors">{{ field.errors }}</span>{% endif %}</span></label>{% else %}{% include "gestao/events/_field.html" %}{% endif %}{% endfor %}</div>
 <p class="text-muted">Os pedidos já criados mantêm o preço e os benefícios da compra. Desativar uma oferta interrompe novas vendas; não cancela inscrições nem pagamentos existentes.</p>
 <div class="mg-form-actions"><a class="btn btn-secondary" href="{% url 'gestao:catalog' event_id=event.id %}">Cancelar</a><button class="btn btn-primary" type="submit"><i data-lucide="save" aria-hidden="true"></i>Salvar alterações</button></div>
 </form></div>
 {% endblock %}
+{% block extra_js %}{% if editor_kind == 'cupom' %}
+<script>
+(() => {
+  'use strict';
+  if (!window.trilhasCouponEditor) {
+    const update = form => {
+      const kind = form.querySelector('[name="kind"]')?.value;
+      form.querySelectorAll('[data-coupon-discount]').forEach(group => {
+        const active = group.dataset.couponDiscount === kind;
+        group.hidden = !active;
+        group.querySelectorAll('input').forEach(input => {
+          input.disabled = !active;
+          input.required = active;
+          if (!active) input.setCustomValidity('');
+        });
+      });
+    };
+    window.trilhasCouponEditor = () => document.querySelectorAll('form[data-coupon-editor]').forEach(update);
+    document.addEventListener('change', event => {
+      const form = event.target.closest?.('form[data-coupon-editor]');
+      if (form && event.target.name === 'kind') update(form);
+    });
+    document.addEventListener('htmx:afterSettle', () => requestAnimationFrame(window.trilhasCouponEditor));
+  }
+  window.trilhasCouponEditor();
+})();
+</script>
+{% endif %}{% endblock %}

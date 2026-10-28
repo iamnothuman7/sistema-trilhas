@@ -7,7 +7,7 @@
 <form method="post" class="mg-stack">
 {% csrf_token %}
 {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
-{% if form.errors %}<div class="mg-form-errors" role="alert"><strong>Revise os campos indicados abaixo.</strong>{{ form.non_field_errors }}{% if form.version_conflict %}<a href="{% url 'gestao:event_edit' event_id=event.id %}" class="btn btn-secondary">Reabrir dados atuais</a>{% endif %}</div>{% endif %}
+{% if form.errors %}<div class="mg-form-errors" role="alert"><strong>Revise os campos indicados abaixo.</strong>{{ form.non_field_errors }}{% if form.version_conflict %}<a href="{% url 'gestao:event_edit' event_id=event.id %}" class="btn btn-secondary" data-workspace-reset>Reabrir dados atuais</a>{% endif %}</div>{% endif %}
 <section class="card" aria-labelledby="identity-title"><div class="card-header"><div><h2 id="identity-title">1. Identifique a edição</h2><p>Use o nome que os participantes vão reconhecer.</p></div></div>
 {% if creating %}{% include "gestao/events/_field.html" with field=form.organization %}
 {% endif %}{% include "gestao/events/_field.html" with field=form.title %}

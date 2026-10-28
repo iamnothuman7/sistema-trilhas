@@ -82,7 +82,7 @@
     </div>
 </div>
 
-<section class="card mg-section-gap"><div class="card-header"><div><h2>Produtos extras</h2><p>Venda exclusiva para quem já tem inscrição paga. O comprador encontra estes produtos em sua inscrição, e a retirada usa o mesmo QR.</p></div><a class="btn btn-primary" href="{% url 'gestao:catalog_create' event_id=event.id kind='adicional' %}">Novo produto extra</a></div><div class="table-responsive"><table class="table"><thead><tr><th>Produto / variação</th><th>Preço</th><th>Estoque</th><th>Reservado</th><th>Vendido</th><th>Livre</th><th>Ações</th></tr></thead><tbody>{% for item in addons %}<tr><td>{{ item.title }} {{ item.variant_code }}{% if not item.active %}<span class="badge">Desativado</span>{% endif %}</td><td>R$ {{ item.formatted_price }}</td><td>{{ item.max_quantity }}</td><td>{{ item.reserved_quantity }}</td><td>{{ item.sold_quantity }}</td><td>{{ item.available_quantity }}</td><td><a class="btn btn-secondary" href="{% url 'gestao:catalog_edit' event_id=event.id kind='adicional' object_id=item.pk %}">Editar extra</a></td></tr>{% empty %}<tr><td colspan="7">Cadastre camisetas extras por tamanho, copos, bonés e outros produtos com seu próprio preço e estoque.</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="card mg-section-gap"><div class="card-header"><div><h2>Produtos extras</h2><p>Venda exclusiva para quem já tem inscrição paga. O comprador encontra estes produtos em sua inscrição, e a retirada usa o mesmo QR.</p></div><a class="btn btn-primary" href="{% url 'gestao:catalog_create' event_id=event.id kind='adicional' %}">Novo produto extra</a></div><div class="table-responsive"><table class="table" data-mobile-cards><thead><tr><th>Produto / variação</th><th>Preço</th><th>Estoque</th><th>Reservado</th><th>Vendido</th><th>Livre</th><th>Ações</th></tr></thead><tbody>{% for item in addons %}<tr><td>{{ item.title }} {{ item.variant_code }}{% if not item.active %}<span class="badge">Desativado</span>{% endif %}</td><td>R$ {{ item.formatted_price }}</td><td>{{ item.max_quantity }}</td><td>{{ item.reserved_quantity }}</td><td>{{ item.sold_quantity }}</td><td>{{ item.available_quantity }}</td><td><a class="btn btn-secondary" href="{% url 'gestao:catalog_edit' event_id=event.id kind='adicional' object_id=item.pk %}">Editar extra</a></td></tr>{% empty %}<tr><td colspan="7">Cadastre camisetas extras por tamanho, copos, bonés e outros produtos com seu próprio preço e estoque.</td></tr>{% endfor %}</tbody></table></div></section>
 <!-- Cupons de Desconto -->
 <div class="card">
     <div class="card-header">
@@ -90,7 +90,7 @@
     </div>
 
     <div class="table-responsive">
-        <table class="table">
+        <table class="table catalog-coupons-table" aria-label="Cupons de desconto">
             <thead>
                 <tr>
                     <th scope="col">Código</th>
@@ -117,7 +117,7 @@
                         <td class="mg-meta">{{ cup.valid_until|date:"d/m/Y H:i" }}</td>
                         <td>
                             <span class="badge {% if cup.is_valid %}badge-success{% else %}badge-danger{% endif %}">
-                                {% if cup.is_valid %}Ativo{% else %}Expirado/Esgotado{% endif %}
+                                {% if not cup.active %}Desativado{% elif cup.is_valid %}Ativo{% else %}Fora da validade / esgotado{% endif %}
                             </span>
                         </td>
                         <td><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='cupom' object_id=cup.id %}">Editar cupom</a></td>

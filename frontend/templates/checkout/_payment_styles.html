@@ -45,4 +45,50 @@ html:has(dialog.payment-dialog[open]){overflow:hidden}
 @media(max-width:560px){.payment-dialog-body{padding:52px 20px 24px}.payment-dialog{border-radius:24px}.payment-dialog .payment-qr{width:200px}.payment-dialog .payment-button{padding:13px 16px}.payment-countdown{padding:12px 14px;gap:10px}.payment-countdown strong{font-size:28px}.payment-dialog .payment-total{flex-wrap:nowrap}.payment-dialog .payment-total strong{font-size:24px}}
 @media(prefers-reduced-motion:reduce){.payment-dialog,.payment-progress-icon{animation:none}}
 .registration-same-buyer{display:flex;align-items:flex-start;gap:.75rem;padding:1rem;margin-bottom:1rem;border:1px solid var(--border-color,#5555);border-radius:1rem;cursor:pointer}.registration-same-buyer input{margin-top:.3rem;flex-shrink:0;width:1.2rem;height:1.2rem;accent-color:#f97316}.registration-same-buyer small{display:block;margin-top:.35rem}[data-participant-identity][hidden]{display:none!important}
+/* Compact phone layouts keep controls readable without nesting oversized cards. */
+.payment-page .payment-kicker{color:var(--brand-ink,#c14e0d)}
+.payment-alert[role=alert]{background:var(--surface-active,#fff7ef);color:var(--text-main,#202221)}
+@media(max-width:700px){
+ .payment-page{padding:24px 16px 40px;font-size:14px;line-height:1.55}
+ .payment-page h1{font-size:clamp(25px,6.4vw,30px);line-height:1.15;margin:10px 0 14px}
+ .payment-page h2{font-size:18px;line-height:1.35;margin-bottom:12px}
+ .payment-page p{line-height:1.6;margin-bottom:14px}.payment-kicker{font-size:11px;letter-spacing:.09em}
+ .payment-layout{gap:0;margin-top:20px}.payment-card{padding:18px;border-radius:18px;margin-bottom:16px}
+ .payment-card h2{gap:8px}.payment-card svg{width:20px;height:20px}
+ .payment-list li{padding:12px 0}.payment-list small{font-size:13px;line-height:1.5;margin-top:4px}
+ .payment-button{min-height:46px;padding:11px 16px;font-size:14px;gap:8px}
+ .payment-form,.payment-form-row,.registration-grid{gap:16px}
+ .payment-field label,.payment-page .form-label{font-size:14px;line-height:1.45;margin-bottom:6px}
+ .payment-field input,.payment-field select,.payment-secure-field,.payment-page .form-control{min-height:48px;padding:12px;font-size:16px;border-radius:10px}
+ .payment-secure-field{height:48px;padding-block:0}
+ .payment-total{margin:16px 0;padding-top:16px;gap:10px}.payment-total strong{font-size:22px}
+ .payment-alert{padding:14px;border-radius:12px;margin:16px 0;line-height:1.6}
+ .payment-help{font-size:13px;margin-top:14px!important}.payment-actions{gap:10px;margin-top:20px}
+ .payment-centered>.payment-card{margin-top:20px}.payment-status-icon{width:48px;height:48px;border-radius:15px}
+ .payment-status-icon svg{width:26px;height:26px}
+ .registration-intro{margin-bottom:22px}.registration-intro p{font-size:14px}
+ .registration-caption{font-size:13px;line-height:1.55}
+ .registration-page .card-header{gap:12px;padding-bottom:14px;margin-bottom:16px}
+ .registration-page .card-header h2{margin-bottom:5px}
+ .registration-page .participant-item{padding:14px;border-radius:12px;margin-bottom:14px!important}
+ .registration-page .participant-item .card-header{padding-bottom:10px;margin-bottom:14px}
+ .registration-page .participant-item h2{font-size:16px}
+ .registration-page .participant-item>div[style*="grid-template-columns"]{gap:16px!important;margin-top:16px}
+ .registration-same-buyer{gap:10px;padding:12px;margin-bottom:14px;border-radius:12px;line-height:1.5}
+ .registration-same-buyer small{margin-top:4px}.registration-submit{margin-top:4px}
+ .payment-dialog{width:calc(100% - 20px);max-height:calc(100dvh - 20px);border-radius:20px}
+ .payment-dialog-body{padding:52px 18px 20px}.payment-dialog h2{font-size:24px;margin:10px 0 12px}
+ .payment-dialog .payment-qr{width:196px;margin:14px auto;border-width:6px;border-radius:14px}
+ .payment-dialog .payment-alert{padding:12px;margin:14px 0}
+ .payment-countdown{padding:10px 12px;border-radius:12px;gap:10px;margin-bottom:12px}
+ .payment-countdown strong{font-size:26px}.payment-countdown span{font-size:12px;gap:6px}
+ .payment-dialog .payment-total{margin:14px 0}.payment-dialog .payment-total strong{font-size:22px}
+ .payment-success-emblem{width:56px;height:56px;margin-bottom:14px}.payment-success-emblem svg{width:30px;height:30px}
+}
+@media(max-width:360px){.payment-page{padding-inline:12px}.payment-card{padding:16px}.registration-page .participant-item{padding:12px}.payment-dialog-body{padding-inline:14px}}
+@media(max-height:500px) and (orientation:landscape){
+ .payment-page{padding-top:20px;padding-bottom:32px}.registration-intro{margin-bottom:20px}
+ .payment-dialog-body{padding:22px 54px 22px 24px}.payment-dialog h2{font-size:22px}
+ .payment-dialog .payment-qr{width:164px;margin:12px auto}.payment-countdown{padding:8px 12px}
+}
 </style>

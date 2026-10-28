@@ -188,6 +188,12 @@ class RefundState(models.TextChoices):
     FAILED = "FAILED", "Falhou / Recusado"
     MANUAL_COMPLETED = "MANUAL_COMPLETED", "Concluído Manualmente via Pix"
 
+
+class RefundChannel(models.TextChoices):
+    UNKNOWN = 'UNKNOWN', 'Canal ainda não conferido'
+    EXTERNAL = 'EXTERNAL', 'Fora do Mercado Pago'
+    MERCADO_PAGO = 'MERCADO_PAGO', 'Mercado Pago verificado'
+
 class Refund(models.Model):
     """
     Devoluções financeiras totais ou parciais auditadas.
@@ -199,6 +205,7 @@ class Refund(models.Model):
     request_key = models.CharField("Chave de Idempotência da Devolução", max_length=150, unique=True)
     amount_cents = models.PositiveBigIntegerField("Valor Devolvido (centavos)")
     state = models.CharField("Status", max_length=30, choices=RefundState.choices, default=RefundState.REQUESTED)
+    channel = models.CharField('Canal da devolução',max_length=20,choices=RefundChannel.choices,default=RefundChannel.UNKNOWN)
     provider_ref = models.CharField("Referência no Mercado Pago", max_length=100, blank=True, null=True)
     reason_code = models.CharField("Código do Motivo", max_length=50)
     reason_notes = models.TextField("Justificativa", blank=True, null=True)

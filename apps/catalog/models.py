@@ -1,5 +1,5 @@
 import uuid
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from apps.core.utils import cents_to_reais
 
@@ -138,8 +138,15 @@ class Coupon(models.Model):
         verbose_name = "Cupom de Desconto"
         verbose_name_plural = "Cupons de Desconto"
 
+    @transaction.atomic
     def save(self, *args, **kwargs):
         self.code_upper = self.code_upper.upper().strip()
+        if not self._state.adding:
+            previous_code = type(self).objects.filter(pk=self.pk).values_list('code_upper', flat=True).first()
+            if previous_code and previous_code != self.code_upper:
+                # Defensive support for legacy/imported applications without a
+                # snapshot. Preserve the old code before changing the catalog.
+                self.ordercoupon_set.filter(coupon_code_snapshot='').update(coupon_code_snapshot=previous_code)
         super().save(*args, **kwargs)
 
     def is_valid(self):

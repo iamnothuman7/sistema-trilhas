@@ -164,3 +164,17 @@ Em Mercado Pago → Conexão, escolha renovar as chaves atuais ou adicionar outr
 Cada cobrança fica vinculada a uma configuração criptografada da conta que a criou. Ativar outra conta afeta novas cobranças; consultas e webhooks das anteriores continuam usando a configuração original. Preserve o acesso e o webhook antigos enquanto houver pagamentos a acompanhar. Renovar o token atualiza a mesma aplicação; trocar de conta não transfere saldo nem executa reembolsos. Somente proprietário global ou superusuário pode fazer essa alteração.
 
 O banner institucional e sua prévia de compartilhamento são independentes das artes de cada evento. No editor de aparência, o banner muda o topo daquele evento, a capa 16:9 muda seu catálogo e compartilhamento, e a imagem 1:1 muda seu card na agenda. O resumo da compra de números mostra quantidade, preço unitário e subtotal. O PDF do globo inclui integralmente a seleção de números confirmados, com paginação e quantidade auditada.
+
+## Cupons e correções operacionais
+
+O código de um cupom pode ser alterado mesmo depois do primeiro uso. Cada pedido guarda o código e o desconto daquela compra; renomear não muda os documentos ou relatórios anteriores nem reinicia o contador. O editor exige somente o valor correspondente ao tipo escolhido: reais ou percentual. Código inexistente, desativado, vencido ou esgotado interrompe a criação do pedido com uma mensagem, sem cobrar o preço cheio silenciosamente.
+
+Reservas abandonadas ou canceladas sem recebimento liberam seu uso de cupom uma única vez. Recebimentos, inscrições pagas e devoluções preservam o consumo histórico. A migração trata reservas antigas conservadoramente, sem liberar usos de cobranças incertas ou com evidência financeira. A tabela de eventos conta somente inscrições confirmadas e não arquivadas.
+
+Reabrir dados atuais ou limpar filtros descarta explicitamente o rascunho daquela ação. A navegação normal entre módulos continua preservando campos e posição. Uma inscrição com compras extras pagas precisa ter esses pedidos devolvidos antes do cancelamento da base. Produtos extras têm devolução própria na ficha e no financeiro; devolver somente os extras preserva a inscrição e seu QR.
+
+Ao registrar uma devolução, escolha o canal. Transferência externa registra o dinheiro já devolvido e exige os dados de conferência; Mercado Pago consulta o pagamento e concilia somente o retorno confirmado pela conta original, sem executar reembolso. Registros antigos sem canal ficam pendentes de classificação para impedir lançamentos duplicados. Marcar uma anotação antiga como teste acrescenta apenas auditoria: não altera valores, estado comercial ou movimenta dinheiro.
+
+## Regras de layout móvel
+
+Site, compra, perfil e gestão têm regras específicas para telas estreitas e celulares em paisagem. Campos mantêm fonte de 16 px para evitar zoom automático; ações principais preservam área de toque de pelo menos 44 px. Títulos, margens e cards ficam mais compactos no celular, sem alterar a composição de desktop. Tabelas extensas têm rolagem restrita ao componente ou apresentação em cartões; a página não deve ultrapassar a largura da tela. As duas paletas usam os mesmos tamanhos e estados de foco.

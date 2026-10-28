@@ -133,6 +133,8 @@ def build_registration_pdf(reg, *, generated_at=None):
     if ticket:
         details.append(('NÚMERO DO SORTEIO', str(ticket.number)))
     order = reg.source_order_line.order
+    if order.applied_coupon_code:
+        details.append(('CUPOM NA COMPRA', f'{order.applied_coupon_code} · Desconto no pedido: R$ {order.formatted_discount}'))
     if order.payment_fee_cents:
         details.append(('VALOR DO PEDIDO', f'Itens R$ {order.formatted_base_total} + tarifa R$ {order.formatted_payment_fee} = R$ {order.formatted_total}'))
     data_table = Table([[paragraph(label, "label"), paragraph(value)] for label, value in details], colWidths=[95, available-95])

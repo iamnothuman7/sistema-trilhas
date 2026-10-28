@@ -1,0 +1,15 @@
+{% load trilhas_ui %}
+<section class="card mg-section-gap" aria-labelledby="addon-orders-title">
+<div class="card-header"><div><h2 id="addon-orders-title" class="section-title">Compras de produtos extras</h2><p class="mg-section-description">Pedidos separados da inscrição. Registre aqui uma devolução já realizada; esta ação preserva a inscrição e seu QR.</p></div></div>
+<div class="table-responsive"><table class="table" aria-label="Pedidos de produtos extras"><thead><tr><th>Pedido e comprador</th><th>Produtos</th><th>Valor</th><th>Situação</th><th>Ações e comprovantes</th></tr></thead><tbody>
+{% for extra_order in addon_orders %}<tr>
+<td><strong>{{ extra_order.merchant_reference }}</strong><div>{{ extra_order.purchaser_name }}</div><small class="text-muted">{{ extra_order.created_at|date:'d/m/Y H:i' }}</small></td>
+<td>{% for item in extra_order.lines.all %}<div>{{ item.quantity }} × {{ item.item_snapshot_json.product_name|default:'Produto extra' }}{% if item.intended_variant_code %} · {{ item.intended_variant_code }}{% endif %}</div>{% endfor %}</td>
+<td class="mg-nowrap">R$ {{ extra_order.total_cents|money }}</td><td>{{ extra_order.get_status_display }}</td>
+<td>{% if extra_order.status == 'PAID' or extra_order.status == 'PARTIALLY_REFUNDED' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:addon_order_refund' event.id extra_order.id %}">Registrar devolução dos produtos</a>{% endif %}
+{% if extra_order.status == 'PAID_NEEDS_REVIEW' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:addon_order_refund' event.id extra_order.id %}">Conferir recebimento e devolução</a>{% endif %}
+{% for refund in extra_order.refunds.all %}<div class="form-help">{{ refund.get_state_display }} · R$ {{ refund.amount_cents|money }}{% if refund.proof_asset %} <a href="{% url 'gestao:private_document_download' event.id 'reembolso' refund.id %}">Comprovante da devolução</a>{% endif %}</div>{% endfor %}</td>
+</tr>{% empty %}<tr><td colspan="5" class="mg-table-empty">Nenhuma compra de produtos extras encontrada.</td></tr>{% endfor %}
+</tbody></table></div>
+{% if addon_orders_page.paginator.num_pages > 1 %}<nav class="mg-pagination" aria-label="Páginas de compras extras"><span>Página {{ addon_orders_page.number }} de {{ addon_orders_page.paginator.num_pages }}</span><div class="page-actions">{% if addon_orders_page.has_previous %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&addon_orders_page={{ addon_orders_page.previous_page_number }}">Anterior</a>{% endif %}{% if addon_orders_page.has_next %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&addon_orders_page={{ addon_orders_page.next_page_number }}">Próxima</a>{% endif %}</div></nav>{% endif %}
+</section>

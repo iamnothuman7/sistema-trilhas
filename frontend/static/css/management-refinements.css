@@ -203,3 +203,154 @@
     .management-main .form-control[type=file]::file-selector-button { min-height: 44px; }
 }
 @media (max-width: 767px) { .management-main .mg-form-grid { grid-template-columns: minmax(0,1fr); gap: 20px; } }
+
+/* Coupon records keep readable columns inside their local horizontal scroller. */
+.management-main .catalog-coupons-table { min-width: 960px; }
+.management-main .catalog-coupons-table :where(th,td) { white-space: nowrap; overflow-wrap: normal; }
+.management-main .catalog-coupons-table .badge { max-width: none; white-space: nowrap; }
+.management-main .catalog-coupons-table .btn { min-width: 112px; white-space: nowrap; overflow-wrap: normal; }
+
+/* Search stays within reach; secondary filters keep their values in a disclosure. */
+.mg-registration-filters { display: grid; gap: 10px; }
+.mg-search-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: end; }
+.mg-search-row > div { min-width: 0; }
+.mg-optional-filters > summary { min-height: 44px; padding-block: 10px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.mg-optional-filters .mg-filter-grid { grid-template-columns: repeat(2,minmax(0,1fr)); padding-top: 8px; }
+
+/* A compact mobile workspace, including short landscape screens. */
+@media (max-width: 767px), (max-width: 1024px) and (max-height: 500px) and (pointer: coarse) {
+    :root { --sidebar-width: 0px; }
+    html { scroll-padding-block: 70px calc(88px + env(safe-area-inset-bottom)); }
+    .management-workspace, body.sidebar-pinned .management-workspace { margin-left: 0; }
+    .management-sidebar { width: 264px; max-width: calc(100vw - 44px); visibility: hidden; transform: translateX(-100%); z-index: 80; background: var(--glass-reflection),var(--glass-strong); }
+    .management-sidebar.is-open { visibility: visible; transform: translateX(0); }
+    .management-sidebar .sidebar-link { width: 100%; }
+    .management-sidebar .sidebar-label,.management-sidebar .sidebar-section-label { opacity: 1; }
+    .sidebar-pin { display: none; }
+    .sidebar-backdrop.is-visible { display: block; position: fixed; inset: 0; border: 0; background: rgb(0 0 0 / 45%); z-index: 70; }
+    .sidebar-close { display: flex; }
+    .sidebar-footer { padding-bottom: max(12px,env(safe-area-inset-bottom)); }
+    body.menu-open { overflow: hidden; }
+    .mobile-menu-toggle { display: inline-grid; }
+    .management-topbar { height: 56px; padding-inline: max(10px,env(safe-area-inset-left)) max(10px,env(safe-area-inset-right)); gap: 8px; }
+    .topbar-leading,.topbar-actions { gap: 6px; }
+    .topbar-divider,.user-copy,.user-menu summary > .lucide,.topbar-site-link { display: none; }
+    .management-topbar .icon-button,.user-menu summary { width: 44px; min-width: 44px; height: 44px; min-height: 44px; justify-content: center; }
+    .topbar-breadcrumb { font-size: 13px; gap: 0; }
+    .user-dropdown { max-width: calc(100vw - 24px); }
+    .user-dropdown a { min-height: 44px; align-items: center; }
+    .management-main { padding: 14px max(12px,env(safe-area-inset-right)) calc(90px + env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); }
+    .management-main h1,.management-main .page-heading h1,.management-main .mg-page-intro h1 { font-size: 24px; line-height: 1.2; margin-bottom: 6px; }
+    .management-main h2 { font-size: 18px; }
+    .management-main h3 { font-size: 15px; }
+    .management-main .page-heading { gap: 12px; margin-bottom: 18px; }
+    .page-heading p { font-size: 14px; line-height: 1.5; }
+    .management-main .card,.management-main .event-overview { padding: 14px; border-radius: 16px; }
+    .management-main .mg-inset-card { padding: 12px; border-radius: 12px; }
+    .card-header { gap: 10px; margin-bottom: 14px; }
+    .card-header h2,.card-header h3 { font-size: 17px; }
+    .management-main .section-title { margin-bottom: 12px; font-size: 17px; }
+    .management-main .mg-section-gap,.management-main .mg-element-gap { margin-bottom: 18px; }
+    .management-main .mg-stack,.dashboard-grid,.dashboard-primary,.dashboard-secondary,.mp-workspace,.mp-workspace .mg-stack,.mp-fees-page { gap: 16px; }
+    .management-main .mg-space-top { margin-top: 16px; }
+    .management-main .form-grid,.management-main .mg-form-grid,.catalog-form-grid { gap: 16px; }
+    .management-main .form-group { margin-bottom: 16px; }
+    .management-main :where(.form-grid,.mg-form-grid,.mg-stack) > .form-group { margin-bottom: 0; }
+    .management-main :is(input:not([type=checkbox],[type=radio]),select,textarea).form-control { font-size: 16px; min-height: 46px; padding: 10px 12px; border-radius: 11px; }
+    .management-main .form-label { margin-bottom: 6px; font-size: 13px; }
+    .management-main .form-help { line-height: 1.5; margin-top: 6px; }
+    .management-main .btn { min-height: 44px; padding: 10px 12px; font-size: 13px; }
+    .management-main .page-actions { gap: 8px; }
+    .page-heading > .page-actions { width: 100%; }
+    .page-heading > .page-actions > .btn { flex: 1 1 calc(50% - 8px); }
+    .page-heading > .page-actions > .btn:first-child:nth-last-child(3) { flex-basis: 100%; }
+    .management-messages { padding: 12px 12px 0; }
+    .management-main .alert { padding: 10px 12px; font-size: 13px; line-height: 1.5; margin-bottom: 14px; }
+    .management-main .mg-check-row { padding: 10px 12px; font-size: 13px; min-height: 46px; line-height: 1.5; }
+    .management-event-context { display: block; padding: 10px 12px; margin-bottom: 18px; border-radius: 14px; }
+    .management-event-switcher { gap: 6px; }
+    .management-event-switcher label { font-size: 12px; }
+    .management-event-context > p { display: none; }
+    .management-event-control select { min-height: 44px; padding-block: 8px; }
+    .event-overview { gap: 14px; margin-bottom: 16px; }
+    .event-overview h2 { font-size: 20px; margin: 8px 0 12px; }
+    .event-meta { gap: 8px 14px; }
+    .event-view-link { margin: 0; min-height: 44px; }
+    .management-main .stat-grid,.management-main .stat-grid.mg-finance-stats,.management-main .stat-grid.sp-summary { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; margin-bottom: 18px; }
+    .management-main .stat-card { padding: 12px; border-radius: 14px; }
+    .stat-top { gap: 6px; margin-bottom: 8px; }
+    .stat-label { font-size: 12px; line-height: 1.4; }
+    .stat-icon { width: 28px; height: 28px; flex-basis: 28px; }
+    .stat-icon .lucide { width: 15px; height: 15px; }
+    .management-main .stat-value,.management-main .mg-finance-stats .stat-value { font-size: clamp(21px,6vw,25px); letter-spacing: -.04em; line-height: 1.25; margin-bottom: 6px; }
+    .stat-foot { font-size: 11px; line-height: 1.4; }
+    .management-main .stat-grid > :last-child:nth-child(odd) { grid-column: 1/-1; }
+    .management-main .empty-state { min-height: 140px; padding: 20px 12px; }
+    .management-main .mg-module-link { padding: 14px; gap: 10px; }
+    .management-main .mg-module-link p { font-size: 13px; }
+    .management-main .mg-form-actions { margin-top: 16px; }
+    .management-main dialog { max-height: calc(100dvh - 16px); max-width: calc(100vw - 16px); }
+    .management-main .mg-dialog .mg-dialog-card { padding: 16px; }
+    .management-main .mg-dialog .card-header { margin-bottom: 16px; }
+    .management-main .mp-status-grid { margin: 16px 0; gap: 12px; }
+    .mp-workspace p { line-height: 1.6; margin-bottom: 12px; }
+    .mp-workspace .mp-webhook { padding: 12px; }
+    .mp-fees-page legend { font-size: 17px; }
+    .management-main .mg-sponsor-art { aspect-ratio: 16/9; max-height: 160px; padding: 14px; }
+    .management-main .mg-sponsor-art img { max-height: 130px; }
+    .management-main .mg-sponsor-copy h2 { font-size: 18px; margin-block: 0 6px; }
+    .management-main .sp-participation,.management-main .sp-receipt { padding: 12px; gap: 12px; }
+    .management-main .sp-notice,.management-main .sp-note { padding: 12px; font-size: 13px; }
+    .management-main .mg-scanner-shell .mg-align-center h1 { margin-block: 10px; }
+    .management-main .mg-scanner-shell .scanner-viewport { margin-bottom: 16px; }
+    .mobile-nav { display: flex; justify-content: space-around; align-items: stretch; position: fixed; bottom: 0; left: 0; right: 0; min-height: 62px; padding: 4px max(4px,env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(4px,env(safe-area-inset-left)); background: var(--glass-reflection),var(--glass); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border-top: 1px solid var(--glass-border); z-index: 40; }
+    .mobile-nav a,.mobile-nav button { display: flex; flex: 1; min-width: 0; min-height: 48px; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; color: var(--text-muted); font-size: 10px; font-weight: 600; padding: 5px 2px; border-radius: 10px; }
+    .mobile-nav .lucide { width: 19px; height: 19px; }
+    .mobile-nav .is-active { color: var(--brand-ink); background: var(--brand-soft); }
+}
+@media (max-width: 767px) {
+    .mg-optional-filters .mg-filter-grid { grid-template-columns: minmax(0,1fr); gap: 12px; }
+    .mg-search-row { gap: 8px; }
+    .mg-search-row .btn { padding-inline: 10px; }
+    /* Labelled records expose every action without sideways hunting on a phone. */
+    .management-main .mg-record-table { display: block; min-width: 0; width: 100%; }
+    .mg-record-table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+    .mg-record-table tbody { display: grid; gap: 12px; }
+    .mg-record-table tbody tr { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; }
+    .management-main .mg-record-table tbody td { display: block; min-width: 0; padding: 0; border: 0; white-space: normal; text-align: left; font-size: 13px; overflow-wrap: anywhere; }
+    .mg-record-table td[data-label]::before { content: attr(data-label); display: block; margin-bottom: 4px; font-size: 11px; color: var(--text-muted); font-weight: 500; line-height: 1.4; }
+    .management-main .mg-record-table td.mg-record-primary { grid-column: 1/-1; order: -1; font-size: 14px; }
+    .mg-record-table td.mg-record-primary::before { display: none; }
+    .management-main .mg-record-table td.mg-record-actions { display: flex; flex-wrap: wrap; grid-column: 1/-1; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+    .mg-record-table td.mg-record-actions::before { display: none; }
+    .mg-record-table td.mg-record-actions > :where(a,button,form) { flex: 1 1 auto; }
+    .mg-record-table td.mg-record-actions .page-actions { width: 100%; }
+    .mg-record-table td.mg-record-actions .mg-finance-actions { width: 100%; }
+    .mg-record-table td.mg-record-actions .mg-finance-actions .btn { flex: 1 1 auto; }
+    .mg-record-table td.mg-record-actions .btn { min-width: 44px; min-height: 44px; white-space: normal; }
+    .mg-record-table td[colspan] { grid-column: 1/-1; }
+    .management-main .mg-record-table .badge { white-space: normal; max-width: 100%; }
+    .management-main .catalog-lots-table tbody { gap: 12px; }
+    .management-main .catalog-lots-table tr { gap: 12px; padding-block: 12px; }
+    .management-main .catalog-lots-table td::before { font-size: 11px; text-transform: none; }
+    .management-main .mg-finance-filters { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px 8px; }
+    .management-main .mg-finance-filters .form-group { width: auto; min-width: 0; }
+    .management-main .mg-finance-filters > .btn { width: 100%; }
+    .management-main .mg-finance-filters .form-label { font-size: 12px; }
+    .management-main .raffle-tabs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-bottom: 16px; }
+    .management-main .raffle-tabs .btn { padding-inline: 8px; font-size: 12px; }
+    .management-main .raffle-workspace { display: flex; flex-direction: column; gap: 16px; }
+    .management-main .raffle-settings { order: -1; width: 100%; }
+    .management-main .raffle-overview { width: 100%; gap: 16px; }
+    .management-main .raffle-fieldset { padding-bottom: 12px; margin-bottom: 12px; }
+    .management-main .raffle-preview-card .raffle-prizes img { max-height: 180px; }
+    .management-main .raffle-image-placeholder { min-height: 140px; }
+}
+@media (max-width: 1024px) and (max-height: 500px) and (pointer: coarse) {
+    .management-main { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+    .management-event-context { max-width: 620px; }
+    .mobile-nav { min-height: 52px; }
+    .mobile-nav a,.mobile-nav button { flex-direction: row; gap: 8px; min-height: 44px; }
+    .management-main .stat-grid,.management-main .stat-grid.mg-finance-stats { grid-template-columns: repeat(3,minmax(0,1fr)); }
+    .management-main .stat-grid > :last-child:nth-child(odd) { grid-column: auto; }
+}
