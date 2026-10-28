@@ -177,15 +177,15 @@ class RegistrationOfferTests(TestCase):
         self.assertNotContains(response, 'id="registrationForm"')
         self.assertContains(response, "Inscrições indisponíveis no momento")
 
-    def test_lot_with_all_places_temporarily_reserved_is_not_offered(self):
+    def test_pending_orders_do_not_hide_lot_or_checkout(self):
         capacity = CapacityResource.objects.create(event=self.event, type="LOT_TOTAL", reference_id=str(self.lot.pk),
             capacity_total=self.lot.max_quantity, reserved_count=self.lot.max_quantity)
         CapacityHold.objects.create(resource=capacity, order_id=uuid.uuid4(), quantity=self.lot.max_quantity,
             status=HoldStatus.ACTIVE, expires_at=timezone.now()+timedelta(minutes=20), idempotency_key="live-lot-hold")
         for url in (self.checkout_url(), reverse("events:detail", kwargs={"slug": self.event.slug})):
             response = self.client.get(url)
-            self.assertContains(response, "Inscrições indisponíveis no momento")
-            self.assertNotContains(response, 'id="registrationForm"')
+            self.assertNotContains(response, "Inscrições indisponíveis no momento")
+        self.assertContains(self.client.get(self.checkout_url()), 'id="registrationForm"')
 
     def test_content_editor_can_preview_own_draft_and_public_cannot(self):
         self.event.status = EventStatus.DRAFT

@@ -38,14 +38,15 @@ class CatalogEditingTests(TestCase):
         self.assertEqual(line.net_cents, 18000)
         self.assertEqual(line.item_snapshot_json['price_cents'], 18000)
 
-    def test_capacity_cannot_drop_below_reserved_and_committed(self):
+    def test_capacity_can_ignore_pending_but_cannot_drop_below_confirmed(self):
         self.client.force_login(self.user)
         CapacityResource.objects.create(event=self.event, type='LOT_TOTAL', reference_id=str(self.lot.pk), capacity_total=50, reserved_count=3, committed_count=4)
         response = self.client.post(self.url('lote', self.lot), self.lot_data(max_quantity=6))
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 302)
         uppercase_url = self.url('lote', self.lot).replace(str(self.lot.pk), str(self.lot.pk).upper())
-        self.assertEqual(self.client.post(uppercase_url, self.lot_data(max_quantity=6)).status_code, 400)
-        self.lot.refresh_from_db(); self.assertEqual(self.lot.max_quantity, 50)
+        self.lot.refresh_from_db()
+        self.assertEqual(self.client.post(uppercase_url, self.lot_data(max_quantity=3)).status_code, 400)
+        self.lot.refresh_from_db(); self.assertEqual(self.lot.max_quantity, 6)
 
     def test_invalid_price_dates_and_stale_form_do_not_save(self):
         self.client.force_login(self.user)

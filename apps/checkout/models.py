@@ -81,6 +81,10 @@ class Order(models.Model):
         return cents_to_reais(self.total_cents)
 
     @property
+    def is_raffle_purchase(self):
+        return self.lines.filter(raffle__isnull=False).exists()
+
+    @property
     def base_total_cents(self):
         return self.total_cents - self.payment_fee_cents
 
@@ -114,6 +118,7 @@ class OrderLine(models.Model):
     product = models.ForeignKey("catalog.Product", on_delete=models.PROTECT, blank=True, null=True)
     lot = models.ForeignKey("catalog.Lot", on_delete=models.PROTECT, blank=True, null=True)
     addon = models.ForeignKey("catalog.AddOn", on_delete=models.PROTECT, blank=True, null=True)
+    raffle = models.ForeignKey('events.MotorcycleRaffle',on_delete=models.PROTECT,blank=True,null=True,related_name='order_lines')
     variant = models.ForeignKey("catalog.ProductVariant", on_delete=models.PROTECT, blank=True, null=True)
 
     # Vínculo opcional se esta linha for um adicional comprado para uma inscrição já existente

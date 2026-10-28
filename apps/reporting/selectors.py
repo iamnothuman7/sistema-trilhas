@@ -42,7 +42,7 @@ def get_event_kpi_summary(event: Event) -> dict:
     # Capacidade Geral
     cap_resource = CapacityResource.objects.filter(event=event, type="EVENT_OVERALL").first()
     max_capacity = cap_resource.capacity_total if cap_resource else event.max_attendees
-    occupied = cap_resource.reserved_count + max(active_confirmed, cap_resource.committed_count) if cap_resource else active_confirmed
+    occupied = max(active_confirmed, cap_resource.committed_count) if cap_resource else active_confirmed
     vacancies_left = max(0, max_capacity - occupied)
 
     # Kits e Camisetas

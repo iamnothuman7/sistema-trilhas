@@ -148,6 +148,7 @@ class Coupon(models.Model):
 
 
 class CapacityResourceType(models.TextChoices):
+    RAFFLE_TOTAL = 'RAFFLE_TOTAL', 'Números extras online do sorteio'
     ADDON_TOTAL = "ADDON_TOTAL", "Estoque de item adicional"
     EVENT_OVERALL = "EVENT_OVERALL", "Capacidade Geral do Evento"
     LOT_TOTAL = "LOT_TOTAL", "Capacidade do Lote"
@@ -182,8 +183,24 @@ class CapacityResource(models.Model):
         return f"{self.type} [{self.reference_id}] - {self.available_count} livres de {self.capacity_total}"
 
     @property
+    def confirmed_occupancy(self):
+        from apps.registrations.models import Registration
+        active=0
+        if self.event_id and self.type in ('EVENT_OVERALL','LOT_TOTAL'):
+            registrations=Registration.objects.filter(event_id=self.event_id,commercial_state='ACTIVE',archived_at__isnull=True)
+            if self.type=='LOT_TOTAL':
+                from uuid import UUID
+                try:lot_id=UUID(str(self.reference_id))
+                except (ValueError,TypeError):return self.committed_count
+                registrations=registrations.filter(source_order_line__lot_id=lot_id)
+            active=registrations.count()
+        return max(self.committed_count,active)
+
+    @property
     def available_count(self):
-        return max(0, self.capacity_total - (self.reserved_count + self.committed_count))
+        # Pending registrations track their checkout, but occupy no event/lot seats.
+        occupied=self.confirmed_occupancy if self.type in ('EVENT_OVERALL','LOT_TOTAL') else self.reserved_count+self.committed_count
+        return max(0, self.capacity_total-occupied)
 
 
 class HoldStatus(models.TextChoices):

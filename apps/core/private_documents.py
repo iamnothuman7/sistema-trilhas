@@ -20,12 +20,14 @@ from .utils import log_audit
 @require_safe
 def private_document_download(request, event_id, kind, document_id):
     from apps.finance.models import Expense
-    from apps.payments.models import ManualPaymentEvidence
+    from apps.payments.models import ManualPaymentEvidence, Refund
 
     if kind == "despesa":
         document = get_object_or_404(Expense, pk=document_id, event_id=event_id)
     elif kind == "pagamento":
         document = get_object_or_404(ManualPaymentEvidence, pk=document_id, order__event_id=event_id)
+    elif kind == 'reembolso':
+        document = get_object_or_404(Refund, pk=document_id, order__event_id=event_id)
     else:
         raise Http404
     asset = document.proof_asset
@@ -58,7 +60,7 @@ class PrivateDocumentAdminMixin:
         if not obj or not obj.proof_asset:
             return "Nenhum arquivo anexado."
         event_id = obj.event_id if hasattr(obj, "event_id") else obj.order.event_id
-        kind = "despesa" if hasattr(obj, "event_id") else "pagamento"
+        kind = "despesa" if hasattr(obj, "event_id") else ('reembolso' if type(obj).__name__=='Refund' else "pagamento")
         return format_html('<a href="{}">Baixar comprovante</a>', reverse(
             "gestao:private_document_download",
             kwargs={"event_id": event_id, "kind": kind, "document_id": obj.pk},

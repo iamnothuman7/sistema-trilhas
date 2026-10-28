@@ -128,6 +128,7 @@ def build_registration_pdf(reg, *, generated_at=None):
         ("OPERAÇÃO", reg.get_operational_state_display() if state["qr_available"] else "Credenciamento e retirada bloqueados no momento"),
     ]
     from apps.events.models_raffles import RaffleTicket
+    from apps.events.raffle_operations import confirmed_registration_tickets
     ticket = RaffleTicket.objects.filter(registration=reg, state='SOLD').first() if state['confirmed'] else None
     if ticket:
         details.append(('NÚMERO DO SORTEIO', str(ticket.number)))
@@ -139,6 +140,11 @@ def build_registration_pdf(reg, *, generated_at=None):
         ("TOPPADDING", (0,0), (-1,-1), 2.5), ("BOTTOMPADDING", (0,0), (-1,-1), 2.5),
         ("LINEBELOW", (0,0), (-1,-2), .3, colors.HexColor("#e9ece8"))]))
     story.append(data_table)
+    extra_tickets=list(confirmed_registration_tickets(reg).filter(source='ONLINE').values_list('number',flat=True)) if state['confirmed'] else []
+    if extra_tickets:
+        story.append(paragraph('Números extras confirmados no sorteio','heading'))
+        for offset in range(0,len(extra_tickets),20):
+            story.append(paragraph(' · '.join(str(number) for number in extra_tickets[offset:offset+20])))
     if state["qr_available"]:
         qr_buffer = BytesIO()
         qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=4)

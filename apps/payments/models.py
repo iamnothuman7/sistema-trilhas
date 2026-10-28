@@ -189,6 +189,7 @@ class Refund(models.Model):
     approved_by = models.ForeignKey("identity.User", on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField("Concluído em", blank=True, null=True)
+    proof_asset = models.FileField('Comprovante da devolução',storage=private_document_storage,upload_to='refunds/',blank=True,null=True)
 
     class Meta:
         verbose_name = "Reembolso"

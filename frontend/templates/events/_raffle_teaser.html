@@ -1,6 +1,6 @@
 {% if raffle_event.motorcycle_raffle.is_public %}
 <section class="section-space raffle-teaser-section"><div class="container"><div class="raffle-teaser" data-trail-reveal>
-  <div class="raffle-art" aria-hidden="true"><i data-lucide="motorbike"></i><span>VEM AÍ</span></div>
+  <div class="raffle-art" aria-hidden="true">{% if raffle_event.motorcycle_raffle.primary_image %}<img src="{{ raffle_event.motorcycle_raffle.primary_image.url }}" alt="" width="800" height="650" loading="lazy" decoding="async" style="width:100%;height:auto;max-height:360px;object-fit:contain">{% else %}<i data-lucide="motorbike"></i><span>VEM AÍ</span>{% endif %}</div>
   <div class="raffle-teaser-copy"><span class="eyebrow">Uma novidade nesse encontro</span><h2>Vai ter<br><em>sorteio de {% if raffle_event.motorcycle_raffle.motorcycle_count > 1 %}{{ raffle_event.motorcycle_raffle.motorcycle_count }} motos.{% else %}moto.{% endif %}</em></h2><p>{% if raffle_event.motorcycle_raffle.registration_tickets_enabled %}Cada inscrição paga recebe um número para participar. Confira os detalhes e as regras do sorteio.{% else %}Acompanhe a apresentação da moto e o regulamento nesta área.{% endif %}</p><a href="{% url 'events:raffle' slug=raffle_event.slug %}" class="btn btn-primary">Conhecer o sorteio <i data-lucide="arrow-up-right" aria-hidden="true"></i></a></div>
   <div class="tire-track" aria-hidden="true"></div>
 </div></div></section>

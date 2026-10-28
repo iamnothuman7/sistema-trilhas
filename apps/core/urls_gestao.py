@@ -5,6 +5,7 @@ from apps.reporting import views as reporting_views
 from apps.events import views_sponsors
 from apps.events import views_raffles
 from apps.events import views_raffle_operations
+from apps.events.views_raffle_finance import raffle_finance
 from apps.events import views_rankings
 from apps.mediaframes import views_management as frame_views
 from apps.payments import views_management as payment_views
@@ -12,6 +13,8 @@ from apps.catalog import views_management as catalog_views
 from .private_documents import private_document_download
 from apps.registrations import views_manual
 from apps.registrations import views_cleanup
+from apps.registrations import views_management as registration_views
+from apps.finance import views_management as finance_views
 from apps.identity import views_team
 from .management_navigation import switch_management_event
 
@@ -36,6 +39,8 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/duplicar/", views_gestao.event_duplicate, name="event_duplicate"),
 
     # Inscrições
+    path('eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/editar/',registration_views.registration_edit,name='registration_edit'),
+    path('eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/devolucao/',registration_views.registration_refund,name='registration_refund'),
     path("eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/remover/", views_cleanup.registration_remove, name="registration_remove"),
     path("eventos/<uuid:event_id>/inscricoes/manual/", views_manual.manual_registration_create, name="manual_registration_create"),
     path("eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/recebimento/", views_manual.manual_registration_payment, name="manual_registration_payment"),
@@ -57,6 +62,10 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/catalogo/<str:kind>/<str:object_id>/editar/", catalog_views.catalog_editor, name="catalog_edit"),
 
     # Financeiro Gerencial
+    path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/editar/", finance_views.expense_editor, name="expense_edit"),
+    path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/comprovante/", finance_views.expense_editor, {'operation':'proof'}, name="expense_proof"),
+    path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/pagamento/", finance_views.expense_editor, {'operation':'pay'}, name="expense_pay"),
+    path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/anular/", finance_views.expense_editor, {'operation':'void'}, name="expense_void"),
     path("eventos/<uuid:event_id>/documentos/<str:kind>/<uuid:document_id>/", private_document_download, name="private_document_download"),
     path("eventos/<uuid:event_id>/financeiro/", views_gestao.finance_overview, name="finance"),
     path("eventos/<uuid:event_id>/financeiro/despesa/nova/", views_gestao.add_expense, name="add_expense"),
@@ -83,6 +92,8 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/receber/", views_sponsors.sponsor_receipt, name="sponsor_receipt"),
     path("eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/recebimentos/<uuid:payment_id>/reverter/", views_sponsors.sponsor_reversal, name="sponsor_reversal"),
     path("eventos/<uuid:event_id>/sorteio/", views_raffles.raffle_management, name="raffle_management"),
+    path("eventos/<uuid:event_id>/sorteio/financeiro/", raffle_finance, name="raffle_finance"),
+    path('eventos/<uuid:event_id>/sorteio/pedidos/<uuid:order_id>/devolucao/',registration_views.raffle_order_refund,name='raffle_order_refund'),
     path("eventos/<uuid:event_id>/sorteio/operacao/", views_raffle_operations.raffle_operations, name="raffle_operations"),
     path("eventos/<uuid:event_id>/sorteio/imprimir.pdf", views_raffle_operations.raffle_print, name="raffle_print"),
 

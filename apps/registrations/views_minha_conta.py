@@ -129,6 +129,8 @@ def dashboard(request):
 @never_cache
 def registration_detail(request, registration_id):
     reg = _registration_for_view(request, registration_id)
+    from apps.events.raffle_operations import confirmed_registration_tickets
+    reg.confirmed_raffle_numbers=list(confirmed_registration_tickets(reg).values_list('number',flat=True))
     from apps.mediaframes.access import authorized_pilot_art
     context = {"reg": reg, "entitlements": reg.entitlements.all(), **_terms_context(reg, request.user),
                "pilot_art_available": bool(authorized_pilot_art(request.user, reg.pk))}
@@ -195,7 +197,23 @@ def credential_view(request, registration_id):
     if not _terms_context(reg, request.user)["credential_available"]:
         messages.warning(request, "A credencial depende do pagamento confirmado, do aceite dos termos vigentes e de uma inscrição válida.")
         return redirect("minha_conta:registration_detail", registration_id=reg.pk)
-    return render(request, "registrations/credential_card.html", {"reg": reg})
+    from apps.events.raffle_operations import confirmed_registration_tickets
+    return render(request, "registrations/credential_card.html", {"reg": reg,
+        'raffle_tickets':confirmed_registration_tickets(reg)})
+
+
+@private_page
+@login_required
+@require_GET
+@never_cache
+def credential_image(request,registration_id):
+    from .card_image import build_credential_image
+    reg=_registration_for_view(request,registration_id)
+    content=build_credential_image(reg)
+    response=HttpResponse(content,content_type='image/png')
+    response['Content-Disposition']=f'attachment; filename="cartao-inscricao-{reg.registration_number}.png"'
+    response['X-Content-Type-Options']='nosniff'
+    return response
 
 
 @private_page

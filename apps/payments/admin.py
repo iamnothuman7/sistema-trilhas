@@ -21,7 +21,7 @@ class PaymentAllocationAdmin(admin.ModelAdmin):
     list_display = ("charge_attempt", "order_line", "receivable_due", "amount_cents", "created_at")
 
 @admin.register(Refund)
-class RefundAdmin(admin.ModelAdmin):
+class RefundAdmin(PrivateDocumentAdminMixin, admin.ModelAdmin):
     list_display = ("order", "amount_cents", "state", "provider_ref", "reason_code", "created_at", "completed_at")
     list_filter = ("state",)
 

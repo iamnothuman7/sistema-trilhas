@@ -93,8 +93,8 @@ class SistemaTrilhasTests(TestCase):
         coupon.save()
         self.assertFalse(coupon.is_valid())
 
-    def test_capacity_hold_anti_oversell(self):
-        """Testa a reserva temporária e contadores de capacidade."""
+    def test_pending_registration_does_not_occupy_capacity(self):
+        """Only confirmed registrations consume event seats."""
         self.assertEqual(self.cap_resource.available_count, 100)
 
         hold = CapacityHold.objects.create(
@@ -108,7 +108,9 @@ class SistemaTrilhasTests(TestCase):
         self.cap_resource.reserved_count += 5
         self.cap_resource.save()
 
-        self.assertEqual(self.cap_resource.available_count, 95)
+        self.assertEqual(self.cap_resource.available_count, 100)
+        self.cap_resource.committed_count=5
+        self.assertEqual(self.cap_resource.available_count,95)
 
     def test_entitlement_delivery_prevents_duplicate(self):
         """Testa que a entrega de kits e pulseiras é atômica e não permite entrega duplicada."""

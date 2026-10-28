@@ -79,7 +79,8 @@ def _validate(payment, charge, gateway):
 
 def _ledger(order, payment_id, kind, amount, suffix, description):
     if amount:
-        FinancialEntry.objects.create(event=order.event, order=order, kind=kind,
+        raffle_id=order.lines.filter(raffle__isnull=False).values_list('raffle_id',flat=True).first()
+        FinancialEntry.objects.create(event=order.event, order=order, raffle_id=raffle_id, kind=kind,
             amount_cents_signed=amount, source_reference=f"MP-{payment_id}-{suffix}"[:150], description=description)
 
 
@@ -98,6 +99,15 @@ def _commit_capacity(order, approved_at):
         return False
     registration_lines = set(order.lines.filter(registration__isnull=False).values_list("pk", flat=True))
     addon_lines = list(order.lines.filter(addon__isnull=False))
+    raffle_lines=list(order.lines.filter(raffle__isnull=False))
+    if raffle_lines:
+        registrations={line.linked_registration_id for line in raffle_lines}
+        eligible=Registration.objects.filter(pk__in=registrations,event_id=order.event_id,commercial_state='ACTIVE',
+            archived_at__isnull=True,source_order_line__order__status=OrderStatus.PAID).count()
+        if None in registrations or eligible!=len(registrations):return False
+        raffle_holds={hold.order_line_id:hold for hold in holds if resources[hold.resource_id].type=='RAFFLE_TOTAL'}
+        if set(raffle_holds)!={line.pk for line in raffle_lines}:return False
+        if any(raffle_holds[line.pk].quantity!=line.quantity or resources[raffle_holds[line.pk].resource_id].reference_id!=str(line.raffle_id) for line in raffle_lines):return False
     if addon_lines:
         registrations = {line.linked_registration_id for line in addon_lines}
         eligible = Registration.objects.filter(pk__in=registrations, event_id=order.event_id,
@@ -125,7 +135,8 @@ def _commit_capacity(order, approved_at):
         required[hold.resource_id] += hold.quantity
     for resource_id, quantity in required.items():
         resource = resources[resource_id]
-        if resource.reserved_count < quantity or resource.reserved_count + resource.committed_count > resource.capacity_total:
+        occupied=resource.confirmed_occupancy+quantity if resource.type in ('EVENT_OVERALL','LOT_TOTAL') else resource.reserved_count+resource.committed_count
+        if resource.reserved_count < quantity or occupied > resource.capacity_total:
             return False
     for resource_id, quantity in required.items():
         resource = resources[resource_id]
@@ -269,6 +280,8 @@ def _suspend_registrations(order, *, canceled=False):
     Entitlement.objects.filter(source_order_line__order=order).update(state=EntitlementState.REVOKED)
     registrations = Registration.objects.filter(source_order_line__order=order)
     from apps.events.models_raffles import RaffleTicket
+    RaffleTicket.objects.filter(order_line__order=order).update(state='VOID')
+    RaffleTicket.objects.filter(beneficiary_registration__in=registrations).update(state='VOID')
     RaffleTicket.objects.filter(registration__in=registrations).update(state='VOID')
     updates = {"operational_state": OperationalState.NOT_READY}
     if canceled:
@@ -316,7 +329,7 @@ def reconcile_payment(payment, *, charge_id=None):
         raise PaymentValidationError("invalid_refund")
     settled = status in {"approved", "refunded", "charged_back"}
     if settled and not snapshot.posted_revenue_cents:
-        revenue_kind = FinancialEntryKind.RECEITA_ADICIONAL if order.lines.filter(addon__isnull=False).exists() and not order.lines.filter(registration__isnull=False).exists() else FinancialEntryKind.RECEITA_INSCRICAO
+        revenue_kind = FinancialEntryKind.RECEITA_SORTEIO if order.lines.filter(raffle__isnull=False).exists() else (FinancialEntryKind.RECEITA_ADICIONAL if order.lines.filter(addon__isnull=False).exists() and not order.lines.filter(registration__isnull=False).exists() else FinancialEntryKind.RECEITA_INSCRICAO)
         _ledger(order, payment_id, revenue_kind, amount, "REVENUE", "Pagamento confirmado pelo Mercado Pago")
         snapshot.posted_revenue_cents = amount
     fees = payment.get("fee_details")
@@ -331,7 +344,8 @@ def reconcile_payment(payment, *, charge_id=None):
                 'expected_cents': charge.passed_fee_cents, 'actual_cents': fee, 'reconciled_at': timezone.now()})
     if refund > snapshot.posted_refund_cents:
         refund_delta = refund-snapshot.posted_refund_cents
-        _ledger(order, payment_id, FinancialEntryKind.REEMBOLSO, -(refund - snapshot.posted_refund_cents),
+        refund_kind=FinancialEntryKind.ESTORNO_SORTEIO if order.lines.filter(raffle__isnull=False).exists() else FinancialEntryKind.REEMBOLSO
+        _ledger(order, payment_id, refund_kind, -(refund - snapshot.posted_refund_cents),
                 f"REFUND-{refund}", "Devolução ou contestação confirmada pelo Mercado Pago")
         snapshot.posted_refund_cents = refund
         Refund.objects.get_or_create(request_key=f"MP-{payment_id}-REFUND-{refund}", defaults={
@@ -346,9 +360,15 @@ def reconcile_payment(payment, *, charge_id=None):
     charge.error_code = ""
     charge.error_message = ""
     if status == "approved" and refund == 0:
-        Registration.objects.filter(source_order_line__order=order, archived_at__isnull=False).update(archived_at=None)
+        manually_refunded = order.refunds.filter(state=RefundState.MANUAL_COMPLETED).exists()
+        if order.status != OrderStatus.REFUNDED and not manually_refunded:
+            Registration.objects.filter(source_order_line__order=order, archived_at__isnull=False).update(archived_at=None)
         charge.state = ChargeState.SUCCEEDED
-        if not snapshot.fulfilled_at:
+        if manually_refunded and not snapshot.fulfilled_at:
+            order.status=OrderStatus.PAID_NEEDS_REVIEW
+            charge.error_code='FULFILLMENT_REVIEW'
+            charge.error_message='Novo pagamento recebido em pedido já devolvido. Confira o recebimento antes de qualquer liberação.'
+        if not snapshot.fulfilled_at and not manually_refunded:
             already_fulfilled = PaymentTransaction.objects.filter(charge_attempt__order=order, fulfilled_at__isnull=False).exclude(pk=snapshot.pk).exists()
             lines = list(order.lines.all())
             correct_lines = sum(line.net_cents for line in lines) + charge.passed_fee_cents == amount
@@ -375,6 +395,8 @@ def reconcile_payment(payment, *, charge_id=None):
                 _activate_registrations(order)
                 from apps.checkout.addons import activate_addons
                 activate_addons(order)
+                from apps.events.raffle_operations import activate_purchased_numbers
+                activate_purchased_numbers(order)
                 from apps.identity.onboarding import provision_buyer_account
                 provision_buyer_account(order)
     elif refund:

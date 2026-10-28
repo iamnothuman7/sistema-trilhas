@@ -47,7 +47,7 @@
                 <tr>
                     <td class="mg-strong">{{ exp.description }}{% if exp.proof_asset %}<div><a class="btn btn-secondary btn-sm" href="{% url 'gestao:private_document_download' event_id=event.id kind='despesa' document_id=exp.id %}"><i data-lucide="download" aria-hidden="true"></i> Comprovante</a></div>{% endif %}</td><td>{{ exp.get_category_display }}</td><td>{{ exp.vendor.name|default:"Avulso" }}</td><td class="mg-strong mg-nowrap">R$ {{ exp.amount_cents|money }}</td><td class="mg-nowrap">{{ exp.due_at|date:"d/m/Y" }}</td>
                     <td><span class="badge {% if exp.status == 'PAID' %}badge-success{% elif exp.status == 'PENDING' %}badge-warning{% else %}badge-info{% endif %}">{{ exp.get_status_display }}</span></td>
-                    <td>{% if exp.status == 'PENDING' %}<div class="mg-finance-actions"><form method="post" action="{% url 'gestao:pay_expense' event_id=event.id expense_id=exp.id %}">{% csrf_token %}<button type="submit" class="btn btn-secondary btn-sm"><i data-lucide="check" aria-hidden="true"></i> Marcar paga</button></form><button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('cancelExpense{{ exp.id }}').showModal()">Cancelar</button></div>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+                    <td><div class="mg-finance-actions">{% if exp.status != 'CANCELED' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_edit' event.id exp.id %}">Editar</a>{% if not exp.proof_asset %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_proof' event.id exp.id %}">Anexar comprovante</a>{% endif %}{% endif %}{% if exp.status == 'PENDING' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_pay' event.id exp.id %}"><i data-lucide="check" aria-hidden="true"></i> Marcar paga</a><button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('cancelExpense{{ exp.id }}').showModal()">Cancelar</button>{% elif exp.status == 'PAID' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_void' event.id exp.id %}">Anular lançamento</a>{% endif %}</div></td>
                 </tr>
                 {% empty %}<tr><td colspan="7" class="mg-table-empty"><i data-lucide="receipt" aria-hidden="true"></i><p>Nenhuma despesa encontrada para este período.</p></td></tr>{% endfor %}
             </tbody>
@@ -70,7 +70,7 @@
 <dialog id="expenseModal" class="mg-dialog" aria-labelledby="expense-dialog-title">
     <div class="card mg-dialog-card">
         <div class="card-header"><div><h2 class="section-title" id="expense-dialog-title">Nova despesa</h2><p class="mg-section-description">Informe o compromisso financeiro da edição.</p></div><button type="button" class="btn btn-secondary btn-sm" aria-label="Fechar formulário de despesa" onclick="document.getElementById('expenseModal').close()"><i data-lucide="x" aria-hidden="true"></i></button></div>
-        <form method="post" action="{% url 'gestao:add_expense' event_id=event.id %}">
+        <form method="post" enctype="multipart/form-data" action="{% url 'gestao:add_expense' event_id=event.id %}">
             {% csrf_token %}{{ expense_form.idempotency_key }}
             {% if expense_form.non_field_errors %}<div class="mg-form-errors" role="alert">{{ expense_form.non_field_errors }}</div>{% endif %}
             {% for field in expense_form.visible_fields %}

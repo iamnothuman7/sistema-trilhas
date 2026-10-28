@@ -84,8 +84,9 @@ class MercadoPagoGateway:
         order = charge.order
         from apps.core.utils import cents_to_reais
         breakdown = f'Itens R$ {cents_to_reais(charge.amount_cents-charge.passed_fee_cents)} + taxa R$ {cents_to_reais(charge.passed_fee_cents)} = R$ {cents_to_reais(charge.amount_cents)}'
+        description=(f'Números extras do sorteio — {order.event.title[:75]}' if getattr(order,'is_raffle_purchase',False) else order.event.title[:100])
         return {"transaction_amount": float(Decimal(charge.amount_cents) / 100),
-                "description": f"{order.event.title[:100]} - {order.merchant_reference} | {breakdown}"[:250],
+                "description": f"{description} - {order.merchant_reference} | {breakdown}"[:250],
                 "external_reference": order.merchant_reference,
                 "notification_url": self.webhook_url,
                 "metadata": {"order_id": str(order.id), "charge_attempt_id": str(charge.id),

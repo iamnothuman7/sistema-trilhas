@@ -1,0 +1,1 @@
+<div class="form-group {% if field.name == 'description' or field.name == 'rules_text' or field.name == 'title' %}mg-full-width{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}<div class="mg-field-errors">{{ field.errors }}</div></div>

@@ -10,10 +10,11 @@ function app(saved, unavailable = false) {
   const button = { setAttribute: (k, v) => attributes[k] = v, addEventListener: (k, v) => clicks[k] = v };
   const writes = [];
   vm.runInNewContext(source, {
-    document: { documentElement: root, querySelector: () => ({ setAttribute() {} }), querySelectorAll: () => [button], addEventListener: (k, v) => events[k] = v },
-    window: { addEventListener: (k, v) => windowEvents[k] = v },
+    document: { cookie: '', documentElement: root, querySelector: () => ({ setAttribute() {} }), querySelectorAll: () => [button], addEventListener: (k, v) => events[k] = v },
+    window: { addEventListener: (k, v) => windowEvents[k] = v }, location: { protocol: 'https:' },
     localStorage: { getItem() { if (unavailable) throw Error('blocked'); return saved; }, setItem(...args) { if (unavailable) throw Error('blocked'); writes.push(args); } }
   });
+  clicks.click = () => events.click({ target: { closest: () => button } });
   return { root, attributes, clicks, events, windowEvents, writes };
 }
 test('saved light preference is applied before DOMContentLoaded', () => {

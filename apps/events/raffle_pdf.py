@@ -28,7 +28,7 @@ def build_tickets_pdf(raffle, tickets, *, globo=False):
             pdf.setStrokeColor(HexColor('#a8a29e'));pdf.setDash(3,3);pdf.rect(x,y,cell_width,cell_height);pdf.setDash()
             if globo:
                 pdf.setFont('Helvetica-Bold',30);pdf.drawCentredString(x+cell_width/2,y+cell_height*.42,f'{ticket.number:04d}')
-                pdf.setFont('Helvetica',7);pdf.drawCentredString(x+cell_width/2,y+12,'INSCRIÇÃO' if ticket.source=='REGISTRATION' else 'PAPEL')
+                pdf.setFont('Helvetica',7);pdf.drawCentredString(x+cell_width/2,y+12,{'REGISTRATION':'INSCRIÇÃO','ONLINE':'EXTRA ONLINE','PAPER':'PAPEL'}[ticket.source])
             else:
                 split=x+cell_width*.36
                 pdf.setDash(3,3);pdf.line(split,y,split,y+cell_height);pdf.setDash()

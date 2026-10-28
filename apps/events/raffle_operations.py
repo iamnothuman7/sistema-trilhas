@@ -8,6 +8,11 @@ from apps.finance.models import FinancialEntry, FinancialEntryKind
 from .models_raffles import MotorcycleRaffle, RaffleTicket
 
 
+def _next_digital_number(raffle):
+    number=(raffle.tickets.exclude(source='PAPER').aggregate(n=Max('number'))['n'] or 0)+1
+    return raffle.paper_end+1 if raffle.paper_start<=number<=raffle.paper_end else number
+
+
 @transaction.atomic
 def issue_registration_ticket(reg):
     if reg.commercial_state != 'ACTIVE' or reg.source_order_line.order.status != 'PAID': return None
@@ -15,9 +20,29 @@ def issue_registration_ticket(reg):
     if not raffle: return None
     existing=RaffleTicket.objects.filter(registration=reg).first()
     if existing: return existing
-    number=(raffle.tickets.filter(source='REGISTRATION').aggregate(n=Max('number'))['n'] or 0)+1
-    if raffle.paper_start<=number<=raffle.paper_end: number=raffle.paper_end+1
+    number=_next_digital_number(raffle)
     return RaffleTicket.objects.create(raffle=raffle,registration=reg,source='REGISTRATION',state='SOLD',number=number,paid_at=timezone.now())
+
+
+def activate_purchased_numbers(order):
+    for line in order.lines.filter(raffle__isnull=False).select_related('raffle'):
+        raffle=MotorcycleRaffle.objects.select_for_update().get(pk=line.raffle_id)
+        existing=raffle.tickets.filter(order_line=line).count()
+        if existing:
+            if existing!=line.quantity:raise ValidationError('A quantidade de números emitidos exige conferência.')
+            continue
+        number=_next_digital_number(raffle)
+        for _ in range(line.quantity):
+            if raffle.paper_start<=number<=raffle.paper_end:number=raffle.paper_end+1
+            RaffleTicket.objects.create(raffle=raffle,number=number,source='ONLINE',state='SOLD',order_line=line,
+                beneficiary_registration_id=line.linked_registration_id,buyer_name=line.intended_person_name,amount_cents=line.unit_cents,paid_at=timezone.now())
+            number+=1
+
+
+def confirmed_registration_tickets(reg):
+    from django.db.models import Q
+    if reg.commercial_state!='ACTIVE' or reg.source_order_line.order.status!='PAID':return RaffleTicket.objects.none()
+    return RaffleTicket.objects.filter(state='SOLD').filter(Q(registration=reg)|Q(beneficiary_registration=reg,order_line__order__status='PAID')).order_by('number')
 
 
 @transaction.atomic
@@ -49,7 +74,7 @@ def record_paper_ticket(*, ticket_id, actor, point, buyer_name, buyer_phone, amo
         raise ValidationError('Informe o comprador, o valor recebido e confirme a conferência do pagamento.')
     ticket.point=point;ticket.buyer_name=buyer_name;ticket.buyer_phone=buyer_phone;ticket.amount_cents=amount_cents
     ticket.state='SOLD';ticket.paid_at=timezone.now();ticket.recorded_by=actor;ticket.save()
-    FinancialEntry.objects.create(event_id=ticket.raffle.event_id,kind=FinancialEntryKind.RECEITA_SORTEIO,
+    FinancialEntry.objects.create(event_id=ticket.raffle.event_id,raffle=ticket.raffle,kind=FinancialEntryKind.RECEITA_SORTEIO,
         amount_cents_signed=amount_cents,source_reference=f'RAFFLE-{ticket.pk}-SALE',posted_by=actor,
         description=f'Bilhete {ticket.number} — {ticket.raffle.title}'[:255])
     log_audit(actor=actor,event_id=ticket.raffle.event_id,action='RAFFLE_PAPER_PAYMENT_CONFIRMED',entity_type='RaffleTicket',entity_id=ticket.pk,

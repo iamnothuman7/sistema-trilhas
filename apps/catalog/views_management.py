@@ -86,9 +86,9 @@ def catalog_editor(request, event_id, kind, object_id=None):
         form = form_class(request.POST if request.method == 'POST' else None, instance=instance, event=event)
         if request.method == 'POST' and form.is_valid():
             if kind == 'lote':
-                occupied = max([instance.current_sold] + [max(instance.current_sold, resource.committed_count) + resource.reserved_count for resource in resources])
+                occupied = max([instance.current_sold] + [resource.confirmed_occupancy for resource in resources])
                 if form.cleaned_data['max_quantity'] < occupied:
-                    form.add_error('max_quantity', f'Existem {occupied} vagas vendidas ou reservadas. Mantenha ao menos essa quantidade.')
+                    form.add_error('max_quantity', f'Existem {occupied} vagas confirmadas. Mantenha ao menos essa quantidade.')
             elif kind == 'adicional':
                 occupied = max([0]+[r.reserved_count+r.committed_count for r in resources])
                 if form.cleaned_data['max_quantity'] < occupied:

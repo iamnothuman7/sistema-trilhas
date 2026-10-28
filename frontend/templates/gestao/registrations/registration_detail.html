@@ -20,6 +20,7 @@
             </div>
         </div>
         <div class="page-actions">
+            {% if not reg.archived_at %}<a class="btn btn-secondary" href="{% url 'gestao:registration_edit' event.id reg.id %}">Editar cadastro</a>{% if management_permissions.finance and reg.source_order_line.order.status == 'PAID' %}<a class="btn btn-secondary" href="{% url 'gestao:registration_refund' event.id reg.id %}">Cancelar e registrar devolução</a>{% endif %}{% endif %}
             <a class="btn btn-secondary" href="{% url 'minha_conta:registration_pdf' reg.id %}"><i data-lucide="file-down" aria-hidden="true"></i> Comprovante PDF</a>
             <span class="badge {% if reg.commercial_state == 'ACTIVE' %}badge-success{% else %}badge-warning{% endif %}">
                 {{ reg.get_commercial_state_display }}
@@ -43,6 +44,7 @@
 <p class="form-help">O pagamento libera a confirmação comercial. O QR Code depende também da titularidade e do aceite pessoal dos termos.</p>
 </section>
 {% endif %}
+{% if recorded_refunds and management_permissions.finance %}<section class="card mg-section-gap"><h2>Devoluções registradas</h2>{% for refund in recorded_refunds %}<p>{{ refund.get_state_display }} · {{ refund.completed_at|date:'d/m/Y' }} · {{ refund.provider_ref|default:'Sem referência' }}{% if refund.proof_asset %} <a class="btn btn-secondary btn-sm" href="{% url 'gestao:private_document_download' event.id 'reembolso' refund.pk %}" hx-boost="false">Baixar comprovante</a>{% endif %}</p>{% endfor %}</section>{% endif %}
 <div class="mg-aside-grid">
     <!-- Coluna Esquerda: Dados e Benefícios -->
     <div class="mg-stack">
@@ -118,26 +120,7 @@
             {% endif %}
         </div>
 
-        <!-- Alteração de Situação (Ação Auditada) -->
-        <div class="card">
-            <h3 class="section-title">Alterar Status Comercial</h3>
-            <form method="POST" action="{% url 'gestao:registration_change_status' event_id=event.id reg_id=reg.id %}">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label class="form-label" for="field-commercial_state">Nova Situação</label>
-                    <select name="commercial_state" class="form-control" id="field-commercial_state">
-                        <option value="ACTIVE" {% if reg.commercial_state == 'ACTIVE' %}selected{% endif %}>Ativo / Confirmado</option>
-                        <option value="RESERVED" {% if reg.commercial_state == 'RESERVED' %}selected{% endif %}>Reservado</option>
-                        <option value="CANCELED" {% if reg.commercial_state == 'CANCELED' %}selected{% endif %}>Cancelado</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="field-reason">Motivo da Alteração (Obrigatório para Auditoria)</label>
-                    <input type="text" name="reason" class="form-control" required placeholder="Ex: Cancelamento a pedido do titular" id="field-reason">
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">Salvar Alteração</button>
-            </form>
-        </div>
+        <div class="card"><h3 class="section-title">Confirmação automática</h3><p>O pagamento aprovado confirma a inscrição sem aprovação da organização. O QR fica disponível após a identificação do titular e o aceite pessoal dos termos.</p><p class="form-help">Use Editar cadastro para correções e Cancelar e registrar devolução para um pedido pago. O pagamento e o histórico ficam preservados.</p></div>
     </div>
 </div>
 {% endblock %}

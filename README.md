@@ -143,3 +143,18 @@ infra/                 # Dockerfile, docker-compose.yml e Caddyfile
 
 ---
 🦇 *Equipe Morcego Off-Road &bull; Tradição e Respeito nas Trilhas da Serra da Ibiapaba*
+
+
+## Sorteio e operação financeira
+
+A gestão do evento reúne apresentação, imagens, numeração, pontos e financeiro do sorteio. Fotos PNG/JPG/WebP de até 15 MB são validadas e convertidas para WebP; a transparência é preservada. Um pagamento confirmado de inscrição emite um único número incluído, sem receita adicional. A sequência digital pula a faixa reservada ao papel e nunca reutiliza números cancelados.
+
+A venda online de números extras começa desativada. A organização preenche preço, limite online, data futura, regulamento, referências da autorização/enquadramento e da análise do Mercado Pago; confirma a conferência e marca a ativação. As referências são declaradas pela organização, não constituem validação jurídica automática. Os extras exigem inscrição paga, reutilizam a conta e o QR e usam o mesmo checkout, tarifas e webhook autenticado do evento. Reservas de extras controlam seu próprio estoque; números são emitidos somente após aprovação. Novas compras encerram 35 minutos antes do sorteio. Pedidos iniciados antes de desligar vendas preservam o preço e podem ser confirmados dentro do prazo.
+
+Recebimentos, tarifas, devoluções e despesas vinculadas ao sorteio são filtrados no mesmo livro financeiro do evento, sem lançamentos duplicados. A devolução de extras invalida somente seus números; a inscrição e seu QR permanecem válidos. Para cancelar uma inscrição com extras pagos, registre primeiro a devolução desses pedidos. O registro manual de devolução pressupõe dinheiro já devolvido e não chama a API de reembolso do Mercado Pago.
+
+As saídas aceitam comprovante privado PDF/JPG/PNG/WebP de até 15 MB, na criação, na quitação ou posteriormente. Correções e anulações preservam o lançamento original e registram compensações e auditoria. Documentos são baixados por uma rota com permissão financeira e escopo de evento, sem URL pública.
+
+Inscrições aguardando pagamento não ocupam vagas do evento ou lote. Somente confirmações comprometem essas capacidades; a aprovação confere novamente o limite. Pagamento recebido quando já não há capacidade exige conciliação e não libera QR nem participação. A reserva de estoque dos produtos extras e números extras permanece separada das vagas de inscrição. O CPF continua limitado a uma inscrição ou pedido vigente por evento.
+
+O cartão de credenciamento pode ser baixado em PDF ou PNG, com o mesmo QR revogável e os números confirmados. O aceite pessoal dos termos continua obrigatório para liberar a credencial; a organização não aprova manualmente inscrições pagas.

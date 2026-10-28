@@ -90,12 +90,12 @@ class EventManagementTests(TestCase):
         self.event.refresh_from_db()
         self.assertEqual(self.event.title, "Edição de teste")
 
-    def test_cannot_reduce_capacity_below_existing_holds_and_commitments(self):
-        response = self.edit(max_attendees="9")
+    def test_cannot_reduce_capacity_below_confirmed_registrations(self):
+        response = self.edit(max_attendees="6")
         self.assertIn("max_attendees", response.context["form"].errors)
         self.capacity.refresh_from_db()
         self.assertEqual(self.capacity.capacity_total, 100)
-        self.assertEqual(get_event_kpi_summary(self.event)["vacancies_left"], 90)
+        self.assertEqual(get_event_kpi_summary(self.event)["vacancies_left"], 93)
 
     def test_timezone_is_used_for_datetime_input_and_roundtrip(self):
         response = self.edit(timezone="America/Manaus", starts_at="2027-04-18T09:30")
@@ -105,7 +105,7 @@ class EventManagementTests(TestCase):
         response = self.client.get(reverse("gestao:event_edit", args=[self.event.pk]))
         self.assertContains(response, 'value="2027-04-18T09:30"')
 
-    def test_capacity_counts_legacy_active_registrations_in_addition_to_new_reservations(self):
+    def test_capacity_counts_legacy_active_registrations_without_pending_orders(self):
         self.capacity.committed_count = 0
         self.capacity.save(update_fields=["committed_count"])
         person = Person.objects.create(full_name="Titular legado")
@@ -116,10 +116,11 @@ class EventManagementTests(TestCase):
             line = OrderLine.objects.create(order=order, intended_person_name=person.full_name, unit_cents=12000, net_cents=12000)
             Registration.objects.create(event=self.event, person=person, source_order_line=line, registration_number=index+1,
                                         commercial_state=CommercialState.ACTIVE)
-        self.assertEqual(get_event_kpi_summary(self.event)["vacancies_left"], 87)
-        response = self.edit(max_attendees="10")
-        self.assertIn("13 vagas", str(response.context["form"].errors["max_attendees"]))
-        self.assertEqual(self.edit(max_attendees="13").status_code, 302)
+        self.assertEqual(get_event_kpi_summary(self.event)["vacancies_left"], 90)
+        self.assertEqual(self.capacity.available_count,90)
+        response = self.edit(max_attendees="9")
+        self.assertIn("10 vagas", str(response.context["form"].errors["max_attendees"]))
+        self.assertEqual(self.edit(max_attendees="10").status_code, 302)
         self.assertEqual(get_event_kpi_summary(self.event)["vacancies_left"], 0)
         self.capacity.refresh_from_db()
         self.assertEqual((self.capacity.reserved_count, self.capacity.committed_count), (3, 0))

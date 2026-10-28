@@ -21,6 +21,7 @@
 </div>
 
 <!-- Filtros de Busca -->
+<div class="alert" role="note"><span>Pagamento aprovado confirma a inscrição automaticamente. “Pendente Termos” indica apenas o aceite pessoal do participante; a organização não precisa aprovar a inscrição.</span></div>
 <div class="card mg-element-gap">
     <form method="GET" class="mg-filter-grid">
         <div>
@@ -45,7 +46,7 @@
                 <option value="NOT_READY" {% if op_filter == 'NOT_READY' %}selected{% endif %}>Pendente Termos</option>
             </select>
         </div>
-        <label class="mg-check-row"><input type="checkbox" name="removed" value="1"{% if show_removed %} checked{% endif %}>Mostrar reservas removidas</label>
+        <label class="mg-check-row"><input type="checkbox" name="removed" value="1"{% if show_removed %} checked{% endif %}>Mostrar inscrições removidas</label>
         <button type="submit" class="btn btn-primary">Filtrar</button>
     </form>
 </div>
@@ -100,7 +101,7 @@
                         <td>
                             <a href="{% url 'gestao:registration_detail' event_id=event.id reg_id=reg.id %}" class="btn btn-sm btn-secondary">
                                 Ver Ficha
-                            </a>{% if reg.commercial_state != 'ACTIVE' and not reg.archived_at %}<a class="btn btn-sm btn-secondary" href="{% url 'gestao:registration_remove' event.id reg.id %}">Remover reserva</a>{% endif %}
+                            </a>{% if not reg.archived_at %}<a class="btn btn-sm btn-secondary" href="{% url 'gestao:registration_edit' event.id reg.id %}">Editar</a>{% if reg.source_order_line.order.status == 'PAID' or reg.source_order_line.order.status == 'PARTIALLY_REFUNDED' %}{% if management_permissions.finance %}<a class="btn btn-sm btn-secondary" href="{% url 'gestao:registration_refund' event.id reg.id %}">Cancelar e registrar devolução</a>{% endif %}{% elif reg.commercial_state != 'ACTIVE' %}<a class="btn btn-sm btn-secondary" href="{% url 'gestao:registration_remove' event.id reg.id %}">Remover reserva</a>{% endif %}{% endif %}
                         </td>
                     </tr>
                 {% empty %}

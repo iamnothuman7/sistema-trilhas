@@ -8,6 +8,7 @@ urlpatterns = [
     path("inscricao/<uuid:registration_id>/", views_minha_conta.registration_detail, name="registration_detail"),
     path("inscricao/<uuid:registration_id>/aceitar-termos/", views_minha_conta.accept_terms, name="accept_terms"),
     path("inscricao/<uuid:registration_id>/credencial/", views_minha_conta.credential_view, name="credential_view"),
+    path("inscricao/<uuid:registration_id>/cartao.png", views_minha_conta.credential_image, name="credential_image"),
     path("inscricao/<uuid:registration_id>/comprovante.pdf", views_minha_conta.registration_pdf, name="registration_pdf"),
     path("inscricao/<uuid:registration_id>/compartilhar/", views_minha_conta.create_claim, name="create_claim"),
     path("inscricao/<uuid:registration_id>/confirmar-titular/", views_minha_conta.claim_own_registration, name="claim_own_registration"),

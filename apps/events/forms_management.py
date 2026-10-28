@@ -72,7 +72,7 @@ class EventManagementForm(forms.ModelForm):
                 field.event_timezone = zone
         self.fields["slug"].help_text = "Opcional ao criar. Usamos o nome para montar o endereço da edição."
         self.fields["timezone"].help_text = "Todos os horários deste formulário seguem o fuso selecionado."
-        self.fields["max_attendees"].help_text = "Não pode ficar abaixo das vagas já confirmadas ou reservadas em checkouts."
+        self.fields["max_attendees"].help_text = "Não pode ficar abaixo das inscrições já confirmadas. Pedidos aguardando pagamento não ocupam vagas."
         self.fields["rules_summary"].help_text = "Resumo público. Não substitui os documentos e aceites legais versionados."
         self.fields["status"].help_text = "Publicado permite inscrições apenas dentro das datas e com lote disponível. Cancelar não estorna pagamentos automaticamente."
         if self.creating:
@@ -116,11 +116,11 @@ class EventManagementForm(forms.ModelForm):
         value = self.cleaned_data["max_attendees"]
         if not self.creating:
             resources = CapacityResource.objects.filter(event=self.instance, type="EVENT_OVERALL")
-            counters = resources.aggregate(reserved=Sum("reserved_count"), committed=Sum("committed_count"))
+            counters = resources.aggregate(committed=Sum("committed_count"))
             active = Registration.objects.filter(event=self.instance, commercial_state=CommercialState.ACTIVE).count()
-            occupied = (counters["reserved"] or 0) + max(counters["committed"] or 0, active)
+            occupied = max(counters["committed"] or 0, active)
             if value < occupied:
-                raise forms.ValidationError(f"A capacidade deve comportar pelo menos {occupied} vagas já utilizadas ou reservadas.")
+                raise forms.ValidationError(f"A capacidade deve comportar pelo menos {occupied} vagas já confirmadas.")
             if resources.count() > 1 and value != self.instance.max_attendees:
                 raise forms.ValidationError("Há mais de um controle de capacidade nesta edição. Solicite conferência antes de alterar o limite.")
         return value

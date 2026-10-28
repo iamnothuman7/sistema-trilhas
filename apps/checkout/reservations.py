@@ -77,6 +77,7 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
     )
 
     gross_total = 0
+    requested_per_lot={}
 
     # 3. Criar as linhas do pedido e inscrições
     for participant in participants:
@@ -88,7 +89,8 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
             defaults={"capacity_total": lot.max_quantity, "committed_count": lot.current_sold})
         if lot_capacity.capacity_total != lot.max_quantity:
             lot_capacity.capacity_total = lot.max_quantity
-        if lot_capacity.available_count < 1:
+        requested_per_lot[lot.pk]=requested_per_lot.get(lot.pk,0)+1
+        if lot_capacity.available_count < requested_per_lot[lot.pk]:
             raise ValidationError("O lote escolhido não tem vagas suficientes para este grupo. Selecione outro lote.")
         lot_capacity.reserved_count += 1
         lot_capacity.save(update_fields=["capacity_total", "reserved_count"])

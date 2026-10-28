@@ -39,7 +39,7 @@
       <p>A confirmação está sendo consultada. Não faça outro pagamento para este pedido enquanto verificamos.</p>
       {% endif %}
       <p id="payment-feedback" class="payment-alert" role="status" aria-live="polite">Aguardando a confirmação do Mercado Pago…</p>
-      <p class="payment-help payment-muted">Sua inscrição só será liberada após a confirmação. O aceite dos termos pode continuar pendente.</p>
+      <p class="payment-help payment-muted">{% if order.is_raffle_purchase %}Seus números extras só serão emitidos após o pagamento aprovado. O cartão da inscrição será atualizado automaticamente.{% else %}Sua inscrição só será liberada após a confirmação. O aceite dos termos pode continuar pendente.{% endif %}</p>
       <form id="refresh-payment" method="post" action="{% url 'checkout:refresh_payment' order.id %}">{% csrf_token %}<button type="submit" class="payment-button payment-button-secondary payment-full">Já paguei. Verificar agora</button></form>
       <p class="payment-help payment-muted">Este botão consulta o pagamento existente. Não gera uma nova cobrança.</p>
       </div>

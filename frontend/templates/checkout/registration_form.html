@@ -5,7 +5,7 @@
 {% block content %}
 <div class="payment-page registration-page">
     <a href="{% url 'events:detail' slug=event.slug %}#inscricao" class="public-back"><i data-lucide="arrow-left" aria-hidden="true"></i> Voltar ao evento</a>
-    <header class="registration-intro"><span class="payment-kicker">Inscrição no evento</span><h1>{{ event.title }}</h1><p class="payment-muted">Informe quem vai participar e confira o valor antes de continuar.{% if event.motorcycle_raffle.is_public and event.motorcycle_raffle.registration_tickets_enabled %} Cada inscrição paga recebe um número no sorteio anunciado pela organização.{% endif %}</p></header>
+    <header class="registration-intro"><span class="payment-kicker">Inscrição no evento</span><h1>{{ event.title }}</h1><p class="payment-muted">Informe quem vai participar e confira o valor antes de continuar. Iniciar o pedido não ocupa uma vaga; a inscrição conta após o pagamento confirmado.{% if event.motorcycle_raffle.is_public and event.motorcycle_raffle.registration_tickets_enabled %} Cada inscrição paga recebe um número no sorteio anunciado pela organização.{% endif %}</p></header>
     {% if active_lots %}
     {% if not payments_available %}<div class="payment-alert" role="status">O pagamento online ainda não está disponível. Você pode conferir os dados e o valor da inscrição; nenhuma cobrança será realizada nesta etapa.</div>{% endif %}
     <form method="post" id="registrationForm" data-max-participants="{{ max_participants }}" data-draft-event="{{ event.id }}" data-draft-user="{{ request.user.pk|default:'visitante' }}" data-draft-bound="{% if request.method == 'POST' %}true{% else %}false{% endif %}">

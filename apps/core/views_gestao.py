@@ -336,6 +336,7 @@ def registration_detail(request, event_id, reg_id):
         "terms": terms,
         "consumptions": consumptions,
         "credential_available": credential_is_available(reg),
+        "recorded_refunds": reg.source_order_line.order.refunds.all(),
         **manual_context(request, reg),
     })
     response["Referrer-Policy"] = "no-referrer"
@@ -354,6 +355,12 @@ def registration_change_status(request, event_id, reg_id):
         old_status = reg.commercial_state
 
         if new_status in CommercialState.values:
+            if reg.source_order_line.order.status in ('PAID','PARTIALLY_REFUNDED','REFUNDED') and new_status != old_status:
+                messages.error(request, 'Uma inscrição com pagamento deve ser cancelada pela opção Cancelar e registrar devolução. A confirmação após pagamento é automática.')
+                return redirect('gestao:registration_detail',event_id=event.id,reg_id=reg.id)
+            if new_status == CommercialState.ACTIVE and reg.source_order_line.order.status != 'PAID':
+                messages.error(request,'Confirme o recebimento pela opção de pagamento manual ou aguarde a aprovação do Mercado Pago.')
+                return redirect('gestao:registration_detail',event_id=event.id,reg_id=reg.id)
             reg.commercial_state = new_status
             try:
                 with transaction.atomic():
@@ -646,12 +653,14 @@ def _finance_context(request, event, expense_form=None):
 def add_expense(request, event_id):
     from apps.core.permissions import require_event_access
     event = require_event_access(request, event_id, action="finance")
-    form = ExpenseForm(request.POST, event=event)
+    form = ExpenseForm(request.POST, request.FILES, event=event)
     if form.is_valid():
         try:
             expense, created = create_expense(event=event, data=form.cleaned_data, actor=request.user, request=request)
         except ValidationError as error:
             form.add_error(None, error)
+        except OSError:
+            form.add_error(None,'Não foi possível salvar o comprovante. Tente novamente; a despesa não foi confirmada.')
         else:
             messages.success(request, "Despesa registrada com sucesso." if created else "Esta despesa já estava registrada; nenhum lançamento foi duplicado.")
             return redirect("gestao:finance", event_id=event.pk)

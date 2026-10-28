@@ -24,6 +24,7 @@ class FinancialEntry(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     event = models.ForeignKey("events.Event", on_delete=models.PROTECT, related_name="financial_entries")
+    raffle = models.ForeignKey('events.MotorcycleRaffle', on_delete=models.PROTECT, null=True, blank=True, related_name='financial_entries')
     order = models.ForeignKey("checkout.Order", on_delete=models.SET_NULL, blank=True, null=True, related_name="financial_entries")
     kind = models.CharField("Tipo do Lançamento", max_length=40, choices=FinancialEntryKind.choices)
     amount_cents_signed = models.BigIntegerField("Valor com Sinal (+/- em centavos)")
@@ -121,6 +122,7 @@ class Expense(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     event = models.ForeignKey("events.Event", on_delete=models.PROTECT, related_name="expenses")
+    raffle = models.ForeignKey('events.MotorcycleRaffle', on_delete=models.PROTECT, null=True, blank=True, related_name='expenses')
     vendor = models.ForeignKey(Vendor, on_delete=models.SET_NULL, blank=True, null=True, related_name="expenses")
     category = models.CharField("Categoria de Custo", max_length=40, choices=ExpenseCategory.choices, default=ExpenseCategory.KITS_CAMISETAS)
     description = models.CharField("Descrição do Gasto", max_length=200)

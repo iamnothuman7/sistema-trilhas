@@ -376,6 +376,12 @@ def process_payment_attempt(request, order_id):
         except ValidationError as exc:
             messages.error(request, ' '.join(exc.messages))
             return redirect('checkout:order_payment', order_id=order.pk)
+        raffle_draw=None
+        if order.is_raffle_purchase:
+            raffle_draw=order.lines.filter(raffle__isnull=False).values_list('raffle__draw_at',flat=True).first()
+            if not raffle_draw or raffle_draw<=timezone.now()+timedelta(minutes=35):
+                messages.error(request,'A compra de números extras encerra 35 minutos antes do sorteio. Nenhuma nova cobrança foi criada.')
+                return redirect('checkout:order_result',order_id=order.pk)
         order.total_cents = quote.total
         order.payment_fee_cents = quote.fee
         order.save(update_fields=['total_cents', 'payment_fee_cents', 'updated_at'])
@@ -385,6 +391,7 @@ def process_payment_attempt(request, order_id):
         if method == PaymentMethod.PIX:
             # Payments API requires at least 30 minutes. One minute covers request latency.
             expiry = timezone.now() + timedelta(minutes=max(31, min(settings.PIX_EXPIRES_MINUTES, 30 * 24 * 60)))
+            if raffle_draw:expiry=min(expiry,raffle_draw-timedelta(minutes=2))
             order.expires_at = max(order.expires_at, expiry + timedelta(minutes=2))
             CapacityHold.objects.filter(order_id=order.id, status=HoldStatus.ACTIVE).update(expires_at=order.expires_at)
         charge = ChargeAttempt.objects.create(order=order, idempotency_key=key, payment_method=method,
@@ -478,6 +485,14 @@ def order_refresh_payment(request, order_id):
 @private_checkout
 def order_result(request, order_id):
     order = authorized_order(request, order_id)
+    if order.is_raffle_purchase:
+        from apps.events.models_raffles import RaffleTicket
+        from apps.registrations.eligibility import credential_is_available
+        registrations=list(Registration.objects.filter(pk__in=order.lines.values('linked_registration_id'),event=order.event).select_related('source_order_line__order','credential'))
+        for reg in registrations:reg.download_ready=credential_is_available(reg)
+        return render(request,'checkout/raffle_result.html',{'order':order,'registrations':registrations,
+            'tickets':RaffleTicket.objects.filter(order_line__order=order,state='SOLD').order_by('number'),
+            'is_paid':order.status==OrderStatus.PAID})
     if order.lines.filter(addon__isnull=False).exists() and not order.lines.filter(registration__isnull=False).exists():
         registrations = Registration.objects.filter(pk__in=order.lines.values('linked_registration_id'), event=order.event)
         return render(request, 'checkout/addon_result.html', {'order':order, 'registrations':registrations,

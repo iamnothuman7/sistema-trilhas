@@ -169,12 +169,13 @@ class ManagementAccessTests(TestCase):
         self.assertEqual(self.client.get('/gestao/?event_id=not-a-uuid').status_code,404)
 
     def test_registration_status_change_rolls_back_when_audit_fails(self):
-        self.operator(RoleChoices.REGISTRATION_AGENT)
+        self.operator(RoleChoices.EVENT_MANAGER)
         reg = self.registration()
-        with patch("apps.core.views_gestao.log_audit", side_effect=RuntimeError("audit unavailable")):
+        with patch("apps.registrations.management.log_audit", side_effect=RuntimeError("audit unavailable")):
             with self.assertRaises(RuntimeError):
-                self.client.post(f"/gestao/eventos/{self.event.id}/inscricoes/{reg.id}/status/",
-                                 {"commercial_state": CommercialState.CANCELED, "reason": "Solicitação do participante"})
+                self.client.post(f"/gestao/eventos/{self.event.id}/inscricoes/{reg.id}/devolucao/",
+                    {'request_key':uuid.uuid4(),'amount':'180,00','returned_on':timezone.localdate().isoformat(),
+                    'reference':'PIX-TESTE','reason':'Solicitação do participante','confirmed':'on'})
         reg.refresh_from_db()
         self.assertEqual(reg.commercial_state, CommercialState.ACTIVE)
 
@@ -186,11 +187,13 @@ class ManagementAccessTests(TestCase):
         delivery_url = f"/gestao/eventos/{self.event.id}/credenciamento/deliver-benefit-api/"
         self.assertTrue(self.client.post(checkin_url, {"registration_id": reg.pk}).json()["success"])
         self.assertTrue(self.client.post(delivery_url, {"entitlement_id": ent.pk, "idempotency_key": uuid.uuid4()}).json()["success"])
-        response = self.client.post(f"/gestao/eventos/{self.event.id}/inscricoes/{reg.id}/status/",
-                                    {"commercial_state": CommercialState.CANCELED, "reason": "Solicitação do participante"})
+        EventMembership.objects.filter(user__email='operator@example.test').update(role_code=RoleChoices.EVENT_MANAGER)
+        response = self.client.post(f"/gestao/eventos/{self.event.id}/inscricoes/{reg.id}/devolucao/",
+            {'request_key':uuid.uuid4(),'amount':'180,00','returned_on':timezone.localdate().isoformat(),
+            'reference':'PIX-TESTE','reason':'Solicitação do participante','confirmed':'on'})
         self.assertEqual(response.status_code, 302)
         reg.refresh_from_db()
-        self.assertEqual(reg.operational_state, OperationalState.CHECKED_IN)
+        self.assertEqual(reg.operational_state, OperationalState.NOT_READY)
         self.assertEqual(self.client.post(checkin_url, {"registration_id": reg.pk}).status_code, 409)
         self.assertEqual(self.client.post(delivery_url, {"entitlement_id": ent.pk, "idempotency_key": uuid.uuid4()}).status_code, 409)
         self.assertEqual(CheckinRecord.objects.filter(registration=reg).count(), 1)

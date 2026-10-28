@@ -1,8 +1,8 @@
 """The public page and checkout share the same currently available lots."""
-from django.db.models import F, Sum
+from django.db.models import F
 from django.utils import timezone
 
-from .models import CapacityHold, CapacityResource, CapacityResourceType, HoldStatus, Lot, Product
+from .models import CapacityResource, CapacityResourceType, Lot, Product
 
 
 def available_registration_lots(event):
@@ -18,15 +18,9 @@ def registration_catalog(event):
     capacities = {resource.reference_id: resource for resource in CapacityResource.objects.filter(
         event=event, type=CapacityResourceType.LOT_TOTAL, reference_id__in=[str(lot.pk) for lot in lots],
     )}
-    # Public reads never expire orders or update counters. Count effective holds
-    # so stale reserved_count cannot hide the only link that runs checkout cleanup.
-    live_holds = dict(CapacityHold.objects.filter(
-        resource_id__in=[resource.pk for resource in capacities.values()],
-        status=HoldStatus.ACTIVE, expires_at__gt=timezone.now(),
-    ).values("resource_id").annotate(quantity=Sum("quantity")).values_list("resource_id", "quantity"))
+    # A pending checkout does not sell or block a seat. Reads remain read-only.
     lots = [lot for lot in lots if str(lot.pk) not in capacities or (
-        lot.max_quantity > max(lot.current_sold, capacities[str(lot.pk)].committed_count)
-        + live_holds.get(capacities[str(lot.pk)].pk, 0)
+        lot.max_quantity > max(lot.current_sold, capacities[str(lot.pk)].confirmed_occupancy)
     )]
     products = list(Product.objects.filter(pk__in={lot.product_id for lot in lots}).prefetch_related("variants"))
     offers = [{"product": product, "lot": next(lot for lot in lots if lot.product_id == product.pk)} for product in products]

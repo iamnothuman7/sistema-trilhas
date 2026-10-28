@@ -1,0 +1,16 @@
+{% extends 'gestao/base_gestao.html' %}
+{% load trilhas_ui %}
+{% block title %}{{ title }} | Financeiro{% endblock %}
+{% block gestao_header %}Financeiro{% endblock %}
+{% block content %}
+<div class="page-heading"><div><h1>{{ title }}</h1><p>{{ expense.description }} · R$ {{ expense.amount_cents|money }}</p></div><a class="btn btn-secondary" href="{% url 'gestao:finance' event.id %}">Voltar ao financeiro</a></div>
+<section class="card">
+{% if operation == 'void' %}<div class="alert" role="note">Use esta opção para corrigir um lançamento de despesa incorreto. O valor será compensado no extrato, sem apagar o registro original. Esta ação não envia dinheiro nem desfaz um pagamento bancário.</div>{% elif operation == 'edit' %}<p class="form-help">Uma alteração de valor ou data de uma saída paga gera lançamentos de correção no extrato. Recebimentos do Mercado Pago continuam vinculados ao pagamento original.</p>{% else %}<p class="form-help">Anexe o comprovante da saída agora ou depois. O documento fica protegido e não aparece no site público.</p>{% endif %}
+{% if expense.proof_asset %}<p><a class="btn btn-secondary" href="{% url 'gestao:private_document_download' event.id 'despesa' expense.id %}">Baixar comprovante existente</a></p>{% endif %}
+<form method="post" enctype="multipart/form-data" data-workspace-private>
+{% csrf_token %}{% for field in form.hidden_fields %}{{ field }}{% endfor %}
+{% if form.non_field_errors %}<div class="mg-form-errors" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+<div class="mg-form-grid">{% for field in form.visible_fields %}<div class="form-group"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}<div class="mg-field-errors">{{ field.errors }}</div></div>{% endfor %}</div>
+<div class="mg-form-actions"><a class="btn btn-secondary" href="{% url 'gestao:finance' event.id %}">Voltar</a><button class="btn {% if operation == 'void' %}btn-danger{% else %}btn-primary{% endif %}" type="submit">{{ submit_label }}</button></div>
+</form></section>
+{% endblock %}

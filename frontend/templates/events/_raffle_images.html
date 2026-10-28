@@ -1,0 +1,4 @@
+<div class="raffle-prizes raffle-prizes--{{ raffle.image_style|lower }}{% if raffle.secondary_image %} raffle-prizes--pair{% endif %}">
+{% if raffle.primary_image %}<figure><img src="{{ raffle.primary_image.url }}" alt="{{ raffle.motorcycle_model|default:'Moto do sorteio' }}" width="800" height="650" decoding="async"><figcaption>{% if raffle.secondary_image %}1ª moto{% else %}{{ raffle.motorcycle_model|default:'Prêmio do sorteio' }}{% endif %}</figcaption></figure>{% else %}<div class="raffle-image-placeholder"><i data-lucide="motorbike" aria-hidden="true"></i><span>Foto da moto em breve</span></div>{% endif %}
+{% if raffle.secondary_image %}<figure><img src="{{ raffle.secondary_image.url }}" alt="Segunda moto do sorteio" width="800" height="650" decoding="async" loading="lazy"><figcaption>2ª moto</figcaption></figure>{% endif %}
+</div>

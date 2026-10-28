@@ -17,13 +17,16 @@ MODULES = {
     "event_edit": ("events", True), "event_appearance": ("content", True),
     "registration_list": ("registrations", True), "credenciamento": ("checkin", True),
     "catalog": ("catalog", True), "finance": ("finance", True),
-    "reports": ("finance", True), "ranking_management": ("registrations", True),
+    "reports": ("finance", True), "raffle_finance": ("finance", True), "ranking_management": ("registrations", True),
     "frames": ("content", True), "team_frame_editor": ("content", True),
     "raffle_management": ("events", True), "sponsor_bank": ("sponsors", False),
     "mercadopago_connection": ("view", False), "audit_log": ("audit", False),
     "team_management": ("team", True),
 }
 PARENTS = {
+    'raffle_order_refund':'raffle_finance',
+    "expense_edit": "finance", "expense_proof": "finance", "expense_pay": "finance", "expense_void": "finance",
+    "registration_edit": "registration_list", "registration_refund": "registration_list",
     "mercadopago_fees": "mercadopago_connection",
     "team_revoke": "team_management",
     "registration_remove": "registration_list",

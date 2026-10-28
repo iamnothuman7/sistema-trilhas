@@ -24,7 +24,8 @@ from .raffle_operations import create_paper_batch, record_paper_ticket
 def tickets_for_event(raffle):
     # A later refund invalidates a digital entry even before any cached UI updates.
     return raffle.tickets.select_related('registration__person','point').filter(
-        Q(source='PAPER') | Q(registration__commercial_state='ACTIVE', registration__source_order_line__order__status='PAID'))
+        Q(source='PAPER') | Q(registration__commercial_state='ACTIVE', registration__source_order_line__order__status='PAID') |
+        Q(source='ONLINE',order_line__order__status='PAID',beneficiary_registration__commercial_state='ACTIVE',beneficiary_registration__source_order_line__order__status='PAID'))
 
 
 @management_required
@@ -74,7 +75,7 @@ def raffle_operations(request, event_id):
                         if ticket.amount_cents and (not can_manage_event(request.user,request.management_event,'finance') or request.POST.get('returned')!='on'):
                             raise ValidationError('Confirme a devolução do valor recebido antes de cancelar um bilhete pago.')
                         if ticket.amount_cents:
-                            FinancialEntry.objects.create(event_id=event_id,kind=FinancialEntryKind.ESTORNO_SORTEIO,
+                            FinancialEntry.objects.create(event_id=event_id,raffle=raffle,kind=FinancialEntryKind.ESTORNO_SORTEIO,
                                 amount_cents_signed=-ticket.amount_cents,source_reference=f'RAFFLE-{ticket.pk}-VOID',posted_by=request.user,
                                 description=f'Devolução do bilhete {ticket.number}')
                         ticket.state='VOID';ticket.save(update_fields=['state'])

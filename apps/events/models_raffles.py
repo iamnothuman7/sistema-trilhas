@@ -1,9 +1,11 @@
 """Preparation and local interest records, separate from paid registrations."""
 import uuid
+from datetime import timedelta
 
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
+from django.utils import timezone
 
 
 RAFFLE_INTEREST_CONSENT = (
@@ -19,6 +21,13 @@ class MotorcycleRaffle(models.Model):
     title = models.CharField("Título", max_length=160, default="Sorteio de moto")
     motorcycle_model = models.CharField("Moto / modelo", max_length=200, blank=True)
     description = models.TextField("Apresentação", blank=True)
+    primary_image = models.ImageField('Foto / arte principal da moto', upload_to='raffles/', blank=True)
+    secondary_image = models.ImageField('Foto / arte da segunda moto', upload_to='raffles/', blank=True)
+    image_style = models.CharField('Apresentação das imagens', max_length=10, default='CUTOUT', choices=[('CUTOUT','Arte sem fundo — destaque livre'),('PHOTO','Fotografia — painel com fundo')])
+    authorization_reference = models.CharField('Referência da autorização / enquadramento', max_length=200, blank=True)
+    provider_review_reference = models.CharField('Protocolo de análise da operação no Mercado Pago', max_length=200, blank=True)
+    online_sales_enabled = models.BooleanField('Ativar venda online de números extras',default=False)
+    operation_review_confirmed = models.BooleanField('Conferi a autorização/enquadramento e a aceitação desta operação pelo Mercado Pago',default=False)
     quota_price_cents = models.PositiveIntegerField("Valor previsto da cota em centavos", blank=True, null=True, validators=[MinValueValidator(1)])
     quota_quantity = models.PositiveIntegerField("Quantidade prevista de cotas", blank=True, null=True, validators=[MinValueValidator(1)])
     draw_at = models.DateTimeField("Data prevista", blank=True, null=True)
@@ -45,8 +54,23 @@ class MotorcycleRaffle(models.Model):
 
     @property
     def purchase_available(self):
-        # Internal printed tickets do not enable a public quota checkout.
-        return False
+        return bool(self.online_sales_enabled and not self.sales_pending_requirements and
+            self.draw_at>timezone.now()+timedelta(minutes=35) and
+            self.event.status in ['PUBLISHED','SALES_CLOSED','IN_PROGRESS'] and self.event.ends_at>timezone.now())
+
+    @property
+    def sales_pending_requirements(self):
+        pending=[]
+        for field,label in [('quota_price_cents','Preço de cada número extra'),('quota_quantity','Limite de números extras online'),
+            ('rules_text','Regulamento'),('authorization_reference','Referência da autorização/enquadramento'),
+            ('provider_review_reference','Confirmação/protocolo do Mercado Pago'),('operation_review_confirmed','Conferência da operação'),('is_public','Publicar apresentação')]:
+            if not getattr(self,field):pending.append(label)
+        if not self.draw_at or self.draw_at<=timezone.now():pending.append('Data futura do sorteio')
+        return pending
+
+    @property
+    def paper_count(self):
+        return self.paper_end - self.paper_start + 1
 
 
 class RaffleSalesPoint(models.Model):
@@ -66,6 +90,7 @@ class RaffleTicket(models.Model):
     class Source(models.TextChoices):
         REGISTRATION = 'REGISTRATION', 'Inscrição paga'
         PAPER = 'PAPER', 'Bilhete em papel'
+        ONLINE = 'ONLINE', 'Número extra online'
     class State(models.TextChoices):
         AVAILABLE = 'AVAILABLE', 'Disponível'
         DISTRIBUTED = 'DISTRIBUTED', 'Entregue ao ponto'
@@ -78,6 +103,8 @@ class RaffleTicket(models.Model):
     source = models.CharField(max_length=20, choices=Source.choices)
     state = models.CharField(max_length=20, choices=State.choices, default=State.AVAILABLE)
     registration = models.OneToOneField('registrations.Registration', on_delete=models.PROTECT, null=True, blank=True, related_name='raffle_ticket')
+    beneficiary_registration = models.ForeignKey('registrations.Registration',on_delete=models.PROTECT,null=True,blank=True,related_name='extra_raffle_tickets')
+    order_line = models.ForeignKey('checkout.OrderLine',on_delete=models.PROTECT,null=True,blank=True,related_name='raffle_tickets')
     point = models.ForeignKey(RaffleSalesPoint, on_delete=models.PROTECT, null=True, blank=True, related_name='tickets')
     buyer_name = models.CharField('Nome do comprador', max_length=150, blank=True)
     buyer_phone = models.CharField('WhatsApp', max_length=30, blank=True)
