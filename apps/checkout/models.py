@@ -62,6 +62,7 @@ class Order(models.Model):
     gross_cents = models.PositiveBigIntegerField("Valor Bruto (centavos)", default=0)
     discount_cents = models.PositiveBigIntegerField("Desconto Aplicado (centavos)", default=0)
     total_cents = models.PositiveBigIntegerField("Valor Líquido a Pagar (centavos)", default=0)
+    payment_fee_cents = models.PositiveBigIntegerField("Taxa repassada no pagamento (centavos)", default=0)
 
     expires_at = models.DateTimeField("Expiração da Reserva (Hold)", db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -78,6 +79,18 @@ class Order(models.Model):
     @property
     def formatted_total(self):
         return cents_to_reais(self.total_cents)
+
+    @property
+    def base_total_cents(self):
+        return self.total_cents - self.payment_fee_cents
+
+    @property
+    def formatted_base_total(self):
+        return cents_to_reais(self.base_total_cents)
+
+    @property
+    def formatted_payment_fee(self):
+        return cents_to_reais(self.payment_fee_cents)
 
     @property
     def formatted_gross(self):

@@ -13,10 +13,12 @@ Desenvolvido para **Kelvim Muniz** e a **Equipe Morcego** (Tianguá - Ceará).
 * **Catálogo & Lotes:** Preços em centavos inteiros, lotes com controle de capacidade transacional (`select_for_update`), evitando *oversell*.
 * **Compras em Grupo:** Um comprador pode pagar inscrições para N pilotos com dados e camisetas individuais.
 
-### 2. Checkout Transparente & Mercado Pago (Orders API)
+### 2. Checkout Transparente & Mercado Pago (Payments API)
 * **Pix Instantâneo:** Gera QR Code em imagem e código Copia e Cola com identificação automática via Webhook em tempo real.
 * **Cartão de Crédito:** Suporte a tokenização segura e parcelamento.
 * **Webhooks Seguros:** Validação criptográfica de assinatura **HMAC SHA-256** e deduplicação estrita de eventos (`ProviderEvent`).
+* **Taxas e repasses:** configuração em `/gestao/integracoes/mercado-pago/taxas/`, com regras separadas por meio, tarifas por parcelas, simulação do líquido e cotação assinada antes da cobrança. As taxas públicas são referências editáveis; a conciliação usa as tarifas reais informadas pelo provedor.
+* **Comissão opcional:** os parâmetros para outra conta ficam em rascunho, sem cobrança nem transferência. A ativação exige integrar e homologar o split 1:1 com autorização OAuth da conta vendedora; informar um ID não conecta o destino.
 
 ### 3. Área do Piloto & Segurança LGPD
 * **Aceite Versionado de Regulamento:** Guarda o hash SHA-256 do documento, IP do participante e data/hora do aceite.
@@ -37,8 +39,10 @@ Desenvolvido para **Kelvim Muniz** e a **Equipe Morcego** (Tianguá - Ceará).
 * **Apuração de Tarifas:** Separação entre tarifas estimadas e tarifas reais do Mercado Pago.
 * **Exportação Segura:** Relatórios em CSV protegidos contra injeção de fórmulas (`=`, `+`, `-`, `@`).
 
-### 7. Expedições de Múltiplos Dias
-* Controle de etapas diárias, alocação de pousadas/quartos e veículos de transporte com controle de capacidade por leito.
+### 7. Operação por Evento
+* Contas individuais de colaboradores com permissões restritas à edição.
+* Produtos extras com estoque próprio, disponíveis após inscrição paga e entregues pelo mesmo QR Code.
+* Numeração após pagamento, bilhetes em papel com canhoto, pontos de venda e recebimentos integrados ao financeiro. A venda pública de cotas permanece indisponível.
 
 ---
 

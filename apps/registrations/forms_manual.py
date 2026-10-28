@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from apps.catalog.models import Lot
 from apps.core.utils import cents_to_reais
 from apps.identity.documents import normalize_cpf
+from .models import VehicleType
 
 PAYMENT_METHODS = [("CASH", "Dinheiro"), ("PIX_MANUAL", "Pix direto na conta da equipe"), ("CARD_EXTERNAL", "Cartão na maquininha")]
 
@@ -47,6 +48,7 @@ class ManualRegistrationForm(PaymentReceiptForm):
     team = forms.CharField(label="Equipe / moto clube", max_length=120, required=False)
     lot = LotChoice(label="Pacote e lote", queryset=Lot.objects.none(), empty_label="Selecione o pacote")
     shirt = forms.ChoiceField(label="Camiseta", required=False, choices=[])
+    vehicle = forms.ChoiceField(label="Veículo / modalidade", choices=VehicleType.choices, initial=VehicleType.MOTO, required=False)
     notes = forms.CharField(label="Motivo / observação do cadastro manual", max_length=1000, widget=forms.Textarea(attrs={"rows": 3}))
     payment_state = forms.ChoiceField(label="Situação do pagamento", choices=[("pending", "Aguardar pagamento — reserva por 35 minutos"), ("received", "Pagamento integral já recebido")])
 

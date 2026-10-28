@@ -278,7 +278,8 @@ def event_duplicate(request, event_id):
 @never_cache
 def registration_list(request, event_id):
     event = get_object_or_404(Event, id=event_id)
-    regs = Registration.objects.filter(event=event).select_related("person", "source_order_line", "credential").order_by("registration_number", "-created_at", "pk")
+    show_removed = request.GET.get('removed') == '1'
+    regs = Registration.objects.filter(event=event, archived_at__isnull=not show_removed).select_related("person", "source_order_line__order", "credential").order_by("registration_number", "-created_at", "pk")
 
     # Filtros
     q = request.GET.get("q", "").strip()
@@ -299,7 +300,7 @@ def registration_list(request, event_id):
         regs = regs.filter(operational_state=op_filter)
 
     page = Paginator(regs, 40).get_page(request.GET.get("page"))
-    filters = {"q": q, "status": status_filter, "op_status": op_filter}
+    filters = {"q": q, "status": status_filter, "op_status": op_filter, "removed": '1' if show_removed else ''}
 
     return render(request, "gestao/registrations/registration_list.html", {
         "event": event,
@@ -309,6 +310,7 @@ def registration_list(request, event_id):
         "q": q,
         "status_filter": status_filter,
         "op_filter": op_filter,
+        "show_removed": show_removed,
     })
 
 
@@ -595,12 +597,14 @@ def catalog_management(request, event_id):
     products = Product.objects.filter(event=event).prefetch_related("lots", "variants")
     coupons = Coupon.objects.filter(event=event).order_by("-valid_until")
     inventory = InventoryItem.objects.filter(event=event)
+    from apps.checkout.addons import inventory_items
 
     return render(request, "gestao/catalog/catalog.html", {
         "event": event,
         "products": products,
         "coupons": coupons,
         "inventory": inventory,
+        "addons": inventory_items(event, active=False),
     })
 
 

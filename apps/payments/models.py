@@ -37,6 +37,31 @@ class ChargeState(models.TextChoices):
     UNKNOWN = "UNKNOWN", "Status Indeterminado (Em Conciliação)"
     CANCELED = "CANCELED", "Cancelado"
 
+
+class PaymentFeePolicy(models.Model):
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    revision = models.PositiveIntegerField(default=0)
+    enabled = models.BooleanField("Repassar tarifas ao comprador", default=False)
+    pix_pass_through = models.BooleanField('Comprador paga a tarifa Pix', default=True)
+    card_pass_through = models.BooleanField('Comprador paga a tarifa do cartão', default=True)
+    pix_bps = models.PositiveIntegerField(default=99)
+    card_bps = models.PositiveIntegerField(default=498)
+    pix_fixed_cents = models.PositiveIntegerField(default=0)
+    card_fixed_cents = models.PositiveIntegerField(default=0)
+    max_installments = models.PositiveIntegerField(default=1)
+    installment_rates = models.JSONField(default=dict, blank=True)
+    commission_requested = models.BooleanField('Preparar comissão opcional para outra conta', default=False)
+    commission_bps = models.PositiveIntegerField(default=0)
+    commission_fixed_cents = models.PositiveIntegerField(default=0)
+    commission_payer = models.CharField('Quem pagaria a comissão', max_length=10, choices=[('BUYER', 'Comprador'), ('TEAM', 'Equipe')], default='TEAM')
+    commission_recipient = models.CharField('Nome da empresa que receberia a comissão', max_length=120, blank=True)
+    commission_account_id = models.CharField('ID da conta Mercado Pago de destino pretendida', max_length=30, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey("identity.User", on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=models.Q(id=1), name="payment_fee_policy_singleton")]
+
 class PaymentMethod(models.TextChoices):
     PIX = "pix", "Pix Instantâneo"
     CREDIT_CARD = "credit_card", "Cartão de Crédito"
@@ -58,6 +83,8 @@ class ChargeAttempt(models.Model):
     payment_method = models.CharField("Meio de Pagamento", max_length=30, choices=PaymentMethod.choices, default=PaymentMethod.PIX)
     state = models.CharField("Situação", max_length=30, choices=ChargeState.choices, default=ChargeState.NEW, db_index=True)
     amount_cents = models.PositiveBigIntegerField("Valor da Tentativa (centavos)")
+    passed_fee_cents = models.PositiveBigIntegerField(default=0)
+    fee_snapshot = models.JSONField(default=dict, blank=True)
 
     # Dados específicos do Pix
     pix_qr_code = models.TextField("QR Code Imagem (Base64)", blank=True, null=True)

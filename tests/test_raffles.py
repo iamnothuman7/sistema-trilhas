@@ -103,7 +103,7 @@ class MotorcycleRaffleTests(TestCase):
 
     def test_manager_creates_draft_and_ignores_forged_event_or_sale_flags(self):
         self.manager()
-        response = self.client.post(self.management_url(), {"title": "Sorteio da edição", "event": str(self.other.pk), "purchase_available": "true"})
+        response = self.client.post(self.management_url(), {"motorcycle_count":1,"paper_start":2000,"paper_end":3000,"title": "Sorteio da edição", "event": str(self.other.pk), "purchase_available": "true"})
         self.assertRedirects(response, self.management_url())
         raffle = MotorcycleRaffle.objects.get()
         self.assertEqual(raffle.event, self.event)
@@ -118,7 +118,7 @@ class MotorcycleRaffleTests(TestCase):
         self.manager()
         raffle = self.public_raffle(interest_enabled=False)
         response = self.client.post(self.management_url(), {
-            "title": "Título atualizado", "quota_price": "25,90", "quota_quantity": "100",
+            "motorcycle_count":1,"paper_start":2000,"paper_end":3000,"title": "Título atualizado", "quota_price": "25,90", "quota_quantity": "100",
             "is_public": "on", "interest_enabled": "on",
         })
         self.assertEqual(response.status_code, 302)
@@ -145,7 +145,7 @@ class MotorcycleRaffleTests(TestCase):
         self.manager()
         with patch("apps.events.views_raffles.log_audit", side_effect=RuntimeError("audit unavailable")):
             with self.assertRaises(RuntimeError):
-                self.client.post(self.management_url(), {"title": "Não persistir"})
+                self.client.post(self.management_url(), {"motorcycle_count":1,"paper_start":2000,"paper_end":3000,"title": "Não persistir"})
         self.assertFalse(MotorcycleRaffle.objects.exists())
 
     def test_interest_requires_login_post_and_csrf(self):

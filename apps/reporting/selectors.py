@@ -15,7 +15,7 @@ def get_event_kpi_summary(event: Event) -> dict:
     Retorna os principais KPIs e métricas consolidadas do evento para o painel de gestão.
     """
     # Inscrições
-    regs = Registration.objects.filter(event=event)
+    regs = Registration.objects.filter(event=event, archived_at__isnull=True)
     total_registered = regs.count()
     active_confirmed = regs.filter(commercial_state=CommercialState.ACTIVE).count()
     ready_for_checkin = regs.filter(commercial_state=CommercialState.ACTIVE, operational_state=OperationalState.READY).count()
@@ -73,6 +73,7 @@ def get_event_kpi_summary(event: Event) -> dict:
 
 
 REVENUE_KINDS = (
+    FinancialEntryKind.RECEITA_SORTEIO, FinancialEntryKind.ESTORNO_SORTEIO,
     FinancialEntryKind.RECEITA_INSCRICAO,
     FinancialEntryKind.RECEITA_ADICIONAL,
     FinancialEntryKind.RECEITA_MANUAL,

@@ -8,6 +8,18 @@ from django.core.exceptions import ValidationError
 SPONSOR_MAX_IMAGE_PIXELS = 24_000_000
 
 
+def sponsor_whatsapp_url(value):
+    digits = re.sub(r"\D", "", value or "")
+    if len(digits) in (10, 11):
+        digits = "55" + digits
+    return "https://wa.me/" + digits if len(digits) in (12, 13) and digits.startswith("55") else ""
+
+
+def validate_sponsor_whatsapp(value):
+    if value and not sponsor_whatsapp_url(value):
+        raise ValidationError("Informe um WhatsApp brasileiro com DDD.")
+
+
 def validate_sponsor_logo_dimensions(width, height):
     if width * height > SPONSOR_MAX_IMAGE_PIXELS:
         raise ValidationError("A imagem deve ter no máximo 24 megapixels. Reduza a resolução e tente novamente.")

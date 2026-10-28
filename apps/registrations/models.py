@@ -14,6 +14,15 @@ class OperationalState(models.TextChoices):
     CHECKED_IN = "CHECKED_IN", "Credenciado no Evento (Presente)"
     CLOSED = "CLOSED", "Encerrado"
 
+
+class VehicleType(models.TextChoices):
+    UTV = "UTV", "UTV"
+    MOTO = "MOTO", "Moto de trilha"
+    QUADRICICLO = "QUADRICICLO", "Quadriciclo"
+    INFANTIL = "INFANTIL", "Infantil"
+    MOTO_RUA = "MOTO_RUA", "Moto de rua"
+    OFFROAD_4X4 = "4X4", "4x4"
+
 class Registration(models.Model):
     """
     Direito individual de participação de uma pessoa física em determinado evento.
@@ -32,6 +41,8 @@ class Registration(models.Model):
     category_name = models.CharField("Categoria / Modalidade", max_length=100, default="Piloto Completo")
     team_name = models.CharField("Equipe / Moto Clube", max_length=120, blank=True, null=True)
     shirt_size = models.CharField("Tamanho da Camiseta", max_length=20, default="M")
+    vehicle_type = models.CharField("Veículo / modalidade", max_length=20, choices=VehicleType.choices, blank=True)
+    archived_at = models.DateTimeField("Removida da lista em", null=True, blank=True, editable=False)
 
     product_snapshot_json = models.JSONField("Snapshot do Pacote Contratado", default=dict)
     parent_registration = models.ForeignKey("self", on_delete=models.SET_NULL, blank=True, null=True, related_name="transferred_to")
@@ -147,6 +158,7 @@ class RegistrationTransfer(models.Model):
 
 
 class BenefitType(models.TextChoices):
+    ADICIONAL = "ADICIONAL", "Produto extra comprado"
     KIT = "KIT", "Kit do Piloto (Sacola/Adesivos/Brindes)"
     CAMISETA = "CAMISETA", "Camiseta Oficial"
     REFEICAO = "REFEICAO", "Alimentação (Café / Almoço)"
@@ -167,6 +179,7 @@ class Entitlement(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     registration = models.ForeignKey(Registration, on_delete=models.CASCADE, related_name="entitlements")
+    source_order_line = models.OneToOneField("checkout.OrderLine", on_delete=models.PROTECT, null=True, blank=True, related_name="addon_entitlement")
     benefit_type = models.CharField("Tipo do Benefício", max_length=30, choices=BenefitType.choices)
     title = models.CharField("Descrição do Benefício", max_length=150)
     quantity_total = models.PositiveIntegerField("Quantidade Total Concedida", default=1)

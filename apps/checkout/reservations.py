@@ -1,5 +1,6 @@
 """Atomic reservation shared by public checkout and authorized internal registration."""
 import secrets
+import re
 from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -76,7 +77,6 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
     )
 
     gross_total = 0
-    next_registration_number = (Registration.objects.filter(event=event).aggregate(number=Max("registration_number"))["number"] or 0) + 1
 
     # 3. Criar as linhas do pedido e inscrições
     for participant in participants:
@@ -131,6 +131,8 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
                 "variant_code": participant["variant"].code if participant["variant"] else "",
                 "variant_label": participant["variant"].label if participant["variant"] else "",
                 "shirt_size": shirt,
+                "vehicle_type": participant.get("vehicle", ""),
+                "buyer_is_participant": bool(participant.get("is_buyer") and participant["cpf"] == re.sub(r"\D", "", buyer["document"])),
                 "includes_kit": product.includes_kit,
                 "includes_shirt": product.includes_shirt,
                 "includes_meal": product.includes_meal,
@@ -143,15 +145,14 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
             event=event,
             person=person,
             source_order_line=line,
-            registration_number=next_registration_number,
             category_name=product.name if product else "Piloto",
             team_name=p_team,
             shirt_size=shirt,
+            vehicle_type=participant.get("vehicle", ""),
             commercial_state=CommercialState.RESERVED,
             operational_state=OperationalState.NOT_READY,
             product_snapshot_json=line.item_snapshot_json,
         )
-        next_registration_number += 1
 
         # Travar recurso de capacidade
         CapacityHold.objects.create(

@@ -45,6 +45,7 @@
                 <option value="NOT_READY" {% if op_filter == 'NOT_READY' %}selected{% endif %}>Pendente Termos</option>
             </select>
         </div>
+        <label class="mg-check-row"><input type="checkbox" name="removed" value="1"{% if show_removed %} checked{% endif %}>Mostrar reservas removidas</label>
         <button type="submit" class="btn btn-primary">Filtrar</button>
     </form>
 </div>
@@ -80,7 +81,7 @@
                                 {{ reg.team_name|default:reg.person.team_name|default:"Sem equipe" }} &bull; {{ reg.person.city }}/{{ reg.person.state }}
                             </div>
                         </td>
-                        <td>{{ reg.category_name }}</td>
+                        <td>{{ reg.category_name }}<small class="text-muted mg-meta">{{ reg.get_vehicle_type_display }}</small></td>
                         <td>
                             <span class="badge">
                                 Tam. {{ reg.shirt_size }}
@@ -99,7 +100,7 @@
                         <td>
                             <a href="{% url 'gestao:registration_detail' event_id=event.id reg_id=reg.id %}" class="btn btn-sm btn-secondary">
                                 Ver Ficha
-                            </a>
+                            </a>{% if reg.commercial_state != 'ACTIVE' and not reg.archived_at %}<a class="btn btn-sm btn-secondary" href="{% url 'gestao:registration_remove' event.id reg.id %}">Remover reserva</a>{% endif %}
                         </td>
                     </tr>
                 {% empty %}

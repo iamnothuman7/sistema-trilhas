@@ -1,0 +1,4 @@
+<nav class="mp-panel-tabs" aria-label="Mercado Pago">
+  <a class="btn {% if request.resolver_match.url_name == 'mercadopago_connection' %}btn-primary{% else %}btn-secondary{% endif %}" href="{% url 'gestao:mercadopago_connection' %}"{% if request.resolver_match.url_name == 'mercadopago_connection' %} aria-current="page"{% endif %}><i data-lucide="plug-zap" aria-hidden="true"></i>Conexão</a>
+  <a class="btn {% if request.resolver_match.url_name == 'mercadopago_fees' %}btn-primary{% else %}btn-secondary{% endif %}" href="{% url 'gestao:mercadopago_fees' %}"{% if request.resolver_match.url_name == 'mercadopago_fees' %} aria-current="page"{% endif %}><i data-lucide="percent" aria-hidden="true"></i>Taxas e repasses</a>
+</nav>

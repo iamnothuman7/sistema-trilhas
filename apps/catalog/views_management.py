@@ -9,12 +9,13 @@ from uuid import UUID
 from apps.core.permissions import management_required
 from apps.core.utils import log_audit
 from apps.events.models import Event
-from .models import Product, Lot, ProductVariant, Coupon, CapacityResource
-from .forms_management import ProductForm, LotForm, VariantForm, CouponForm
+from .models import Product, Lot, ProductVariant, Coupon, CapacityResource, AddOn
+from .forms_management import ProductForm, LotForm, VariantForm, CouponForm, AddOnForm
 from apps.checkout.models import OrderLine
 from .models import CapacityHold
 
 EDITORS = {'produto': (Product, ProductForm, 'produto'), 'lote': (Lot, LotForm, 'lote'),
+           'adicional': (AddOn, AddOnForm, 'produto extra'),
            'tamanho': (ProductVariant, VariantForm, 'tamanho de camiseta'), 'cupom': (Coupon, CouponForm, 'cupom')}
 
 
@@ -65,8 +66,8 @@ def catalog_editor(request, event_id, kind, object_id=None):
     with transaction.atomic():
         event = get_object_or_404(Event.objects.select_for_update(), pk=event_id)
         resources = []
-        if kind == 'lote' and object_id:
-            resources = list(CapacityResource.objects.select_for_update().filter(event=event, type='LOT_TOTAL', reference_id=object_id).order_by('pk'))
+        if kind in ('lote', 'adicional') and object_id:
+            resources = list(CapacityResource.objects.select_for_update().filter(event=event, type='LOT_TOTAL' if kind == 'lote' else 'ADDON_TOTAL', reference_id=object_id).order_by('pk'))
         queryset = model.objects.select_for_update().filter(**({'product__event': event} if kind == 'tamanho' else {'event': event}))
         try:
             if object_id:
@@ -88,10 +89,14 @@ def catalog_editor(request, event_id, kind, object_id=None):
                 occupied = max([instance.current_sold] + [max(instance.current_sold, resource.committed_count) + resource.reserved_count for resource in resources])
                 if form.cleaned_data['max_quantity'] < occupied:
                     form.add_error('max_quantity', f'Existem {occupied} vagas vendidas ou reservadas. Mantenha ao menos essa quantidade.')
+            elif kind == 'adicional':
+                occupied = max([0]+[r.reserved_count+r.committed_count for r in resources])
+                if form.cleaned_data['max_quantity'] < occupied:
+                    form.add_error('max_quantity', f'Existem {occupied} unidades vendidas ou reservadas. O estoque não pode ser menor.')
             if not form.errors:
                 before = form.original_version
                 saved = form.save()
-                if kind == 'lote':
+                if kind in ('lote', 'adicional'):
                     for resource in resources:
                         resource.capacity_total = saved.max_quantity
                         resource.save(update_fields=['capacity_total'])

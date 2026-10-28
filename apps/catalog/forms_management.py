@@ -6,7 +6,7 @@ from apps.events.forms_management import EventDateTimeField
 from apps.finance.forms import parse_amount_cents
 from apps.reporting.selectors import event_timezone
 from apps.checkout.models import OrderLine
-from .models import Product, Lot, ProductVariant, Coupon
+from .models import Product, Lot, ProductVariant, Coupon, AddOn
 
 
 def edit_version(instance):
@@ -51,6 +51,28 @@ class ProductForm(CatalogForm):
         if self.instance.pk and OrderLine.objects.filter(product=self.instance).exists():
             self.fields['kind'].disabled = True
             self.fields['kind'].help_text = 'Modalidade preservada porque já existem pedidos. Crie outro produto para uma modalidade diferente.'
+
+
+class AddOnForm(CatalogForm):
+    price = forms.CharField(label='Preço em reais', widget=forms.TextInput(attrs={'inputmode':'decimal'}))
+    max_quantity = forms.IntegerField(label='Estoque disponível para venda', min_value=0, max_value=2147483647)
+
+    class Meta:
+        model = AddOn
+        fields = ['title', 'description', 'variant_code', 'price', 'max_quantity', 'active']
+        widgets = {'description': forms.Textarea(attrs={'rows':3})}
+        help_texts = {'variant_code':'Ex.: P, M, G ou uma variação do produto. Cadastre um item separado para cada estoque.'}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.initial['price'] = self.instance.formatted_price
+
+    def clean_price(self):
+        return parse_amount_cents(self.cleaned_data['price'])
+
+    def save(self, commit=True):
+        self.instance.price_cents = self.cleaned_data['price']
+        return super().save(commit)
 
 
 def date_field(label):

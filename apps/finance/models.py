@@ -5,6 +5,8 @@ from apps.core.utils import cents_to_reais
 from apps.core.private_storage import private_document_storage
 
 class FinancialEntryKind(models.TextChoices):
+    RECEITA_SORTEIO = "RECEITA_SORTEIO", "Recebimento de Bilhete de Sorteio"
+    ESTORNO_SORTEIO = "ESTORNO_SORTEIO", "Reversão de Bilhete de Sorteio"
     RECEITA_INSCRICAO = "RECEITA_INSCRICAO", "Receita de Inscrição (Mercado Pago)"
     RECEITA_ADICIONAL = "RECEITA_ADICIONAL", "Receita de Item Adicional"
     RECEITA_MANUAL = "RECEITA_MANUAL", "Receita Manual Confirmada (Dinheiro/Pix)"

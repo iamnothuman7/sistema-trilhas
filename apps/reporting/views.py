@@ -13,7 +13,7 @@ from .exports import export_financial_csv, export_orders_csv, export_participant
 from .exports import AGGREGATE_REPORTS, export_aggregate_csv, export_expenses_csv, export_checkins_csv, export_benefits_csv, export_deliveries_csv, export_bundle
 from .forms import DateRangeForm
 from .selectors import get_event_report
-from .exports import export_sponsorships_csv, export_sponsor_receipts_csv
+from .exports import export_sponsorships_csv, export_sponsor_receipts_csv, export_addons_csv, export_raffle_csv
 
 
 @login_required(login_url="identity:login")
@@ -34,8 +34,11 @@ def event_reports(request, event_id):
     exporters = {"participants": export_participants_csv, "financial": export_financial_csv, "orders": export_orders_csv}
     exporters.update(expenses=export_expenses_csv, checkins=export_checkins_csv, benefits=export_benefits_csv, deliveries=export_deliveries_csv)
     exporters.update(sponsorships=export_sponsorships_csv, sponsor_receipts=export_sponsor_receipts_csv)
+    exporters['extras'] = export_addons_csv
+    exporters['raffle'] = export_raffle_csv
     exporters.update({key: partial(export_aggregate_csv, section=key) for key in AGGREGATE_REPORTS})
     allowed = {key: value for key, value in exporters.items() if
+        (key != 'raffle' or can_manage_event(request.user, event, 'events')) and
         (key != 'participants' or can_export_participants) and
         (key not in {'checkins', 'benefits', 'deliveries'} or can_manage_event(request.user, event, 'checkin'))}
     if export and export not in {*exporters, "summary", "all"}:
@@ -55,6 +58,8 @@ def event_reports(request, event_id):
     labels = {'participants': 'Participantes', 'financial': 'Extrato financeiro', 'orders': 'Pedidos', 'expenses': 'Despesas',
         'checkins': 'Credenciamentos', 'benefits': 'Benefícios e kits', 'deliveries': 'Histórico de entregas', **{key: value[0] for key, value in AGGREGATE_REPORTS.items()}}
     labels.update(sponsorships='Patrocínios — saldos atuais (todos os acordos)', sponsor_receipts='Recebimentos de patrocinadores')
+    labels['extras'] = 'Produtos extras — estoque atual'
+    labels['raffle'] = 'Sorteio — números, pontos e recebimentos'
     context['export_options'] = [{'key': key, 'label': labels[key]} for key in allowed]
     context["report"] = get_event_report(event, start, end)
     response = render(request, "gestao/reporting/overview.html", context)

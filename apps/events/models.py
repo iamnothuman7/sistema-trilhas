@@ -286,12 +286,9 @@ class RouteCheckpoint(models.Model):
 
 
 class SponsorTier(models.TextChoices):
-    DIAMANTE = "DIAMANTE", "Cota Diamante"
     OURO = "OURO", "Cota Ouro"
     PRATA = "PRATA", "Cota Prata"
     BRONZE = "BRONZE", "Cota Bronze"
-    APOIO = "APOIO", "Apoio Institucional"
-    PARCEIRO = "PARCEIRO", "Parceiro Oficial"
 
 
 class Sponsor(models.Model):
@@ -302,12 +299,14 @@ class Sponsor(models.Model):
     profile = models.ForeignKey("SponsorProfile", on_delete=models.PROTECT, null=True, blank=True, related_name="participations")
     name = models.CharField("Nome do Patrocinador / Marca", max_length=150)
     tier = models.CharField("Cota de Patrocínio", max_length=30, choices=SponsorTier.choices, default=SponsorTier.OURO)
+    previous_tier = models.CharField(max_length=30, blank=True, editable=False)
     website = models.URLField("Site / Instagram", blank=True, null=True)
     logo_image = models.ImageField("Logotipo", upload_to="events/sponsors/", blank=True, validators=[validate_sponsor_logo_size])
     logo_preview = models.ImageField("Prévia do logotipo", upload_to="events/sponsors/previews/", blank=True, editable=False)
     logo_preview_width = models.PositiveIntegerField(null=True, blank=True, editable=False)
     logo_preview_height = models.PositiveIntegerField(null=True, blank=True, editable=False)
     instagram_url = models.URLField("Instagram", blank=True, validators=[validate_instagram_profile])
+    whatsapp_number = models.CharField("WhatsApp público", max_length=30, blank=True)
     sort_order = models.PositiveIntegerField("Ordem de Exibição", default=0)
     approved_at = models.DateTimeField("Aprovado em", default=timezone.now)
     is_public = models.BooleanField("Autorizar exibição na página deste evento", default=False)
@@ -331,6 +330,11 @@ class Sponsor(models.Model):
             return ""
         return self.logo_preview.url if self.logo_preview else self.logo_image.url
 
+    @property
+    def whatsapp_url(self):
+        from .validators import sponsor_whatsapp_url
+        return sponsor_whatsapp_url(self.whatsapp_number)
+
 
 class SponsorProfile(models.Model):
     """Reusable brand record. Financial agreements remain on each event participation."""
@@ -342,6 +346,7 @@ class SponsorProfile(models.Model):
     logo_preview_width = models.PositiveIntegerField(null=True, blank=True, editable=False)
     logo_preview_height = models.PositiveIntegerField(null=True, blank=True, editable=False)
     instagram_url = models.URLField("Instagram", blank=True, validators=[validate_instagram_profile])
+    whatsapp_number = models.CharField("WhatsApp público", max_length=30, blank=True)
     contact_name = models.CharField("Pessoa de contato", max_length=150, blank=True)
     contact_phone = models.CharField("WhatsApp / telefone", max_length=30, blank=True)
     contact_email = models.EmailField("E-mail de contato", blank=True)
@@ -400,4 +405,4 @@ class LegalDocumentVersion(models.Model):
 
 
 # Django discovers these event-specific models through the app's models module.
-from .models_raffles import MotorcycleRaffle, RaffleInterest  # noqa: E402,F401
+from .models_raffles import MotorcycleRaffle, RaffleInterest, RaffleTicket, RaffleSalesPoint  # noqa: E402,F401

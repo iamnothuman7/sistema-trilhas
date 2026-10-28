@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static trilhas_ui %}
 {% block title %}Pagamento | Equipe Morcego{% endblock %}
 {% block extra_head %}{% include "checkout/_payment_styles.html" %}{% endblock %}
 {% block content %}
@@ -23,18 +23,21 @@
         <h2><i data-lucide="qr-code" aria-hidden="true"></i> Pix</h2>
         <p class="payment-muted">{% if is_homologation %}Gere um QR de teste para conferir a integração. Não faça transferência pelo aplicativo do banco: este pedido é fictício.{% else %}Gere um código para pagar no aplicativo do seu banco. A inscrição será confirmada após a aprovação do Mercado Pago.{% endif %}</p>
         <form method="post" action="{% url 'checkout:process_payment' order.id %}" id="pix-payment-form">
-          {% csrf_token %}<input type="hidden" name="payment_method" value="pix"><input type="hidden" name="attempt_key" value="{{ attempt_key }}">
-          <button type="submit" class="payment-button payment-full">Gerar Pix de R$ {{ order.formatted_total }}</button>
+          <p>Itens: <strong>R$ {{ order.formatted_base_total }}</strong> · Taxa Pix: <strong>R$ {{ pix_quote.formatted_fee }}</strong> · Total: <strong>R$ {{ pix_quote.formatted_total }}</strong></p>
+          {% csrf_token %}<input type="hidden" name="payment_quote" value="{{ pix_quote.token }}"><input type="hidden" name="payment_method" value="pix"><input type="hidden" name="attempt_key" value="{{ attempt_key }}">
+          <button type="submit" class="payment-button payment-full">Gerar Pix de R$ {{ pix_quote.formatted_total }}</button>
         </form>
       </section>
       {% if card_available %}
       <section class="payment-card">
         <h2><i data-lucide="credit-card" aria-hidden="true"></i> Cartão de crédito</h2>
         <p class="payment-muted">Preencha o formulário seguro do Mercado Pago. As parcelas disponíveis são informadas pela operadora.</p>
+        <p>Itens: <strong>R$ {{ order.formatted_base_total }}</strong> · Taxa cartão: <strong>R$ {{ card_quote.formatted_fee }}</strong> · Total: <strong>R$ {{ card_quote.formatted_total }}</strong></p>
+        {% if fee_policy.max_installments > 1 %}<form method="get"><label class="form-label" for="quoted-installments">Escolha as parcelas antes de preencher o cartão</label><select id="quoted-installments" name="parcelas" class="form-control">{% for choice in installment_choices %}<option value="{{ choice.installments }}"{% if choice.installments == card_quote.installments %} selected{% endif %}>{{ choice.installments }}x · Total R$ {{ choice.formatted_total }} (taxa R$ {{ choice.formatted_fee }})</option>{% endfor %}</select><button type="submit" class="payment-button payment-button-secondary">Atualizar parcelas e total</button></form>{% endif %}
         <p id="card-feedback" class="payment-alert" role="status" aria-live="polite">Carregando o formulário seguro…</p>
         <form id="form-checkout" class="payment-form" method="post" action="{% url 'checkout:process_payment' order.id %}">
           {% csrf_token %}
-          <input type="hidden" name="payment_method" value="credit_card"><input type="hidden" name="attempt_key" value="{{ attempt_key }}">
+          <input type="hidden" name="payment_quote" value="{{ card_quote.token }}"><input type="hidden" name="payment_method" value="credit_card"><input type="hidden" name="attempt_key" value="{{ attempt_key }}">
           <input type="hidden" name="card_token"><input type="hidden" name="payment_method_id"><input type="hidden" name="issuer_id"><input type="hidden" name="installments"><input type="hidden" name="identification_type"><input type="hidden" name="identification_number">
           <div class="payment-field"><label id="card-number-label">Número do cartão</label><div id="form-checkout__cardNumber" class="payment-secure-field" aria-labelledby="card-number-label"></div></div>
           <div class="payment-form-row">
@@ -49,7 +52,7 @@
           </div>
           <div class="payment-field"><label for="form-checkout__issuer">Banco emissor</label><select id="form-checkout__issuer"></select></div>
           <div class="payment-field"><label for="form-checkout__installments">Parcelas</label><select id="form-checkout__installments"></select></div>
-          <button type="submit" class="payment-button payment-full" id="form-checkout__submit" disabled>Pagar R$ {{ order.formatted_total }}</button>
+          <button type="submit" class="payment-button payment-full" id="form-checkout__submit" disabled>Pagar R$ {{ card_quote.formatted_total }}</button>
         </form>
         <p class="payment-help payment-muted"><i data-lucide="lock-keyhole" aria-hidden="true"></i> Número e código de segurança são enviados diretamente ao Mercado Pago.</p>
       </section>
@@ -73,7 +76,7 @@
       <h2>Seu pedido</h2>
       <ul class="payment-list">{% for line in order.lines.all %}<li><strong>{{ line.intended_person_name }}</strong><small class="payment-muted">{{ line.item_snapshot_json.product_name }}</small></li>{% endfor %}</ul>
       {% if order.discount_cents %}<p class="payment-muted">Desconto aplicado: R$ {{ order.formatted_discount }}</p>{% endif %}
-      <div class="payment-total"><span>Total</span><strong>R$ {{ order.formatted_total }}</strong></div>
+      <div class="payment-total"><span>Valor dos itens</span><strong>R$ {{ order.formatted_base_total }}</strong></div><p class="payment-muted">A tarifa e o total de cada meio de pagamento estão detalhados ao lado, antes da confirmação.</p>
       <p class="payment-help payment-muted">Reserva até {{ order.expires_at|date:"d/m H:i" }}. O pagamento está vinculado a este pedido.</p>
     </aside>
   </div>
@@ -101,6 +104,20 @@ document.getElementById('pix-payment-form')?.addEventListener('submit', function
   if (!window.MercadoPago) { feedback.textContent = 'O formulário seguro está indisponível. Recarregue a página ou escolha Pix.'; return; }
   try {
     const mp = new MercadoPago(config.publicKey, { locale: 'pt-BR' });
+    const select = document.getElementById('form-checkout__installments');
+    if (config.quotedInstallments) {
+      const enforceQuote = () => {
+        for (const option of select.options) {
+          if (!option.value) continue;
+          const allowed = Number(option.value) === config.quotedInstallments;
+          if (option.disabled === allowed) option.disabled = !allowed;
+          if (option.hidden === allowed) option.hidden = !allowed;
+        }
+        const chosen = [...select.options].find(option => Number(option.value) === config.quotedInstallments);
+        if (chosen && select.value !== chosen.value) { select.value = chosen.value; select.dispatchEvent(new Event('change', {bubbles:true})); }
+      };
+      new MutationObserver(enforceQuote).observe(select, {childList:true});
+    }
     const cardForm = mp.cardForm({ amount: config.amount, iframe: true,
       form: { id: 'form-checkout',
         cardNumber: { id: 'form-checkout__cardNumber', placeholder: 'Número do cartão' },
@@ -119,7 +136,7 @@ document.getElementById('pix-payment-form')?.addEventListener('submit', function
         onSubmit(event) {
           event.preventDefault();
           const data = cardForm.getCardFormData();
-          if (!data.token || !data.paymentMethodId) { fail(); return; }
+          if (!data.token || !data.paymentMethodId || (config.quotedInstallments && Number(data.installments) !== config.quotedInstallments)) { fail(); return; }
           const fields = { card_token: data.token, payment_method_id: data.paymentMethodId, issuer_id: data.issuerId || '',
             installments: data.installments, identification_type: data.identificationType, identification_number: data.identificationNumber };
           Object.entries(fields).forEach(([name, value]) => { form.elements.namedItem(name).value = value || ''; });

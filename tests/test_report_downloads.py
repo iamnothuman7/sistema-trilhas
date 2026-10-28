@@ -19,7 +19,7 @@ class ReportDownloadTests(TestCase):
     def test_all_exports_download_and_zip_includes_every_available_report(self):
         self.client.force_login(self.user)
         Expense.objects.create(event=self.event, description='=SUM(A1)', amount_cents=1500, due_at=timezone.localdate())
-        names = {'participants','orders','financial','summary','expenses','checkins','benefits','deliveries','sponsorships','sponsor_receipts', *AGGREGATE_REPORTS}
+        names = {'participants','orders','financial','summary','expenses','checkins','benefits','deliveries','sponsorships','sponsor_receipts','extras','raffle', *AGGREGATE_REPORTS}
         contents = {}
         for name in names:
             response = self.client.get(self.url(), {'export':name})

@@ -10,6 +10,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const buyerSummary = document.getElementById('buyerParticipantSummary');
     const identityFields = ['name', 'document', 'email', 'phone'];
     const originalValues = new WeakMap();
+    form.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter' && event.target.tagName === 'INPUT') {
+            event.preventDefault();
+            const fields = [...form.querySelectorAll('input,select,button[type="submit"]')].filter(el =>
+                !el.disabled && el.type !== 'hidden' && el.getClientRects().length);
+            fields[fields.indexOf(event.target) + 1]?.focus();
+        }
+    });
 
     function syncBuyer() {
         if (!sameBuyer) return;

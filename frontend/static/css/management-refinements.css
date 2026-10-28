@@ -113,6 +113,16 @@
 
 /* One coherent connection panel, with paired credential fields on wide screens. */
 .mp-connection-simple{grid-template-columns:minmax(0,1fr);max-width:1120px;margin-inline:auto}
+.mp-panel-tabs{display:flex;flex-wrap:wrap;gap:10px;grid-column:1/-1;justify-content:flex-start}
+.mp-panel-tabs .btn{min-height:44px}
+.mp-fees-page{display:grid;gap:24px;min-width:0;max-width:1440px;margin-inline:auto}
+.mp-fees-page fieldset{min-width:0;margin:0}
+.mp-fees-page legend{font-size:18px;font-weight:700;padding-inline:8px}
+.mp-fees-page .form-grid{align-items:start}
+.mp-fee-simulator{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.mp-fee-simulator label{display:grid;gap:8px;max-width:240px}
+.mp-fees-page .mp-status-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:767px){.mp-panel-tabs .btn{flex:1 1 140px}.mp-fee-simulator label{max-width:none;flex:1 1 160px}.mp-fees-page .mp-status-grid{grid-template-columns:minmax(0,1fr)}}
 .mp-connection-simple .mp-connect-form,.mp-connection-simple .mp-recheck{grid-column:1/-1;min-width:0}
 .mp-connection-simple .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .mp-connection-simple .mp-webhook{min-width:0;padding:clamp(16px,3vw,28px);border:1px solid var(--border-color,#7774);border-radius:16px}

@@ -21,8 +21,13 @@ MODULES = {
     "frames": ("content", True), "team_frame_editor": ("content", True),
     "raffle_management": ("events", True), "sponsor_bank": ("sponsors", False),
     "mercadopago_connection": ("view", False), "audit_log": ("audit", False),
+    "team_management": ("team", True),
 }
 PARENTS = {
+    "mercadopago_fees": "mercadopago_connection",
+    "team_revoke": "team_management",
+    "registration_remove": "registration_list",
+    "raffle_operations": "raffle_management", "raffle_print": "raffle_management",
     "event_create": "event_list", "catalog_create": "catalog", "catalog_edit": "catalog",
     "lot_remove": "catalog", "registration_detail": "registration_list",
     "manual_registration_create": "registration_list", "manual_registration_payment": "registration_list",

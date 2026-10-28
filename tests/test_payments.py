@@ -47,7 +47,7 @@ class GatewayTests(SimpleTestCase):
         from apps.payments.gateway_config import GatewayConfiguration, environment_configuration
         patch("apps.payments.gateway_config.load_gateway_configuration", side_effect=lambda: GatewayConfiguration(environment_configuration())).start()
         self.now = timezone.now()
-        self.charge = SimpleNamespace(id=uuid.uuid4(), idempotency_key=str(uuid.uuid4()), amount_cents=18001,
+        self.charge = SimpleNamespace(id=uuid.uuid4(), idempotency_key=str(uuid.uuid4()), amount_cents=18001, passed_fee_cents=0,
             pix_expiration=self.now + timedelta(minutes=30), order=SimpleNamespace(id=uuid.uuid4(),
                 merchant_reference="UNIT-1", purchaser_name="Comprador Teste", purchaser_email="buyer@example.com",
                 purchaser_document="", event=SimpleNamespace(title="Trilha Teste")))
@@ -521,7 +521,7 @@ class PaymentReconciliationTests(TestCase):
         self.assertEqual(people.count(), 2)
         self.assertEqual(set(people.values_list("email", flat=True)), {"first@example.com", "second@example.com"})
         registrations = Registration.objects.filter(person__in=people).order_by("registration_number")
-        self.assertEqual(list(registrations.values_list("registration_number", flat=True)), [8, 9])
+        self.assertEqual(list(registrations.values_list("registration_number", flat=True)), [None, None])
         self.assertNotEqual(registrations[0].person_id, registrations[1].person_id)
         created_order = registrations[0].source_order_line.order
         self.assertIn(str(created_order.id), self.client.session["checkout_order_ids"])

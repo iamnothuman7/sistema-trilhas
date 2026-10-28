@@ -94,6 +94,8 @@ class AddOn(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     event = models.ForeignKey("events.Event", on_delete=models.CASCADE, related_name="addons")
     title = models.CharField("Nome do Item Adicional", max_length=150)
+    description = models.TextField("Descrição", blank=True)
+    variant_code = models.CharField("Tamanho / variação", max_length=30, blank=True)
     price_cents = models.PositiveBigIntegerField("Preço (centavos)", default=5000)
     max_quantity = models.PositiveIntegerField("Limite Disponível", default=100)
     active = models.BooleanField("Ativo", default=True)
@@ -104,6 +106,10 @@ class AddOn(models.Model):
 
     def __str__(self):
         return f"{self.title} (R$ {cents_to_reais(self.price_cents)})"
+
+    @property
+    def formatted_price(self):
+        return cents_to_reais(self.price_cents)
 
 
 class CouponKind(models.TextChoices):
@@ -142,6 +148,7 @@ class Coupon(models.Model):
 
 
 class CapacityResourceType(models.TextChoices):
+    ADDON_TOTAL = "ADDON_TOTAL", "Estoque de item adicional"
     EVENT_OVERALL = "EVENT_OVERALL", "Capacidade Geral do Evento"
     LOT_TOTAL = "LOT_TOTAL", "Capacidade do Lote"
     SHIRT_SIZE = "SHIRT_SIZE", "Estoque de Camisetas por Tamanho"

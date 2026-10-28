@@ -63,6 +63,7 @@ def create_manual_registration(*, event, actor, data, request_key, request_hash,
     lot = data["lot"]
     participant = {key: data[key] for key in ("name", "cpf", "email", "phone", "city", "state", "team", "shirt")}
     participant.update(product_id=str(lot.product_id), lot_id=str(lot.pk))
+    participant["vehicle"] = data.get("vehicle", "")
     order = reserve_order(event=event, participants=[participant], buyer={"name": data["name"], "email": data["email"],
         "phone": data["phone"], "document": data["cpf"]}, manual=True)
     entry = ManualRegistration.objects.create(registration=Registration.objects.get(source_order_line__order=order),

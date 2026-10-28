@@ -66,7 +66,7 @@ def _validate(payment, charge, gateway):
     if payment.get("currency_id") != order.currency or order.currency != "BRL":
         raise PaymentValidationError("currency_mismatch")
     amount = money_cents(payment.get("transaction_amount"))
-    if amount != charge.amount_cents or amount != order.total_cents or not amount:
+    if amount != charge.amount_cents or amount != order.base_total_cents + charge.passed_fee_cents or not amount:
         raise PaymentValidationError("amount_mismatch")
     if charge.provider_payment_ref and charge.provider_payment_ref != payment_id:
         raise PaymentValidationError("payment_id_mismatch")
@@ -97,6 +97,19 @@ def _commit_capacity(order, approved_at):
     if not holds or any(hold.status != HoldStatus.ACTIVE or approved_at > hold.expires_at for hold in holds):
         return False
     registration_lines = set(order.lines.filter(registration__isnull=False).values_list("pk", flat=True))
+    addon_lines = list(order.lines.filter(addon__isnull=False))
+    if addon_lines:
+        registrations = {line.linked_registration_id for line in addon_lines}
+        eligible = Registration.objects.filter(pk__in=registrations, event_id=order.event_id,
+            commercial_state='ACTIVE', source_order_line__order__status=OrderStatus.PAID).count()
+        if None in registrations or eligible != len(registrations):
+            return False
+        addon_holds = {hold.order_line_id:hold for hold in holds if resources[hold.resource_id].type == 'ADDON_TOTAL'}
+        if set(addon_holds) != {line.pk for line in addon_lines}:
+            return False
+        if any(addon_holds[line.pk].quantity != line.quantity or
+            resources[addon_holds[line.pk].resource_id].reference_id != str(line.addon_id) for line in addon_lines):
+            return False
     overall_holds = [hold for hold in holds if resources[hold.resource_id].type == "EVENT_OVERALL"]
     if {hold.order_line_id for hold in overall_holds} != registration_lines or sum(hold.quantity for hold in overall_holds) != len(registration_lines):
         return False
@@ -223,11 +236,18 @@ def activate_registration_if_eligible(registration):
 
 
 def _activate_registrations(order):
+    from django.db.models import Max
+    from apps.events.models import Event
+    Event.objects.select_for_update().get(pk=order.event_id)
+    next_number = (Registration.objects.filter(event_id=order.event_id).aggregate(n=Max("registration_number"))["n"] or 0) + 1
     # Payment never implies legal acceptance. The participant completes that separately.
     for reg in Registration.objects.select_for_update(of=("self",)).filter(source_order_line__order=order).select_related("source_order_line__product"):
         reg.commercial_state = CommercialState.ACTIVE
         reg.operational_state = OperationalState.NOT_READY
-        reg.save(update_fields=["commercial_state", "operational_state", "updated_at"])
+        if reg.registration_number is None:
+            reg.registration_number = next_number
+            next_number += 1
+        reg.save(update_fields=["commercial_state", "operational_state", "registration_number", "updated_at"])
         product = reg.source_order_line.product
         benefits_snapshot = reg.source_order_line.item_snapshot_json
         benefits = [("ACESSO_PISTA", "Acesso ao evento")]
@@ -241,10 +261,15 @@ def _activate_registrations(order):
             Entitlement.objects.get_or_create(registration=reg, benefit_type=kind,
                 defaults={"title": title, "quantity_total": 1, "state": EntitlementState.AVAILABLE})
         activate_registration_if_eligible(reg)
+        from apps.events.raffle_operations import issue_registration_ticket
+        issue_registration_ticket(reg)
 
 
 def _suspend_registrations(order, *, canceled=False):
+    Entitlement.objects.filter(source_order_line__order=order).update(state=EntitlementState.REVOKED)
     registrations = Registration.objects.filter(source_order_line__order=order)
+    from apps.events.models_raffles import RaffleTicket
+    RaffleTicket.objects.filter(registration__in=registrations).update(state='VOID')
     updates = {"operational_state": OperationalState.NOT_READY}
     if canceled:
         updates["commercial_state"] = CommercialState.CANCELED
@@ -291,7 +316,8 @@ def reconcile_payment(payment, *, charge_id=None):
         raise PaymentValidationError("invalid_refund")
     settled = status in {"approved", "refunded", "charged_back"}
     if settled and not snapshot.posted_revenue_cents:
-        _ledger(order, payment_id, FinancialEntryKind.RECEITA_INSCRICAO, amount, "REVENUE", "Pagamento confirmado pelo Mercado Pago")
+        revenue_kind = FinancialEntryKind.RECEITA_ADICIONAL if order.lines.filter(addon__isnull=False).exists() and not order.lines.filter(registration__isnull=False).exists() else FinancialEntryKind.RECEITA_INSCRICAO
+        _ledger(order, payment_id, revenue_kind, amount, "REVENUE", "Pagamento confirmado pelo Mercado Pago")
         snapshot.posted_revenue_cents = amount
     fees = payment.get("fee_details")
     if settled and isinstance(fees, list):
@@ -299,6 +325,10 @@ def reconcile_payment(payment, *, charge_id=None):
         _ledger(order, payment_id, FinancialEntryKind.TAXA_MERCADO_PAGO, snapshot.posted_fee_cents - fee,
                 f"FEE-{fee}-{updated_at.isoformat()}", "Tarifa real informada pelo Mercado Pago")
         snapshot.posted_fee_cents = fee
+        if charge.fee_snapshot:
+            from .models import FeeStatement
+            FeeStatement.objects.update_or_create(provider_order_id=payment_id, fee_type='CHECKOUT_PASS_THROUGH', defaults={
+                'expected_cents': charge.passed_fee_cents, 'actual_cents': fee, 'reconciled_at': timezone.now()})
     if refund > snapshot.posted_refund_cents:
         refund_delta = refund-snapshot.posted_refund_cents
         _ledger(order, payment_id, FinancialEntryKind.REEMBOLSO, -(refund - snapshot.posted_refund_cents),
@@ -316,11 +346,12 @@ def reconcile_payment(payment, *, charge_id=None):
     charge.error_code = ""
     charge.error_message = ""
     if status == "approved" and refund == 0:
+        Registration.objects.filter(source_order_line__order=order, archived_at__isnull=False).update(archived_at=None)
         charge.state = ChargeState.SUCCEEDED
         if not snapshot.fulfilled_at:
             already_fulfilled = PaymentTransaction.objects.filter(charge_attempt__order=order, fulfilled_at__isnull=False).exclude(pk=snapshot.pk).exists()
             lines = list(order.lines.all())
-            correct_lines = sum(line.net_cents for line in lines) == amount
+            correct_lines = sum(line.net_cents for line in lines) + charge.passed_fee_cents == amount
             # Do not resurrect a canceled/transferred registration after its CPF was released.
             correct_lines = correct_lines and not Registration.objects.filter(source_order_line__order=order).exclude(
                 commercial_state=CommercialState.RESERVED).exists()
@@ -331,12 +362,19 @@ def reconcile_payment(payment, *, charge_id=None):
                 charge.error_message = "Pagamento recebido. A organização precisa conferir sua reserva antes de liberar a inscrição."
             else:
                 order.status = OrderStatus.PAID
-                order.save(update_fields=["status", "updated_at"])
+                order.total_cents, order.payment_fee_cents = amount, charge.passed_fee_cents
+                order.save(update_fields=["status", "total_cents", "payment_fee_cents", "updated_at"])
                 snapshot.fulfilled_at = timezone.now()
                 for line in lines:
                     PaymentAllocation.objects.get_or_create(charge_attempt=charge, order_line=line, defaults={"amount_cents": line.net_cents})
+                if charge.passed_fee_cents:
+                    due = ReceivableDue.objects.filter(order=order, due_type='FULL').first()
+                    PaymentAllocation.objects.get_or_create(charge_attempt=charge, order_line=None, receivable_due=due,
+                        defaults={'amount_cents': charge.passed_fee_cents})
                 ReceivableDue.objects.filter(order=order, due_type="FULL").update(allocated_paid_cents=amount, status="PAID")
                 _activate_registrations(order)
+                from apps.checkout.addons import activate_addons
+                activate_addons(order)
                 from apps.identity.onboarding import provision_buyer_account
                 provision_buyer_account(order)
     elif refund:

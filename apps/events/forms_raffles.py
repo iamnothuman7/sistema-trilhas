@@ -15,7 +15,7 @@ class MotorcycleRaffleForm(forms.ModelForm):
 
     class Meta:
         model = MotorcycleRaffle
-        fields = ("title", "motorcycle_model", "description", "quota_price", "quota_quantity", "draw_at", "rules_text", "is_public", "interest_enabled")
+        fields = ("title", "motorcycle_model", "motorcycle_count", "description", "quota_price", "quota_quantity", "draw_at", "rules_text", "is_public", "interest_enabled", "registration_tickets_enabled", "paper_start", "paper_end")
         widgets = {
             "motorcycle_model": forms.TextInput(attrs={"placeholder": "A definir"}),
             "description": forms.Textarea(attrs={"rows": 3}),
@@ -43,6 +43,13 @@ class MotorcycleRaffleForm(forms.ModelForm):
         data = super().clean()
         if data.get("interest_enabled") and not data.get("is_public"):
             self.add_error("interest_enabled", "Publique a apresentação antes de habilitar o registro de interesse.")
+        start, end = data.get('paper_start'), data.get('paper_end')
+        if start is not None and end is not None and (end < start or end-start >= 5000):
+            self.add_error('paper_end', 'Use uma faixa crescente de até 5.000 números.')
+        if self.instance.pk and not self.instance._state.adding and self.instance.tickets.exists() and any(name in self.changed_data for name in ['paper_start','paper_end']):
+            self.add_error('paper_start', 'A faixa não pode mudar depois da emissão de números. Isso evita bilhetes duplicados.')
+        if data.get('motorcycle_count') is not None and not 1 <= data['motorcycle_count'] <= 10:
+            self.add_error('motorcycle_count', 'Informe entre 1 e 10 motos.')
         return data
 
     def save(self, commit=True):

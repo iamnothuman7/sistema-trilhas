@@ -1,0 +1,9 @@
+{% extends 'gestao/base_gestao.html' %}
+{% block title %}Equipe e acessos | {{ event.title }}{% endblock %}
+{% block gestao_header %}Equipe e acessos{% endblock %}
+{% block content %}
+<header class="page-heading"><div><h1>Equipe e acessos</h1><p>Crie acessos individuais e escolha o que cada pessoa pode usar nesta edição.</p></div></header>
+{% if new_access %}<section class="card mg-element-gap" data-workspace-private><h2>Acesso criado</h2><p>Guarde a senha antes de sair desta tela. Ela aparece somente agora.</p><dl><dt>E-mail</dt><dd>{{ new_access.email }}</dd><dt>Senha inicial</dt><dd><code>{{ new_access.password }}</code></dd></dl><p>Endereço para entrar: <strong>{{ request.scheme }}://{{ request.get_host }}/login/</strong></p></section>{% endif %}
+<div class="form-grid"><section class="card"><h2>Adicionar colaborador</h2><form method="post" class="mg-stack" data-workspace-private>{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}{% include 'gestao/events/_field.html' %}{% endfor %}<p class="form-help">Credenciamento permite consultar QR e entregar kits. Atendimento permite consultar e cadastrar inscrições. Financeiro e Conteúdo são acessos separados.</p><button class="btn btn-primary" type="submit">Criar ou conceder acesso</button></form></section>
+<section class="card"><h2>Equipe desta edição</h2><div class="mg-stack">{% for member in members %}<article class="mg-row mg-row-divider"><div><strong>{{ member.user.full_name }}</strong><p>{{ member.user.email }}</p>{% for role in member.roles %}<span class="badge badge-info">{{ role }}</span> {% endfor %}</div>{% if member.editable %}<form method="post" action="{% url 'gestao:team_revoke' event.id member.user.id %}">{% csrf_token %}<button class="btn btn-secondary" type="submit">Remover acesso</button></form>{% endif %}</article>{% empty %}<p>Nenhum colaborador adicional cadastrado nesta edição.</p>{% endfor %}</div></section></div>
+{% endblock %}

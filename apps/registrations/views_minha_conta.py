@@ -40,7 +40,7 @@ def visible_registrations(user):
     linked_people = UserPersonLink.objects.filter(user=user).values("person_id")
     return Registration.objects.filter(
         Q(source_order_line__order__purchaser_user=user) | Q(person_id__in=linked_people)
-    ).distinct()
+    ).filter(archived_at__isnull=True).distinct()
 
 
 def _registration_for_view(request, registration_id):
@@ -133,6 +133,8 @@ def registration_detail(request, registration_id):
     context = {"reg": reg, "entitlements": reg.entitlements.all(), **_terms_context(reg, request.user),
                "pilot_art_available": bool(authorized_pilot_art(request.user, reg.pk))}
     context["journey"] = registration_journey(reg, request.user, context)
+    from apps.checkout.addons import eligible_registrations
+    context['can_buy_addons'] = eligible_registrations(request.user).filter(pk=reg.pk).exists()
     return render(request, "registrations/registration_detail.html", context)
 
 

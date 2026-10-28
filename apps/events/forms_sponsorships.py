@@ -18,7 +18,7 @@ def style_fields(form):
 class SponsorProfileForm(SponsorForm):
     class Meta(SponsorForm.Meta):
         model = SponsorProfile
-        fields = ("name", "logo_image", "instagram_url", "website", "contact_name", "contact_phone", "contact_email", "notes")
+        fields = ("name", "logo_image", "instagram_url", "whatsapp_number", "website", "contact_name", "contact_phone", "contact_email", "notes")
         widgets = {
             **SponsorForm.Meta.widgets,
             "contact_phone": forms.TextInput(attrs={"data-mask": "phone", "inputmode": "tel"}),

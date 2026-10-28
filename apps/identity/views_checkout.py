@@ -13,7 +13,7 @@ from apps.checkout.views import authorized_order, private_checkout
 from apps.core.utils import log_audit
 from apps.core.rate_limits import rate_limit_request, reset_rate_limit
 from .models import CheckoutAccount, User
-from .onboarding import provision_buyer_account
+from .onboarding import provision_buyer_account, link_buyer_registration
 from apps.mediaframes.access import purchased_art_url
 
 
@@ -81,6 +81,8 @@ def purchase_access(request, order_id):
             locked.save(update_fields=["purchaser_user", "updated_at"])
         log_audit(actor=user, event_id=order.event_id, action="CHECKOUT_ACCOUNT_ACTIVATED" if new_account else "CHECKOUT_ACCOUNT_LINKED",
                   entity_type="Order", entity_id=order.pk, request=request)
+    order.refresh_from_db()
+    link_buyer_registration(order, user)
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     reset_rate_limit(scope + ":account", order.purchaser_email.lower().strip())
     messages.success(request, "Sua conta está pronta. Acompanhe suas inscrições e conclua os termos de cada participante.")

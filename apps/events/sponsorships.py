@@ -6,7 +6,7 @@ from django.utils import timezone
 from apps.core.permissions import accessible_events, can_manage_event
 from .models import Sponsor, SponsorProfile
 
-BRAND_FIELDS = ("name", "website", "instagram_url", "logo_image", "logo_preview", "logo_preview_width", "logo_preview_height")
+BRAND_FIELDS = ("name", "website", "instagram_url", "whatsapp_number", "logo_image", "logo_preview", "logo_preview_width", "logo_preview_height")
 
 
 def brand_values(instance):

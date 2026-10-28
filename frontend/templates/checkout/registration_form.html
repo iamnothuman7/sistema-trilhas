@@ -5,12 +5,11 @@
 {% block content %}
 <div class="payment-page registration-page">
     <a href="{% url 'events:detail' slug=event.slug %}#inscricao" class="public-back"><i data-lucide="arrow-left" aria-hidden="true"></i> Voltar ao evento</a>
-    <header class="registration-intro"><span class="payment-kicker">Inscrição no evento</span><h1>{{ event.title }}</h1><p class="payment-muted">Informe quem vai participar e confira o valor antes de continuar.{% if event.motorcycle_raffle.is_public %} A inscrição não inclui cotas do sorteio.{% endif %}</p></header>
+    <header class="registration-intro"><span class="payment-kicker">Inscrição no evento</span><h1>{{ event.title }}</h1><p class="payment-muted">Informe quem vai participar e confira o valor antes de continuar.{% if event.motorcycle_raffle.is_public and event.motorcycle_raffle.registration_tickets_enabled %} Cada inscrição paga recebe um número no sorteio anunciado pela organização.{% endif %}</p></header>
     {% if active_lots %}
     {% if not payments_available %}<div class="payment-alert" role="status">O pagamento online ainda não está disponível. Você pode conferir os dados e o valor da inscrição; nenhuma cobrança será realizada nesta etapa.</div>{% endif %}
     <form method="post" id="registrationForm" data-max-participants="{{ max_participants }}" data-draft-event="{{ event.id }}" data-draft-user="{{ request.user.pk|default:'visitante' }}" data-draft-bound="{% if request.method == 'POST' %}true{% else %}false{% endif %}">
         {% csrf_token %}
-        <label class="draft-preferences"><input type="checkbox" id="remember-registration"><span>Lembrar meu preenchimento neste dispositivo<small>Por até 7 dias. Use apenas no seu aparelho. Senhas e dados de cartão não são salvos.</small></span></label><p class="registration-caption" id="draft-status" role="status"></p><button type="button" class="payment-button payment-button-secondary" id="clear-registration-draft">Apagar preenchimento salvo</button>
         <section class="payment-card"><header class="card-header"><div><h2>1. Seus dados</h2><span class="registration-caption">Responsável pela inscrição e pelo comprovante</span></div></header>
             <p class="registration-caption">Não precisa fazer um cadastro separado. Após o pagamento confirmado, sua conta é criada com os dados da compra e você define a senha no primeiro acesso. Se já tiver conta, use sua senha habitual.</p>
             <div class="registration-grid">
@@ -32,4 +31,4 @@
     {% else %}<section class="payment-card"><h2>Inscrições indisponíveis no momento</h2><p>A organização ainda não disponibilizou uma oferta para esta edição ou as vagas estão esgotadas.</p><a href="{% url 'events:detail' slug=event.slug %}" class="payment-button payment-button-secondary">Voltar ao evento</a></section>{% endif %}
 </div>
 {% endblock %}
-{% block extra_js %}<script src="{% static 'js/registration.js' %}?v=checkout20261026" defer></script><script src="{% static 'js/registration-draft.js' %}?v=20261026" defer></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'js/registration.js' %}?v=meeting20261028" defer></script>{% endblock %}

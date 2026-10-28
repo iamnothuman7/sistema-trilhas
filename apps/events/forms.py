@@ -29,10 +29,11 @@ class SponsorForm(forms.ModelForm):
 
     class Meta:
         model = Sponsor
-        fields = ("name", "tier", "logo_image", "instagram_url", "website", "sort_order", "is_public")
+        fields = ("name", "tier", "logo_image", "instagram_url", "whatsapp_number", "website", "sort_order", "is_public")
         labels = {"name": "Nome da marca", "tier": "Cota", "website": "Site", "sort_order": "Ordem de exibição"}
         help_texts = {
             "instagram_url": "Use o endereço completo do perfil: https://www.instagram.com/suamarca/.",
+            "whatsapp_number": "Opcional. Este número será exibido no botão de WhatsApp do patrocinador.",
             "website": "Opcional. Endereço do site do patrocinador.",
             "sort_order": "Números menores aparecem primeiro.",
         }
@@ -40,6 +41,7 @@ class SponsorForm(forms.ModelForm):
             "name": forms.TextInput(attrs={"placeholder": "Nome do patrocinador"}),
             "instagram_url": forms.URLInput(attrs={"placeholder": "https://www.instagram.com/suamarca/"}),
             "website": forms.URLInput(attrs={"placeholder": "https://www.suamarca.com.br"}),
+            "whatsapp_number": forms.TextInput(attrs={"data-mask": "phone", "inputmode": "tel"}),
             "sort_order": forms.NumberInput(attrs={"min": 0}),
         }
 
@@ -62,6 +64,12 @@ class SponsorForm(forms.ModelForm):
             except (OSError, ValueError, Image.DecompressionBombError) as exc:
                 raise ValidationError("Não foi possível preparar a imagem. Envie outra imagem PNG, JPG ou WebP.") from exc
         return upload
+
+    def clean_whatsapp_number(self):
+        from .validators import validate_sponsor_whatsapp
+        value = self.cleaned_data.get("whatsapp_number", "")
+        validate_sponsor_whatsapp(value)
+        return value
 
     def save(self, commit=True):
         instance = super().save(commit=False)

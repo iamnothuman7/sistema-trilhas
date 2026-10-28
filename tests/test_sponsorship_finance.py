@@ -150,7 +150,7 @@ class SponsorshipFinanceTests(TestCase):
         self.assertFalse(SponsorPayment.objects.exists())
 
     def test_link_existing_brand_keeps_independent_agreement(self):
-        response = self.client.post(self.url("sponsor_link", event=self.other), {"profile": self.profile.pk, "tier": "APOIO", "sort_order": 0,
+        response = self.client.post(self.url("sponsor_link", event=self.other), {"profile": self.profile.pk, "tier": "BRONZE", "sort_order": 0,
             "is_public": "on", "agreement-amount": "500,00"})
         self.assertEqual(response.status_code, 302)
         linked = Sponsor.objects.get(event=self.other, profile=self.profile)
@@ -158,7 +158,7 @@ class SponsorshipFinanceTests(TestCase):
         self.assertEqual(self.balance().agreed_amount_cents, 100000)
         self.assertTrue(linked.is_public)
         self.assertFalse(self.balance().is_public)
-        duplicate = self.client.post(self.url("sponsor_link", event=self.other), {"profile": self.profile.pk, "tier": "APOIO", "sort_order": 0})
+        duplicate = self.client.post(self.url("sponsor_link", event=self.other), {"profile": self.profile.pk, "tier": "BRONZE", "sort_order": 0})
         self.assertEqual(duplicate.status_code, 400)
         self.assertEqual(Sponsor.objects.filter(profile=self.profile).count(), 2)
 

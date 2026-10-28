@@ -31,7 +31,7 @@
         element.setAttribute('hx-boost', 'false');
       }
       if (isForm && element.enctype === 'multipart/form-data') element.setAttribute('hx-encoding', 'multipart/form-data');
-      if (!nativePage && location.pathname.startsWith('/gestao/') && isForm && element.method.toLowerCase() === 'get') element.setAttribute('hx-push-url', 'true');
+      if (!nativePage && location.pathname.startsWith('/gestao/') && isForm && (element.getAttribute('method') || 'get').toLowerCase() === 'get') element.setAttribute('hx-push-url', 'true');
     });
   }
   document.addEventListener('htmx:beforeProcessNode', event => prepare(event.detail.elt));

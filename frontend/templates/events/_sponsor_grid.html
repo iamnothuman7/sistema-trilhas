@@ -3,5 +3,6 @@
 <div class="sponsor-art">{% if sp.logo_image %}<img src="{{ sp.display_logo_url }}" alt="{{ sp.name }}" loading="lazy" decoding="async"{% if sp.logo_preview and sp.logo_preview_width and sp.logo_preview_height %} width="{{ sp.logo_preview_width }}" height="{{ sp.logo_preview_height }}"{% endif %}>{% else %}<div class="sponsor-placeholder"><i data-lucide="image" aria-hidden="true"></i><span>Logo do patrocinador</span></div>{% endif %}</div>
 <div class="sponsor-caption"><strong>{{ sp.name }}</strong><span>{{ sp.get_tier_display }}</span></div>
 {% if sp.instagram_url %}<a class="btn btn-secondary sponsor-instagram" href="{{ sp.instagram_url }}" target="_blank" rel="noopener noreferrer"><i data-lucide="camera" aria-hidden="true"></i> Ver Instagram <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>{% endif %}
+{% if sp.whatsapp_url %}<a class="btn btn-secondary sponsor-instagram" href="{{ sp.whatsapp_url }}" target="_blank" rel="noopener noreferrer"><i data-lucide="message-circle" aria-hidden="true"></i> WhatsApp <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>{% endif %}
 </article>{% endfor %}
 </div>

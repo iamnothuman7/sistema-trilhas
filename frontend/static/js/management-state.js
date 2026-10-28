@@ -28,7 +28,7 @@
     return {value:el.value};
   }
   function changed(el) {
-    if (!el.form || el.form.method.toLowerCase() === 'get') return true;
+    if (!el.form || (el.form.getAttribute('method') || 'get').toLowerCase() === 'get') return true;
     if (el.type === 'file') return Boolean(el.files.length);
     if (['checkbox','radio'].includes(el.type)) return el.checked !== el.defaultChecked;
     if (el.tagName === 'SELECT') return [...el.options].some(o => o.selected !== o.defaultSelected);
@@ -39,8 +39,8 @@
     const fields = new Map(), versions = [];
     controls().forEach((el, index) => { if (changed(el)) fields.set(controlKey(el,index), valueOf(el)); });
     for (const [index, form] of [...root().querySelectorAll('form')].entries()) {
-      if (form.method.toLowerCase() !== 'post' || ![...form.elements].some(el => fields.has(controlKey(el,controls().indexOf(el))))) continue;
-      const version = form.querySelector('input[name="version"]');
+      if ((form.getAttribute('method') || 'get').toLowerCase() !== 'post' || ![...form.elements].some(el => fields.has(controlKey(el,controls().indexOf(el))))) continue;
+      const version = form.querySelector('input[name="version"],input[name$="-version"]');
       if (version) versions.push({index,value:version.value}); // Preserve optimistic locking with the draft.
     }
     const custom = new Map();
@@ -67,7 +67,7 @@
         el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true}));
       }
     });
-    state.versions.forEach(({index,value}) => { const field=root().querySelectorAll('form')[index]?.querySelector('input[name="version"]'); if(field)field.value=value; });
+    state.versions.forEach(({index,value}) => { const field=root().querySelectorAll('form')[index]?.querySelector('input[name="version"],input[name$="-version"]'); if(field)field.value=value; });
     [...root().querySelectorAll('details')].forEach((el,i)=>{ if(i<state.details.length)el.open=state.details[i]; });
     state.dialogs.forEach(id=>{const el=document.getElementById(id);if(el?.tagName==='DIALOG'&&!el.open)el.showModal();});
     [...root().querySelectorAll('.table-responsive')].forEach((el,i)=>{const p=state.tables[i];if(p){el.scrollLeft=p.x;el.scrollTop=p.y;}});

@@ -2,8 +2,9 @@
 {% block title %}Sorteio da moto | {{ event.title }}{% endblock %}
 {% block gestao_header %}Sorteio da moto{% endblock %}
 {% block content %}
+{% if saved_raffle %}<div class="page-actions mg-section-gap"><a class="btn btn-primary" href="{% url 'gestao:raffle_operations' event.id %}"><i data-lucide="tickets" aria-hidden="true"></i>Bilhetes, pontos e impressão</a></div>{% endif %}
 <div class="page-heading"><div><h1>Sorteio da moto</h1><p>Configuração e interesses de {{ event.title }}.</p></div><a class="btn btn-secondary" href="{% url 'events:raffle' slug=event.slug %}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i>Ver página do sorteio</a></div>
-<div class="alert" role="status"><i data-lucide="info" aria-hidden="true"></i><span>Em preparação. Esta área é separada das inscrições do evento. Salvar ou publicar os dados não libera compra de cotas, reserva de números ou pagamentos.</span></div>
+<div class="alert" role="status"><i data-lucide="info" aria-hidden="true"></i><span>Gerencie a numeração das inscrições pagas, os bilhetes em papel e os pontos de venda. A compra pública de cotas continua indisponível.</span></div>
 <form method="post" class="card mg-section-gap">
     {% csrf_token %}
     <div class="card-header"><div><h2>Informações do sorteio</h2><p>Preencha somente os dados confirmados. Os campos ainda indefinidos podem ficar em branco.</p></div><span class="badge badge-info">{% if raffle.is_public %}Apresentação pública{% else %}Rascunho{% endif %}</span></div>

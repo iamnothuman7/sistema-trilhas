@@ -19,8 +19,11 @@ ACTION_ROLES = {
     "content": MANAGERS | {RoleChoices.CONTENT},
     "sponsors": MANAGERS | {RoleChoices.CONTENT, RoleChoices.FINANCE},
     "audit": MANAGERS,
+    "team": MANAGERS,
 }
 VIEW_ACTIONS = {
+    "team_management": "team", "team_revoke": "team",
+    "registration_remove": "registrations",
     "manual_registration_create": "registrations",
     "manual_registration_payment": "finance",
     "manual_registration_renew_link": "registrations",
@@ -44,6 +47,7 @@ VIEW_ACTIONS = {
     "sponsor_link": "content", "sponsor_detail": "sponsors", "sponsor_agreement": "finance",
     "sponsor_receipt": "finance", "sponsor_reversal": "finance",
     "raffle_management": "events",
+    "raffle_operations": "events", "raffle_print": "events",
     "team_frame_editor": "content",
     "official_frame_preview": "content",
     "ranking_management": "registrations",

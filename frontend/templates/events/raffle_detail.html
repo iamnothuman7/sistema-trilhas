@@ -6,12 +6,12 @@
 <div class="public-page public-page--narrow">
     <a href="{% url 'events:detail' slug=event.slug %}" class="public-back"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar ao evento</a>
     {% include 'events/_event_navigation.html' with current='raffle' %}
-    <header class="public-intro"><span class="public-eyebrow">{{ event.title }}</span><h1>{% if raffle %}{{ raffle.title }}{% else %}Sorteio de moto{% endif %}</h1><p>{% if raffle %}Uma ação separada da inscrição no evento. Os detalhes serão publicados aqui pela organização.{% else %}Nenhum sorteio divulgado para esta edição.{% endif %}</p></header>
+    <header class="public-intro"><span class="public-eyebrow">{{ event.title }}</span><h1>{% if raffle %}{{ raffle.title }}{% else %}Sorteio de moto{% endif %}</h1><p>{% if raffle %}{% if raffle.registration_tickets_enabled %}Cada inscrição paga recebe um número para este sorteio. Os detalhes e as regras serão publicados pela organização.{% else %}Os detalhes serão publicados aqui pela organização.{% endif %}{% else %}Nenhum sorteio divulgado para esta edição.{% endif %}</p></header>
     {% if raffle_preview %}<div class="alert alert-warning" role="status">Prévia da organização. Este rascunho ainda não está público.</div>{% endif %}
     {% if raffle %}
     <section class="public-card">
         <span class="public-icon"><i data-lucide="gift" aria-hidden="true"></i></span>
-        <h2>{% if raffle.motorcycle_model %}{{ raffle.motorcycle_model }}{% else %}A moto será apresentada em breve{% endif %}</h2>
+        <h2>{% if raffle.motorcycle_model %}{{ raffle.motorcycle_model }}{% else %}{% if raffle.motorcycle_count > 1 %}{{ raffle.motorcycle_count }} motos no sorteio{% else %}A moto será apresentada em breve{% endif %}{% endif %}</h2>
         <p class="public-document">{{ raffle.description|default:'A organização está preparando a apresentação da moto, as regras e os detalhes das cotas.' }}</p>
         <dl class="public-stats">
             <div><dt>Cotas do sorteio</dt><dd>{% if raffle.quota_price_cents %}R$ {{ raffle.quota_price_cents|money }}{% else %}Em breve{% endif %}</dd></div>

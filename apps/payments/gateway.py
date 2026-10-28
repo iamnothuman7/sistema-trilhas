@@ -82,11 +82,14 @@ class MercadoPagoGateway:
 
     def _base_payload(self, charge):
         order = charge.order
+        from apps.core.utils import cents_to_reais
+        breakdown = f'Itens R$ {cents_to_reais(charge.amount_cents-charge.passed_fee_cents)} + taxa R$ {cents_to_reais(charge.passed_fee_cents)} = R$ {cents_to_reais(charge.amount_cents)}'
         return {"transaction_amount": float(Decimal(charge.amount_cents) / 100),
-                "description": f"{order.event.title} - {order.merchant_reference}"[:250],
+                "description": f"{order.event.title[:100]} - {order.merchant_reference} | {breakdown}"[:250],
                 "external_reference": order.merchant_reference,
                 "notification_url": self.webhook_url,
-                "metadata": {"order_id": str(order.id), "charge_attempt_id": str(charge.id)},
+                "metadata": {"order_id": str(order.id), "charge_attempt_id": str(charge.id),
+                    "items_cents": charge.amount_cents-charge.passed_fee_cents, "payment_fee_cents": charge.passed_fee_cents},
                 "payer": {"email": order.purchaser_email}}
 
     def create_pix_payment(self, charge):

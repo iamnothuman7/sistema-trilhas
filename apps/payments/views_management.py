@@ -12,7 +12,8 @@ from .connection import can_manage_connection, can_view_connection, draft_values
 from .forms_connection import MercadoPagoDraftForm, MercadoPagoOperationForm, MercadoPagoActivationForm
 from .gateway import MercadoPagoGateway, GatewayError
 from .gateway_config import CredentialStorageError, configured_webhook_url
-from .models import MercadoPagoConnection
+from .models import MercadoPagoConnection, PaymentFeePolicy, FeeStatement
+from .fees import PaymentFeeForm, policy, OFFICIAL_FEE_SOURCE
 
 
 @login_required
@@ -104,3 +105,62 @@ def mercadopago_connection(request):
     response = render(request, "gestao/payments/connection.html", context, status=status)
     response["Referrer-Policy"] = "same-origin"
     return response
+
+
+@login_required
+@never_cache
+@require_http_methods(['GET', 'POST'])
+def mercadopago_fees(request):
+    from decimal import Decimal, InvalidOperation
+    from types import SimpleNamespace
+    from django.db import transaction
+    from apps.core.utils import cents_to_reais, log_audit
+    from .fees import quote_for
+    from .models import PaymentMethod
+    if not can_view_connection(request.user):
+        raise PermissionDenied
+    can_edit = can_manage_connection(request.user)
+    if request.method == 'POST' and not can_edit:
+        raise PermissionDenied
+    form = None
+    status = 200
+    if request.method == 'POST':
+        with transaction.atomic():
+            config, _ = PaymentFeePolicy.objects.get_or_create(pk=1)
+            config = PaymentFeePolicy.objects.select_for_update().get(pk=config.pk)
+            form = PaymentFeeForm(request.POST, instance=config, prefix='fees')
+            if form.is_valid():
+                saved = form.save(commit=False)
+                saved.updated_by = request.user
+                saved.save()
+                log_audit(actor=request.user, action='PAYMENT_FEE_POLICY_UPDATED', entity_type='PaymentFeePolicy', entity_id=1,
+                    diff={'fields': list(form.changed_data)}, request=request)
+                messages.success(request, 'Regras salvas. O repasse de tarifas vale para novas cotações. A comissão para outra conta permanece em rascunho até conectar o split.')
+                return redirect('gestao:mercadopago_fees')
+            status = 400
+    config = policy()
+    try:
+        amount = Decimal(request.GET.get('valor', '120').replace(',', '.'))
+        if not amount.is_finite() or amount < Decimal('0.01') or amount > 100000:
+            raise ValueError
+        base = int(amount.quantize(Decimal('0.01')) * 100)
+    except (ValueError, InvalidOperation):
+        base = 12000
+    quotes = []
+    sample = SimpleNamespace(pk='simulation', base_total_cents=base)
+    for method in [PaymentMethod.PIX, PaymentMethod.CREDIT_CARD]:
+        quote = quote_for(sample, method, configuration=config)
+        provider_rate = config.pix_bps if method == PaymentMethod.PIX else config.card_bps
+        fixed = config.pix_fixed_cents if method == PaymentMethod.PIX else config.card_fixed_cents
+        provider_fee = (quote.total * provider_rate + 5000)//10000 + fixed
+        quotes.append({'method': method, 'name': 'Pix' if method == PaymentMethod.PIX else 'Cartão à vista',
+            'items': cents_to_reais(base), 'passed': quote.formatted_fee, 'total': quote.formatted_total,
+            'provider': cents_to_reais(provider_fee), 'net': cents_to_reais(quote.total-provider_fee)})
+    statements = list(FeeStatement.objects.filter(fee_type='CHECKOUT_PASS_THROUGH').order_by('-reconciled_at')[:20])
+    for item in statements:
+        item.formatted_expected = cents_to_reais(item.expected_cents)
+        item.formatted_actual = cents_to_reais(item.actual_cents) if item.actual_cents is not None else 'Aguardando'
+        item.has_difference = item.actual_cents is not None and item.actual_cents != item.expected_cents
+    return render(request, 'gestao/payments/fees.html', {'fee_form': form or PaymentFeeForm(instance=config, prefix='fees'),
+        'can_edit_connection': can_edit, 'fee_policy': config, 'fee_source': OFFICIAL_FEE_SOURCE,
+        'fee_statements': statements, 'fee_quotes': quotes, 'simulation_value': format(Decimal(base)/100, '.2f')}, status=status)

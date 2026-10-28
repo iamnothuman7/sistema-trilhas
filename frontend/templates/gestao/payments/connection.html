@@ -3,6 +3,7 @@
 {% block gestao_header %}Conectar Mercado Pago{% endblock %}
 {% block content %}
 <div class="mp-workspace mp-connection-simple">
+{% include "gestao/payments/_tabs.html" %}
   <div class="page-heading"><div><h1>Conectar sua conta Mercado Pago</h1><p>Preencha as chaves da Equipe Morcego e conclua a conexão aqui mesmo.</p></div></div>
   <section class="card mp-status" aria-labelledby="connection-status-title">
     <h2 id="connection-status-title" class="section-title">{% if connection_complete %}Configuração ativa{% else %}Falta concluir a conexão{% endif %}</h2>
@@ -42,5 +43,6 @@
   </form>
   {% if has_draft %}<form method="post" class="mp-recheck">{% csrf_token %}<input type="hidden" name="action" value="verify">{{ operation_form.version }}<button class="btn btn-secondary" type="submit">Testar conta sem cobrar</button></form>{% else %}<p class="text-muted mp-recheck">Testar conta sem cobrar ficará disponível após salvar as chaves.</p>{% endif %}
   {% elif not can_edit_connection %}<section class="card"><h2 class="section-title">Consulta financeira</h2><p>Somente o proprietário global ou superusuário pode conectar a conta recebedora.</p></section>{% endif %}
+
 </div>
 {% endblock %}

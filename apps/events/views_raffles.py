@@ -81,6 +81,12 @@ def raffle_management(request, event_id):
                 saved = form.save(commit=False)
                 saved.event = event
                 saved.save()
+                if saved.registration_tickets_enabled:
+                    from apps.registrations.models import Registration
+                    from .raffle_operations import issue_registration_ticket
+                    for reg in Registration.objects.filter(event=event, commercial_state='ACTIVE',
+                            source_order_line__order__status='PAID', raffle_ticket__isnull=True).select_related('source_order_line__order'):
+                        issue_registration_ticket(reg)
                 log_audit(actor=request.user, event_id=event.pk,
                           action="RAFFLE_CREATED" if creating else "RAFFLE_UPDATED",
                           entity_type="MotorcycleRaffle", entity_id=saved.pk,
@@ -90,5 +96,6 @@ def raffle_management(request, event_id):
         interests = RaffleInterest.objects.filter(raffle=raffle).select_related("user") if not raffle._state.adding else RaffleInterest.objects.none()
         return render(request, "gestao/raffles/manage.html", {
             "event": event, "raffle": raffle, "form": form,
+            "saved_raffle": not raffle._state.adding,
             "interest_count": interests.count(), "interests_page": Paginator(interests, 20).get_page(request.GET.get("page")),
         }, status=400 if request.method == "POST" else 200)

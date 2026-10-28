@@ -46,6 +46,21 @@ def export_expenses_csv(event, start=None, end=None):
           item.get_status_display(), Decimal(item.amount_cents) / 100] for item in entries.iterator()))
 
 
+def export_addons_csv(event, start=None, end=None):
+    from apps.checkout.addons import inventory_items
+    return table_csv(event, 'estoque_extras', ['Produto', 'Variação', 'Preço (R$)', 'Estoque total', 'Reservado', 'Vendido', 'Disponível', 'Ativo'],
+        ([item.title,item.variant_code,Decimal(item.price_cents)/100,item.max_quantity,item.reserved_quantity,item.sold_quantity,item.available_quantity,'Sim' if item.active else 'Não']
+        for item in inventory_items(event, active=False)))
+
+
+def export_raffle_csv(event, start=None, end=None):
+    from apps.events.models_raffles import RaffleTicket
+    rows=RaffleTicket.objects.filter(raffle__event=event).select_related('registration__person','point').order_by('number')
+    return table_csv(event,'bilhetes_sorteio',['Número','Origem','Situação','Participante / comprador','Ponto','Recebido (R$)','Data da baixa'],
+        ([item.number,item.get_source_display(),item.get_state_display(),item.registration.person.full_name if item.registration else item.buyer_name,
+          item.point.name if item.point else '',Decimal(item.amount_cents)/100,item.paid_at.isoformat() if item.paid_at else ''] for item in rows))
+
+
 def export_sponsorships_csv(event, start=None, end=None):
     from apps.events.sponsorships import decorate_balance, sponsorships_with_balances
     # Agreements are a current-position report, including agreements without a due date.
@@ -159,6 +174,7 @@ def export_participants_csv(event, start=None, end=None) -> HttpResponse:
         "UF",
         "Equipe / Moto Clube",
         "Modalidade / Pacote",
+        "Veículo",
         "Tamanho da Camiseta",
         "Situação Comercial",
         "Situação Operacional",
@@ -181,6 +197,7 @@ def export_participants_csv(event, start=None, end=None) -> HttpResponse:
             safe_text(reg.person.state or ""),
             safe_text(reg.team_name or reg.person.team_name or ""),
             safe_text(reg.category_name or ""),
+            safe_text(reg.get_vehicle_type_display()),
             safe_text(reg.shirt_size or ""),
             safe_text(reg.get_commercial_state_display()),
             safe_text(reg.get_operational_state_display()),
@@ -224,13 +241,14 @@ def export_orders_csv(event, start=None, end=None):
     output = io.StringIO("", newline="")
     output.write("\ufeff")
     writer = csv.writer(output, delimiter=";")
-    writer.writerow(["Pedido", "Criado em", "Comprador", "E-mail", "Situação", "Bruto (R$)", "Desconto (R$)", "Total do pedido (R$)"])
+    writer.writerow(["Pedido", "Criado em", "Comprador", "E-mail", "Situação", "Bruto (R$)", "Desconto (R$)", "Itens após desconto (R$)", "Tarifas repassadas (R$)", "Total do pedido (R$)"])
     orders = in_period(Order.objects.filter(event=event), "created_at", start, end, tz=event_timezone(event)).order_by("created_at", "pk")
     for order in orders.iterator():
         writer.writerow([
             safe_text(order.merchant_reference), timezone.localtime(order.created_at, event_timezone(event)).strftime("%d/%m/%Y %H:%M"),
             safe_text(order.purchaser_name), safe_text(order.purchaser_email), safe_text(order.get_status_display()),
-            decimal_amount(order.gross_cents), decimal_amount(order.discount_cents), decimal_amount(order.total_cents),
+            decimal_amount(order.gross_cents), decimal_amount(order.discount_cents), decimal_amount(order.base_total_cents),
+            decimal_amount(order.payment_fee_cents), decimal_amount(order.total_cents),
         ])
     return csv_response(output, f"pedidos_{event.slug}.csv")
 

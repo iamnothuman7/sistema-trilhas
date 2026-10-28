@@ -121,12 +121,19 @@ def build_registration_pdf(reg, *, generated_at=None):
         ("INSCRIÇÃO", f"#{reg.registration_number}" if reg.registration_number else "Número ainda não atribuído"),
         ("MODALIDADE", reg.category_name),
         ("EQUIPE", reg.team_name or reg.person.team_name or "Não informada"),
-        ("CAMISETA", reg.shirt_size or "Não informada"),
+        ("CAMISETA", (reg.shirt_size or "Não informada") + (" · " + reg.get_vehicle_type_display() if reg.vehicle_type else "")),
         ("EVENTO", f"{starts:%d/%m/%Y %H:%M} a {ends:%d/%m/%Y %H:%M} ({reg.event.timezone})"),
         ("LOCAL", reg.event.venue or "A confirmar pela organização"),
         ("PAGAMENTO", reg.source_order_line.order.get_status_display()),
         ("OPERAÇÃO", reg.get_operational_state_display() if state["qr_available"] else "Credenciamento e retirada bloqueados no momento"),
     ]
+    from apps.events.models_raffles import RaffleTicket
+    ticket = RaffleTicket.objects.filter(registration=reg, state='SOLD').first() if state['confirmed'] else None
+    if ticket:
+        details.append(('NÚMERO DO SORTEIO', str(ticket.number)))
+    order = reg.source_order_line.order
+    if order.payment_fee_cents:
+        details.append(('VALOR DO PEDIDO', f'Itens R$ {order.formatted_base_total} + tarifa R$ {order.formatted_payment_fee} = R$ {order.formatted_total}'))
     data_table = Table([[paragraph(label, "label"), paragraph(value)] for label, value in details], colWidths=[95, available-95])
     data_table.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "TOP"), ("LEFTPADDING", (0,0), (-1,-1), 0),
         ("TOPPADDING", (0,0), (-1,-1), 2.5), ("BOTTOMPADDING", (0,0), (-1,-1), 2.5),

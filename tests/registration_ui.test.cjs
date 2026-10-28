@@ -26,7 +26,11 @@ const participant = { querySelector(selector) {
 const handlers = {};
 const container = { querySelectorAll() { return [participant]; }, addEventListener(name, fn) { handlers[name] = fn; } };
 const total = {};
-const elements = { registrationForm: {}, participantsContainer: container, registrationTotal: total, btnAddParticipant: { addEventListener() {} } };
+const formHandlers = {};
+let prevented = false, focused = false;
+const cpfInput = {tagName:'INPUT',type:'text',getClientRects(){return [{}];}};
+const nextField = {tagName:'SELECT',type:'select-one',getClientRects(){return [{}];},focus(){focused=true;}};
+const elements = { registrationForm: {addEventListener(name,fn){formHandlers[name]=fn;},querySelectorAll(){return [cpfInput,nextField];}}, participantsContainer: container, registrationTotal: total, btnAddParticipant: { addEventListener() {} } };
 const scriptPath = path.join(__dirname, '..', 'frontend', 'static', 'js', 'registration.js');
 vm.runInNewContext(fs.readFileSync(scriptPath, 'utf8'), {
   document: { getElementById(id) { return elements[id]; }, addEventListener(name, fn) { fn(); } },
@@ -41,4 +45,7 @@ handlers.change();
 assert.equal(shirt.selectedIndex, 2, 'matching size code on another product selects the enabled option by index');
 assert.match(total.textContent, /140,00/, 'changing product recalculates its own extra');
 assert.equal(shirt.options[0].disabled, true, 'other products cannot submit the hidden variant');
-console.log('Registration totals and variant selection: 4 checks passed.');
+formHandlers.keydown({key:'Enter',target:cpfInput,preventDefault(){prevented=true;}});
+assert.ok(prevented, 'Enter after CPF must not submit a partially completed registration');
+assert.ok(focused, 'Enter advances to the next visible field');
+console.log('Registration totals, variant selection and Enter navigation: 6 checks passed.');

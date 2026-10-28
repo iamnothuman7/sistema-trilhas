@@ -21,7 +21,7 @@ from apps.checkout.models import Order, OrderStatus
 from apps.payments.models import ChargeAttempt, ChargeState, PaymentMethod
 from apps.payments.gateway import MercadoPagoGateway
 from apps.identity.documents import normalize_cpf
-from apps.registrations.models import Registration, CommercialState, OperationalState
+from apps.registrations.models import Registration, CommercialState, OperationalState, VehicleType
 from apps.core.rate_limits import client_ip, consume_rate_limit, rate_limit_request
 
 
@@ -51,7 +51,7 @@ def _registration_context(request, event, products, active_lots):
     names = request.POST.getlist("participant_name[]")[:settings.CHECKOUT_MAX_PARTICIPANTS] if request.method == "POST" else []
     for index, name in enumerate(names):
         row = {"name": name}
-        for field in ("document", "email", "phone", "city", "state", "team", "product", "lot", "shirt"):
+        for field in ("document", "email", "phone", "city", "state", "team", "product", "lot", "shirt", "vehicle"):
             values = request.POST.getlist(f"participant_{field}[]")
             row[field] = values[index] if index < len(values) else ""
         rows.append(row)
@@ -70,7 +70,7 @@ def _registration_context(request, event, products, active_lots):
         if not product.includes_shirt:
             sizes = [("", "Esta inscrição não inclui camiseta", 0)]
         shirt_options.extend({"product_id": str(product.pk), "code": code, "label": label, "extra_cents": extra} for code, label, extra in sizes)
-    return {"event": event, "products": products, "active_lots": active_lots, "shirt_options": shirt_options,
+    return {"event": event, "products": products, "active_lots": active_lots, "shirt_options": shirt_options, "vehicle_choices": VehicleType.choices,
             "buyer_is_participant": request.method != "POST" or request.POST.get("buyer_is_participant") == "on",
             "buyer": buyer, "participant_rows": rows, "coupon_code": request.POST.get("coupon_code", ""),
             "max_participants": settings.CHECKOUT_MAX_PARTICIPANTS,
@@ -122,6 +122,7 @@ def start_registration(request, event_slug):
         participant_products = request.POST.getlist("participant_product[]")
         participant_lots = request.POST.getlist("participant_lot[]")
         participant_shirts = request.POST.getlist("participant_shirt[]")
+        participant_vehicles = request.POST.getlist("participant_vehicle[]")
 
         # Explicit opt-in: never assume that a purchaser is also a rider.
         # Resolve on the server too, so hidden/copied client values cannot diverge.
@@ -173,8 +174,11 @@ def start_registration(request, event_slug):
                 "phone": value(participant_phones), "city": value(participant_cities, event.city),
                 "state": value(participant_states, event.state).upper(), "team": value(participant_teams),
                 "product_id": value(participant_products), "lot_id": value(participant_lots),
-                "shirt": value(participant_shirts, "M")}
+                "shirt": value(participant_shirts, "M"), "vehicle": value(participant_vehicles, VehicleType.MOTO),
+                "is_buyer": index == 0 and request.POST.get("buyer_is_participant") == "on"}
             label = f"Participante {index+1}"
+            if participant["vehicle"] not in VehicleType.values:
+                errors.append(f"{label}: selecione um veículo ou modalidade disponível.")
             try:
                 participant["cpf"] = normalize_cpf(value(participant_documents))
                 if participant["cpf"] in participant_cpfs:
@@ -250,20 +254,31 @@ def authorized_order(request, order_id):
         "lines", "lines__registration", "lines__registration__person").filter(access), pk=order_id)
 
 
-def _payment_context(order):
+def _payment_context(order, installments=1):
     from decimal import Decimal
     from django.core import signing
     from django.urls import reverse
     gateway = MercadoPagoGateway()
+    from apps.payments.fees import policy, quote_for
+    fee_policy = policy()
+    try:
+        installments = max(1, min(int(installments), fee_policy.max_installments))
+    except (ValueError, TypeError):
+        installments = 1
+    pix_quote = quote_for(order, PaymentMethod.PIX)
+    card_quote = quote_for(order, PaymentMethod.CREDIT_CARD, installments)
     return {
         "order": order,
+        "pix_quote": pix_quote, "card_quote": card_quote, "fee_policy": fee_policy,
+        "installment_choices": [quote_for(order, PaymentMethod.CREDIT_CARD, n) for n in range(1, fee_policy.max_installments+1)],
         "payments_available": order.total_cents > 0 and not gateway.configuration_issues(),
         "card_available": order.total_cents > 0 and not gateway.configuration_issues(card=True),
         "zero_total": order.total_cents <= 0,
         "attempt_key": signing.dumps({"order": str(order.id), "key": str(uuid.uuid4())}, salt="checkout-payment"),
         "mp_config": {
             "publicKey": gateway.public_key,
-            "amount": format(Decimal(order.total_cents) / 100, ".2f"),
+            "amount": format(Decimal(card_quote.total) / 100, ".2f"),
+            "quotedInstallments": installments,
             "email": order.purchaser_email,
             "processUrl": reverse("checkout:process_payment", kwargs={"order_id": order.id}),
         },
@@ -282,7 +297,7 @@ def order_payment(request, order_id):
         return redirect("checkout:order_result", order_id=order.id)
     if order.charge_attempts.filter(state__in=[ChargeState.SENT, ChargeState.PENDING, ChargeState.UNKNOWN]).exists():
         return redirect("checkout:order_waiting", order_id=order.id)
-    return render(request, "checkout/payment_options.html", _payment_context(order))
+    return render(request, "checkout/payment_options.html", _payment_context(order, request.GET.get('parcelas', 1)))
 
 
 @private_checkout
@@ -354,6 +369,18 @@ def process_payment_attempt(request, order_id):
         if existing:
             messages.error(request, existing.error_message or "Esta tentativa já foi processada. Atualize a página para tentar novamente.")
             return redirect("checkout:order_payment", order_id=order.id)
+        from apps.payments.fees import submitted_quote
+        from dataclasses import asdict
+        try:
+            quote = submitted_quote(order, method, card_data.get('installments', 1), request.POST.get('payment_quote', ''))
+        except ValidationError as exc:
+            messages.error(request, ' '.join(exc.messages))
+            return redirect('checkout:order_payment', order_id=order.pk)
+        order.total_cents = quote.total
+        order.payment_fee_cents = quote.fee
+        order.save(update_fields=['total_cents', 'payment_fee_cents', 'updated_at'])
+        from apps.checkout.models import ReceivableDue
+        ReceivableDue.objects.filter(order=order, due_type='FULL', status='PENDING').update(amount_cents=quote.total)
         expiry = None
         if method == PaymentMethod.PIX:
             # Payments API requires at least 30 minutes. One minute covers request latency.
@@ -362,6 +389,7 @@ def process_payment_attempt(request, order_id):
             CapacityHold.objects.filter(order_id=order.id, status=HoldStatus.ACTIVE).update(expires_at=order.expires_at)
         charge = ChargeAttempt.objects.create(order=order, idempotency_key=key, payment_method=method,
             state=ChargeState.SENT, amount_cents=order.total_cents,
+            passed_fee_cents=quote.fee, fee_snapshot=asdict(quote),
             pix_expiration=expiry if method == PaymentMethod.PIX else None)
         order.status = OrderStatus.AWAITING_PAYMENT
         order.save(update_fields=["status", "expires_at", "updated_at"])
@@ -450,6 +478,10 @@ def order_refresh_payment(request, order_id):
 @private_checkout
 def order_result(request, order_id):
     order = authorized_order(request, order_id)
+    if order.lines.filter(addon__isnull=False).exists() and not order.lines.filter(registration__isnull=False).exists():
+        registrations = Registration.objects.filter(pk__in=order.lines.values('linked_registration_id'), event=order.event)
+        return render(request, 'checkout/addon_result.html', {'order':order, 'registrations':registrations,
+            'is_paid':order.status == OrderStatus.PAID})
     from apps.mediaframes.access import purchased_art_url
     art_url = purchased_art_url(request.user, order)
     if art_url:
