@@ -132,6 +132,7 @@ class Expense(models.Model):
     status = models.CharField("Situação", max_length=20, choices=ExpenseStatus.choices, default=ExpenseStatus.PAID)
     idempotency_key = models.UUIDField("Identificação do lançamento", unique=True, null=True, blank=True, editable=False)
     submission_hash = models.CharField(max_length=64, blank=True, editable=False)
+    revision = models.PositiveIntegerField(default=0, editable=False)
     proof_asset = models.FileField("Comprovante / Recibo", storage=private_document_storage, upload_to="expenses/receipts/", blank=True, null=True)
     notes = models.TextField("Observações", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

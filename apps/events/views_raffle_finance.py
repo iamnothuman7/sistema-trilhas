@@ -1,3 +1,4 @@
+from .raffle_results import eligible_tickets
 """The raffle view reads the same ledger as the event's general finance."""
 import csv
 from urllib.parse import urlencode
@@ -51,8 +52,8 @@ def raffle_finance(request,event_id):
     totals['pending']=cents_to_reais(expenses.aggregate(n=Sum('amount_cents'))['n'] or 0)
     return render(request,'gestao/raffles/finance.html',{'event':event,'raffle':raffle,'totals':totals,'date_form':form,
         'page_obj':Paginator(entries.order_by('-recognized_at','-pk'),30).get_page(request.GET.get('page')),
-        'digital_count':raffle.tickets.filter(source='REGISTRATION',state='SOLD',registration__commercial_state='ACTIVE',registration__source_order_line__order__status='PAID').count(),
-        'paper_sold':raffle.tickets.filter(source='PAPER',state='SOLD').count(),
-        'online_count':raffle.tickets.filter(source='ONLINE',state='SOLD',order_line__order__status='PAID',beneficiary_registration__commercial_state='ACTIVE',beneficiary_registration__source_order_line__order__status='PAID').count(),
+        'digital_count':eligible_tickets(raffle).filter(source='REGISTRATION').count(),
+        'paper_sold':eligible_tickets(raffle).filter(source='PAPER').count(),
+        'online_count':eligible_tickets(raffle).filter(source='ONLINE').count(),
         'orders_page':Paginator(Order.objects.filter(event=event,lines__raffle=raffle).distinct().order_by('-created_at','-pk'),20).get_page(request.GET.get('orders_page')),
         'filter_query':urlencode({k:v.isoformat() for k,v in form.cleaned_data.items() if v}) if valid else ''},status=200 if valid else 400)

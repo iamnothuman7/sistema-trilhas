@@ -15,7 +15,7 @@ def get_event_kpi_summary(event: Event) -> dict:
     Retorna os principais KPIs e métricas consolidadas do evento para o painel de gestão.
     """
     # Inscrições
-    regs = Registration.objects.filter(event=event, archived_at__isnull=True)
+    regs = Registration.objects.filter(event=event, archived_at__isnull=True,source_order_line__order__is_test=False)
     total_registered = regs.count()
     active_confirmed = regs.filter(commercial_state=CommercialState.ACTIVE).count()
     ready_for_checkin = regs.filter(commercial_state=CommercialState.ACTIVE, operational_state=OperationalState.READY).count()
@@ -23,7 +23,7 @@ def get_event_kpi_summary(event: Event) -> dict:
     pending_terms = regs.filter(commercial_state=CommercialState.ACTIVE, operational_state=OperationalState.NOT_READY).count()
 
     # Vendas e Pedidos
-    orders = Order.objects.filter(event=event)
+    orders = Order.objects.filter(event=event,is_test=False)
     orders_paid = orders.filter(status=OrderStatus.PAID)
     orders_pending = orders.filter(status__in=[OrderStatus.RESERVED, OrderStatus.AWAITING_PAYMENT], expires_at__gte=timezone.now())
 
@@ -46,9 +46,14 @@ def get_event_kpi_summary(event: Event) -> dict:
     vacancies_left = max(0, max_capacity - occupied)
 
     # Kits e Camisetas
-    shirt_entitlements = Entitlement.objects.filter(registration__event=event, benefit_type="CAMISETA")
-    shirts_total = shirt_entitlements.aggregate(s=Sum("quantity_total"))["s"] or 0
-    shirts_delivered = shirt_entitlements.aggregate(s=Sum("quantity_used"))["s"] or 0
+    from apps.catalog.stock import shirt_rows
+    stocks=shirt_rows(event)
+    # Include legacy sizes even when no variant was registered in the catalog.
+    shirt_entitlements = Entitlement.objects.filter(registration__event=event,benefit_type='CAMISETA',registration__source_order_line__order__is_test=False)
+    active_shirts=shirt_entitlements.filter(registration__commercial_state='ACTIVE',registration__archived_at__isnull=True)
+    shirts_delivered=shirt_entitlements.aggregate(s=Sum('quantity_used'))['s'] or 0
+    shirts_waiting=max(0,(active_shirts.aggregate(s=Sum('quantity_total'))['s'] or 0)-(active_shirts.aggregate(s=Sum('quantity_used'))['s'] or 0))
+    shirts_total=shirts_waiting+shirts_delivered
 
     return {
         "total_registered": total_registered,
@@ -66,9 +71,14 @@ def get_event_kpi_summary(event: Event) -> dict:
         "total_expenses_cents": total_expenses_cents,
         "total_refunds_cents": financial["refunds_cents"],
         "pending_expenses_cents": financial["pending_expenses_cents"],
+        "sponsor_received_cents":financial['sponsor_received_cents'],
+        "sponsor_outstanding_cents":financial['sponsor_outstanding_cents'],
         "net_profit_cents": net_profit_cents,
         "shirts_total": shirts_total,
         "shirts_delivered": shirts_delivered,
+        "shirts_reserved":sum(row['reserved'] for row in stocks),
+        "shirts_available":sum(row['available'] or 0 for row in stocks),
+        "shirts_stock_configured":any(row['resource'] for row in stocks),
     }
 
 
@@ -144,7 +154,7 @@ def get_financial_summary(event, start=None, end=None):
 
 
 def get_event_report(event, start=None, end=None):
-    registrations = in_period(Registration.objects.filter(event=event), "created_at", start, end, tz=event_timezone(event))
+    registrations = in_period(Registration.objects.filter(event=event,archived_at__isnull=True,source_order_line__order__is_test=False), "created_at", start, end, tz=event_timezone(event))
     active_registrations = registrations.filter(commercial_state=CommercialState.ACTIVE)
     # Only aggregate names and counts; no individual participant data is exposed.
     missing_group = Q(name__isnull=True) | Q(name="") | Q(name__iregex=r"^n[ãa]o\s*informad[oa]$")
@@ -153,7 +163,7 @@ def get_event_report(event, start=None, end=None):
     cities = list(active_registrations.annotate(name=Trim("person__city"), state=Trim("person__state"))
                   .exclude(missing_group).values("name", "state").annotate(count=Count("pk"))
                   .order_by("-count", "name", "state"))
-    orders = in_period(Order.objects.filter(event=event), "created_at", start, end, tz=event_timezone(event))
+    orders = in_period(Order.objects.filter(event=event,is_test=False), "created_at", start, end, tz=event_timezone(event))
     counts = registrations.aggregate(
         total=Count("pk"),
         active=Count("pk", filter=Q(commercial_state=CommercialState.ACTIVE)),

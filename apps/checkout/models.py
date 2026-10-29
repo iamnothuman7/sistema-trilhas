@@ -56,6 +56,7 @@ class Order(models.Model):
     purchaser_email = models.EmailField("E-mail do Comprador", db_index=True)
     purchaser_phone = models.CharField("Telefone / WhatsApp", max_length=30)
     purchaser_document = models.CharField("CPF do Pagador", max_length=20, blank=True, null=True)
+    is_test = models.BooleanField('Teste identificado (fora dos indicadores operacionais)',default=False,editable=False)
 
     status = models.CharField("Status do Pedido", max_length=30, choices=OrderStatus.choices, default=OrderStatus.RESERVED, db_index=True)
 

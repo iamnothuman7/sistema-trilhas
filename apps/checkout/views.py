@@ -64,12 +64,14 @@ def _registration_context(request, event, products, active_lots):
             selected = str(products[0].pk) if products else ""
         rows = [{"city": event.city, "state": event.state, "shirt": "M", "product": selected}]
     shirt_options = []
+    from apps.catalog.models import CapacityResource
+    shirt_stock = {r.reference_id:r.available_count for r in CapacityResource.objects.filter(event=event,type='SHIRT_SIZE')}
     for product in products:
         variants = [variant for variant in product.variants.all() if variant.kind == "SHIRT_SIZE"]
-        sizes = [(variant.code, variant.label, variant.extra_price_cents) for variant in variants] if variants else [(code, code, 0) for code in ("P", "M", "G", "GG", "XG")]
+        sizes = [(variant.code, variant.label, variant.extra_price_cents,shirt_stock.get(str(variant.pk))) for variant in variants] if variants else [(code, code, 0,None) for code in ("P", "M", "G", "GG", "XG")]
         if not product.includes_shirt:
-            sizes = [("", "Esta inscrição não inclui camiseta", 0)]
-        shirt_options.extend({"product_id": str(product.pk), "code": code, "label": label, "extra_cents": extra} for code, label, extra in sizes)
+            sizes = [("", "Esta inscrição não inclui camiseta", 0,None)]
+        shirt_options.extend({"product_id":str(product.pk),"code":code,"label":label,"extra_cents":extra,"sold_out":available==0} for code,label,extra,available in sizes)
     return {"event": event, "products": products, "active_lots": active_lots, "shirt_options": shirt_options, "vehicle_choices": VehicleType.choices,
             "buyer_is_participant": request.method != "POST" or request.POST.get("buyer_is_participant") == "on",
             "buyer": buyer, "participant_rows": rows, "coupon_code": request.POST.get("coupon_code", ""),

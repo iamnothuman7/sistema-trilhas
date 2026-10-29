@@ -12,6 +12,8 @@ from .permissions import accessible_events, management_required, require_event_a
 
 # Destinations only accept an event, never a record belonging to the old event.
 MODULES = {
+    'sponsor_leads':('sponsors',True),
+    'shirt_stock':('catalog',True),
     "dashboard": ("view", False), "usage_guide": ("view", False),
     "event_list": ("events", False), "event_detail": ("events", True),
     "event_edit": ("events", True), "event_appearance": ("content", True),
@@ -24,6 +26,9 @@ MODULES = {
     "team_management": ("team", True),
 }
 PARENTS = {
+    'raffle_result':'raffle_management',
+    'sponsor_lead_create':'sponsor_leads','sponsor_lead_edit':'sponsor_leads','sponsor_lead_convert':'sponsor_leads','sponsor_history':'sponsor_bank',
+    'expense_status':'finance',
     'refund_channel_review':'finance',
     'addon_order_refund':'finance',
     'raffle_order_refund':'raffle_finance',

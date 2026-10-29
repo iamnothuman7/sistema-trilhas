@@ -108,9 +108,22 @@ def _commit_capacity(order, approved_at):
     if not holds or any(hold.status != HoldStatus.ACTIVE or approved_at > hold.expires_at for hold in holds):
         return False
     registration_lines = set(order.lines.filter(registration__isnull=False).values_list("pk", flat=True))
+    # A configured size must have exactly one matching reservation. Do not
+    # confirm an inscription whose stock hold was removed or reassigned.
+    from apps.catalog.models import ProductVariant
+    configured_sizes = {r.reference_id:r.pk for r in CapacityResource.objects.filter(event_id=order.event_id,type='SHIRT_SIZE')}
+    for line in order.lines.filter(pk__in=registration_lines).select_related('registration'):
+        variant_id = ProductVariant.objects.filter(product_id=line.product_id,kind='SHIRT_SIZE',code=line.registration.shirt_size).values_list('pk',flat=True).first()
+        resource_id = configured_sizes.get(str(variant_id))
+        shirt_holds = [h for h in holds if h.order_line_id==line.pk and resources[h.resource_id].type=='SHIRT_SIZE']
+        if resource_id and (len(shirt_holds)!=1 or shirt_holds[0].resource_id!=resource_id or shirt_holds[0].quantity!=1):
+            return False
     addon_lines = list(order.lines.filter(addon__isnull=False))
     raffle_lines=list(order.lines.filter(raffle__isnull=False))
     if raffle_lines:
+        from apps.events.models_raffles import MotorcycleRaffle
+        raffles=list(MotorcycleRaffle.objects.select_for_update().filter(pk__in=[line.raffle_id for line in raffle_lines]))
+        if any(hasattr(raffle,'result') for raffle in raffles):return False
         registrations={line.linked_registration_id for line in raffle_lines}
         eligible=Registration.objects.filter(pk__in=registrations,event_id=order.event_id,commercial_state='ACTIVE',
             archived_at__isnull=True,source_order_line__order__status=OrderStatus.PAID).count()
@@ -162,13 +175,22 @@ def _commit_capacity(order, approved_at):
 
 
 def _release_capacity(order, *, include_committed=False, expired=False):
+    from apps.events.models import Event
+    Event.objects.select_for_update().get(pk=order.event_id)
     holds, resources = _holds_and_resources(order)
     released_committed = any(hold.status == HoldStatus.COMMITTED for hold in holds) and include_committed
     for hold in holds:
         resource = resources[hold.resource_id]
         if hold.status == HoldStatus.ACTIVE:
             resource.reserved_count = max(0, resource.reserved_count - hold.quantity)
-        elif include_committed and hold.status == HoldStatus.COMMITTED:
+        elif include_committed and hold.status in (HoldStatus.COMMITTED,HoldStatus.RETAINED):
+            if hold.status==HoldStatus.RETAINED and not order.is_test:
+                continue
+            if resource.type=='SHIRT_SIZE' and not order.is_test and Entitlement.objects.filter(
+                    registration__source_order_line_id=hold.order_line_id,benefit_type='CAMISETA',quantity_used__gt=0).exists():
+                hold.status=HoldStatus.RETAINED
+                hold.save(update_fields=['status'])
+                continue
             resource.committed_count = max(0, resource.committed_count - hold.quantity)
         else:
             continue
@@ -315,6 +337,8 @@ def reconcile_payment(payment, *, charge_id=None):
         raise PaymentValidationError("unknown_charge") from exc
     # All payments for one order serialize before touching transaction snapshots.
     order = Order.objects.select_for_update().select_related("event").get(pk=initial_charge.order_id)
+    from apps.events.models import Event
+    Event.objects.select_for_update().get(pk=order.event_id)
     charge = ChargeAttempt.objects.select_for_update().get(pk=attempt_id)
     charge.order = order
     from .gateway_config import charge_gateway
@@ -387,14 +411,18 @@ def reconcile_payment(payment, *, charge_id=None):
     charge.error_message = ""
     if status == "approved" and refund == 0:
         manually_refunded = order.refunds.filter(state=RefundState.MANUAL_COMPLETED).exists()
-        if order.status != OrderStatus.REFUNDED and not manually_refunded:
+        if order.status != OrderStatus.REFUNDED and not manually_refunded and not order.is_test:
             Registration.objects.filter(source_order_line__order=order, archived_at__isnull=False).update(archived_at=None)
         charge.state = ChargeState.SUCCEEDED
         if manually_refunded and not snapshot.fulfilled_at and not previously_received:
             order.status=OrderStatus.PAID_NEEDS_REVIEW
             charge.error_code='FULFILLMENT_REVIEW'
             charge.error_message='Novo pagamento recebido em pedido já devolvido. Confira o recebimento antes de qualquer liberação.'
-        if not snapshot.fulfilled_at and not manually_refunded:
+        if order.is_test:
+            order.status=OrderStatus.PAID_NEEDS_REVIEW
+            charge.error_code='TEST_PAYMENT_PRESERVED'
+            charge.error_message='Recebimento real de teste preservado no caixa. Participação operacional desativada.'
+        elif not snapshot.fulfilled_at and not manually_refunded:
             already_fulfilled = PaymentTransaction.objects.filter(charge_attempt__order=order, fulfilled_at__isnull=False).exclude(pk=snapshot.pk).exists()
             lines = list(order.lines.all())
             correct_lines = sum(line.net_cents for line in lines) + charge.passed_fee_cents == amount

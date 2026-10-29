@@ -116,6 +116,11 @@ else:
         }
     }
 
+# SQLite has no SELECT FOR UPDATE. Take the writer lock before reading stock.
+# Keep explicit atomic blocks short and perform external HTTP outside them.
+if DATABASES['default']['ENGINE']=='django.db.backends.sqlite3':
+    DATABASES['default'].setdefault('OPTIONS',{}).update(timeout=30,transaction_mode='IMMEDIATE')
+
 # Custom User Model
 AUTH_USER_MODEL = "identity.User"
 

@@ -22,10 +22,8 @@ from .raffle_operations import create_paper_batch, record_paper_ticket
 
 
 def tickets_for_event(raffle):
-    # A later refund invalidates a digital entry even before any cached UI updates.
-    return raffle.tickets.select_related('registration__person','point').filter(
-        Q(source='PAPER') | Q(registration__commercial_state='ACTIVE', registration__source_order_line__order__status='PAID') |
-        Q(source='ONLINE',order_line__order__status='PAID',beneficiary_registration__commercial_state='ACTIVE',beneficiary_registration__source_order_line__order__status='PAID'))
+    from .raffle_results import eligible_tickets
+    return eligible_tickets(raffle).select_related('registration__person','point')
 
 
 @management_required
@@ -51,7 +49,10 @@ def raffle_operations(request, event_id):
                 start,end=int(request.POST.get('start','')),int(request.POST.get('end',''))
                 if not raffle.paper_start<=start<=end<=raffle.paper_end: raise ValidationError('Use números dentro da faixa em papel desta edição.')
                 with transaction.atomic():
-                    MotorcycleRaffle.objects.select_for_update().get(pk=raffle.pk)
+                    from .models import Event
+                    Event.objects.select_for_update().get(pk=event_id)
+                    locked=MotorcycleRaffle.objects.select_for_update().get(pk=raffle.pk)
+                    if hasattr(locked,'result'):raise ValidationError('O resultado já foi registrado. Não distribua novos bilhetes.')
                     count=raffle.tickets.filter(source='PAPER',number__gte=start,number__lte=end,state__in=['AVAILABLE','DISTRIBUTED']).update(point=point,state='DISTRIBUTED')
                     log_audit(actor=request.user,event_id=event_id,action='RAFFLE_TICKETS_DISTRIBUTED',entity_type='MotorcycleRaffle',entity_id=raffle.pk,
                         diff={'point':str(point.pk),'start':start,'end':end,'count':count},request=request)
@@ -70,6 +71,8 @@ def raffle_operations(request, event_id):
                 reason=request.POST.get('reason','').strip()
                 if len(reason)<10 or len(reason)>1000: raise ValidationError('Descreva o motivo do cancelamento, de 10 a 1.000 caracteres.')
                 with transaction.atomic():
+                    from .models import Event
+                    Event.objects.select_for_update().get(pk=event_id)
                     ticket=get_object_or_404(RaffleTicket.objects.select_for_update(),raffle=raffle,number=int(request.POST.get('number','')),source='PAPER')
                     if ticket.state!='VOID':
                         if ticket.amount_cents and (not can_manage_event(request.user,request.management_event,'finance') or request.POST.get('returned')!='on'):

@@ -405,4 +405,5 @@ class LegalDocumentVersion(models.Model):
 
 
 # Django discovers these event-specific models through the app's models module.
-from .models_raffles import MotorcycleRaffle, RaffleInterest, RaffleTicket, RaffleSalesPoint  # noqa: E402,F401
+from .models_raffles import MotorcycleRaffle, RaffleInterest, RaffleTicket, RaffleSalesPoint,RaffleResult  # noqa: E402,F401
+from .models_sponsors import SponsorLead,SponsorHistory  # noqa: E402,F401

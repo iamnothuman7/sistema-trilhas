@@ -57,8 +57,8 @@ def dashboard(request):
                                         can_manage_event(request.user, event, "registrations")))
     show_recent_checkins = bool(event and can_manage_event(request.user, event, "checkin"))
     # The overview obeys the same capabilities as each detailed workspace.
-    recent_orders = Order.objects.filter(event=event).order_by("-created_at")[:8] if show_recent_orders else []
-    recent_checkins = CheckinRecord.objects.filter(event=event).select_related("registration", "registration__person").order_by("-occurred_at")[:6] if show_recent_checkins else []
+    recent_orders = Order.objects.filter(event=event,is_test=False).exclude(lines__registration__archived_at__isnull=False).order_by("-created_at")[:8] if show_recent_orders else []
+    recent_checkins = CheckinRecord.objects.filter(event=event,registration__archived_at__isnull=True,registration__commercial_state='ACTIVE',registration__source_order_line__order__is_test=False).select_related("registration", "registration__person").order_by("-occurred_at")[:6] if show_recent_checkins else []
 
     return render(request, "gestao/dashboard.html", {
         "events": events,
@@ -77,6 +77,7 @@ def event_list(request):
         confirmed_count=Count("registrations", filter=Q(
             registrations__commercial_state=CommercialState.ACTIVE,
             registrations__archived_at__isnull=True,
+            registrations__source_order_line__order__is_test=False,
         )),
     ).order_by("-starts_at")
     return render(request, "gestao/events/event_list.html", {"events": events})
@@ -640,9 +641,18 @@ def _finance_context(request, event, expense_form=None):
     end = date_form.cleaned_data.get("date_end") if valid else None
     entries = financial_entries(event, start, end).order_by("-recognized_at", "-pk") if valid else FinancialEntry.objects.none()
     expenses = in_period(Expense.objects.filter(event=event).select_related("vendor"), "due_at", start, end, date_field=True).order_by("-due_at", "-pk") if valid else Expense.objects.none()
+    expense_status = request.GET.get('status','')
+    if expense_status in ('PAID','PENDING','CANCELED'):
+        expenses = expenses.filter(status=expense_status)
+    else:
+        expense_status = ''
     form = expense_form if expense_form is not None else ExpenseForm(event=event)
     entries_page = Paginator(entries, 30).get_page(request.GET.get("entries_page"))
     expenses_page = Paginator(expenses, 20).get_page(request.GET.get("expenses_page"))
+    from apps.finance.forms import expense_version
+    for expense in expenses_page.object_list:
+        expense.edit_version = expense_version(expense)
+    date_query = urlencode({key:value.isoformat() for key,value in date_form.cleaned_data.items() if value}) if valid else ''
     addon_orders = in_period(Order.objects.filter(event=event,lines__addon__isnull=False).distinct(), 'created_at', start, end).prefetch_related('lines','refunds').order_by('-created_at','-pk') if valid else Order.objects.none()
     addon_orders_page = Paginator(addon_orders,20).get_page(request.GET.get('addon_orders_page'))
     return {
@@ -657,7 +667,8 @@ def _finance_context(request, event, expense_form=None):
         "vendors": Vendor.objects.filter(organization=event.organization).order_by("name"),
         "date_form": date_form, "expense_form": form, "expense_form_errors": form.errors,
         "today": timezone.localdate().isoformat(),
-        "filter_query": urlencode({key: value.isoformat() for key, value in date_form.cleaned_data.items() if value}) if valid else "",
+        "expense_status": expense_status, "date_query": date_query,
+        "filter_query": date_query + ('&status='+expense_status if expense_status else ''),
     }
 
 

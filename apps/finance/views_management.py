@@ -9,6 +9,44 @@ from apps.core.permissions import management_required
 from .models import Expense, ExpenseStatus
 from .forms import ExpenseEditForm, ExpensePaymentForm, ExpenseProofForm, expense_version
 from .services import update_expense, settle_expense, attach_expense_receipt, void_paid_expense
+from django.urls import reverse
+from urllib.parse import urlsplit
+
+
+def finance_return_url(request, event):
+    default = reverse('gestao:finance', args=[event.pk])
+    candidate = request.POST.get('return_to', '')
+    parsed = urlsplit(candidate)
+    return candidate if not parsed.netloc and not parsed.scheme and parsed.path == default else default
+
+
+@management_required
+@never_cache
+@require_http_methods(['POST'])
+def expense_status(request, event_id, expense_id):
+    from .forms import ExpenseStatusForm
+    from apps.core.views_gestao import _finance_context
+    event = request.management_event
+    expense = get_object_or_404(Expense, event=event, pk=expense_id)
+    form = ExpenseStatusForm(request.POST, request.FILES)
+    if form.is_valid():
+        data = dict(form.cleaned_data, description=expense.description, category=expense.category,
+            amount=expense.amount_cents, due_at=expense.due_at, vendor_id=expense.vendor, raffle=expense.raffle)
+        data['paid_at'] = data['paid_at'] if data['status']=='PAID' else None
+        data['reason'] = data['reason'] or 'Correção de status pelo painel financeiro.'
+        try:
+            update_expense(event=event,expense_id=expense.pk,data=data,actor=request.user,request=request)
+        except (ValidationError,OSError) as error:
+            form.add_error(None,error if isinstance(error,ValidationError) else 'Não foi possível salvar o comprovante. Nenhuma alteração foi concluída.')
+        else:
+            messages.success(request,'Situação salva. Saldo e totais atualizados; nenhum dinheiro foi enviado ou estornado.')
+            return redirect(finance_return_url(request,event))
+    context = _finance_context(request,event)
+    target=finance_return_url(request,event)
+    context.update(status_form=form,status_expense=expense,management_workspace_url=target)
+    response=render(request,'gestao/finance/overview.html',context,status=400)
+    response['HX-Replace-Url']=target
+    return response
 
 
 class VoidExpenseForm(forms.Form):

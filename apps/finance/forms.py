@@ -100,7 +100,7 @@ class ExpenseProofForm(ExpensePaymentForm):
 def expense_version(expense):
     import hashlib,json
     values={name:str(getattr(expense,name) or '') for name in
-        ['description','category','vendor_id','amount_cents','due_at','paid_at','status','notes','proof_asset','raffle_id']}
+        ['description','category','vendor_id','amount_cents','due_at','paid_at','status','notes','proof_asset','raffle_id','revision']}
     return hashlib.sha256(json.dumps(values,sort_keys=True).encode()).hexdigest()
 
 
@@ -114,9 +114,17 @@ class ExpenseEditForm(ExpenseForm):
         self.fields.pop('idempotency_key')
         self.initial.update(description=expense.description,category=expense.category,vendor_id=expense.vendor_id,
             amount=expense.formatted_amount,due_at=expense.due_at,paid_at=expense.paid_at,status=expense.status,version=expense_version(expense),raffle_expense=bool(expense.raffle_id))
-        if expense.status==ExpenseStatus.PAID:self.fields['status'].disabled=True
 
     def clean(self):
         data=super().clean()
         if data.get('version')!=expense_version(self.expense):raise forms.ValidationError('Esta despesa mudou em outra aba. Atualize a página antes de editar.')
         return data
+
+
+class ExpenseStatusForm(ExpensePaymentForm):
+    status = forms.ChoiceField(label='Situação', choices=[('PENDING','A pagar'),('PAID','Paga / concluída')])
+    version = forms.CharField(widget=forms.HiddenInput)
+    reason = forms.CharField(label='Observação (opcional)', required=False, max_length=1000)
+
+    def clean_paid_at(self):
+        return None if self.data.get('status')=='PENDING' else super().clean_paid_at()

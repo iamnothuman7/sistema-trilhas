@@ -116,6 +116,17 @@ class OnlineRaffleTests(TestCase):
         self.approve(order);self.assertEqual(order.status,'PAID')
         self.assertEqual(order.lines.get().raffle_tickets.count(),3)
 
+    def test_payment_arriving_after_recorded_draw_cannot_issue_new_numbers(self):
+        from apps.events.raffle_results import record_draw_result
+        self.prepare();order=self.reserve()
+        self.raffle.draw_at=self.now-timedelta(minutes=1);self.raffle.save()
+        record_draw_result(raffle=self.raffle,actor=self.user,numbers=[1],
+            notes='Resultado fictício conferido no globo de teste.',confirmed=True)
+        self.approve(order)
+        self.assertEqual(order.status,'PAID_NEEDS_REVIEW')
+        self.assertFalse(order.lines.get().raffle_tickets.exists())
+        self.assertEqual(FinancialEntry.objects.filter(order=order,kind='RECEITA_SORTEIO').count(),1)
+
     def test_refunded_base_blocks_later_extra_payment_from_releasing_numbers(self):
         self.prepare();order=self.reserve()
         data=dict(request_key=uuid.uuid4(),channel='EXTERNAL',amount=self.order.total_cents,returned_on=timezone.localdate(),reference='DEV-QA',reason='Devolução fictícia para teste local',confirmed=True)

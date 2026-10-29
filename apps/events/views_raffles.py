@@ -1,3 +1,4 @@
+from .raffle_results import eligible_tickets
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.contrib import messages
@@ -29,8 +30,10 @@ def _public_context(request, event, form=None):
     registered = bool(raffle and request.user.is_authenticated and RaffleInterest.objects.filter(raffle=raffle, user=request.user).exists())
     my_tickets=[]
     if raffle and request.user.is_authenticated:
-        my_tickets=raffle.tickets.filter(state='SOLD',registration__commercial_state='ACTIVE',
-            registration__source_order_line__order__status='PAID',registration__person__user_links__user=request.user).select_related('registration').distinct()
+        from django.db.models import Q
+        from .raffle_results import eligible_tickets
+        my_tickets=eligible_tickets(raffle).filter(Q(registration__person__user_links__user=request.user)|
+            Q(beneficiary_registration__person__user_links__user=request.user)).select_related('registration').distinct()
     from apps.checkout.addons import eligible_registrations
     purchase_regs=eligible_registrations(request.user).filter(event=event) if request.user.is_authenticated and raffle and raffle.purchase_available else []
     return {"event": event, "raffle": raffle, "raffle_preview": preview,
@@ -112,6 +115,6 @@ def _manage_form(request,event,raffle):
         "event": event, "raffle": raffle, "form": form,
         "saved_raffle": not raffle._state.adding,
         "interest_count": interests.count(), "interests_page": Paginator(interests, 20).get_page(request.GET.get("page")),
-        'digital_count':tickets.filter(source='REGISTRATION',state='SOLD',registration__commercial_state='ACTIVE',registration__source_order_line__order__status='PAID').count() if tickets is not None else 0,
-        'paper_sold':tickets.filter(source='PAPER',state='SOLD').count() if tickets is not None else 0,
+        'digital_count':eligible_tickets(raffle).filter(source='REGISTRATION').count() if tickets is not None else 0,
+        'paper_sold':eligible_tickets(raffle).filter(source='PAPER').count() if tickets is not None else 0,
     }, status=400 if request.method == "POST" else 200)

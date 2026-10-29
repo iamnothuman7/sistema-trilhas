@@ -16,7 +16,7 @@ def _post_expense(expense, actor):
     FinancialEntry.objects.get_or_create(
         event=expense.event,
         kind=FinancialEntryKind.DESPESA,
-        source_reference=f"EXPENSE-{expense.pk}",
+        source_reference=f"EXPENSE-{expense.pk}" + (f"-PAY-{expense.revision}" if expense.revision else ""),
         defaults={
             'raffle_id':expense.raffle_id,
             "amount_cents_signed": -expense.amount_cents,
@@ -91,7 +91,8 @@ def settle_expense(*, event, expense_id, actor, paid_at, proof=None, request=Non
         raise ValidationError("Somente uma despesa a pagar pode ser quitada.")
     expense.status = ExpenseStatus.PAID
     expense.paid_at = paid_at
-    expense.save(update_fields=["status", "paid_at"])
+    expense.revision += 1
+    expense.save(update_fields=["status", "paid_at", "revision"])
     save_receipt(expense, proof, _saved_receipts)
     _post_expense(expense, actor)
     log_audit(actor=actor, event_id=event.pk, action="EXPENSE_PAID", entity_type="Expense", entity_id=expense.pk,
@@ -118,7 +119,7 @@ def update_expense(*,event,expense_id,data,actor,request=None,_saved_receipts):
     expense=Expense.objects.select_for_update().get(pk=expense_id,event=event)
     if data.get('version')!=expense_version(expense):raise ValidationError('Esta despesa já foi alterada. Atualize a página.')
     if expense.status==ExpenseStatus.CANCELED:raise ValidationError('O histórico de uma despesa anulada não pode ser reescrito.')
-    if expense.status==ExpenseStatus.PAID and data['status']!=ExpenseStatus.PAID:raise ValidationError('Use Anular lançamento para uma despesa paga.')
+    if data['status'] not in (ExpenseStatus.PAID,ExpenseStatus.PENDING):raise ValidationError('Selecione Paga ou A pagar.')
     vendor=data.get('vendor_id')
     if vendor and vendor.organization_id!=event.organization_id:raise ValidationError('Fornecedor de outra organização.')
     reason=data.get('reason','').strip()
@@ -129,9 +130,17 @@ def update_expense(*,event,expense_id,data,actor,request=None,_saved_receipts):
     if raffle and raffle.event_id!=event.pk:raise ValidationError('O sorteio pertence a outro evento.')
     version=data['version']
     for field in ['description','category','due_at','paid_at','status']:setattr(expense,field,data[field])
-    expense.vendor=vendor;expense.amount_cents=data['amount'];expense.raffle=raffle;expense.save()
+    expense.vendor=vendor;expense.amount_cents=data['amount'];expense.raffle=raffle
+    expense.revision += 1
+    expense.save()
     save_receipt(expense,data.get('proof_asset'),_saved_receipts)
-    if old_status==ExpenseStatus.PAID and (old_amount!=expense.amount_cents or old_paid!=expense.paid_at or old_raffle!=expense.raffle_id):
+    if old_status==ExpenseStatus.PAID and expense.status==ExpenseStatus.PENDING:
+        if not old_paid:raise ValidationError('O pagamento original não tem data. Confira o lançamento antes de reabrir.')
+        FinancialEntry.objects.create(event=event,raffle_id=old_raffle,kind=FinancialEntryKind.DESPESA,
+            amount_cents_signed=old_amount,recognized_at=timezone.make_aware(datetime.combine(old_paid,time(hour=12))),
+            posted_by=actor,source_reference=f'EXPENSE-{expense.pk}-REOPEN-{expense.revision}',
+            description=f'Correção: voltou a pagar — {expense.description}'[:255])
+    elif old_status==ExpenseStatus.PAID and (old_amount!=expense.amount_cents or old_paid!=expense.paid_at or old_raffle!=expense.raffle_id):
         if not old_paid:raise ValidationError('Corrija a data do pagamento original antes de ajustar esta saída.')
         for suffix,amount,date in [('REVERSAL',old_amount,old_paid),('CORRECTION',-expense.amount_cents,expense.paid_at)]:
             FinancialEntry.objects.create(event=event,raffle_id=old_raffle if suffix=='REVERSAL' else expense.raffle_id,kind=FinancialEntryKind.DESPESA,amount_cents_signed=amount,

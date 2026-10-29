@@ -54,7 +54,8 @@ document.addEventListener('DOMContentLoaded', function () {
             const shirt = participant.querySelector('[name="participant_shirt[]"]');
             [lot, shirt].forEach(function (select) {
                 Array.from(select.options).forEach(function (option) {
-                    option.hidden = option.disabled = option.dataset.product !== product.value;
+                    option.hidden = option.dataset.product !== product.value;
+                    option.disabled = option.hidden || option.dataset.soldOut === 'true';
                 });
                 if (!select.selectedOptions[0] || select.selectedOptions[0].disabled) {
                     const first = Array.from(select.options).find(function (option) { return !option.disabled; });

@@ -1,0 +1,46 @@
+<section class="card mg-section-gap compact-panel" aria-labelledby="expenses-title">
+  <div class="card-header"><h2 id="expenses-title" class="section-title">Despesas</h2><span class="badge badge-info">{{ expenses_page.paginator.count }} registros</span></div>
+  <nav class="compact-tabs" aria-label="Situação das despesas">
+    <a href="?{{ date_query }}" {% if not expense_status %}aria-current="page"{% endif %}>Todas</a>
+    <a href="?{{ date_query }}&status=PENDING" {% if expense_status == 'PENDING' %}aria-current="page"{% endif %}>A pagar</a>
+    <a href="?{{ date_query }}&status=PAID" {% if expense_status == 'PAID' %}aria-current="page"{% endif %}>Pagas</a>
+    <a href="?{{ date_query }}&status=CANCELED" {% if expense_status == 'CANCELED' %}aria-current="page"{% endif %}>Canceladas</a>
+  </nav>
+  {% load trilhas_ui %}
+  <div class="compact-records">
+  {% for exp in expenses %}
+    <article class="compact-record" data-expense="{{ exp.id }}">
+      <div class="compact-record-top">
+        <div class="compact-record-name"><strong>{{ exp.description }}</strong><small>Vence {{ exp.due_at|date:'d/m/Y' }}</small></div>
+        <strong class="compact-amount">R$ {{ exp.amount_cents|money }}</strong>
+        {% if exp.status != 'CANCELED' %}<button class="compact-status {% if exp.status == 'PAID' %}is-paid{% endif %}" type="button" onclick="document.getElementById('status-{{ exp.id }}').showModal()" aria-label="Alterar situação: {{ exp.description }}">{{ exp.get_status_display }} <i data-lucide="chevron-down" aria-hidden="true"></i></button>{% else %}<span class="badge">Cancelada</span>{% endif %}
+        <a class="icon-button" href="{% url 'gestao:expense_edit' event.id exp.id %}" aria-label="Editar {{ exp.description }}"><i data-lucide="pencil" aria-hidden="true"></i></a>
+      </div>
+      <details class="compact-details"><summary>Detalhes e comprovante</summary><div class="compact-detail-body">
+        <p>{{ exp.get_category_display }} · {{ exp.vendor.name|default:'Sem fornecedor' }}</p>
+        {% if exp.paid_at %}<p>Pagamento registrado: {{ exp.paid_at|date:'d/m/Y' }}</p>{% endif %}
+        <div class="page-actions">
+        {% if exp.proof_asset %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:private_document_download' event.id 'despesa' exp.id %}">Baixar comprovante</a>{% elif exp.status != 'CANCELED' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_proof' event.id exp.id %}">Anexar comprovante</a>{% endif %}
+        {% if exp.status == 'PAID' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_void' event.id exp.id %}">Anular lançamento</a>{% elif exp.status == 'PENDING' %}<button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('cancelExpense{{ exp.id }}').showModal()">Cancelar despesa</button>{% endif %}
+        </div>
+      </div></details>
+    </article>
+    {% if exp.status != 'CANCELED' %}
+    <dialog id="status-{{ exp.id }}" class="mg-dialog"><div class="card mg-dialog-card">
+      <div class="card-header"><h2 class="section-title">Situação da despesa</h2><button type="button" class="icon-button" onclick="this.closest('dialog').close()" aria-label="Fechar"><i data-lucide="x"></i></button></div>
+      <p>{{ exp.description }} · R$ {{ exp.amount_cents|money }}</p>
+      <p class="form-help">Corrige o registro e o saldo do sistema. Não faz transferência nem estorno bancário. Use “A pagar” se a baixa foi registrada por engano.</p>
+      <form method="post" enctype="multipart/form-data" action="{% url 'gestao:expense_status' event.id exp.id %}?{{ filter_query }}" data-workspace-private data-workspace-preserve-position>
+        {% csrf_token %}<input type="hidden" name="version" value="{{ exp.edit_version }}"><input type="hidden" name="return_to" value="{% url 'gestao:finance' event.id %}?{{ filter_query }}&expenses_page={{ expenses_page.number }}">
+        <div class="form-group"><label class="form-label" for="status-select-{{ exp.id }}">Situação</label><select class="form-control" name="status" id="status-select-{{ exp.id }}"><option value="PENDING" {% if exp.status == 'PENDING' %}selected{% endif %}>A pagar</option><option value="PAID" {% if exp.status == 'PAID' %}selected{% endif %}>Paga / concluída</option></select></div>
+        <div class="form-group"><label class="form-label" for="paid-date-{{ exp.id }}">Data do pagamento (se paga)</label><input type="date" class="form-control" name="paid_at" id="paid-date-{{ exp.id }}" max="{{ today }}" value="{% if exp.paid_at %}{{ exp.paid_at|date:'Y-m-d' }}{% else %}{{ today }}{% endif %}"></div>
+        <div class="form-group"><label class="form-label" for="reason-{{ exp.id }}">Observação (opcional)</label><input class="form-control" name="reason" id="reason-{{ exp.id }}" maxlength="1000"></div>
+        {% if status_expense.pk == exp.pk %}<div role="alert" class="mg-form-errors">{{ status_form.errors }}</div>{% endif %}
+        <div class="mg-form-actions"><button type="button" class="btn btn-secondary" onclick="this.closest('dialog').close()">Voltar</button><button class="btn btn-primary" type="submit">Salvar situação</button></div>
+      </form>
+    </div></dialog>
+    {% endif %}
+  {% empty %}<p class="empty-inline">Nenhuma despesa neste filtro.</p>{% endfor %}
+  </div>
+  {% if expenses_page.paginator.num_pages > 1 %}<nav class="mg-pagination" aria-label="Páginas de despesas"><span>{{ expenses_page.number }} / {{ expenses_page.paginator.num_pages }}</span><div class="page-actions">{% if expenses_page.has_previous %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&expenses_page={{ expenses_page.previous_page_number }}">Anterior</a>{% endif %}{% if expenses_page.has_next %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&expenses_page={{ expenses_page.next_page_number }}">Próxima</a>{% endif %}</div></nav>{% endif %}
+</section>

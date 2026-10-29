@@ -178,6 +178,7 @@ class CapacityResource(models.Model):
         verbose_name = "Recurso de Capacidade"
         verbose_name_plural = "Recursos de Capacidade"
         constraints = [
+            models.UniqueConstraint(fields=['event','reference_id'],condition=models.Q(type='SHIRT_SIZE'),name='unique_shirt_stock_per_variant'),
             models.CheckConstraint(
                 condition=models.Q(capacity_total__gte=0) &
                           models.Q(reserved_count__gte=0) &
@@ -194,7 +195,7 @@ class CapacityResource(models.Model):
         from apps.registrations.models import Registration
         active=0
         if self.event_id and self.type in ('EVENT_OVERALL','LOT_TOTAL'):
-            registrations=Registration.objects.filter(event_id=self.event_id,commercial_state='ACTIVE',archived_at__isnull=True)
+            registrations=Registration.objects.filter(event_id=self.event_id,commercial_state='ACTIVE',archived_at__isnull=True,source_order_line__order__is_test=False)
             if self.type=='LOT_TOTAL':
                 from uuid import UUID
                 try:lot_id=UUID(str(self.reference_id))
@@ -211,6 +212,7 @@ class CapacityResource(models.Model):
 
 
 class HoldStatus(models.TextChoices):
+    RETAINED = "RETAINED", "Entregue; não devolvida ao estoque"
     ACTIVE = "ACTIVE", "Ativa (Checkout em andamento)"
     COMMITTED = "COMMITTED", "Confirmada (Pago)"
     EXPIRED = "EXPIRED", "Expirada por Tempo"

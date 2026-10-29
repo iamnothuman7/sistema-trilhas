@@ -3,7 +3,7 @@
   'use strict';
   if (window.trilhasWorkspace) return;
   const pages = new Map(), tabs = new Map();
-  let hooks = new Map(), current = null, restoring = false, skipCapture = false;
+  let hooks = new Map(), current = null, restoring = false, skipCapture = false, pendingPosition = null;
   const root = () => document.getElementById('mainContent');
   const sensitive = /password|senha|token|secret|credential|public_key|csrf|confirm|aceite/i;
   const canonical = value => { const url = new URL(value, location.href); url.hash = ''; url.searchParams.sort(); return url.pathname + url.search; };
@@ -88,6 +88,10 @@
       });
     }
     tabs.set(tabKey(current),current.url);
+    if (pendingPosition) {
+      const position=pendingPosition;pendingPosition=null;
+      if(position.tab===tabKey(current))requestAnimationFrame(()=>window.scrollTo(position.x,position.y));
+    }
   }
   window.trilhasWorkspace = {
     register(name,hook) {
@@ -95,7 +99,7 @@
       const ctx=context(),state=ctx&&pages.get(pageKey(ctx));
       if (state?.custom.has(name)) hook.restore(state.custom.get(name));
     },
-    clear() { pages.clear();tabs.clear();hooks.clear(); },
+    clear() { pages.clear();tabs.clear();hooks.clear();pendingPosition=null; },
   };
   document.addEventListener('click',event=>{
     const link=event.target.closest('a[href]');if(!link)return;
@@ -128,6 +132,9 @@
   document.addEventListener('htmx:beforeOnLoad',event=>{
     const {xhr,requestConfig}=event.detail;
     if(requestConfig?.verb!=='get'&&xhr.status>=200&&xhr.status<300&&xhr.getResponseHeader('HX-Location')){
+      if(current&&requestConfig.elt?.closest('[data-workspace-preserve-position]')){
+        pendingPosition={tab:tabKey(current),x:scrollX,y:scrollY};
+      }
       if(current){pages.delete(pageKey(current));tabs.delete(tabKey(current));}
       skipCapture=true;
     }

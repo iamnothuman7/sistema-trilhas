@@ -178,3 +178,15 @@ Ao registrar uma devolução, escolha o canal. Transferência externa registra o
 ## Regras de layout móvel
 
 Site, compra, perfil e gestão têm regras específicas para telas estreitas e celulares em paisagem. Campos mantêm fonte de 16 px para evitar zoom automático; ações principais preservam área de toque de pelo menos 44 px. Títulos, margens e cards ficam mais compactos no celular, sem alterar a composição de desktop. Tabelas extensas têm rolagem restrita ao componente ou apresentação em cartões; a página não deve ultrapassar a largura da tela. As duas paletas usam os mesmos tamanhos e estados de foco.
+
+## Controles operacionais da edição
+
+Em **Financeiro → Despesas**, tocar no status permite corrigir Paga/A pagar na própria lista. Cada mudança usa uma versão do registro para recusar abas desatualizadas. Reabrir uma baixa gera compensação contábil na data original; pagar novamente gera uma nova baixa única. Nenhuma dessas ações envia dinheiro ou solicita estorno. Filtros, saldo e histórico permanecem coerentes, e o retorno após erro aponta para a lista, não para uma ação POST.
+
+**Patrocinadores → Interessados e visitas** registra contatos apenas com nome, permite organizar a próxima visita e a negociação e converte o contato em participação do evento. A busca normalizada reaproveita a marca existente; confirmação não registra recebimento nem publica a logo. Histórico de edições anteriores fica separado do acordo e do financeiro atual. Valores históricos respeitam a permissão financeira.
+
+**Camisetas e estoque** reutiliza os recursos e reservas do checkout por variante: uma unidade passa de reservada a confirmada, sem novo desconto. A entrega continua ocupando o estoque depois do cancelamento, até haver conferência física. Tamanhos sem total cadastrado preservam a venda sem limite de estoque; a organização deve cadastrar quantidades reais. Ao salvar o total, os contadores são reconstituídos a partir das inscrições válidas. Reservas de camisetas duram 35 minutos; vagas do evento continuam contabilizando somente inscrições confirmadas. SQLite usa transações IMMEDIATE com espera limitada, pois SELECT FOR UPDATE não implementa bloqueio de linha nesse banco.
+
+**Sorteio → Resultado** registra a apuração realizada conforme o regulamento já definido, sem inventar um algoritmo de escolha. Guarda vencedores, responsável, método e lista elegível com hash. Depois do registro, bloqueia sobrescrita, novas vendas e emissão tardia de números. Recebimentos tardios são preservados no financeiro e ficam para análise, sem modificar o resultado.
+
+Pedidos explicitamente identificados como testes podem ser excluídos dos indicadores operacionais pelo campo interno `is_test`; seus recebimentos reais não desaparecem do livro financeiro. A correção excepcional de uma antiga anotação fictícia de devolução exige identificação individual, consulta autenticada à conta original e pagamento aprovado sem estorno. Ela preserva o lançamento original e adiciona compensação e auditoria. Não se aplica a devoluções reais nem apaga cadastros em massa.

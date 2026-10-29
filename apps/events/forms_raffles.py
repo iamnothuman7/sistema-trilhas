@@ -57,6 +57,10 @@ class MotorcycleRaffleForm(forms.ModelForm):
 
     def clean(self):
         data = super().clean()
+        if not self.instance._state.adding and hasattr(self.instance,'result'):
+            locked={'draw_at','rules_text','motorcycle_count','registration_tickets_enabled','paper_start','paper_end','quota_price','quota_quantity','online_sales_enabled'}
+            if locked.intersection(self.changed_data):
+                raise forms.ValidationError('O resultado foi registrado. Regras, prêmios, numeração e vendas deste sorteio estão encerrados.')
         for name in ('primary_image','secondary_image'):
             upload=data.get(name)
             if isinstance(upload,UploadedFile):

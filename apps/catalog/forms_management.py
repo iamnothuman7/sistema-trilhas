@@ -120,6 +120,10 @@ class VariantForm(CatalogForm):
 
     def clean_code(self):
         value = self.cleaned_data['code'].strip().upper()
+        if self.instance.pk and value!=ProductVariant.objects.get(pk=self.instance.pk).code:
+            from apps.checkout.models import OrderLine
+            if OrderLine.objects.filter(variant=self.instance).exists():
+                raise forms.ValidationError('Este tamanho já tem inscrições. Edite a descrição ou cadastre outro tamanho; o código identifica o estoque anterior.')
         if ProductVariant.objects.filter(product=self.instance.product, kind=self.instance.kind, code=value).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError('Este código já existe neste produto.')
         return value

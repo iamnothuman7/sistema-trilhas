@@ -54,13 +54,14 @@ class MotorcycleRaffle(models.Model):
 
     @property
     def purchase_available(self):
-        return bool(self.online_sales_enabled and not self.sales_pending_requirements and
+        return bool(not hasattr(self,'result') and self.online_sales_enabled and not self.sales_pending_requirements and
             self.draw_at>timezone.now()+timedelta(minutes=35) and
             self.event.status in ['PUBLISHED','SALES_CLOSED','IN_PROGRESS'] and self.event.ends_at>timezone.now())
 
     @property
     def sales_pending_requirements(self):
         pending=[]
+        if hasattr(self,'result'):pending.append('O resultado deste sorteio já foi registrado')
         for field,label in [('quota_price_cents','Preço de cada número extra'),('quota_quantity','Limite de números extras online'),
             ('rules_text','Regulamento'),('authorization_reference','Referência da autorização/enquadramento'),
             ('provider_review_reference','Confirmação/protocolo do Mercado Pago'),('operation_review_confirmed','Conferência da operação'),('is_public','Publicar apresentação')]:
@@ -133,3 +134,13 @@ class RaffleInterest(models.Model):
 
     def __str__(self):
         return f"{self.user} — {self.raffle.title}"
+
+
+class RaffleResult(models.Model):
+    raffle=models.OneToOneField(MotorcycleRaffle,on_delete=models.PROTECT,related_name='result')
+    winners=models.JSONField(default=list)
+    eligible_snapshot=models.JSONField(default=list)
+    snapshot_sha256=models.CharField(max_length=64)
+    method_notes=models.TextField()
+    recorded_by=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT)
+    recorded_at=models.DateTimeField(auto_now_add=True)

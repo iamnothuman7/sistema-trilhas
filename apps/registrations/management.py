@@ -23,6 +23,8 @@ def registration_version(reg):
 
 @transaction.atomic
 def edit_registration(*,event,reg_id,data,actor,request=None):
+    from apps.events.models import Event
+    Event.objects.select_for_update().get(pk=event.pk)
     reg=Registration.objects.select_for_update().select_related('person','source_order_line__variant').get(pk=reg_id,event=event)
     if data['version']!=registration_version(reg):raise ValidationError('Esta inscrição mudou em outra aba. Atualize a página.')
     if reg.archived_at or reg.commercial_state in ['CANCELED','TRANSFERRED']:raise ValidationError('Não é possível editar uma inscrição removida, cancelada ou transferida.')
@@ -34,6 +36,11 @@ def edit_registration(*,event,reg_id,data,actor,request=None):
         target=ProductVariant.objects.filter(product_id=reg.source_order_line.product_id,kind='SHIRT_SIZE',code=data['shirt_size']).first()
         if not target or target.extra_price_cents!=(original.extra_price_cents if original else 0):
             raise ValidationError('Escolha um tamanho cadastrado com o mesmo valor. Acréscimos exigem uma compra adicional.')
+        from apps.catalog.stock import move_shirt_hold
+        move_shirt_hold(reg,target)
+        line=reg.source_order_line
+        line.variant=target;line.intended_variant_code=target.code
+        line.save(update_fields=['variant','intended_variant_code'])
     person=Person.objects.select_for_update().get(pk=reg.person_id)
     person_fields=['full_name','email','phone','city','state']
     changed=any((getattr(person,key) or '')!=(data[key] or '') for key in person_fields)
@@ -90,6 +97,8 @@ def cancel_paid_order(*,event,order_id,data,actor,request=None,_saved_receipts):
     if data.get('channel')!=RefundChannel.EXTERNAL:
         raise ValidationError('Selecione Fora do Mercado Pago somente para uma devolução externa real. Estornos do Mercado Pago precisam da consulta autenticada, sem lançamento manual.')
     order=Order.objects.select_for_update().get(pk=order_id,event=event)
+    from apps.events.models import Event
+    Event.objects.select_for_update().get(pk=event.pk)
     key=f"MANUAL-CANCEL-{data['request_key']}"
     existing=Refund.objects.filter(request_key=key).first()
     if existing:

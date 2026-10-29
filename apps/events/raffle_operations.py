@@ -18,6 +18,7 @@ def issue_registration_ticket(reg):
     if reg.commercial_state != 'ACTIVE' or reg.source_order_line.order.status != 'PAID': return None
     raffle=MotorcycleRaffle.objects.select_for_update().filter(event_id=reg.event_id,registration_tickets_enabled=True).first()
     if not raffle: return None
+    if hasattr(raffle,'result') or reg.archived_at or reg.source_order_line.order.is_test:return None
     existing=RaffleTicket.objects.filter(registration=reg).first()
     if existing: return existing
     number=_next_digital_number(raffle)
@@ -42,12 +43,15 @@ def activate_purchased_numbers(order):
 def confirmed_registration_tickets(reg):
     from django.db.models import Q
     if reg.commercial_state!='ACTIVE' or reg.source_order_line.order.status!='PAID':return RaffleTicket.objects.none()
-    return RaffleTicket.objects.filter(state='SOLD').filter(Q(registration=reg)|Q(beneficiary_registration=reg,order_line__order__status='PAID')).order_by('number')
+    from .raffle_results import eligible_tickets
+    raffle=MotorcycleRaffle.objects.filter(event_id=reg.event_id).first()
+    return eligible_tickets(raffle).filter(Q(registration=reg)|Q(beneficiary_registration=reg)).order_by('number') if raffle else RaffleTicket.objects.none()
 
 
 @transaction.atomic
 def create_paper_batch(raffle, actor, request=None):
     raffle=MotorcycleRaffle.objects.select_for_update().get(pk=raffle.pk)
+    if hasattr(raffle,'result'):raise ValidationError('O resultado já foi registrado. A numeração está encerrada.')
     if not 0<=raffle.paper_end-raffle.paper_start<5000:
         raise ValidationError('A faixa deve conter até 5.000 números.')
     existing=dict(raffle.tickets.filter(number__gte=raffle.paper_start,number__lte=raffle.paper_end).values_list('number','source'))
@@ -62,6 +66,11 @@ def create_paper_batch(raffle, actor, request=None):
 
 @transaction.atomic
 def record_paper_ticket(*, ticket_id, actor, point, buyer_name, buyer_phone, amount_cents, confirmed, request=None):
+    from .models import Event
+    initial=RaffleTicket.objects.select_related('raffle').get(pk=ticket_id)
+    Event.objects.select_for_update().get(pk=initial.raffle.event_id)
+    raffle=MotorcycleRaffle.objects.select_for_update().get(pk=initial.raffle_id)
+    if hasattr(raffle,'result'):raise ValidationError('O resultado já foi registrado. Não é possível confirmar novas vendas.')
     ticket=RaffleTicket.objects.select_for_update().select_related('raffle').get(pk=ticket_id)
     if ticket.source!='PAPER' or ticket.state=='VOID': raise ValidationError('Este número não está disponível para registrar venda em papel.')
     if point and point.raffle_id!=ticket.raffle_id: raise ValidationError('O ponto precisa pertencer a este sorteio.')

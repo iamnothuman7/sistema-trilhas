@@ -3,13 +3,16 @@ from . import views_gestao
 from apps.reporting import exports
 from apps.reporting import views as reporting_views
 from apps.events import views_sponsors
+from apps.events import views_sponsor_leads
 from apps.events import views_raffles
 from apps.events import views_raffle_operations
+from apps.events import views_raffle_results
 from apps.events.views_raffle_finance import raffle_finance
 from apps.events import views_rankings
 from apps.mediaframes import views_management as frame_views
 from apps.payments import views_management as payment_views
 from apps.catalog import views_management as catalog_views
+from apps.catalog import views_stock
 from .private_documents import private_document_download
 from apps.registrations import views_manual
 from apps.registrations import views_cleanup
@@ -56,12 +59,14 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/credenciamento/deliver-benefit-api/", views_gestao.deliver_benefit_api, name="deliver_benefit"),
 
     # Catálogo e Lotes
+    path('eventos/<uuid:event_id>/camisetas/',views_stock.shirt_stock,name='shirt_stock'),
     path("eventos/<uuid:event_id>/catalogo/", views_gestao.catalog_management, name="catalog"),
     path("eventos/<uuid:event_id>/catalogo/lotes/<uuid:lot_id>/remover/", catalog_views.lot_remove, name="lot_remove"),
     path("eventos/<uuid:event_id>/catalogo/<str:kind>/novo/", catalog_views.catalog_editor, name="catalog_create"),
     path("eventos/<uuid:event_id>/catalogo/<str:kind>/<str:object_id>/editar/", catalog_views.catalog_editor, name="catalog_edit"),
 
     # Financeiro Gerencial
+    path('eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/situacao/',finance_views.expense_status,name='expense_status'),
     path('eventos/<uuid:event_id>/financeiro/devolucoes/<uuid:refund_id>/conferir/',registration_views.refund_channel_review,name='refund_channel_review'),
     path('eventos/<uuid:event_id>/financeiro/adicionais/<uuid:order_id>/devolucao/',registration_views.addon_order_refund,name='addon_order_refund'),
     path("eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/editar/", finance_views.expense_editor, name="expense_edit"),
@@ -82,6 +87,11 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/molduras/equipes/", frame_views.team_frame_editor, name="team_frame_editor"),
 
     # Patrocinadores
+    path('eventos/<uuid:event_id>/patrocinadores/interessados/',views_sponsor_leads.sponsor_leads,name='sponsor_leads'),
+    path('eventos/<uuid:event_id>/patrocinadores/interessados/novo/',views_sponsor_leads.sponsor_lead_edit,name='sponsor_lead_create'),
+    path('eventos/<uuid:event_id>/patrocinadores/interessados/<int:lead_id>/editar/',views_sponsor_leads.sponsor_lead_edit,name='sponsor_lead_edit'),
+    path('eventos/<uuid:event_id>/patrocinadores/interessados/<int:lead_id>/confirmar/',views_sponsor_leads.sponsor_lead_convert,name='sponsor_lead_convert'),
+    path('eventos/<uuid:event_id>/patrocinadores/marcas/<int:profile_id>/historico/',views_sponsor_leads.sponsor_history,name='sponsor_history'),
     path("patrocinadores/", views_sponsors.sponsor_bank, name="sponsor_bank"),
     path("patrocinadores/novo/", views_sponsors.sponsor_profile_create, name="sponsor_profile_create"),
     path("patrocinadores/<int:profile_id>/editar/", views_sponsors.sponsor_profile_edit, name="sponsor_profile_edit"),
@@ -94,6 +104,7 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/receber/", views_sponsors.sponsor_receipt, name="sponsor_receipt"),
     path("eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/recebimentos/<uuid:payment_id>/reverter/", views_sponsors.sponsor_reversal, name="sponsor_reversal"),
     path("eventos/<uuid:event_id>/sorteio/", views_raffles.raffle_management, name="raffle_management"),
+    path('eventos/<uuid:event_id>/sorteio/resultado/',views_raffle_results.raffle_result,name='raffle_result'),
     path("eventos/<uuid:event_id>/sorteio/financeiro/", raffle_finance, name="raffle_finance"),
     path('eventos/<uuid:event_id>/sorteio/pedidos/<uuid:order_id>/devolucao/',registration_views.raffle_order_refund,name='raffle_order_refund'),
     path("eventos/<uuid:event_id>/sorteio/operacao/", views_raffle_operations.raffle_operations, name="raffle_operations"),

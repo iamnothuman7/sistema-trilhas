@@ -1,6 +1,7 @@
 <nav class="raffle-tabs" aria-label="Áreas do sorteio">
 {% if management_permissions.events %}<a class="btn {% if current == 'settings' %}btn-primary{% else %}btn-secondary{% endif %}" href="{% url 'gestao:raffle_management' event.id %}" {% if current == 'settings' %}aria-current="page"{% endif %}><i data-lucide="image" aria-hidden="true"></i>Apresentação e regras</a>{% endif %}
-{% if saved_raffle or current == 'operations' or current == 'finance' %}
+{% if saved_raffle or current == 'operations' or current == 'finance' or current == 'result' %}
 {% if management_permissions.events %}<a class="btn {% if current == 'operations' %}btn-primary{% else %}btn-secondary{% endif %}" href="{% url 'gestao:raffle_operations' event.id %}" {% if current == 'operations' %}aria-current="page"{% endif %}><i data-lucide="tickets" aria-hidden="true"></i>Números e pontos</a>{% endif %}
+{% if management_permissions.events %}<a class="btn {% if current == 'result' %}btn-primary{% else %}btn-secondary{% endif %}" href="{% url 'gestao:raffle_result' event.id %}" {% if current == 'result' %}aria-current="page"{% endif %}><i data-lucide="award" aria-hidden="true"></i>Resultado</a>{% endif %}
 {% if management_permissions.finance %}<a class="btn {% if current == 'finance' %}btn-primary{% else %}btn-secondary{% endif %}" href="{% url 'gestao:raffle_finance' event.id %}" {% if current == 'finance' %}aria-current="page"{% endif %}><i data-lucide="wallet" aria-hidden="true"></i>Financeiro do sorteio</a>{% endif %}
 {% endif %}</nav>

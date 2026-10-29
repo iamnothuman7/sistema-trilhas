@@ -14,7 +14,7 @@
     </div>
 </div>
 
-<section class="card mg-element-gap" aria-label="Período do financeiro">
+<details class="card compact-details mg-element-gap" {% if date_form.errors or date_query %}open{% endif %}><summary>Filtrar período</summary>
     <form method="get" class="mg-finance-filters">
         <div class="form-group"><label class="form-label" for="{{ date_form.date_start.id_for_label }}">Data inicial</label>{{ date_form.date_start }}{% if date_form.date_start.errors %}<div class="mg-field-errors">{{ date_form.date_start.errors }}</div>{% endif %}</div>
         <div class="form-group"><label class="form-label" for="{{ date_form.date_end.id_for_label }}">Data final</label>{{ date_form.date_end }}{% if date_form.date_end.errors %}<div class="mg-field-errors">{{ date_form.date_end.errors }}</div>{% endif %}</div>
@@ -22,8 +22,11 @@
         <a href="{% url 'gestao:finance' event_id=event.id %}" class="btn btn-secondary" data-workspace-reset>Limpar</a>
     </form>
     {% if date_form.non_field_errors %}<div class="mg-field-errors" role="alert">{{ date_form.non_field_errors }}</div>{% endif %}
-</section>
+</details>
 
+{% if status_form.errors %}<div class="mg-form-errors" role="alert"><strong>A situação não foi alterada.</strong>{{ status_form.errors }} Confira o registro atualizado antes de tentar novamente.</div>{% endif %}
+{% include 'gestao/finance/_compact_expenses.html' %}
+<details class="card compact-details mg-section-gap"><summary>Resumo financeiro e recebimentos</summary>
 <div class="stat-grid mg-finance-stats mg-section-gap">
     <article class="stat-card"><div class="stat-label"><i data-lucide="arrow-down-left" aria-hidden="true"></i> Recebimentos</div><div class="stat-value">R$ {{ finance.revenue_formatted }}</div><p class="stat-foot">Pagamentos confirmados no período</p></article>
     <article class="stat-card"><div class="stat-label"><i data-lucide="undo-2" aria-hidden="true"></i> Estornos</div><div class="stat-value">R$ {{ finance.refunds_formatted }}</div><p class="stat-foot">Valores devolvidos aos participantes</p></article>
@@ -40,33 +43,12 @@
 {% include 'gestao/finance/_addon_orders.html' %}
 {% include 'gestao/finance/_refund_channels.html' %}
 
-<section class="card mg-section-gap" aria-labelledby="expenses-title">
-    <div class="card-header"><div><h2 id="expenses-title" class="section-title">Despesas e fornecedores</h2><p class="mg-section-description">Registre compromissos e acompanhe cada pagamento.</p></div><span class="badge badge-info">{% if expenses_page %}{{ expenses_page.paginator.count }}{% else %}{{ expenses|length }}{% endif %} registros</span></div>
-    <div class="table-responsive">
-        <table class="table" aria-label="Despesas da edição">
-            <thead><tr><th scope="col">Descrição</th><th scope="col">Categoria</th><th scope="col">Fornecedor</th><th scope="col">Valor</th><th scope="col">Vencimento</th><th scope="col">Situação</th><th scope="col">Ações</th></tr></thead>
-            <tbody>
-                {% for exp in expenses %}
-                <tr>
-                    <td class="mg-strong">{{ exp.description }}{% if exp.proof_asset %}<div><a class="btn btn-secondary btn-sm" href="{% url 'gestao:private_document_download' event_id=event.id kind='despesa' document_id=exp.id %}"><i data-lucide="download" aria-hidden="true"></i> Comprovante</a></div>{% endif %}</td><td>{{ exp.get_category_display }}</td><td>{{ exp.vendor.name|default:"Avulso" }}</td><td class="mg-strong mg-nowrap">R$ {{ exp.amount_cents|money }}</td><td class="mg-nowrap">{{ exp.due_at|date:"d/m/Y" }}</td>
-                    <td><span class="badge {% if exp.status == 'PAID' %}badge-success{% elif exp.status == 'PENDING' %}badge-warning{% else %}badge-info{% endif %}">{{ exp.get_status_display }}</span></td>
-                    <td><div class="mg-finance-actions">{% if exp.status != 'CANCELED' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_edit' event.id exp.id %}">Editar</a>{% if not exp.proof_asset %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_proof' event.id exp.id %}">Anexar comprovante</a>{% endif %}{% endif %}{% if exp.status == 'PENDING' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_pay' event.id exp.id %}"><i data-lucide="check" aria-hidden="true"></i> Marcar paga</a><button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('cancelExpense{{ exp.id }}').showModal()">Cancelar</button>{% elif exp.status == 'PAID' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_void' event.id exp.id %}">Anular lançamento</a>{% endif %}</div></td>
-                </tr>
-                {% empty %}<tr><td colspan="7" class="mg-table-empty"><i data-lucide="receipt" aria-hidden="true"></i><p>Nenhuma despesa encontrada para este período.</p></td></tr>{% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% if expenses_page.paginator.num_pages > 1 %}<nav class="mg-pagination" aria-label="Páginas de despesas"><span>Página {{ expenses_page.number }} de {{ expenses_page.paginator.num_pages }}</span><div class="page-actions">{% if expenses_page.has_previous %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&expenses_page={{ expenses_page.previous_page_number }}&entries_page={{ entries_page.number }}">Anterior</a>{% endif %}{% if expenses_page.has_next %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&expenses_page={{ expenses_page.next_page_number }}&entries_page={{ entries_page.number }}">Próxima</a>{% endif %}</div></nav>{% endif %}
-</section>
 
+
+</details>
 <section class="card" aria-labelledby="ledger-title">
     <div class="card-header"><div><h2 id="ledger-title" class="section-title">Extrato de movimentações</h2><p class="mg-section-description">Entradas, taxas e saídas reconhecidas no caixa da edição.</p></div></div>
-    <div class="table-responsive">
-        <table class="table" aria-label="Movimentações financeiras">
-            <thead><tr><th scope="col">Data e hora</th><th scope="col">Movimento</th><th scope="col">Descrição</th><th scope="col">Valor</th><th scope="col">Referência</th></tr></thead>
-            <tbody>{% for entry in entries %}<tr><td class="mg-meta mg-nowrap">{{ entry.recognized_at|date:"d/m/Y H:i" }}</td><td><span class="badge badge-info">{{ entry.get_kind_display }}</span></td><td class="mg-strong">{{ entry.description }}</td><td class="mg-strong mg-nowrap {% if entry.amount_cents_signed >= 0 %}text-success{% else %}mg-text-danger{% endif %}">R$ {{ entry.amount_cents_signed|money }}</td><td class="mg-code text-muted">{{ entry.source_reference|default:"—" }}</td></tr>{% empty %}<tr><td colspan="5" class="mg-table-empty"><i data-lucide="rows-3" aria-hidden="true"></i><p>Nenhuma movimentação encontrada para este período.</p></td></tr>{% endfor %}</tbody>
-        </table>
-    </div>
+<div class="compact-records">{% for entry in entries %}<article class="compact-record"><div class="stock-heading"><div class="compact-record-name"><strong>{{ entry.description }}</strong><small>{{ entry.recognized_at|date:'d/m/Y H:i' }}</small></div><strong class="compact-amount {% if entry.amount_cents_signed >= 0 %}text-success{% else %}mg-text-danger{% endif %}">R$ {{ entry.amount_cents_signed|money }}</strong></div><details class="compact-details"><summary>Origem do lançamento</summary><div class="compact-detail-body"><p>{{ entry.get_kind_display }}</p><p class="mg-code">{{ entry.source_reference }}</p>{% if entry.order_id %}<p>Confirmado pela integração. Uma mudança interna não estorna esta transação; use a devolução na ficha do pedido quando aplicável.</p>{% endif %}</div></details></article>{% empty %}<p class="empty-inline">Nenhuma movimentação neste período.</p>{% endfor %}</div>
     {% if entries_page.paginator.num_pages > 1 %}<nav class="mg-pagination" aria-label="Páginas do extrato"><span>Página {{ entries_page.number }} de {{ entries_page.paginator.num_pages }}</span><div class="page-actions">{% if entries_page.has_previous %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.previous_page_number }}&expenses_page={{ expenses_page.number }}">Anterior</a>{% endif %}{% if entries_page.has_next %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.next_page_number }}&expenses_page={{ expenses_page.number }}">Próxima</a>{% endif %}</div></nav>{% endif %}
 </section>
 
@@ -91,5 +73,6 @@
 {% endblock %}
 
 {% block extra_js %}
+{% if status_form.errors %}<script>document.getElementById('status-{{ status_expense.id }}')?.showModal();</script>{% endif %}
 {% if expense_form.errors %}<script>document.getElementById('expenseModal')?.showModal();</script>{% endif %}
 {% endblock %}

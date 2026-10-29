@@ -22,6 +22,10 @@ ACTION_ROLES = {
     "team": MANAGERS,
 }
 VIEW_ACTIONS = {
+    'raffle_result':'events',
+    'sponsor_leads':'sponsors','sponsor_lead_edit':'content','sponsor_lead_convert':'content','sponsor_history':'finance',
+    'shirt_stock':'catalog',
+    'expense_status':'finance',
     'refund_channel_review':'finance',
     'addon_order_refund':'finance',
     'raffle_order_refund':'finance',

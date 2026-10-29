@@ -181,6 +181,7 @@ class PaymentAllocation(models.Model):
 
 
 class RefundState(models.TextChoices):
+    VOIDED_TEST = "VOIDED_TEST", "Anotação fictícia anulada (sem devolução)"
     REQUESTED = "REQUESTED", "Solicitado"
     AUTHORIZED = "AUTHORIZED", "Autorizado pela Gestão"
     PROCESSING = "PROCESSING", "Em Processamento no Gateway"

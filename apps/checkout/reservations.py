@@ -143,6 +143,9 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
         )
 
         # Criar inscrição vinculada
+        if product.includes_shirt:
+            from apps.catalog.stock import reserve_shirt
+            reserve_shirt(event=event,variant=participant['variant'],line=line,expires_at=hold_expires)
         Registration.objects.create(
             participant_cpf=participant["cpf"],
             event=event,
