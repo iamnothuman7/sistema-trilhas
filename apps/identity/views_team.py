@@ -105,3 +105,46 @@ def team_revoke(request, event_id, user_id):
         log_audit(actor=request.user, event_id=event_id, action='TEAM_ACCESS_REVOKED', entity_type='User', entity_id=user.pk, request=request)
     messages.success(request, 'Acesso removido deste evento. A conta continua disponível para seus outros vínculos.')
     return redirect('gestao:team_management', event_id=event_id)
+
+
+class TeamEditForm(TeamAccessForm):
+    version=forms.CharField(widget=forms.HiddenInput)
+    def __init__(self,*args,actor,**kwargs):
+        super().__init__(*args,actor=actor,**kwargs)
+        self.fields.pop('password');self.fields.pop('replace_permissions')
+        self.fields['email'].disabled=True
+        self.fields['full_name'].disabled=not is_administrator(actor)
+
+
+@management_required
+@never_cache
+@require_http_methods(['GET','POST'])
+def team_edit(request,event_id,user_id):
+    from apps.events.models import Event
+    from apps.core.record_actions import record_version
+    from apps.finance.views_crud import form_page
+    from django.urls import reverse
+    import hashlib
+    event=request.management_event
+    with transaction.atomic():
+        Event.objects.select_for_update().get(pk=event.pk)
+        user=get_object_or_404(User.objects.select_for_update().filter(pk__in=EventMembership.objects.filter(event=event).values('user_id')),pk=user_id)
+        if protected_user(request.user,user):raise PermissionDenied('Este acesso administrativo está protegido.')
+        memberships=list(EventMembership.objects.filter(event=event,user=user,revoked_at__isnull=True).order_by('pk'))
+        version=hashlib.sha256((record_version(user,['id','full_name','email','is_active'])+''.join(record_version(m) for m in memberships)).encode()).hexdigest()
+        form=TeamEditForm(request.POST if request.method=='POST' else None,actor=request.user,
+            initial={'email':user.email,'full_name':user.full_name,'roles':[m.role_code for m in memberships],'version':version})
+        if request.method=='POST' and form.is_valid():
+            if form.cleaned_data['version']!=version:form.add_error(None,'Este acesso mudou em outra aba. Atualize a página.')
+            elif not user.is_active:form.add_error(None,'A conta está desativada. A administração precisa revisar o acesso.')
+            else:
+                roles=form.cleaned_data['roles']
+                if is_administrator(request.user):user.full_name=form.cleaned_data['full_name'];user.save(update_fields=['full_name'])
+                EventMembership.objects.filter(user=user,event=event,revoked_at__isnull=True).exclude(role_code__in=roles).update(revoked_at=timezone.now())
+                for role in roles:EventMembership.objects.get_or_create(user=user,event=event,role_code=role,revoked_at=None,defaults={'granted_by':request.user})
+                log_audit(actor=request.user,event_id=event.pk,action='TEAM_ACCESS_EDITED',entity_type='User',entity_id=user.pk,diff={'roles':roles},request=request)
+                messages.success(request,'Nome e permissões atualizados. A senha e os acessos a outros eventos foram preservados.')
+                return redirect('gestao:team_management',event_id=event.pk)
+    return form_page(request,event=event,form=form,record=user,title='Editar acesso da equipe',
+        note='As permissões valem para este evento. O e-mail identifica a conta e a senha atual é preservada.',
+        back=reverse('gestao:team_management',args=[event.pk]),submit='Salvar acesso',section='Equipe e acessos')

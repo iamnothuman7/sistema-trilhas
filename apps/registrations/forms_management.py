@@ -22,7 +22,7 @@ class RegistrationEditForm(forms.Form):
     def __init__(self,*args,registration,**kwargs):
         super().__init__(*args,**kwargs)
         from apps.catalog.models import ProductVariant
-        sizes=set(ProductVariant.objects.filter(product_id=registration.source_order_line.product_id,kind='SHIRT_SIZE').values_list('code',flat=True))
+        sizes=set(ProductVariant.objects.filter(product_id=registration.source_order_line.product_id,kind='SHIRT_SIZE',active=True).values_list('code',flat=True))
         sizes.add(registration.shirt_size)
         self.fields['shirt_size'].choices=[(size,size or 'Sem camiseta') for size in sorted(sizes)]
         self.fields['shirt_size'].required=bool(registration.shirt_size)

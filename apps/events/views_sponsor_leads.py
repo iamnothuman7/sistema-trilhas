@@ -165,7 +165,7 @@ class HistoryForm(forms.Form):
 @require_http_methods(['GET','POST'])
 def sponsor_history(request,event_id,profile_id):
     event=request.management_event
-    profile=get_object_or_404(available_profiles(request.user),pk=profile_id,organization=event.organization)
+    profile=get_object_or_404(available_profiles(request.user,include_archived=True),pk=profile_id,organization=event.organization)
     can_edit=can_edit_profile(request.user,profile)
     form=HistoryForm(request.POST if request.method=='POST' else None)
     if request.method=='POST':

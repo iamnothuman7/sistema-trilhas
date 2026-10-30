@@ -74,6 +74,7 @@ def record_paper_ticket(*, ticket_id, actor, point, buyer_name, buyer_phone, amo
     ticket=RaffleTicket.objects.select_for_update().select_related('raffle').get(pk=ticket_id)
     if ticket.source!='PAPER' or ticket.state=='VOID': raise ValidationError('Este número não está disponível para registrar venda em papel.')
     if point and point.raffle_id!=ticket.raffle_id: raise ValidationError('O ponto precisa pertencer a este sorteio.')
+    if point and not point.active:raise ValidationError('Este ponto foi desativado. Escolha um ponto ativo.')
     if ticket.state=='SOLD':
         if (ticket.amount_cents == amount_cents and ticket.buyer_name == buyer_name and ticket.buyer_phone == buyer_phone
                 and ticket.point_id == (point.pk if point else None) and confirmed):

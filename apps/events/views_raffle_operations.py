@@ -74,6 +74,7 @@ def raffle_operations(request, event_id):
                     from .models import Event
                     Event.objects.select_for_update().get(pk=event_id)
                     ticket=get_object_or_404(RaffleTicket.objects.select_for_update(),raffle=raffle,number=int(request.POST.get('number','')),source='PAPER')
+                    if hasattr(raffle,'result'):raise ValidationError('O sorteio já foi apurado. Os números do resultado estão preservados.')
                     if ticket.state!='VOID':
                         if ticket.amount_cents and (not can_manage_event(request.user,request.management_event,'finance') or request.POST.get('returned')!='on'):
                             raise ValidationError('Confirme a devolução do valor recebido antes de cancelar um bilhete pago.')
@@ -98,6 +99,7 @@ def raffle_operations(request, event_id):
     elif number: tickets=tickets.none()
     if state in RaffleTicket.State.values: tickets=tickets.filter(state=state)
     return render(request,'gestao/raffles/operations.html',{'event':request.management_event,'raffle':raffle,'points':points,
+        'active_points':points.filter(active=True),
         'page_obj':Paginator(tickets,50).get_page(request.GET.get('page')),'ticket_states':RaffleTicket.State.choices,
         'total':raffle.tickets.count(),'confirmed':tickets_for_event(raffle).filter(state='SOLD').count(),
         'paper_count':raffle.paper_end-raffle.paper_start+1,'number_filter':number,'state_filter':state,

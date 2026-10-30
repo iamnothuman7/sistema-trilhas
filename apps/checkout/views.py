@@ -68,7 +68,7 @@ def _registration_context(request, event, products, active_lots):
     shirt_stock = {r.reference_id:r.available_count for r in CapacityResource.objects.filter(event=event,type='SHIRT_SIZE')}
     for product in products:
         variants = [variant for variant in product.variants.all() if variant.kind == "SHIRT_SIZE"]
-        sizes = [(variant.code, variant.label, variant.extra_price_cents,shirt_stock.get(str(variant.pk))) for variant in variants] if variants else [(code, code, 0,None) for code in ("P", "M", "G", "GG", "XG")]
+        sizes = [(variant.code, variant.label, variant.extra_price_cents,shirt_stock.get(str(variant.pk))) for variant in variants if variant.active] if variants else [(code, code, 0,None) for code in ("P", "M", "G", "GG", "XG")]
         if not product.includes_shirt:
             sizes = [("", "Esta inscrição não inclui camiseta", 0,None)]
         shirt_options.extend({"product_id":str(product.pk),"code":code,"label":label,"extra_cents":extra,"sold_out":available==0} for code,label,extra,available in sizes)

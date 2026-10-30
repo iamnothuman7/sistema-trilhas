@@ -609,8 +609,10 @@ def deliver_benefit_api(request, event_id):
 @require_GET
 def catalog_management(request, event_id):
     event = get_object_or_404(Event, id=event_id)
-    products = Product.objects.filter(event=event).prefetch_related("lots", "variants")
-    coupons = Coupon.objects.filter(event=event).order_by("-valid_until")
+    from django.db.models import Prefetch
+    from apps.catalog.models import ProductVariant
+    products = Product.objects.filter(event=event,active=True).prefetch_related(Prefetch('lots',queryset=Lot.objects.filter(active=True)),Prefetch('variants',queryset=ProductVariant.objects.filter(active=True)))
+    coupons = Coupon.objects.filter(event=event,active=True).order_by("-valid_until")
     inventory = InventoryItem.objects.filter(event=event)
     from apps.checkout.addons import inventory_items
 
@@ -619,7 +621,7 @@ def catalog_management(request, event_id):
         "products": products,
         "coupons": coupons,
         "inventory": inventory,
-        "addons": inventory_items(event, active=False),
+        "addons": inventory_items(event, active=True),
     })
 
 

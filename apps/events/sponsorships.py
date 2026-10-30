@@ -25,8 +25,9 @@ def sync_profile(profile):
     Sponsor.objects.filter(profile=profile).update(**brand_values(profile))
 
 
-def available_profiles(user, action="sponsors"):
-    return SponsorProfile.objects.filter(organization_id__in=accessible_events(user, action).values("organization_id"))
+def available_profiles(user, action="sponsors", include_archived=False):
+    rows=SponsorProfile.objects.filter(organization_id__in=accessible_events(user, action).values("organization_id"))
+    return rows if include_archived else rows.filter(archived_at__isnull=True)
 
 
 def can_edit_profile(user, profile):
@@ -67,6 +68,7 @@ def decorate_balance(sponsor):
 
 
 def sponsor_totals(sponsors):
+    sponsors=[s for s in sponsors if not s.archived_at]
     return {
         "agreed_cents": sum(s.agreed_amount_cents or 0 for s in sponsors),
         "received_cents": sum(s.received_cents for s in sponsors),

@@ -77,6 +77,7 @@ class ProductVariant(models.Model):
     code = models.CharField("Código da Variante", max_length=20)  # P, M, G, GG, XG, FEMININO_M
     label = models.CharField("Descrição para o Usuário", max_length=100)
     extra_price_cents = models.PositiveBigIntegerField("Acréscimo de Preço (centavos)", default=0)
+    active = models.BooleanField('Disponível para novas inscrições', default=True)
 
     class Meta:
         unique_together = ("product", "kind", "code")

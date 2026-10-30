@@ -38,8 +38,9 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
             product = lot = None
         if not product or not lot or not lot.is_open:
             raise ValidationError("O pacote ou lote escolhido não está disponível. Revise a inscrição.")
-        size_variants = {variant.code: variant for variant in product.variants.filter(kind="SHIRT_SIZE")}
-        allowed_sizes = set(size_variants) or {"P", "M", "G", "GG", "XG"}
+        configured_variants=list(product.variants.filter(kind="SHIRT_SIZE"))
+        size_variants = {variant.code: variant for variant in configured_variants if variant.active}
+        allowed_sizes = set(size_variants) if configured_variants else {"P", "M", "G", "GG", "XG"}
         if product.includes_shirt and participant["shirt"] not in allowed_sizes:
             raise ValidationError(f"Escolha um tamanho de camiseta disponível para {participant['name']}.")
         if not product.includes_shirt:

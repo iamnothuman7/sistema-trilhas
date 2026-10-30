@@ -1,0 +1,5 @@
+{% extends 'gestao/base_gestao.html' %}
+{% block content %}
+<div class="page-heading"><div><h1>Excluídos e inativos do catálogo</h1><p>Recupere os cadastros que saíram das novas vendas.</p></div><a class="btn btn-secondary" href="{% url 'gestao:catalog' event.id %}">Voltar ao catálogo</a></div>
+{% for group in groups %}<section class="card mg-section-gap"><h2 class="section-title">{{ group.label|capfirst }}</h2><div class="compact-records">{% for row in group.rows %}<article class="compact-record"><strong>{% firstof row.name row.title row.code_upper row.label %}</strong><div class="record-actions"><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event.id group.kind row.pk %}">Editar</a><a class="btn btn-primary btn-sm" href="{% url 'gestao:catalog_restore' event.id group.kind row.pk %}">Restaurar</a></div></article>{% empty %}<p class="form-help">Nenhum cadastro excluído.</p>{% endfor %}</div></section>{% endfor %}
+{% endblock %}

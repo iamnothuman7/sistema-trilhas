@@ -33,7 +33,7 @@ def edit_registration(*,event,reg_id,data,actor,request=None):
         if reg.entitlements.filter(benefit_type=BenefitType.CAMISETA,quantity_used__gt=0).exists():raise ValidationError('A camiseta já foi entregue. O tamanho não pode ser alterado.')
         from apps.catalog.models import ProductVariant
         original=reg.source_order_line.variant
-        target=ProductVariant.objects.filter(product_id=reg.source_order_line.product_id,kind='SHIRT_SIZE',code=data['shirt_size']).first()
+        target=ProductVariant.objects.filter(product_id=reg.source_order_line.product_id,kind='SHIRT_SIZE',code=data['shirt_size'],active=True).first()
         if not target or target.extra_price_cents!=(original.extra_price_cents if original else 0):
             raise ValidationError('Escolha um tamanho cadastrado com o mesmo valor. Acréscimos exigem uma compra adicional.')
         from apps.catalog.stock import move_shirt_hold

@@ -44,7 +44,16 @@
 .compact-details.card>summary{min-height:44px}
 .sponsor-filter .sp-filters{padding-top:8px;gap:12px}
 .sponsor-filter .sp-filters .form-group{margin:0}
+.record-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0;min-width:0}
+.record-actions>form{margin:0}
+.record-actions .btn{white-space:normal;max-width:100%;text-align:center;overflow-wrap:anywhere}
+.expense-record .compact-record-top{grid-template-columns:minmax(0,1fr) auto auto auto}
+.expense-record .compact-record-top>.record-actions{margin:0}
+.record-actions .btn-danger{border-color:color-mix(in srgb,var(--danger,#ef4444) 40%,transparent);color:var(--danger,#ef4444);background:color-mix(in srgb,var(--danger,#ef4444) 8%,transparent)}
 @media(max-width:600px){
+ .record-actions .btn{min-height:44px;padding:9px 12px;font-size:13px}
+ .expense-record .compact-record-top{grid-template-columns:minmax(0,1fr) auto}
+ .expense-record .compact-record-top>.record-actions{grid-column:1 / -1;grid-row:3;margin-top:4px}
  .audit-dashboard-grid{grid-template-columns:1fr;gap:12px}
  .compact-panel.card{padding:12px}
  .compact-record{padding:10px 0}

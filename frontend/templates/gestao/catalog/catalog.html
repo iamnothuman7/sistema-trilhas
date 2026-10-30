@@ -10,7 +10,7 @@
     <p class="text-muted">Crie e edite produtos, tamanhos, preços, períodos de venda, vagas e cupons desta edição.</p>
 </div>
 
-<p><a class="btn btn-secondary" href="{% url 'gestao:shirt_stock' event.id %}"><i data-lucide="shirt"></i>Gerenciar estoque de camisetas</a></p>
+<p><a class="btn btn-secondary" href="{% url 'gestao:catalog_trash' event.id %}">Excluídos e inativos</a> <a class="btn btn-secondary" href="{% url 'gestao:shirt_stock' event.id %}"><i data-lucide="shirt"></i>Gerenciar estoque de camisetas</a></p>
 <!-- Produtos e Lotes -->
 <div class="card mg-section-gap">
     <div class="card-header">
@@ -25,7 +25,7 @@
                         <span class="badge badge-warning">{{ prod.get_kind_display }}</span>
                         <strong>{{ prod.name }}</strong><span class="badge {% if prod.active %}badge-success{% else %}badge-warning{% endif %}">{% if prod.active %}Ativo{% else %}Desativado{% endif %}</span>
                     </div>
-                    <div class="page-actions"><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='produto' object_id=prod.id %}">Editar produto</a><a class="btn btn-primary btn-sm" href="{% url 'gestao:catalog_create' event_id=event.id kind='lote' %}?product={{ prod.id }}">Novo lote</a></div>
+                    <div class="page-actions"><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='produto' object_id=prod.id %}">Editar produto</a><a class="btn btn-danger btn-sm" href="{% url 'gestao:catalog_remove' event.id 'produto' prod.id %}">Excluir</a><a class="btn btn-primary btn-sm" href="{% url 'gestao:catalog_create' event_id=event.id kind='lote' %}?product={{ prod.id }}">Novo lote</a></div>
                 </div>
 
                 <div class="text-muted mg-space-bottom">
@@ -36,7 +36,7 @@
 
                 <details class="catalog-variants"><summary>Tamanhos de camiseta e acréscimos</summary><div class="mg-stack">
                     <p class="text-muted">Sem tamanhos personalizados, o checkout usa P, M, G, GG e XG sem acréscimo. Ao personalizar, cadastre todos os tamanhos que deseja oferecer.</p>
-                    {% for variant in prod.variants.all %}{% if variant.kind == 'SHIRT_SIZE' %}<div class="mg-row"><span>{{ variant.code }} · {{ variant.label }} · R$ {{ variant.extra_price_cents|money }} de acréscimo</span><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='tamanho' object_id=variant.id %}">Editar tamanho</a></div>{% endif %}{% endfor %}
+                    {% for variant in prod.variants.all %}{% if variant.kind == 'SHIRT_SIZE' %}<div class="mg-row"><span>{{ variant.code }} · {{ variant.label }} · R$ {{ variant.extra_price_cents|money }} de acréscimo</span><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='tamanho' object_id=variant.id %}">Editar tamanho</a><a class="btn btn-danger btn-sm" href="{% url 'gestao:catalog_remove' event.id 'tamanho' variant.id %}">Excluir</a></div>{% endif %}{% endfor %}
                     <a class="btn btn-secondary" href="{% url 'gestao:catalog_create' event_id=event.id kind='tamanho' %}?product={{ prod.id }}">Adicionar tamanho</a></div></details>
                 <!-- Tabela de Lotes deste produto -->
                 <div class="table-responsive">
@@ -66,7 +66,7 @@
                                             {% if not lot.active %}Desativado{% elif lot.is_open %}Aberto{% else %}Fechado{% endif %}
                                         </span>
                                     </td>
-                                    <td data-label="Ações"><div class="page-actions"><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='lote' object_id=lot.id %}" aria-label="Editar lote {{ lot.title }}">Editar lote</a><a class="btn btn-secondary btn-sm" href="{% url 'gestao:lot_remove' event_id=event.id lot_id=lot.id %}" aria-label="Remover lote {{ lot.title }}"><i data-lucide="trash-2" aria-hidden="true"></i>Remover lote</a></div></td>
+                                    <td data-label="Ações"><div class="page-actions"><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='lote' object_id=lot.id %}" aria-label="Editar lote {{ lot.title }}">Editar lote</a><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_remove' event.id 'lote' lot.id %}" aria-label="Remover lote {{ lot.title }}"><i data-lucide="trash-2" aria-hidden="true"></i>Excluir lote</a></div></td>
                                 </tr>
                             {% empty %}
                                 <tr>
@@ -83,7 +83,7 @@
     </div>
 </div>
 
-<section class="card mg-section-gap"><div class="card-header"><div><h2>Produtos extras</h2><p>Venda exclusiva para quem já tem inscrição paga. O comprador encontra estes produtos em sua inscrição, e a retirada usa o mesmo QR.</p></div><a class="btn btn-primary" href="{% url 'gestao:catalog_create' event_id=event.id kind='adicional' %}">Novo produto extra</a></div><div class="table-responsive"><table class="table" data-mobile-cards><thead><tr><th>Produto / variação</th><th>Preço</th><th>Estoque</th><th>Reservado</th><th>Vendido</th><th>Livre</th><th>Ações</th></tr></thead><tbody>{% for item in addons %}<tr><td>{{ item.title }} {{ item.variant_code }}{% if not item.active %}<span class="badge">Desativado</span>{% endif %}</td><td>R$ {{ item.formatted_price }}</td><td>{{ item.max_quantity }}</td><td>{{ item.reserved_quantity }}</td><td>{{ item.sold_quantity }}</td><td>{{ item.available_quantity }}</td><td><a class="btn btn-secondary" href="{% url 'gestao:catalog_edit' event_id=event.id kind='adicional' object_id=item.pk %}">Editar extra</a></td></tr>{% empty %}<tr><td colspan="7">Cadastre camisetas extras por tamanho, copos, bonés e outros produtos com seu próprio preço e estoque.</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="card mg-section-gap"><div class="card-header"><div><h2>Produtos extras</h2><p>Venda exclusiva para quem já tem inscrição paga. O comprador encontra estes produtos em sua inscrição, e a retirada usa o mesmo QR.</p></div><a class="btn btn-primary" href="{% url 'gestao:catalog_create' event_id=event.id kind='adicional' %}">Novo produto extra</a></div><div class="table-responsive"><table class="table" data-mobile-cards><thead><tr><th>Produto / variação</th><th>Preço</th><th>Estoque</th><th>Reservado</th><th>Vendido</th><th>Livre</th><th>Ações</th></tr></thead><tbody>{% for item in addons %}<tr><td>{{ item.title }} {{ item.variant_code }}{% if not item.active %}<span class="badge">Desativado</span>{% endif %}</td><td>R$ {{ item.formatted_price }}</td><td>{{ item.max_quantity }}</td><td>{{ item.reserved_quantity }}</td><td>{{ item.sold_quantity }}</td><td>{{ item.available_quantity }}</td><td><a class="btn btn-secondary" href="{% url 'gestao:catalog_edit' event_id=event.id kind='adicional' object_id=item.pk %}">Editar extra</a><a class="btn btn-danger btn-sm" href="{% url 'gestao:catalog_remove' event.id 'adicional' item.pk %}">Excluir</a></td></tr>{% empty %}<tr><td colspan="7">Cadastre camisetas extras por tamanho, copos, bonés e outros produtos com seu próprio preço e estoque.</td></tr>{% endfor %}</tbody></table></div></section>
 <!-- Cupons de Desconto -->
 <div class="card">
     <div class="card-header">
@@ -121,7 +121,7 @@
                                 {% if not cup.active %}Desativado{% elif cup.is_valid %}Ativo{% else %}Fora da validade / esgotado{% endif %}
                             </span>
                         </td>
-                        <td><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='cupom' object_id=cup.id %}">Editar cupom</a></td>
+                        <td><a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_edit' event_id=event.id kind='cupom' object_id=cup.id %}">Editar cupom</a><a class="btn btn-danger btn-sm" href="{% url 'gestao:catalog_remove' event.id 'cupom' cup.id %}">Excluir</a></td>
                     </tr>
                 {% empty %}
                     <tr>

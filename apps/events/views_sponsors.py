@@ -1,4 +1,4 @@
-"""Event-scoped sponsor management; no destructive actions."""
+"""Event-scoped sponsor management and archived participation history."""
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
@@ -47,11 +47,13 @@ def _sponsor_hub(request, event=None):
         request.session["management_event_id"] = str(event.pk)
     request.management_all_events = event is None
     scopes = {choice.pk: choice for choice in events}
-    sponsors = list(sponsorships_with_balances(Sponsor.objects.filter(event__in=[event] if event else events)))
+    archived=request.GET.get('archived')=='1'
+    sponsors = list(sponsorships_with_balances(Sponsor.objects.filter(event__in=[event] if event else events,archived_at__isnull=not archived)))
     for sponsor in sponsors:
         decorate_balance(sponsor)
         sponsor.can_finance = scopes[sponsor.event_id].can_finance
         sponsor.can_content = scopes[sponsor.event_id].can_content
+        sponsor.can_remove = sponsor.can_content and (sponsor.can_finance or (not sponsor.agreed_amount_cents and not sponsor.payments.exists()))
     financial_sponsors = [sponsor for sponsor in sponsors if sponsor.can_finance]
     query = request.GET.get("q", "").strip()[:150]
     status = request.GET.get("status", "")
@@ -59,12 +61,13 @@ def _sponsor_hub(request, event=None):
     for sponsor in sponsors:
         by_profile.setdefault(sponsor.profile_id, []).append(sponsor)
     cards = []
-    brands = list(available_profiles(request.user).order_by("name", "pk"))
+    brands = list(available_profiles(request.user,include_archived=archived).order_by("name", "pk"))
     # Preserve access to older rows without creating or changing data on a GET.
     brands.extend(sponsor for sponsor in sponsors if sponsor.profile_id is None)
     for brand in brands:
         legacy = isinstance(brand, Sponsor)
         participations = [brand] if legacy else by_profile.get(brand.pk, [])
+        if archived and not brand.archived_at and not participations:continue
         if event and not participations:
             continue
         if query and query.casefold() not in " ".join(str(getattr(brand, field, "") or "") for field in ("name", "contact_name", "contact_email", "contact_phone")).casefold():
@@ -77,12 +80,13 @@ def _sponsor_hub(request, event=None):
                 continue
         linked_events = set(brand.participations.filter(event__in=events).values_list("event_id", flat=True)) if not legacy else {brand.event_id}
         cards.append({"brand": brand, "profile": None if legacy else brand,
+            'can_remove':not legacy and can_edit_profile(request.user,brand) and all(can_manage_event(request.user,s.event,'finance') or (not s.agreed_amount_cents and not s.payments.exists()) for s in brand.participations.select_related('event').all()),
             "can_edit": not legacy and can_edit_profile(request.user, brand), "participations": participations,
-            "link_events": [choice for choice in events if not legacy and choice.can_content and
+            "link_events": [choice for choice in events if not legacy and not brand.archived_at and choice.can_content and
                 choice.organization_id == brand.organization_id and choice.pk not in linked_events]})
     page = Paginator(cards, 24).get_page(request.GET.get("page"))
     return render(request, "gestao/sponsors/bank.html", {"event": event, "events": events,
-        "cards": page, "page_obj": page, "q": query, "status": status,
+        "cards": page, "page_obj": page, "q": query, "status": status,'archived':archived,
         "totals": sponsor_totals(financial_sponsors),
         "can_finance": any(choice.can_finance for choice in events if event is None or choice.pk == event.pk),
         "can_create": any(choice.can_content for choice in events),
@@ -141,7 +145,7 @@ def sponsor_create(request, event_id):
 @require_http_methods(["GET", "POST"])
 @never_cache
 def sponsor_edit(request, event_id, sponsor_id):
-    sponsor = get_object_or_404(Sponsor, pk=sponsor_id, event=request.management_event)
+    sponsor = get_object_or_404(Sponsor, pk=sponsor_id, event=request.management_event,archived_at__isnull=True)
     return _sponsor_form(request, sponsor)
 
 
@@ -189,7 +193,7 @@ def sponsor_profile_create(request):
 @require_http_methods(["GET", "POST"])
 @never_cache
 def sponsor_profile_edit(request, profile_id):
-    return _profile_form(request, get_object_or_404(available_profiles(request.user, "content"), pk=profile_id))
+    return _profile_form(request, get_object_or_404(available_profiles(request.user, "content",include_archived=True), pk=profile_id))
 
 
 @management_required

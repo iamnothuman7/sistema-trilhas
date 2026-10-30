@@ -21,6 +21,43 @@ EDITORS = {'produto': (Product, ProductForm, 'produto'), 'lote': (Lot, LotForm, 
 
 @management_required
 @never_cache
+@require_http_methods(['GET'])
+def catalog_trash(request,event_id):
+    event=request.management_event
+    groups=[{'kind':kind,'label':label,'rows':model.objects.filter(**({'product__event':event} if kind=='tamanho' else {'event':event}),active=False)}
+        for kind,(model,form,label) in EDITORS.items()]
+    return render(request,'gestao/catalog/trash.html',{'event':event,'groups':groups})
+
+
+@management_required
+@never_cache
+@require_http_methods(['GET','POST'])
+def catalog_action(request,event_id,kind,object_id,restore=False):
+    from apps.core.record_actions import RecordConfirmationForm,record_version
+    from apps.finance.views_crud import form_page
+    from django.urls import reverse
+    if kind not in EDITORS:raise Http404
+    model,_,label=EDITORS[kind];event=request.management_event
+    with transaction.atomic():
+        Event.objects.select_for_update().get(pk=event.pk)
+        try:row=get_object_or_404(model.objects.select_for_update(),pk=object_id,**({'product__event':event} if kind=='tamanho' else {'event':event}))
+        except (ValueError,TypeError,ValidationError):raise Http404
+        form=RecordConfirmationForm(request.POST if request.method=='POST' else None,initial={'version':record_version(row)})
+        if request.method=='POST' and form.is_valid():
+            if form.cleaned_data['version']!=record_version(row):form.add_error(None,'O cadastro mudou em outra aba. Atualize antes de continuar.')
+            else:
+                row.active=restore;row.save(update_fields=['active'])
+                log_audit(actor=request.user,event_id=event.pk,action='CATALOG_RESTORED' if restore else 'CATALOG_REMOVED',entity_type=model.__name__,entity_id=row.pk,
+                    reason=form.cleaned_data['reason'],diff={'active':restore},request=request)
+                messages.success(request,f'{label.capitalize()} '+('restaurado. Confira as datas e os limites de venda.' if restore else 'excluído das novas vendas. Pedidos, preços contratados e estoque anteriores foram preservados.'))
+                return redirect('gestao:catalog',event_id=event.pk)
+    return form_page(request,event=event,form=form,record=row,title=('Restaurar ' if restore else 'Excluir ')+label,
+        note='O cadastro sai das novas vendas e fica em Excluídos para recuperação. Inscrições, reservas em andamento e pagamentos existentes não são apagados. Ao restaurar um lote ou tamanho, o produto também precisa estar ativo.',
+        back=reverse('gestao:catalog',args=[event.pk]),submit='Restaurar' if restore else 'Confirmar exclusão',danger=not restore,section='Catálogo e lotes')
+
+
+@management_required
+@never_cache
 @require_http_methods(['GET', 'POST'])
 def lot_remove(request, event_id, lot_id):
     with transaction.atomic():

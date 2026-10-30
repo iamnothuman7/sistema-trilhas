@@ -71,9 +71,9 @@ class RecordActionForm(forms.Form):
         super().__init__(*args, **kwargs); style(self)
 
 
-def form_page(request, *, event, form, title, note, back, record=None, submit='Salvar', danger=False, proof_kind=None):
+def form_page(request, *, event, form, title, note, back, record=None, submit='Salvar', danger=False, proof_kind=None, section='Financeiro'):
     return render(request, 'gestao/finance/record_form.html', dict(event=event, form=form, title=title, note=note,
-        back_url=back, record=record, submit_label=submit, danger=danger, proof_kind=proof_kind), status=400 if form.errors else 200)
+        back_url=back, record=record, submit_label=submit, danger=danger, proof_kind=proof_kind,section=section), status=400 if form.errors else 200)
 
 
 @management_required

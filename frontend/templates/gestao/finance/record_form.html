@@ -1,8 +1,8 @@
 {% extends 'gestao/base_gestao.html' %}
-{% block title %}{{ title }} | Financeiro{% endblock %}
-{% block gestao_header %}Financeiro{% endblock %}
+{% block title %}{{ title }} | {{ section }}{% endblock %}
+{% block gestao_header %}{{ section }}{% endblock %}
 {% block content %}
-<div class="page-heading"><div><h1>{{ title }}</h1><p>{% firstof record.description record.name %}</p></div><a class="btn btn-secondary" href="{{ back_url }}">Voltar</a></div>
+<div class="page-heading"><div><h1>{{ title }}</h1><p>{% firstof record.name record.title record.edition record.label record.code_upper record.description %}</p></div><a class="btn btn-secondary" href="{{ back_url }}">Voltar</a></div>
 <section class="card">
   <p class="form-help">{{ note }}</p>
   {% if record.proof_asset and proof_kind %}<p><a class="btn btn-secondary" href="{% url 'gestao:private_document_download' event.id proof_kind record.id %}">Baixar comprovante</a></p>{% endif %}

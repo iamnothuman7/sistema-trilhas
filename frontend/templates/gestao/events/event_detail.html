@@ -17,6 +17,7 @@
     <div class="page-actions">
         <a href="{% url 'events:detail' slug=event.slug %}" target="_blank" rel="noopener" class="btn btn-secondary"><i data-lucide="external-link" aria-hidden="true"></i> Ver evento</a>
         <a href="{% url 'gestao:event_edit' event_id=event.id %}" class="btn btn-primary"><i data-lucide="pencil" aria-hidden="true"></i> Editar evento</a>
+        {% if event.status == 'ARCHIVED' %}<a class="btn btn-secondary" href="{% url 'gestao:event_restore' event.id %}">Restaurar evento</a>{% else %}<a class="btn btn-danger" href="{% url 'gestao:event_remove' event.id %}">Excluir evento</a>{% endif %}
         {% if management_can_create_events %}<form method="post" action="{% url 'gestao:event_duplicate' event_id=event.id %}" onsubmit="return confirm('Duplicar esta edição para um novo rascunho?')">
             {% csrf_token %}
             <button type="submit" class="btn btn-secondary"><i data-lucide="copy" aria-hidden="true"></i> Duplicar</button>

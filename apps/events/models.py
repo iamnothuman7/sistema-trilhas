@@ -314,6 +314,7 @@ class Sponsor(models.Model):
     due_at = models.DateField("Prazo para pagamento", null=True, blank=True)
     agreement_notes = models.TextField("Observações internas do acordo", blank=True)
     finance_version = models.PositiveIntegerField(default=0, editable=False)
+    archived_at = models.DateTimeField(null=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["sort_order", "name"]
@@ -351,6 +352,7 @@ class SponsorProfile(models.Model):
     contact_phone = models.CharField("WhatsApp / telefone", max_length=30, blank=True)
     contact_email = models.EmailField("E-mail de contato", blank=True)
     notes = models.TextField("Anotações internas", blank=True)
+    archived_at = models.DateTimeField(null=True, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

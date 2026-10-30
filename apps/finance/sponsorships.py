@@ -30,6 +30,7 @@ def lock_sponsorship(event, sponsor_id, actor):
 @transaction.atomic
 def update_sponsor_agreement(*, event, sponsor_id, data, actor, request=None):
     sponsor = lock_sponsorship(event, sponsor_id, actor)
+    if sponsor.archived_at:raise ValidationError('Restaure o patrocínio antes de alterar o acordo.')
     if data.get("version") != sponsor.finance_version - 1:
         raise ValidationError("Este acordo mudou em outra tela. Reabra a página para conferir os valores antes de salvar.")
     amount = data.get("amount")
@@ -67,6 +68,7 @@ def record_sponsor_payment(*, event, sponsor_id, data, actor, request=None):
     try:
         with transaction.atomic():
             sponsor = lock_sponsorship(event, sponsor_id, actor)
+            if sponsor.archived_at:raise ValidationError('Restaure o patrocínio antes de registrar recebimentos.')
             previous = existing()
             if previous:
                 return previous, False
@@ -93,7 +95,7 @@ def record_sponsor_payment(*, event, sponsor_id, data, actor, request=None):
 
 
 @transaction.atomic
-def reverse_sponsor_payment(*, event, sponsor_id, payment_id, actor, reason, request=None):
+def reverse_sponsor_payment(*, event, sponsor_id, payment_id, actor, reason, request=None, correct_original_period=False):
     reason = (reason or "").strip()
     if not 5 <= len(reason) <= 500:
         raise ValidationError("Descreva o motivo da reversão, de 5 a 500 caracteres.")
@@ -104,10 +106,29 @@ def reverse_sponsor_payment(*, event, sponsor_id, payment_id, actor, reason, req
     now = timezone.now()
     entry = FinancialEntry.objects.create(event=event, kind=FinancialEntryKind.ESTORNO_PATROCINIO,
         amount_cents_signed=-payment.amount_cents, source_reference=f"SPONSOR-REVERSAL-{payment.pk}",
-        posted_by=actor, recognized_at=now, description=f"Reversão de patrocínio: {sponsor.name}")
+        posted_by=actor, recognized_at=payment.ledger_entry.recognized_at if correct_original_period else now, description=f"Reversão de patrocínio: {sponsor.name}")
     payment.reversed_at, payment.reversed_by = now, actor
     payment.reversal_reason, payment.reversal_entry = reason, entry
     payment.save(update_fields=["reversed_at", "reversed_by", "reversal_reason", "reversal_entry"])
     log_audit(actor=actor, event_id=event.pk, action="SPONSOR_PAYMENT_REVERSED", entity_type="SponsorPayment", entity_id=payment.pk,
         diff={"sponsor_id": sponsor.pk, "amount_cents": payment.amount_cents}, reason=reason, request=request)
     return payment, True
+
+
+@transaction.atomic
+def edit_sponsor_payment(*,event,sponsor_id,payment_id,data,actor,request=None):
+    from apps.core.record_actions import record_version
+    sponsor=lock_sponsorship(event,sponsor_id,actor)
+    old=SponsorPayment.objects.select_for_update().get(pk=payment_id,sponsorship=sponsor)
+    previous=SponsorPayment.objects.filter(idempotency_key=data['idempotency_key']).first()
+    if previous:
+        # record_sponsor_payment checks the complete original submission fingerprint.
+        return record_sponsor_payment(event=event,sponsor_id=sponsor_id,data=data,actor=actor,request=request)
+    if old.reversed_at:raise ValidationError('Esta baixa já foi revertida ou substituída. Edite o recebimento atual.')
+    if data['version']!=record_version(old):raise ValidationError('Este recebimento mudou em outra aba. Atualize a página.')
+    if not 5<=len(data.get('reason','').strip())<=500:raise ValidationError('Informe o motivo da correção.')
+    reverse_sponsor_payment(event=event,sponsor_id=sponsor_id,payment_id=old.pk,actor=actor,reason=data['reason'],request=request,correct_original_period=True)
+    replacement,_=record_sponsor_payment(event=event,sponsor_id=sponsor_id,data=data,actor=actor,request=request)
+    log_audit(actor=actor,event_id=event.pk,action='SPONSOR_PAYMENT_CORRECTED',entity_type='SponsorPayment',entity_id=old.pk,
+        diff={'replacement_id':str(replacement.pk),'amount_cents':replacement.amount_cents},reason=data['reason'],request=request)
+    return replacement,True

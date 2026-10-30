@@ -78,7 +78,7 @@ def manual_registration_create(request, event_id):
     catalog = {}
     for lot in form.fields["lot"].queryset.prefetch_related("product__variants"):
         variants = [v for v in lot.product.variants.all() if v.kind == "SHIRT_SIZE"]
-        sizes = [{"code": v.code, "label": v.label, "extra": v.extra_price_cents} for v in variants] if variants else [{"code": s, "label": s, "extra": 0} for s in ("P", "M", "G", "GG", "XG")]
+        sizes = [{"code": v.code, "label": v.label, "extra": v.extra_price_cents} for v in variants if v.active] if variants else [{"code": s, "label": s, "extra": 0} for s in ("P", "M", "G", "GG", "XG")]
         if not lot.product.includes_shirt:
             sizes = [{"code": "", "label": "Pacote sem camiseta", "extra": 0}]
         catalog[str(lot.pk)] = {"price": lot.price_cents, "sizes": sizes}

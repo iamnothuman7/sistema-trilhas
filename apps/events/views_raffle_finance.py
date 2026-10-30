@@ -11,6 +11,7 @@ from django.views.decorators.http import require_GET
 from apps.core.permissions import management_required
 from apps.core.utils import cents_to_reais,escape_csv_cell,log_audit
 from apps.finance.models import FinancialEntry,FinancialEntryKind as K,Expense,ExpenseStatus
+from apps.finance.entry_actions import attach_entry_actions
 from apps.reporting.forms import DateRangeForm
 from apps.reporting.selectors import in_period
 from apps.checkout.models import Order
@@ -50,8 +51,10 @@ def raffle_finance(request,event_id):
         costs=Sum('amount_cents_signed',filter=Q(kind=K.DESPESA)),net=Sum('amount_cents_signed'))
     totals={key:cents_to_reais(-(value or 0) if key in ['refunds','costs','fees'] else (value or 0)) for key,value in values.items()}
     totals['pending']=cents_to_reais(expenses.aggregate(n=Sum('amount_cents'))['n'] or 0)
+    page=Paginator(entries.order_by('-recognized_at','-pk'),30).get_page(request.GET.get('page'))
+    page.object_list=attach_entry_actions(page.object_list,event)
     return render(request,'gestao/raffles/finance.html',{'event':event,'raffle':raffle,'totals':totals,'date_form':form,
-        'page_obj':Paginator(entries.order_by('-recognized_at','-pk'),30).get_page(request.GET.get('page')),
+        'page_obj':page,
         'digital_count':eligible_tickets(raffle).filter(source='REGISTRATION').count(),
         'paper_sold':eligible_tickets(raffle).filter(source='PAPER').count(),
         'online_count':eligible_tickets(raffle).filter(source='ONLINE').count(),

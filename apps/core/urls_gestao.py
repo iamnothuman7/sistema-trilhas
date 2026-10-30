@@ -4,6 +4,7 @@ from apps.reporting import exports
 from apps.reporting import views as reporting_views
 from apps.events import views_sponsors
 from apps.events import views_sponsor_leads
+from apps.events import views_records, views_raffle_crud
 from apps.events import views_raffles
 from apps.events import views_raffle_operations
 from apps.events import views_raffle_results
@@ -25,6 +26,23 @@ from .management_navigation import switch_management_event
 app_name = "gestao"
 
 urlpatterns = [
+    path('eventos/<uuid:event_id>/excluir/',views_records.event_action,name='event_remove'),
+    path('eventos/<uuid:event_id>/restaurar/',views_records.event_action,{'restore':True},name='event_restore'),
+    path('eventos/<uuid:event_id>/catalogo/excluidos/',catalog_views.catalog_trash,name='catalog_trash'),
+    path('eventos/<uuid:event_id>/catalogo/<str:kind>/<str:object_id>/excluir/',catalog_views.catalog_action,name='catalog_remove'),
+    path('eventos/<uuid:event_id>/catalogo/<str:kind>/<str:object_id>/restaurar/',catalog_views.catalog_action,{'restore':True},name='catalog_restore'),
+    path('eventos/<uuid:event_id>/equipe/<uuid:user_id>/editar/',views_team.team_edit,name='team_edit'),
+    path('patrocinadores/<int:profile_id>/excluir/',views_records.sponsor_profile_action,name='sponsor_profile_remove'),
+    path('patrocinadores/<int:profile_id>/restaurar/',views_records.sponsor_profile_action,{'restore':True},name='sponsor_profile_restore'),
+    path('eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/excluir/',views_records.sponsor_action,name='sponsor_remove'),
+    path('eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/restaurar/',views_records.sponsor_action,{'restore':True},name='sponsor_restore'),
+    path('eventos/<uuid:event_id>/patrocinadores/historico/<int:history_id>/editar/',views_records.sponsor_history_editor,name='sponsor_history_edit'),
+    path('eventos/<uuid:event_id>/patrocinadores/historico/<int:history_id>/excluir/',views_records.sponsor_history_editor,{'remove':True},name='sponsor_history_remove'),
+    path('eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/recebimentos/<uuid:payment_id>/editar/',views_records.sponsor_payment_editor,name='sponsor_payment_edit'),
+    path('eventos/<uuid:event_id>/sorteio/pontos/<uuid:point_id>/editar/',views_raffle_crud.raffle_point_editor,name='raffle_point_edit'),
+    path('eventos/<uuid:event_id>/sorteio/pontos/<uuid:point_id>/excluir/',views_raffle_crud.raffle_point_editor,{'remove':True},name='raffle_point_remove'),
+    path('eventos/<uuid:event_id>/sorteio/bilhetes/<uuid:ticket_id>/editar/',views_raffle_crud.raffle_ticket_editor,name='raffle_ticket_edit'),
+    path('eventos/<uuid:event_id>/sorteio/bilhetes/<uuid:ticket_id>/excluir/',views_raffle_crud.raffle_ticket_editor,{'remove':True},name='raffle_ticket_remove'),
     path("eventos/<uuid:event_id>/equipe/", views_team.team_management, name="team_management"),
     path("eventos/<uuid:event_id>/equipe/<uuid:user_id>/remover/", views_team.team_revoke, name="team_revoke"),
     path("selecionar-evento/", switch_management_event, name="switch_event"),

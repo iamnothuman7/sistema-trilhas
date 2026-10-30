@@ -41,7 +41,7 @@ class SponsorLinkForm(forms.Form):
 
     def __init__(self, *args, event, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["profile"].queryset = SponsorProfile.objects.filter(organization=event.organization).exclude(participations__event=event)
+        self.fields["profile"].queryset = SponsorProfile.objects.filter(organization=event.organization,archived_at__isnull=True).exclude(participations__event=event)
         style_fields(self)
 
 

@@ -26,6 +26,10 @@ MODULES = {
     "team_management": ("team", True),
 }
 PARENTS = {
+    'event_remove':'event_list','event_restore':'event_list','team_edit':'team_management',
+    **{name:'catalog' for name in ('catalog_trash','catalog_remove','catalog_restore')},
+    **{name:'sponsor_bank' for name in ('sponsor_remove','sponsor_restore','sponsor_profile_remove','sponsor_profile_restore','sponsor_history_edit','sponsor_history_remove','sponsor_payment_edit')},
+    **{name:'raffle_management' for name in ('raffle_point_edit','raffle_point_remove','raffle_ticket_edit','raffle_ticket_remove')},
     **{name:'finance' for name in ('movement_list','movement_create','movement_edit','movement_remove','movement_restore','vendor_list','vendor_create','vendor_edit','vendor_remove','vendor_restore','expense_remove','expense_restore')},
     'sponsor_lead_remove':'sponsor_leads','sponsor_lead_restore':'sponsor_leads',
     'raffle_result':'raffle_management',

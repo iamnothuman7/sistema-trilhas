@@ -24,7 +24,9 @@ def convert_lead(*,event,lead_id,version,actor,profile_id=None,request=None):
         profile=matches[0] if matches else SponsorProfile.objects.create(organization=event.organization,
             name=lead.name,contact_name=lead.contact_name,contact_phone=lead.phone,
             notes='\n'.join(value for value in [lead.address,lead.notes] if value))
+    if profile.archived_at:raise ValidationError('Esta marca está excluída. Restaure o cadastro antes de confirmar.')
     sponsor,created=Sponsor.objects.get_or_create(event=event,profile=profile,defaults={**brand_values(profile),'is_public':False})
+    if sponsor.archived_at:raise ValidationError('Esta participação está excluída. Restaure o patrocínio antes de confirmar.')
     lead.sponsor=sponsor;lead.status=SponsorLead.Status.CONFIRMED;lead.revision+=1
     lead.save(update_fields=['sponsor','status','revision','updated_at'])
     if lead.previous_edition:

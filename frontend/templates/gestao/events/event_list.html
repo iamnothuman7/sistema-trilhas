@@ -52,7 +52,7 @@
                         </td>
                         <td>
                             <div class="page-actions">
-                                <a href="{% url 'gestao:event_detail' event_id=ev.id %}" class="btn btn-sm btn-secondary">Gerenciar</a>
+                                <a href="{% url 'gestao:event_detail' event_id=ev.id %}" class="btn btn-sm btn-secondary">Ver</a><a href="{% url 'gestao:event_edit' ev.id %}" class="btn btn-sm btn-secondary">Editar</a>{% if ev.status == 'ARCHIVED' %}<a href="{% url 'gestao:event_restore' ev.id %}" class="btn btn-sm btn-secondary">Restaurar</a>{% else %}<a href="{% url 'gestao:event_remove' ev.id %}" class="btn btn-sm btn-danger">Excluir</a>{% endif %}
                                 {% if management_can_create_events %}<form method="post" action="{% url 'gestao:event_duplicate' event_id=ev.id %}" onsubmit="return confirm('Duplicar este evento para uma nova edição em rascunho? As inscrições e os dados financeiros ficam na edição original.')">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-sm btn-secondary"><i data-lucide="copy" aria-hidden="true"></i> Duplicar</button>

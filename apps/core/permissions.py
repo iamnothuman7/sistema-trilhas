@@ -22,6 +22,9 @@ ACTION_ROLES = {
     "team": MANAGERS,
 }
 VIEW_ACTIONS = {
+    'event_action':'events','catalog_trash':'catalog','catalog_action':'catalog','team_edit':'team',
+    'sponsor_action':'content','sponsor_profile_action':'content','sponsor_history_editor':'finance','sponsor_payment_editor':'finance',
+    'raffle_point_editor':'events','raffle_ticket_editor':'finance',
     'movement_list':'finance','movement_editor':'finance','vendor_list':'finance','vendor_editor':'finance','expense_action':'finance',
     'sponsor_lead_archive':'content',
     'raffle_result':'events',
