@@ -43,7 +43,7 @@ class LeadForm(forms.ModelForm):
     def clean_name(self):
         value=self.cleaned_data['name'].strip()
         if SponsorLead.objects.filter(event=self.event,name_key=sponsor_name_key(value)).exclude(pk=self.instance.pk).exists():
-            raise forms.ValidationError('Este interessado já está cadastrado no evento. Edite o contato existente.')
+            raise forms.ValidationError('Este interessado já está cadastrado no evento. Confira também a lista Removidos e edite ou restaure o contato existente.')
         return value
 
     def clean_previous_amount(self):
@@ -72,11 +72,12 @@ class LeadForm(forms.ModelForm):
 @require_http_methods(['GET'])
 def sponsor_leads(request,event_id):
     event=request.management_event;query=request.GET.get('q','').strip()[:150];state=request.GET.get('status','')
-    leads=SponsorLead.objects.filter(event=event).select_related('sponsor')
+    archived=request.GET.get('archived')=='1'
+    leads=SponsorLead.objects.filter(event=event,archived_at__isnull=not archived).select_related('sponsor')
     if query:leads=leads.filter(Q(name__icontains=query)|Q(contact_name__icontains=query)|Q(phone__icontains=query))
     if state in SponsorLead.Status.values:leads=leads.filter(status=state)
     return render(request,'gestao/sponsors/leads.html',{'event':event,'page_obj':Paginator(leads,30).get_page(request.GET.get('page')),
-        'q':query,'status':state,'statuses':SponsorLead.Status.choices,'can_content':can_manage_event(request.user,event,'content'),
+        'q':query,'status':state,'archived':archived,'statuses':SponsorLead.Status.choices,'can_content':can_manage_event(request.user,event,'content'),
         'can_finance':can_manage_event(request.user,event,'finance')})
 
 
@@ -87,7 +88,7 @@ def sponsor_lead_edit(request,event_id,lead_id=None):
     event=request.management_event
     with transaction.atomic():
         Event.objects.select_for_update().get(pk=event.pk)
-        lead=get_object_or_404(SponsorLead.objects.select_for_update(),pk=lead_id,event=event) if lead_id else SponsorLead(event=event)
+        lead=get_object_or_404(SponsorLead.objects.select_for_update(),pk=lead_id,event=event,archived_at__isnull=True) if lead_id else SponsorLead(event=event)
         form=LeadForm(request.POST if request.method=='POST' else None,instance=lead,event=event,
             can_finance=can_manage_event(request.user,event,'finance'))
         if request.method=='POST' and form.is_valid():
@@ -104,6 +105,28 @@ class ConvertForm(forms.Form):
     profile=forms.ModelChoiceField(label='Marca já cadastrada (opcional)',queryset=SponsorProfile.objects.none(),required=False,
         empty_label='Localizar pelo nome ou criar a marca',widget=forms.Select(attrs={'class':'form-control'}))
     confirmed=forms.BooleanField(label='Este interessado confirmou o patrocínio. O recebimento será registrado separadamente.')
+
+
+@management_required
+@never_cache
+@require_http_methods(['GET','POST'])
+def sponsor_lead_archive(request,event_id,lead_id,restore=False):
+    from apps.finance.views_crud import RecordActionForm
+    from .sponsor_leads import archive_lead
+    event=request.management_event;lead=get_object_or_404(SponsorLead,event=event,pk=lead_id)
+    form=RecordActionForm(request.POST if request.method=='POST' else None,initial={'revision':lead.revision})
+    if request.method=='POST' and form.is_valid():
+        try:
+            archive_lead(event=event,lead_id=lead.pk,revision=form.cleaned_data['revision'],actor=request.user,
+                restore=restore,reason=form.cleaned_data['reason'],request=request)
+        except ValidationError as error:form.add_error(None,error)
+        else:
+            messages.success(request,'Interessado restaurado.' if restore else 'Interessado removido da lista ativa. Você pode recuperá-lo em Removidos. Patrocínios e recebimentos já confirmados foram preservados.')
+            return redirect('gestao:sponsor_leads',event_id=event.pk)
+    return render(request,'gestao/sponsors/lead_form.html',dict(event=event,lead=lead,form=form,
+        action_title='Restaurar interessado' if restore else 'Remover interessado',
+        action_note='Apenas o pré-cadastro sai da lista ativa. Se já há patrocínio confirmado, o acordo, a exibição e os recebimentos continuam disponíveis em Patrocínios.',
+        submit_label='Restaurar interessado' if restore else 'Confirmar remoção'),status=400 if form.errors else 200)
 
 
 @management_required

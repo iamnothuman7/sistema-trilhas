@@ -1,0 +1,5 @@
+<nav class="compact-tabs" aria-label="Áreas do financeiro">
+  <a href="{% url 'gestao:finance' event.id %}" {% if request.resolver_match.url_name == 'finance' %}aria-current="page"{% endif %}>Despesas e extrato</a>
+  <a href="{% url 'gestao:movement_list' event.id %}" {% if request.resolver_match.url_name == 'movement_list' %}aria-current="page"{% endif %}>Entradas e transferências</a>
+  <a href="{% url 'gestao:vendor_list' event.id %}" {% if request.resolver_match.url_name == 'vendor_list' %}aria-current="page"{% endif %}>Fornecedores</a>
+</nav>

@@ -26,6 +26,8 @@ MODULES = {
     "team_management": ("team", True),
 }
 PARENTS = {
+    **{name:'finance' for name in ('movement_list','movement_create','movement_edit','movement_remove','movement_restore','vendor_list','vendor_create','vendor_edit','vendor_remove','vendor_restore','expense_remove','expense_restore')},
+    'sponsor_lead_remove':'sponsor_leads','sponsor_lead_restore':'sponsor_leads',
     'raffle_result':'raffle_management',
     'sponsor_lead_create':'sponsor_leads','sponsor_lead_edit':'sponsor_leads','sponsor_lead_convert':'sponsor_leads','sponsor_history':'sponsor_bank',
     'expense_status':'finance',

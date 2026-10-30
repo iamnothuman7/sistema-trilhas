@@ -14,14 +14,14 @@
         <div class="compact-record-name"><strong>{{ exp.description }}</strong><small>Vence {{ exp.due_at|date:'d/m/Y' }}</small></div>
         <strong class="compact-amount">R$ {{ exp.amount_cents|money }}</strong>
         {% if exp.status != 'CANCELED' %}<button class="compact-status {% if exp.status == 'PAID' %}is-paid{% endif %}" type="button" onclick="document.getElementById('status-{{ exp.id }}').showModal()" aria-label="Alterar situação: {{ exp.description }}">{{ exp.get_status_display }} <i data-lucide="chevron-down" aria-hidden="true"></i></button>{% else %}<span class="badge">Cancelada</span>{% endif %}
-        <a class="icon-button" href="{% url 'gestao:expense_edit' event.id exp.id %}" aria-label="Editar {{ exp.description }}"><i data-lucide="pencil" aria-hidden="true"></i></a>
+        {% if exp.status != 'CANCELED' %}<a class="icon-button" href="{% url 'gestao:expense_edit' event.id exp.id %}" aria-label="Editar {{ exp.description }}"><i data-lucide="pencil" aria-hidden="true"></i></a>{% else %}<a class="icon-button" href="{% url 'gestao:expense_restore' event.id exp.id %}" aria-label="Restaurar {{ exp.description }}"><i data-lucide="rotate-ccw" aria-hidden="true"></i></a>{% endif %}
       </div>
       <details class="compact-details"><summary>Detalhes e comprovante</summary><div class="compact-detail-body">
         <p>{{ exp.get_category_display }} · {{ exp.vendor.name|default:'Sem fornecedor' }}</p>
         {% if exp.paid_at %}<p>Pagamento registrado: {{ exp.paid_at|date:'d/m/Y' }}</p>{% endif %}
         <div class="page-actions">
         {% if exp.proof_asset %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:private_document_download' event.id 'despesa' exp.id %}">Baixar comprovante</a>{% elif exp.status != 'CANCELED' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_proof' event.id exp.id %}">Anexar comprovante</a>{% endif %}
-        {% if exp.status == 'PAID' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_void' event.id exp.id %}">Anular lançamento</a>{% elif exp.status == 'PENDING' %}<button class="btn btn-secondary btn-sm" type="button" onclick="document.getElementById('cancelExpense{{ exp.id }}').showModal()">Cancelar despesa</button>{% endif %}
+        {% if exp.status != 'CANCELED' %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_remove' event.id exp.id %}"><i data-lucide="trash-2" aria-hidden="true"></i> Excluir despesa</a>{% else %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:expense_restore' event.id exp.id %}">Restaurar como A pagar</a>{% endif %}
         </div>
       </div></details>
     </article>

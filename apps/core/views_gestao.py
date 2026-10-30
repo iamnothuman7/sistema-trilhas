@@ -639,7 +639,7 @@ def _finance_context(request, event, expense_form=None):
     valid = date_form.is_valid()
     start = date_form.cleaned_data.get("date_start") if valid else None
     end = date_form.cleaned_data.get("date_end") if valid else None
-    entries = financial_entries(event, start, end).order_by("-recognized_at", "-pk") if valid else FinancialEntry.objects.none()
+    entries = financial_entries(event, start, end).select_related('movement').order_by("-recognized_at", "-pk") if valid else FinancialEntry.objects.none()
     expenses = in_period(Expense.objects.filter(event=event).select_related("vendor"), "due_at", start, end, date_field=True).order_by("-due_at", "-pk") if valid else Expense.objects.none()
     expense_status = request.GET.get('status','')
     if expense_status in ('PAID','PENDING','CANCELED'):
@@ -648,6 +648,8 @@ def _finance_context(request, event, expense_form=None):
         expense_status = ''
     form = expense_form if expense_form is not None else ExpenseForm(event=event)
     entries_page = Paginator(entries, 30).get_page(request.GET.get("entries_page"))
+    from apps.finance.entry_actions import attach_entry_actions
+    entries_page.object_list=attach_entry_actions(entries_page.object_list,event)
     expenses_page = Paginator(expenses, 20).get_page(request.GET.get("expenses_page"))
     from apps.finance.forms import expense_version
     for expense in expenses_page.object_list:
@@ -688,7 +690,13 @@ def add_expense(request, event_id):
         else:
             messages.success(request, "Despesa registrada com sucesso." if created else "Esta despesa já estava registrada; nenhum lançamento foi duplicado.")
             return redirect("gestao:finance", event_id=event.pk)
-    return render(request, "gestao/finance/overview.html", _finance_context(request, event, form), status=400)
+    from django.urls import reverse
+    context=_finance_context(request,event,form)
+    target=reverse('gestao:finance',args=[event.pk])
+    context['management_workspace_url']=target
+    response=render(request,"gestao/finance/overview.html",context,status=400)
+    response['HX-Replace-Url']=target
+    return response
 
 
 @staff_required_custom

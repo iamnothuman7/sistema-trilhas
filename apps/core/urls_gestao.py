@@ -18,6 +18,7 @@ from apps.registrations import views_manual
 from apps.registrations import views_cleanup
 from apps.registrations import views_management as registration_views
 from apps.finance import views_management as finance_views
+from apps.finance import views_crud as finance_crud
 from apps.identity import views_team
 from .management_navigation import switch_management_event
 
@@ -66,6 +67,18 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/catalogo/<str:kind>/<str:object_id>/editar/", catalog_views.catalog_editor, name="catalog_edit"),
 
     # Financeiro Gerencial
+    path('eventos/<uuid:event_id>/financeiro/movimentacoes/',finance_crud.movement_list,name='movement_list'),
+    path('eventos/<uuid:event_id>/financeiro/movimentacoes/nova/',finance_crud.movement_editor,name='movement_create'),
+    path('eventos/<uuid:event_id>/financeiro/movimentacoes/<uuid:movement_id>/editar/',finance_crud.movement_editor,name='movement_edit'),
+    path('eventos/<uuid:event_id>/financeiro/movimentacoes/<uuid:movement_id>/excluir/',finance_crud.movement_editor,{'operation':'remove'},name='movement_remove'),
+    path('eventos/<uuid:event_id>/financeiro/movimentacoes/<uuid:movement_id>/restaurar/',finance_crud.movement_editor,{'operation':'restore'},name='movement_restore'),
+    path('eventos/<uuid:event_id>/financeiro/fornecedores/',finance_crud.vendor_list,name='vendor_list'),
+    path('eventos/<uuid:event_id>/financeiro/fornecedores/novo/',finance_crud.vendor_editor,name='vendor_create'),
+    path('eventos/<uuid:event_id>/financeiro/fornecedores/<uuid:vendor_id>/editar/',finance_crud.vendor_editor,name='vendor_edit'),
+    path('eventos/<uuid:event_id>/financeiro/fornecedores/<uuid:vendor_id>/excluir/',finance_crud.vendor_editor,{'operation':'remove'},name='vendor_remove'),
+    path('eventos/<uuid:event_id>/financeiro/fornecedores/<uuid:vendor_id>/restaurar/',finance_crud.vendor_editor,{'operation':'restore'},name='vendor_restore'),
+    path('eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/excluir/',finance_crud.expense_action,name='expense_remove'),
+    path('eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/restaurar/',finance_crud.expense_action,{'operation':'restore'},name='expense_restore'),
     path('eventos/<uuid:event_id>/financeiro/despesas/<uuid:expense_id>/situacao/',finance_views.expense_status,name='expense_status'),
     path('eventos/<uuid:event_id>/financeiro/devolucoes/<uuid:refund_id>/conferir/',registration_views.refund_channel_review,name='refund_channel_review'),
     path('eventos/<uuid:event_id>/financeiro/adicionais/<uuid:order_id>/devolucao/',registration_views.addon_order_refund,name='addon_order_refund'),
@@ -91,6 +104,8 @@ urlpatterns = [
     path('eventos/<uuid:event_id>/patrocinadores/interessados/novo/',views_sponsor_leads.sponsor_lead_edit,name='sponsor_lead_create'),
     path('eventos/<uuid:event_id>/patrocinadores/interessados/<int:lead_id>/editar/',views_sponsor_leads.sponsor_lead_edit,name='sponsor_lead_edit'),
     path('eventos/<uuid:event_id>/patrocinadores/interessados/<int:lead_id>/confirmar/',views_sponsor_leads.sponsor_lead_convert,name='sponsor_lead_convert'),
+    path('eventos/<uuid:event_id>/patrocinadores/interessados/<int:lead_id>/remover/',views_sponsor_leads.sponsor_lead_archive,name='sponsor_lead_remove'),
+    path('eventos/<uuid:event_id>/patrocinadores/interessados/<int:lead_id>/restaurar/',views_sponsor_leads.sponsor_lead_archive,{'restore':True},name='sponsor_lead_restore'),
     path('eventos/<uuid:event_id>/patrocinadores/marcas/<int:profile_id>/historico/',views_sponsor_leads.sponsor_history,name='sponsor_history'),
     path("patrocinadores/", views_sponsors.sponsor_bank, name="sponsor_bank"),
     path("patrocinadores/novo/", views_sponsors.sponsor_profile_create, name="sponsor_profile_create"),

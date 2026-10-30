@@ -1,0 +1,16 @@
+{% extends 'gestao/base_gestao.html' %}
+{% block title %}Fornecedores | {{ event.title }}{% endblock %}
+{% block gestao_header %}Financeiro{% endblock %}
+{% block content %}
+<div class="page-heading"><div><h1>Fornecedores</h1><p>Contatos compartilhados entre os eventos da organização.</p></div>{% if can_edit %}<a class="btn btn-primary" href="{% url 'gestao:vendor_create' event.id %}">Novo fornecedor</a>{% endif %}</div>
+{% include 'gestao/finance/_navigation.html' %}
+{% if not can_edit %}<p class="form-help">Para alterar este cadastro compartilhado, peça ao administrador ou à equipe financeira com acesso a todos os eventos da organização.</p>{% endif %}
+<nav class="compact-tabs" aria-label="Situação dos fornecedores"><a href="?" {% if not archived %}aria-current="page"{% endif %}>Ativos</a><a href="?archived=1" {% if archived %}aria-current="page"{% endif %}>Excluídos</a></nav>
+<section class="card compact-panel"><div class="compact-records">
+{% for row in page_obj %}<article class="compact-record" data-vendor="{{ row.id }}">
+  <div class="compact-record-name"><strong>{{ row.name }}</strong><small>{{ row.category }}</small></div>
+  <details class="compact-details"><summary>Dados do fornecedor</summary><div class="compact-detail-body"><p>{{ row.contact_name|default:'' }} · {{ row.contact_phone|default:'Sem telefone' }}</p><p>{{ row.contact_email|default:'' }}</p><p>Pix: {{ row.pix_key|default:'Não informado' }}</p></div></details>
+  {% if can_edit %}<div class="page-actions">{% if archived %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:vendor_restore' event.id row.id %}">Restaurar</a>{% else %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:vendor_edit' event.id row.id %}">Editar</a><a class="btn btn-secondary btn-sm" href="{% url 'gestao:vendor_remove' event.id row.id %}">Excluir</a>{% endif %}</div>{% endif %}
+</article>{% empty %}<p class="empty-inline">Nenhum fornecedor neste filtro.</p>{% endfor %}
+</div>{% include 'gestao/finance/_record_pagination.html' %}</section>
+{% endblock %}

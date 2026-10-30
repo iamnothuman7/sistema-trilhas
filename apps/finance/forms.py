@@ -44,7 +44,7 @@ class ExpenseForm(forms.Form):
     def __init__(self, *args, event, **kwargs):
         super().__init__(*args, **kwargs)
         self.event = event
-        self.fields["vendor_id"].queryset = Vendor.objects.filter(organization=event.organization).order_by("name")
+        self.fields["vendor_id"].queryset = Vendor.objects.filter(organization=event.organization, archived_at__isnull=True).order_by("name")
         today = timezone.localdate()
         self.initial.setdefault("due_at", today.isoformat())
         self.initial.setdefault("paid_at", today.isoformat())
@@ -112,6 +112,9 @@ class ExpenseEditForm(ExpenseForm):
         self.expense=expense
         super().__init__(*args,event=expense.event,**kwargs)
         self.fields.pop('idempotency_key')
+        if expense.vendor_id:
+            from django.db.models import Q
+            self.fields['vendor_id'].queryset=Vendor.objects.filter(organization=expense.event.organization).filter(Q(archived_at__isnull=True)|Q(pk=expense.vendor_id)).order_by('name')
         self.initial.update(description=expense.description,category=expense.category,vendor_id=expense.vendor_id,
             amount=expense.formatted_amount,due_at=expense.due_at,paid_at=expense.paid_at,status=expense.status,version=expense_version(expense),raffle_expense=bool(expense.raffle_id))
 

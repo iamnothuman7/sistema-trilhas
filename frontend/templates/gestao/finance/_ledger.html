@@ -1,0 +1,9 @@
+<div class="compact-records">
+{% for entry in entries %}<article class="compact-record">
+  <div class="stock-heading"><div class="compact-record-name"><strong>{{ entry.description }}</strong><small>{{ entry.recognized_at|date:'d/m/Y H:i' }}</small></div><strong class="compact-amount {% if entry.amount_cents_signed >= 0 %}text-success{% else %}mg-text-danger{% endif %}">{{ entry.formatted_amount }}</strong></div>
+  <details class="compact-details"><summary>Origem e ações</summary><div class="compact-detail-body"><p>{{ entry.get_kind_display }}</p><p class="mg-code">{{ entry.source_reference }}</p>
+    {% if entry.order_id %}<p>Movimentação vinculada ao pedido. As correções e devoluções são feitas na ficha de origem, mantendo o registro do pagamento.</p>{% endif %}
+    {% if entry.action_url %}<a class="btn btn-secondary btn-sm" href="{{ entry.action_url }}">{{ entry.action_label }}</a>{% endif %}
+  </div></details>
+</article>{% empty %}<p class="empty-inline">Nenhuma movimentação neste período.</p>{% endfor %}
+</div>

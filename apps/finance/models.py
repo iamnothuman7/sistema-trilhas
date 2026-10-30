@@ -26,6 +26,7 @@ class FinancialEntry(models.Model):
     event = models.ForeignKey("events.Event", on_delete=models.PROTECT, related_name="financial_entries")
     raffle = models.ForeignKey('events.MotorcycleRaffle', on_delete=models.PROTECT, null=True, blank=True, related_name='financial_entries')
     order = models.ForeignKey("checkout.Order", on_delete=models.SET_NULL, blank=True, null=True, related_name="financial_entries")
+    movement = models.ForeignKey('finance.ManualMovement', on_delete=models.PROTECT, null=True, blank=True, related_name='entries')
     kind = models.CharField("Tipo do Lançamento", max_length=40, choices=FinancialEntryKind.choices)
     amount_cents_signed = models.BigIntegerField("Valor com Sinal (+/- em centavos)")
     recognized_at = models.DateTimeField("Data de Competência / Reconhecimento", default=timezone.now)
@@ -92,6 +93,8 @@ class Vendor(models.Model):
     contact_phone = models.CharField("WhatsApp / Telefone", max_length=30, blank=True, null=True)
     contact_email = models.EmailField("E-mail", blank=True, null=True)
     pix_key = models.CharField("Chave Pix", max_length=100, blank=True, null=True)
+    archived_at = models.DateTimeField(null=True, blank=True, editable=False)
+    revision = models.PositiveIntegerField(default=0, editable=False)
 
     class Meta:
         verbose_name = "Fornecedor"
@@ -144,6 +147,39 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.description} - R$ {cents_to_reais(self.amount_cents)} ({self.get_status_display()})"
+
+    @property
+    def formatted_amount(self):
+        return cents_to_reais(self.amount_cents)
+
+
+class ManualMovement(models.Model):
+    """Editable source document; its ledger entries remain immutable."""
+    class Kind(models.TextChoices):
+        INCOME = 'INCOME', 'Entrada avulsa recebida'
+        TRANSFER = 'TRANSFER', 'Transferência entre contas próprias'
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    event = models.ForeignKey('events.Event', on_delete=models.PROTECT, related_name='manual_movements')
+    kind = models.CharField('Tipo', max_length=20, choices=Kind.choices)
+    description = models.CharField('Descrição', max_length=200)
+    amount_cents = models.PositiveBigIntegerField()
+    occurred_on = models.DateField('Data da movimentação')
+    method = models.CharField('Forma de recebimento / transferência', max_length=20, choices=SponsorPaymentMethod.choices)
+    reference = models.CharField('Referência ou contas de origem e destino', max_length=150, blank=True)
+    notes = models.TextField('Observações', blank=True)
+    proof_asset = models.FileField('Comprovante', storage=private_document_storage, upload_to='finance/movements/', blank=True)
+    revision = models.PositiveIntegerField(default=0, editable=False)
+    request_key = models.UUIDField(unique=True, editable=False)
+    submission_hash = models.CharField(max_length=64, editable=False)
+    archived_at = models.DateTimeField(null=True, blank=True, editable=False)
+    created_by = models.ForeignKey('identity.User', on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-occurred_on', '-created_at']
+        constraints = [models.CheckConstraint(condition=models.Q(amount_cents__gt=0), name='manual_movement_positive')]
 
     @property
     def formatted_amount(self):

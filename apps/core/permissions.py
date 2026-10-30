@@ -22,6 +22,8 @@ ACTION_ROLES = {
     "team": MANAGERS,
 }
 VIEW_ACTIONS = {
+    'movement_list':'finance','movement_editor':'finance','vendor_list':'finance','vendor_editor':'finance','expense_action':'finance',
+    'sponsor_lead_archive':'content',
     'raffle_result':'events',
     'sponsor_leads':'sponsors','sponsor_lead_edit':'content','sponsor_lead_convert':'content','sponsor_history':'finance',
     'shirt_stock':'catalog',

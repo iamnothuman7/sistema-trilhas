@@ -11,6 +11,7 @@ from .sponsorships import brand_values
 def convert_lead(*,event,lead_id,version,actor,profile_id=None,request=None):
     Event.objects.select_for_update().get(pk=event.pk)
     lead=SponsorLead.objects.select_for_update().get(pk=lead_id,event=event)
+    if lead.archived_at:raise ValidationError('Restaure o interessado antes de confirmar o patrocínio.')
     if lead.sponsor_id:return lead.sponsor,False
     if lead.revision!=version:raise ValidationError('Este contato mudou em outra aba. Atualize antes de confirmar.')
     profiles=SponsorProfile.objects.select_for_update().filter(organization=event.organization)
@@ -35,3 +36,18 @@ def convert_lead(*,event,lead_id,version,actor,profile_id=None,request=None):
     log_audit(actor=actor,event_id=event.pk,action='SPONSOR_LEAD_CONVERTED',entity_type='SponsorLead',entity_id=lead.pk,
         diff={'sponsor_id':sponsor.pk,'profile_id':profile.pk,'new_participation':created,'receipt_created':False},request=request)
     return sponsor,True
+
+
+@transaction.atomic
+def archive_lead(*,event,lead_id,revision,actor,restore=False,reason='',request=None):
+    from django.utils import timezone
+    Event.objects.select_for_update().get(pk=event.pk)
+    lead=SponsorLead.objects.select_for_update().get(pk=lead_id,event=event)
+    if bool(lead.archived_at)!=bool(restore):return lead,False
+    if lead.revision!=revision:raise ValidationError('Este contato mudou em outra aba. Atualize antes de continuar.')
+    if not 5<=len(reason.strip())<=1000:raise ValidationError('Descreva o motivo, entre 5 e 1.000 caracteres.')
+    lead.archived_at=None if restore else timezone.now()
+    lead.revision+=1;lead.save(update_fields=['archived_at','revision','updated_at'])
+    log_audit(actor=actor,event_id=event.pk,action='SPONSOR_LEAD_RESTORED' if restore else 'SPONSOR_LEAD_REMOVED',
+        entity_type='SponsorLead',entity_id=lead.pk,reason=reason,diff={'sponsor_preserved':lead.sponsor_id},request=request)
+    return lead,True

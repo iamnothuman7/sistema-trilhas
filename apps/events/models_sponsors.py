@@ -30,6 +30,7 @@ class SponsorLead(models.Model):
     status=models.CharField('Situação do contato',max_length=20,choices=Status.choices,default=Status.NEW)
     sponsor=models.ForeignKey('events.Sponsor',on_delete=models.PROTECT,null=True,blank=True,related_name='leads')
     revision=models.PositiveIntegerField(default=0,editable=False)
+    archived_at=models.DateTimeField(null=True,blank=True,editable=False)
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
 

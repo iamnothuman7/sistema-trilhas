@@ -1,0 +1,17 @@
+{% extends 'gestao/base_gestao.html' %}
+{% block title %}Entradas e transferências | {{ event.title }}{% endblock %}
+{% block gestao_header %}Financeiro{% endblock %}
+{% block content %}
+<div class="page-heading"><div><h1>Entradas e transferências</h1><p>Movimentações avulsas realizadas em {{ event.title }}.</p></div><a class="btn btn-primary" href="{% url 'gestao:movement_create' event.id %}">Nova movimentação</a></div>
+{% include 'gestao/finance/_navigation.html' %}
+<p class="form-help">Entradas avulsas entram no resultado e na exportação do financeiro. Recebimentos de inscrições e patrocínios são registrados nos seus próprios cadastros. Transferências próprias apenas documentam a mudança de conta.</p>
+<nav class="compact-tabs" aria-label="Situação das movimentações"><a href="?q={{ q|urlencode }}" {% if not archived %}aria-current="page"{% endif %}>Ativas</a><a href="?archived=1&q={{ q|urlencode }}" {% if archived %}aria-current="page"{% endif %}>Excluídas</a></nav>
+<form method="get" class="mg-filter-row"><input type="hidden" name="archived" value="{% if archived %}1{% else %}0{% endif %}"><div class="form-group"><label class="form-label" for="movement-search">Descrição ou referência</label><input class="form-control" id="movement-search" name="q" value="{{ q }}" maxlength="150"></div><button type="submit" class="btn btn-secondary">Buscar</button></form>
+<section class="card compact-panel"><div class="compact-records">
+{% for row in page_obj %}<article class="compact-record" data-movement="{{ row.id }}">
+  <div class="stock-heading"><div class="compact-record-name"><strong>{{ row.description }}</strong><small>{{ row.occurred_on|date:'d/m/Y' }} · {{ row.get_kind_display }}</small></div><strong class="compact-amount">R$ {{ row.formatted_amount }}</strong></div>
+  <details class="compact-details"><summary>Detalhes da movimentação</summary><div class="compact-detail-body"><p>{{ row.get_method_display }}{% if row.reference %} · {{ row.reference }}{% endif %}</p><p>{{ row.notes|linebreaksbr }}</p>{% if row.proof_asset %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:private_document_download' event.id 'movimentacao' row.id %}">Baixar comprovante</a>{% endif %}</div></details>
+  <div class="page-actions">{% if archived %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:movement_restore' event.id row.id %}">Restaurar</a>{% else %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:movement_edit' event.id row.id %}"><i data-lucide="pencil" aria-hidden="true"></i> Editar</a><a class="btn btn-secondary btn-sm" href="{% url 'gestao:movement_remove' event.id row.id %}"><i data-lucide="trash-2" aria-hidden="true"></i> Excluir</a>{% endif %}</div>
+</article>{% empty %}<p class="empty-inline">Nenhuma movimentação avulsa neste filtro.</p>{% endfor %}
+</div>{% include 'gestao/finance/_record_pagination.html' %}</section>
+{% endblock %}

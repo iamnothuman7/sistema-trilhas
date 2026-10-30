@@ -19,11 +19,13 @@ from .utils import log_audit
 @management_required
 @require_safe
 def private_document_download(request, event_id, kind, document_id):
-    from apps.finance.models import Expense
+    from apps.finance.models import Expense, ManualMovement
     from apps.payments.models import ManualPaymentEvidence, Refund
 
     if kind == "despesa":
         document = get_object_or_404(Expense, pk=document_id, event_id=event_id)
+    elif kind == 'movimentacao':
+        document = get_object_or_404(ManualMovement, pk=document_id, event_id=event_id)
     elif kind == "pagamento":
         document = get_object_or_404(ManualPaymentEvidence, pk=document_id, order__event_id=event_id)
     elif kind == 'reembolso':
