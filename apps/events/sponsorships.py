@@ -63,6 +63,10 @@ def decorate_balance(sponsor):
         sponsor.payment_status, sponsor.payment_label = "partial", "Pago parcialmente"
     else:
         sponsor.payment_status, sponsor.payment_label = "pending", "A receber"
+    if sponsor.archived_at:
+        sponsor.balance_cents = 0
+        sponsor.is_overdue = False
+        sponsor.payment_status, sponsor.payment_label = 'archived', 'Excluído'
     sponsor.paid_percent = min(100, sponsor.received_cents * 100 // agreed) if agreed else 0
     return sponsor
 

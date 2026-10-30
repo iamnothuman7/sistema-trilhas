@@ -56,9 +56,9 @@ def export_addons_csv(event, start=None, end=None):
 def export_raffle_csv(event, start=None, end=None):
     from apps.events.models_raffles import RaffleTicket
     rows=RaffleTicket.objects.filter(raffle__event=event).select_related('registration__person','point').order_by('number')
-    return table_csv(event,'bilhetes_sorteio',['Número','Origem','Situação','Participante / comprador','Ponto','Recebido (R$)','Data da baixa'],
+    return table_csv(event,'bilhetes_sorteio',['Número','Origem','Situação','Participante / comprador','Ponto','Recebido líquido (R$)','Data da baixa','Valor original registrado (R$)'],
         ([item.number,item.get_source_display(),item.get_state_display(),item.registration.person.full_name if item.registration else item.buyer_name,
-          item.point.name if item.point else '',Decimal(item.amount_cents)/100,item.paid_at.isoformat() if item.paid_at else ''] for item in rows))
+          item.point.name if item.point else '',Decimal(item.amount_cents if item.state=='SOLD' else 0)/100,item.paid_at.isoformat() if item.paid_at else '',Decimal(item.amount_cents)/100] for item in rows))
 
 
 def export_sponsorships_csv(event, start=None, end=None):
@@ -66,10 +66,11 @@ def export_sponsorships_csv(event, start=None, end=None):
     # Agreements are a current-position report, including agreements without a due date.
     sponsors = (decorate_balance(s) for s in sponsorships_with_balances(event.sponsors.all()))
     return table_csv(event, 'patrocinios_saldos_atuais',
-        ['Patrocinador', 'Cota', 'Exibição autorizada', 'Combinado (R$)', 'Recebido líquido (R$)', 'A receber (R$)', 'Vencimento', 'Situação atual', 'Observações do acordo'],
+        ['Patrocinador', 'Cota', 'Exibição autorizada', 'Combinado ativo (R$)', 'Recebido líquido (R$)', 'A receber (R$)', 'Vencimento', 'Situação atual', 'Observações do acordo', 'Valor contratado original (R$)'],
         ([s.name, s.get_tier_display(), 'Sim' if s.is_public else 'Não',
-          Decimal(s.agreed_amount_cents) / 100 if s.agreed_amount_cents is not None else '', Decimal(s.received_cents) / 100,
-          Decimal(s.balance_cents) / 100 if s.balance_cents is not None else '', s.due_at, s.payment_label, s.agreement_notes] for s in sponsors))
+          Decimal(0 if s.archived_at else s.agreed_amount_cents) / 100 if s.archived_at or s.agreed_amount_cents is not None else '', Decimal(s.received_cents) / 100,
+          Decimal(s.balance_cents) / 100 if s.balance_cents is not None else '', s.due_at, s.payment_label, s.agreement_notes,
+          Decimal(s.agreed_amount_cents)/100 if s.agreed_amount_cents is not None else ''] for s in sponsors))
 
 
 def export_sponsor_receipts_csv(event, start=None, end=None):
@@ -120,6 +121,7 @@ def export_bundle(event, exporters, start=None, end=None):
                 'Inscrições, pedidos e benefícios: data de criação da inscrição/pedido; situação atual.',
                 'Financeiro: reconhecimento. Despesas: vencimento. Credenciamentos e entregas: data da operação.',
                 'Patrocínios: saldos atuais de todos os acordos, independente do período. Recebimentos de patrocinadores: data do recebimento, com situação atual. Reversões constam no extrato financeiro na data da correção.',
+                'Patrocínios excluídos não entram no combinado ativo nem no saldo a receber; os recebimentos e valores contratados originais são preservados. Bilhetes cancelados têm recebimento líquido zero e valor original em coluna separada.',
                 'Equipes, cidades e tamanhos correspondem às tabelas do painel de relatórios, não ao ranking público normalizado.',
                 'Inclui todos os relatórios permitidos para esta conta, sem limitar à página atual.',
                 'Arquivos: ' + ', '.join(exporters),
