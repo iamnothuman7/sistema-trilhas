@@ -14,6 +14,7 @@ from apps.core.utils import log_audit
 from .forms import SponsorForm
 from .models import Sponsor, SponsorProfile
 from .sponsor_images import sponsor_upload_transaction
+from .sponsor_duplicates import require_unique_sponsor_name
 from .sponsorships import (available_profiles, brand_values, can_edit_profile, decorate_balance,
     ensure_profile, sponsor_totals, sponsorships_with_balances, sync_profile)
 from .forms_sponsorships import (SponsorProfileForm, SponsorLinkForm, SponsorAgreementForm, SponsorReceiptForm, SponsorReversalForm)
@@ -103,31 +104,49 @@ def _sponsor_form(request, sponsor):
         for name in brand_values(sponsor):
             if name in form.fields:
                 form.fields[name].disabled = True
-    agreement_form = SponsorAgreementForm(request.POST or None, prefix="agreement") if creating and can_manage_event(request.user, event, "finance") else None
-    if request.method == "POST" and form.is_valid() and (agreement_form is None or agreement_form.is_valid()):
-        with sponsor_upload_transaction():
-            saved = form.save(commit=False)
-            saved.event = event
-            if agreement_form:
-                data = agreement_form.cleaned_data
-                saved.agreed_amount_cents, saved.due_at = data["amount"], data["due_at"]
-                saved.agreement_notes = data["agreement_notes"]
-            saved.save(update_fields=None if creating else [*brand_values(saved), "tier", "sort_order", "is_public"])
-            profile = ensure_profile(saved)
-            if not brand_locked:
-                for name, value in brand_values(saved).items():
-                    setattr(profile, name, value)
-                profile.save()
-                sync_profile(profile)
-            log_audit(
-                actor=request.user, event_id=event.pk,
-                action="SPONSOR_CREATED" if creating else "SPONSOR_UPDATED",
-                entity_type="Sponsor", entity_id=saved.pk,
-                diff={"fields": list(form.changed_data), "is_public": saved.is_public,
-                    **({"agreed_amount_cents": saved.agreed_amount_cents} if agreement_form else {})}, request=request,
-            )
-        messages.success(request, "Patrocinador cadastrado." if creating else "Patrocinador atualizado.")
-        return redirect("gestao:sponsor_list", event_id=event.pk)
+    can_finance = can_manage_event(request.user, event, "finance")
+    # Old pages may submit only the brand fields. Such a submission must never
+    # blank an existing agreement; the current form always sends its version.
+    agreement_submitted = request.method == "POST" and (creating or any(key.startswith("agreement-") for key in request.POST))
+    agreement_form = SponsorAgreementForm(
+        request.POST if agreement_submitted else None, prefix="agreement", sponsor=None if creating else sponsor,
+    ) if can_finance else None
+    if request.method == "POST" and form.is_valid() and (agreement_form is None or not agreement_submitted or agreement_form.is_valid()):
+        try:
+            with sponsor_upload_transaction():
+                if creating:
+                    require_unique_sponsor_name(organization_id=event.organization_id, name=form.cleaned_data["name"])
+                saved = form.save(commit=False)
+                saved.event = event
+                if agreement_form and agreement_submitted:
+                    data = agreement_form.cleaned_data
+                    if creating:
+                        saved.agreed_amount_cents, saved.due_at = data["amount"], data["due_at"]
+                        saved.agreement_notes = data["agreement_notes"]
+                    else:
+                        update_sponsor_agreement(event=event, sponsor_id=saved.pk, data=data, actor=request.user, request=request)
+                saved.save(update_fields=None if creating else [*brand_values(saved), "tier", "sort_order", "is_public"])
+                profile = ensure_profile(saved)
+                if not brand_locked:
+                    for name, value in brand_values(saved).items():
+                        setattr(profile, name, value)
+                    profile.save()
+                    sync_profile(profile)
+                log_audit(
+                    actor=request.user, event_id=event.pk,
+                    action="SPONSOR_CREATED" if creating else "SPONSOR_UPDATED",
+                    entity_type="Sponsor", entity_id=saved.pk,
+                    diff={"fields": list(form.changed_data), "is_public": saved.is_public,
+                        **({"agreed_amount_cents": saved.agreed_amount_cents} if creating and agreement_form else {})}, request=request,
+                )
+        except ValidationError as exc:
+            error_form = agreement_form if not hasattr(exc, "error_dict") and agreement_form is not None and agreement_submitted else form
+            error_form.add_error(None, exc)
+        else:
+            messages.success(request, "Patrocinador salvo. O valor combinado não registra recebimento; confira o saldo e dê baixa quando receber." if can_finance else "Patrocinador cadastrado." if creating else "Patrocinador atualizado.")
+            if can_finance or not creating:
+                return redirect("gestao:sponsor_detail", event_id=event.pk, sponsor_id=saved.pk)
+            return redirect("gestao:sponsor_list", event_id=event.pk)
     return render(request, "gestao/sponsors/form.html", {
         "event": event, "sponsor": sponsor, "form": form, "creating": creating,
         "agreement_form": agreement_form, "brand_locked": brand_locked,
@@ -167,17 +186,27 @@ def _profile_form(request, profile):
     if creating and organizations.count() > 1:
         form.fields["organization"] = forms.ModelChoiceField(label="Organização", queryset=organizations, widget=forms.Select(attrs={"class": "form-control"}))
     if request.method == "POST" and form.is_valid():
-        with sponsor_upload_transaction():
-            saved = form.save(commit=False)
-            if creating:
-                saved.organization = form.cleaned_data.get("organization") or organizations.first()
-            saved.save()
-            sync_profile(saved)
-            log_audit(actor=request.user, action="SPONSOR_PROFILE_CREATED" if creating else "SPONSOR_PROFILE_UPDATED",
-                entity_type="SponsorProfile", entity_id=saved.pk, diff={"fields": list(form.changed_data)}, request=request)
-        messages.success(request, "Cadastro salvo em Patrocinadores. A imagem e os links foram atualizados nos eventos vinculados.")
-        return redirect("gestao:sponsor_bank")
-    participations = profile.participations.filter(event__in=accessible_events(request.user, "sponsors")).select_related("event") if not creating else []
+        try:
+            with sponsor_upload_transaction():
+                organization = (form.cleaned_data.get("organization") or organizations.first()) if creating else profile.organization
+                if creating:
+                    require_unique_sponsor_name(organization_id=organization.pk, name=form.cleaned_data["name"])
+                saved = form.save(commit=False)
+                if creating:
+                    saved.organization = organization
+                saved.save()
+                sync_profile(saved)
+                log_audit(actor=request.user, action="SPONSOR_PROFILE_CREATED" if creating else "SPONSOR_PROFILE_UPDATED",
+                    entity_type="SponsorProfile", entity_id=saved.pk, diff={"fields": list(form.changed_data)}, request=request)
+        except ValidationError as exc:
+            form.add_error(None, exc)
+        else:
+            messages.success(request, "Marca cadastrada. Vincule a um evento para definir o valor combinado e registrar os recebimentos." if creating else "Cadastro salvo em Patrocinadores. A imagem e os links foram atualizados nos eventos vinculados.")
+            return redirect("gestao:sponsor_bank")
+    participations = list(profile.participations.filter(event__in=accessible_events(request.user, "sponsors")).select_related("event")) if not creating else []
+    for participation in participations:
+        participation.can_finance = can_manage_event(request.user, participation.event, "finance")
+        participation.can_content = can_manage_event(request.user, participation.event, "content")
     return render(request, "gestao/sponsors/profile_form.html", {"form": form, "profile": profile, "creating": creating,
         "participations": participations}, status=400 if request.method == "POST" else 200)
 

@@ -18,6 +18,11 @@
 .sp-hub-grid{align-items:start}.sp-hub-card{min-width:0}.sp-hub-card .page-actions .btn{flex:1;white-space:normal}
 .sp-participations{display:grid;gap:16px}.sp-participation{display:grid;gap:16px;padding:20px;border:1px solid var(--border);border-radius:16px;background:var(--input-bg)}
 .sp-participation h3{font-size:16px;line-height:1.5;margin:0;overflow-wrap:anywhere}.sp-participation .sp-status-line{font-size:12px}.sp-participation .btn{white-space:normal}
+.sp-profile-participations{margin-bottom:20px}
+.sp-profile-event{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:12px;border-top:1px solid var(--border);min-width:0}
+.sp-profile-event>strong{min-width:0;overflow-wrap:anywhere;font-size:14px}
+.sp-profile-event .page-actions{flex-shrink:0}
+@media(max-width:767px){.sp-profile-event{display:grid;gap:10px}.sp-profile-event .page-actions{flex-wrap:wrap}.sp-profile-event .page-actions .btn{flex:1;min-width:0;white-space:normal}}
 @media(max-width:1100px){.sp-hub-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:767px){.sp-hub-filters{grid-template-columns:minmax(0,1fr)}.sp-participation{padding:16px}}
 @media(min-width:1600px){.sp-detail-grid .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
