@@ -2,16 +2,68 @@
 {% block title %}Entradas e transferências | {{ event.title }}{% endblock %}
 {% block gestao_header %}Financeiro{% endblock %}
 {% block content %}
-<div class="page-heading"><div><h1>Entradas e transferências</h1><p>Movimentações avulsas realizadas em {{ event.title }}.</p></div><a class="btn btn-primary" href="{% url 'gestao:movement_create' event.id %}">Nova movimentação</a></div>
+<div class="page-heading">
+  <div>
+    <h1>Entradas e transferências</h1>
+    <p>Movimentações avulsas realizadas em {{ event.title }}.</p>
+  </div>
+  <a class="btn btn-primary" href="{% url 'gestao:movement_create' event.id %}"><i data-lucide="plus-circle" aria-hidden="true"></i>Nova movimentação</a>
+</div>
+
 {% include 'gestao/finance/_navigation.html' %}
+
 <p class="form-help">Entradas avulsas entram no resultado e na exportação do financeiro. Recebimentos de inscrições e patrocínios são registrados nos seus próprios cadastros. Transferências próprias apenas documentam a mudança de conta.</p>
-<nav class="compact-tabs" aria-label="Situação das movimentações"><a href="?q={{ q|urlencode }}" {% if not archived %}aria-current="page"{% endif %}>Ativas</a><a href="?archived=1&q={{ q|urlencode }}" {% if archived %}aria-current="page"{% endif %}>Excluídas</a></nav>
-<form method="get" class="mg-filter-row"><input type="hidden" name="archived" value="{% if archived %}1{% else %}0{% endif %}"><div class="form-group"><label class="form-label" for="movement-search">Descrição ou referência</label><input class="form-control" id="movement-search" name="q" value="{{ q }}" maxlength="150"></div><button type="submit" class="btn btn-secondary">Buscar</button></form>
-<section class="card compact-panel"><div class="compact-records">
-{% for row in page_obj %}<article class="compact-record" data-movement="{{ row.id }}">
-  <div class="stock-heading"><div class="compact-record-name"><strong>{{ row.description }}</strong><small>{{ row.occurred_on|date:'d/m/Y' }} · {{ row.get_kind_display }}</small></div><strong class="compact-amount">R$ {{ row.formatted_amount }}</strong></div>
-  <details class="compact-details"><summary>Detalhes da movimentação</summary><div class="compact-detail-body"><p>{{ row.get_method_display }}{% if row.reference %} · {{ row.reference }}{% endif %}</p><p>{{ row.notes|linebreaksbr }}</p>{% if row.proof_asset %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:private_document_download' event.id 'movimentacao' row.id %}">Baixar comprovante</a>{% endif %}</div></details>
-  <div class="page-actions">{% if archived %}<a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:movement_restore' event.id row.id %}" aria-label="Restaurar" title="Restaurar"><i data-lucide="rotate-ccw" aria-hidden="true"></i><span class="record-action-label">Restaurar</span></a>{% else %}<a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:movement_edit' event.id row.id %}" aria-label="Editar" title="Editar"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar</span></a><a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:movement_remove' event.id row.id %}" aria-label="Excluir" title="Excluir"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir</span></a>{% endif %}</div>
-</article>{% empty %}<p class="empty-inline">Nenhuma movimentação avulsa neste filtro.</p>{% endfor %}
-</div>{% include 'gestao/finance/_record_pagination.html' %}</section>
+
+<nav class="compact-tabs" aria-label="Situação das movimentações">
+  <a href="?q={{ q|urlencode }}" {% if not archived %}aria-current="page"{% endif %}>Ativas</a>
+  <a href="?archived=1&q={{ q|urlencode }}" {% if archived %}aria-current="page"{% endif %}>Excluídas</a>
+</nav>
+
+<form method="get" class="mg-filter-row">
+  <input type="hidden" name="archived" value="{% if archived %}1{% else %}0{% endif %}">
+  <div class="form-group">
+    <label class="form-label" for="movement-search">Descrição ou referência</label>
+    <input class="form-control" id="movement-search" name="q" value="{{ q }}" maxlength="150">
+  </div>
+  <button type="submit" class="btn btn-secondary"><i data-lucide="search" aria-hidden="true"></i>Buscar</button>
+</form>
+
+<section class="card compact-panel">
+  <div class="compact-records">
+  {% for row in page_obj %}
+    <article class="compact-record" data-movement="{{ row.id }}">
+      <div class="stock-heading">
+        <div class="compact-record-name">
+          <strong>{{ row.description }}</strong>
+          <small>{{ row.occurred_on|date:'d/m/Y' }} · {{ row.get_kind_display }}</small>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
+          <strong class="compact-amount {% if row.kind == 'INCOME' %}text-success{% endif %}">R$ {{ row.formatted_amount }}</strong>
+          <div class="record-actions" aria-label="Ações de {{ row.description }}">
+            {% if row.proof_asset %}
+              <a class="btn-icon-action record-action" href="{% url 'gestao:private_document_download' event.id 'movimentacao' row.id %}" aria-label="Baixar comprovante" title="Baixar comprovante"><i data-lucide="file-text" aria-hidden="true"></i></a>
+            {% endif %}
+            {% if archived %}
+              <a class="btn-icon-action record-action" href="{% url 'gestao:movement_restore' event.id row.id %}" aria-label="Restaurar" title="Restaurar"><i data-lucide="rotate-ccw" aria-hidden="true"></i></a>
+            {% else %}
+              <a class="btn-icon-action record-action" href="{% url 'gestao:movement_edit' event.id row.id %}" aria-label="Editar" title="Editar"><i data-lucide="pencil" aria-hidden="true"></i></a>
+              <a class="btn-icon-action btn-icon-danger record-action" href="{% url 'gestao:movement_remove' event.id row.id %}" aria-label="Excluir" title="Excluir"><i data-lucide="trash-2" aria-hidden="true"></i></a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <details class="compact-details">
+        <summary>Detalhes da movimentação</summary>
+        <div class="compact-detail-body">
+          <p>{{ row.get_method_display }}{% if row.reference %} · {{ row.reference }}{% endif %}</p>
+          {% if row.notes %}<p>{{ row.notes|linebreaksbr }}</p>{% endif %}
+        </div>
+      </details>
+    </article>
+  {% empty %}
+    <p class="empty-inline">Nenhuma movimentação avulsa neste filtro.</p>
+  {% endfor %}
+  </div>
+  {% include 'gestao/finance/_record_pagination.html' %}
+</section>
 {% endblock %}

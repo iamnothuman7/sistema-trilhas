@@ -1,7 +1,7 @@
 /* Compact controls retain their existing forms, permissions and confirmation pages. */
-.management-main .record-action{gap:6px;flex:0 0 auto;margin:0;font-size:12px}
-.management-main .record-action .lucide{width:18px;height:18px}
-.management-main .record-actions{gap:6px}
+.management-main .record-action{flex:0 0 auto;margin:0}
+.management-main .record-action .lucide{width:16px;height:16px}
+.management-main .record-actions{gap:6px;margin-left:auto}
 .management-main .compact-record{border-color:var(--border)}
 .lead-list-caption{display:flex;justify-content:space-between;gap:12px;padding-bottom:10px;color:var(--text-muted);font-size:12px}
 .lead-record-heading{display:flex;align-items:flex-start;gap:12px}

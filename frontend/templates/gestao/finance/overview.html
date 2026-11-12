@@ -7,14 +7,59 @@
 {% block content %}
 {% timezone event.timezone %}
 <div class="page-heading">
-    <div><h1>Financeiro da edição</h1><p>Recebimentos, compromissos e resultado de {{ event.title }}.</p></div>
+    <div>
+        <h1>Financeiro da edição</h1>
+        <p>Recebimentos, compromissos e resultado de {{ event.title }}.</p>
+    </div>
     <div class="page-actions">
         <a href="{% url 'gestao:export_financial' event_id=event.id %}?{{ filter_query }}" class="btn btn-secondary"><i data-lucide="download" aria-hidden="true"></i> Exportar extrato</a>
-        <button type="button" class="btn btn-primary" onclick="document.getElementById('expenseModal').showModal()"><i data-lucide="plus" aria-hidden="true"></i> Nova despesa</button>
+        <button type="button" class="btn btn-primary" onclick="openMovementModal('despesa')"><i data-lucide="plus-circle" aria-hidden="true"></i> Registrar movimentação</button>
     </div>
 </div>
 
+<!-- Contagem Real do Financeiro (Hero Cards) -->
+<section class="mg-finance-hero-summary" aria-label="Contagem real do financeiro">
+    <div class="stat-grid stat-grid-financial-hero">
+        <!-- Quanto Tem -->
+        <article class="stat-card stat-card-hero stat-card-balance">
+            <div class="stat-card-header">
+                <span class="stat-label">Saldo em Caixa (Quanto Tem)</span>
+                <span class="stat-icon stat-icon-wallet"><i data-lucide="wallet" aria-hidden="true"></i></span>
+            </div>
+            <div class="stat-value {% if finance.net_cents < 0 %}text-danger{% else %}text-success{% endif %}">
+                R$ {{ finance.net_formatted|default:'0,00' }}
+            </div>
+            <p class="stat-foot">Disponível em caixa (Entradas - Saídas pagas)</p>
+        </article>
+
+        <!-- Quanto Entrou -->
+        <article class="stat-card stat-card-hero stat-card-income">
+            <div class="stat-card-header">
+                <span class="stat-label">Quanto Entrou (Receitas)</span>
+                <span class="stat-icon stat-icon-income"><i data-lucide="trending-up" aria-hidden="true"></i></span>
+            </div>
+            <div class="stat-value text-success">
+                R$ {{ finance.revenue_formatted|default:'0,00' }}
+            </div>
+            <p class="stat-foot">Inscrições, patrocínios recebidos e entradas avulsas</p>
+        </article>
+
+        <!-- Quanto Saiu -->
+        <article class="stat-card stat-card-hero stat-card-outflow">
+            <div class="stat-card-header">
+                <span class="stat-label">Quanto Saiu (Despesas)</span>
+                <span class="stat-icon stat-icon-outflow"><i data-lucide="trending-down" aria-hidden="true"></i></span>
+            </div>
+            <div class="stat-value text-warning">
+                R$ {{ finance.total_outflow_formatted|default:'0,00' }}
+            </div>
+            <p class="stat-foot">Despesas pagas (R$ {{ finance.paid_expenses_formatted|default:'0,00' }}), estornos e tarifas</p>
+        </article>
+    </div>
+</section>
+
 {% include 'gestao/finance/_navigation.html' %}
+
 <details class="card compact-details mg-element-gap" {% if date_form.errors or date_query %}open{% endif %}><summary>Filtrar período</summary>
     <form method="get" class="mg-finance-filters">
         <div class="form-group"><label class="form-label" for="{{ date_form.date_start.id_for_label }}">Data inicial</label>{{ date_form.date_start }}{% if date_form.date_start.errors %}<div class="mg-field-errors">{{ date_form.date_start.errors }}</div>{% endif %}</div>
@@ -26,15 +71,17 @@
 </details>
 
 {% if status_form.errors %}<div class="mg-form-errors" role="alert"><strong>A situação não foi alterada.</strong>{{ status_form.errors }} Confira o registro atualizado antes de tentar novamente.</div>{% endif %}
+
 {% include 'gestao/finance/_compact_expenses.html' %}
-<details class="card compact-details mg-section-gap"><summary>Resumo financeiro e recebimentos</summary>
+
+<details class="card compact-details mg-section-gap"><summary>Detalhamento de compromissos e recebimentos</summary>
 <div class="stat-grid mg-finance-stats mg-section-gap">
-    <article class="stat-card"><div class="stat-label"><i data-lucide="arrow-down-left" aria-hidden="true"></i> Recebimentos</div><div class="stat-value">R$ {{ finance.revenue_formatted }}</div><p class="stat-foot">Pagamentos confirmados no período</p></article>
-    <article class="stat-card"><div class="stat-label"><i data-lucide="undo-2" aria-hidden="true"></i> Estornos</div><div class="stat-value">R$ {{ finance.refunds_formatted }}</div><p class="stat-foot">Valores devolvidos aos participantes</p></article>
-    <article class="stat-card"><div class="stat-label"><i data-lucide="percent" aria-hidden="true"></i> Tarifas</div><div class="stat-value">R$ {{ finance.fees_formatted }}</div><p class="stat-foot">Custos de processamento dos pagamentos</p></article>
-    <article class="stat-card"><div class="stat-label"><i data-lucide="receipt" aria-hidden="true"></i> Despesas pagas</div><div class="stat-value">R$ {{ finance.paid_expenses_formatted }}</div><p class="stat-foot">Saídas operacionais confirmadas</p></article>
-    <article class="stat-card"><div class="stat-label"><i data-lucide="clock-3" aria-hidden="true"></i> Despesas pendentes</div><div class="stat-value">R$ {{ finance.pending_expenses_formatted }}</div><p class="stat-foot">Compromissos ainda não pagos</p></article>
-    <article class="stat-card"><div class="stat-label"><i data-lucide="wallet" aria-hidden="true"></i> Resultado de caixa</div><div class="stat-value {% if finance.net_cents < 0 %}mg-text-danger{% else %}text-success{% endif %}">R$ {{ finance.net_formatted }}</div><p class="stat-foot">Receitas menos estornos, tarifas e despesas pagas</p></article>
+    <article class="stat-card"><div class="stat-label"><i data-lucide="arrow-down-left" aria-hidden="true"></i> Recebimentos totais</div><div class="stat-value">R$ {{ finance.revenue_formatted }}</div><p class="stat-foot">Pagamentos confirmados no período</p></article>
+    <article class="stat-card"><div class="stat-label"><i data-lucide="clock-3" aria-hidden="true"></i> Despesas pendentes</div><div class="stat-value">R$ {{ finance.pending_expenses_formatted }}</div><p class="stat-foot">Compromissos a pagar</p></article>
+    <article class="stat-card"><div class="stat-label"><i data-lucide="handshake" aria-hidden="true"></i> Patrocínios a receber</div><div class="stat-value">R$ {{ finance.sponsor_outstanding_formatted|default:'0,00' }}</div><p class="stat-foot">Saldos pendentes de marcas</p></article>
+    <article class="stat-card"><div class="stat-label"><i data-lucide="undo-2" aria-hidden="true"></i> Estornos</div><div class="stat-value">R$ {{ finance.refunds_formatted }}</div><p class="stat-foot">Devolvidos aos participantes</p></article>
+    <article class="stat-card"><div class="stat-label"><i data-lucide="percent" aria-hidden="true"></i> Tarifas</div><div class="stat-value">R$ {{ finance.fees_formatted }}</div><p class="stat-foot">Processamento de pagamentos</p></article>
+    <article class="stat-card"><div class="stat-label"><i data-lucide="receipt" aria-hidden="true"></i> Despesas pagas</div><div class="stat-value">R$ {{ finance.paid_expenses_formatted }}</div><p class="stat-foot">Saídas quitadas</p></article>
 </div>
 
 {% include "gestao/sponsors/_finance_summary.html" %}
@@ -43,37 +90,154 @@
 
 {% include 'gestao/finance/_addon_orders.html' %}
 {% include 'gestao/finance/_refund_channels.html' %}
-
-
-
 </details>
+
 <section class="card" aria-labelledby="ledger-title">
     <div class="card-header"><div><h2 id="ledger-title" class="section-title">Extrato de movimentações</h2><p class="mg-section-description">Entradas, taxas e saídas reconhecidas no caixa da edição.</p></div></div>
 {% include 'gestao/finance/_ledger.html' %}
     {% if entries_page.paginator.num_pages > 1 %}<nav class="mg-pagination" aria-label="Páginas do extrato"><span>Página {{ entries_page.number }} de {{ entries_page.paginator.num_pages }}</span><div class="page-actions">{% if entries_page.has_previous %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.previous_page_number }}&expenses_page={{ expenses_page.number }}">Anterior</a>{% endif %}{% if entries_page.has_next %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.next_page_number }}&expenses_page={{ expenses_page.number }}">Próxima</a>{% endif %}</div></nav>{% endif %}
 </section>
 
-<dialog id="expenseModal" class="mg-dialog" aria-labelledby="expense-dialog-title">
+<!-- Modal Unificado: Registrar Movimentação (Despesa ou Receita) -->
+<dialog id="movementModal" class="mg-dialog" aria-labelledby="movement-dialog-title">
     <div class="card mg-dialog-card">
-        <div class="card-header"><div><h2 class="section-title" id="expense-dialog-title">Nova despesa</h2><p class="mg-section-description">Informe o compromisso financeiro da edição.</p></div><button type="button" class="btn btn-secondary btn-sm" aria-label="Fechar formulário de despesa" onclick="document.getElementById('expenseModal').close()"><i data-lucide="x" aria-hidden="true"></i></button></div>
-        <form method="post" enctype="multipart/form-data" action="{% url 'gestao:add_expense' event_id=event.id %}">
-            {% csrf_token %}{{ expense_form.idempotency_key }}
-            {% if expense_form.non_field_errors %}<div class="mg-form-errors" role="alert">{{ expense_form.non_field_errors }}</div>{% endif %}
-            {% for field in expense_form.visible_fields %}
-            <div class="form-group"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}{% if field.errors %}<div class="mg-field-errors" role="alert">{{ field.errors }}</div>{% endif %}</div>
-            {% endfor %}
-            <div class="mg-form-actions"><button type="button" class="btn btn-secondary" onclick="document.getElementById('expenseModal').close()">Cancelar</button><button type="submit" class="btn btn-primary"><i data-lucide="check" aria-hidden="true"></i> Salvar despesa</button></div>
-        </form>
+        <div class="card-header">
+            <div>
+                <h2 class="section-title" id="movement-dialog-title">Registrar movimentação</h2>
+                <p class="mg-section-description">Selecione se deseja lançar uma despesa ou uma receita.</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" aria-label="Fechar" onclick="document.getElementById('movementModal').close()"><i data-lucide="x" aria-hidden="true"></i></button>
+        </div>
+
+        <!-- Seletor de Tipo: Despesa ou Receita -->
+        <div class="movement-type-switcher">
+            <button type="button" class="btn-toggle active toggle-despesa" id="btnTabDespesa" onclick="switchMovementTab('despesa')">
+                <i data-lucide="arrow-up-right" aria-hidden="true"></i> Despesa (Saída)
+            </button>
+            <button type="button" class="btn-toggle toggle-receita" id="btnTabReceita" onclick="switchMovementTab('receita')">
+                <i data-lucide="arrow-down-left" aria-hidden="true"></i> Receita (Entrada)
+            </button>
+        </div>
+
+        <!-- Formulário de Despesa -->
+        <div id="panelDespesa">
+            <form method="post" enctype="multipart/form-data" action="{% url 'gestao:add_expense' event_id=event.id %}">
+                {% csrf_token %}{{ expense_form.idempotency_key }}
+                {% if expense_form.non_field_errors %}<div class="mg-form-errors" role="alert">{{ expense_form.non_field_errors }}</div>{% endif %}
+                {% for field in expense_form.visible_fields %}
+                <div class="form-group">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                    {{ field }}
+                    {% if field.help_text %}<p class="form-help">{{ field.help_text }}</p>{% endif %}
+                    {% if field.errors %}<div class="mg-field-errors" role="alert">{{ field.errors }}</div>{% endif %}
+                </div>
+                {% endfor %}
+                <div class="mg-form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('movementModal').close()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i data-lucide="check" aria-hidden="true"></i> Salvar despesa</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Formulário de Receita / Entrada Avulsa -->
+        <div id="panelReceita" style="display: none;">
+            <form method="post" enctype="multipart/form-data" action="{% url 'gestao:movement_create' event_id=event.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="return_to" value="{% url 'gestao:finance' event_id=event.id %}">
+                <input type="hidden" name="kind" value="INCOME">
+                {% if movement_form.request_key %}{{ movement_form.request_key }}{% endif %}
+                <div class="form-group">
+                    <label class="form-label" for="{{ movement_form.description.id_for_label }}">Descrição da entrada *</label>
+                    {{ movement_form.description }}
+                    <p class="form-help">Ex: Venda avulsa em dinheiro, aporte de diretoria, recebimento local.</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="{{ movement_form.amount_cents.id_for_label }}">Valor (R$) *</label>
+                    {{ movement_form.amount_cents }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="{{ movement_form.occurred_on.id_for_label }}">Data do recebimento *</label>
+                    {{ movement_form.occurred_on }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="{{ movement_form.method.id_for_label }}">Forma de recebimento *</label>
+                    {{ movement_form.method }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="{{ movement_form.reference.id_for_label }}">Referência / Identificador</label>
+                    {{ movement_form.reference }}
+                    <p class="form-help">Código Pix, número do recibo ou banco depositado.</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="{{ movement_form.proof_asset.id_for_label }}">Comprovante / Recibo</label>
+                    {{ movement_form.proof_asset }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="{{ movement_form.notes.id_for_label }}">Observações</label>
+                    {{ movement_form.notes }}
+                </div>
+                <div class="mg-form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('movementModal').close()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i data-lucide="check" aria-hidden="true"></i> Salvar receita</button>
+                </div>
+            </form>
+        </div>
     </div>
 </dialog>
 
 {% for exp in expenses %}{% if exp.status == 'PENDING' %}
-<dialog id="cancelExpense{{ exp.id }}" class="mg-dialog" aria-labelledby="cancel-title-{{ exp.id }}"><div class="card mg-dialog-card"><div class="card-header"><h2 class="section-title" id="cancel-title-{{ exp.id }}">Cancelar despesa</h2><button type="button" class="btn btn-secondary btn-sm" aria-label="Fechar cancelamento" onclick="document.getElementById('cancelExpense{{ exp.id }}').close()"><i data-lucide="x" aria-hidden="true"></i></button></div><p class="mg-space-bottom">{{ exp.description }} · <strong>R$ {{ exp.amount_cents|money }}</strong></p><form method="post" action="{% url 'gestao:cancel_expense' event_id=event.id expense_id=exp.id %}">{% csrf_token %}<div class="form-group"><label class="form-label" for="cancel-reason-{{ exp.id }}">Motivo do cancelamento</label><textarea id="cancel-reason-{{ exp.id }}" name="reason" class="form-control" rows="3" maxlength="500" required placeholder="Informe por que a despesa será cancelada."></textarea><p class="form-help">A justificativa será registrada no histórico de auditoria.</p></div><div class="mg-form-actions"><button type="button" class="btn btn-secondary" onclick="document.getElementById('cancelExpense{{ exp.id }}').close()">Voltar</button><button type="submit" class="btn btn-danger">Cancelar despesa</button></div></form></div></dialog>
+<dialog id="cancelExpense{{ exp.id }}" class="mg-dialog" aria-labelledby="cancel-title-{{ exp.id }}">
+    <div class="card mg-dialog-card">
+        <div class="card-header">
+            <h2 class="section-title" id="cancel-title-{{ exp.id }}">Cancelar despesa</h2>
+            <button type="button" class="btn btn-secondary btn-sm" aria-label="Fechar cancelamento" onclick="document.getElementById('cancelExpense{{ exp.id }}').close()"><i data-lucide="x" aria-hidden="true"></i></button>
+        </div>
+        <p class="mg-space-bottom">{{ exp.description }} · <strong>R$ {{ exp.amount_cents|money }}</strong></p>
+        <form method="post" action="{% url 'gestao:cancel_expense' event_id=event.id expense_id=exp.id %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label" for="cancel-reason-{{ exp.id }}">Motivo do cancelamento</label>
+                <textarea id="cancel-reason-{{ exp.id }}" name="reason" class="form-control" rows="3" maxlength="500" required placeholder="Informe por que a despesa será cancelada."></textarea>
+                <p class="form-help">A justificativa será registrada no histórico de auditoria.</p>
+            </div>
+            <div class="mg-form-actions">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('cancelExpense{{ exp.id }}').close()">Voltar</button>
+                <button type="submit" class="btn btn-danger">Cancelar despesa</button>
+            </div>
+        </form>
+    </div>
+</dialog>
 {% endif %}{% endfor %}
 {% endtimezone %}
 {% endblock %}
 
 {% block extra_js %}
+<script>
+function openMovementModal(type) {
+    switchMovementTab(type || 'despesa');
+    const modal = document.getElementById('movementModal');
+    if (modal) modal.showModal();
+    if (window.lucide) window.lucide.createIcons();
+}
+
+function switchMovementTab(type) {
+    const isDespesa = (type === 'despesa');
+    const panelDespesa = document.getElementById('panelDespesa');
+    const panelReceita = document.getElementById('panelReceita');
+    const btnDespesa = document.getElementById('btnTabDespesa');
+    const btnReceita = document.getElementById('btnTabReceita');
+
+    if (panelDespesa) panelDespesa.style.display = isDespesa ? 'block' : 'none';
+    if (panelReceita) panelReceita.style.display = isDespesa ? 'none' : 'block';
+
+    if (btnDespesa) {
+        btnDespesa.classList.toggle('active', isDespesa);
+    }
+    if (btnReceita) {
+        btnReceita.classList.toggle('active', !isDespesa);
+    }
+}
+</script>
 {% if status_form.errors %}<script>document.getElementById('status-{{ status_expense.id }}')?.showModal();</script>{% endif %}
-{% if expense_form.errors %}<script>document.getElementById('expenseModal')?.showModal();</script>{% endif %}
+{% if expense_form.errors %}<script>openMovementModal('despesa');</script>{% endif %}
 {% endblock %}

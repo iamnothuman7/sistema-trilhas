@@ -142,6 +142,9 @@ def get_financial_summary(event, start=None, end=None):
     }
     result["net_cents"] = result["revenue_cents"] - result["refunds_cents"] - result["fees_cents"] - result["paid_expenses_cents"]
     result["expense_reconciliation_delta_cents"] = paid_record_total - result["paid_expenses_cents"]
+    total_outflow_cents = (result["paid_expenses_cents"] or 0) + (result["refunds_cents"] or 0) + (result["fees_cents"] or 0)
+    result["total_outflow_cents"] = total_outflow_cents
+    result["total_outflows_cents"] = total_outflow_cents
     from apps.events.sponsorships import sponsorships_with_balances, decorate_balance, sponsor_totals
     sponsors = sponsor_totals([decorate_balance(s) for s in sponsorships_with_balances(event.sponsors.all())])
     result["sponsor_outstanding_cents"] = sponsors["balance_cents"]

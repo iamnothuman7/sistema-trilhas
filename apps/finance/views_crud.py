@@ -100,8 +100,12 @@ def movement_editor(request, event_id, movement_id=None, operation='edit'):
     form = RecordActionForm(request.POST if request.method=='POST' else None, initial={'revision':row.revision}) if action else MovementForm(
         request.POST if request.method=='POST' else None, request.FILES or None, movement=row)
     title = {'remove':'Excluir movimentação', 'restore':'Restaurar movimentação'}.get(operation, 'Editar movimentação' if row else 'Nova entrada / transferência')
-    back = reverse('gestao:movement_list', args=[event.pk])
-    if row and row.archived_at: back += '?archived=1'
+    candidate_back = request.POST.get('return_to') or request.GET.get('return_to')
+    if candidate_back and candidate_back.startswith('/'):
+        back = candidate_back
+    else:
+        back = reverse('gestao:movement_list', args=[event.pk])
+        if row and row.archived_at: back += '?archived=1'
     if request.method == 'POST' and form.is_valid():
         try:
             if action:

@@ -649,6 +649,8 @@ def _finance_context(request, event, expense_form=None):
     else:
         expense_status = ''
     form = expense_form if expense_form is not None else ExpenseForm(event=event)
+    from apps.finance.views_crud import MovementForm
+    mv_form = MovementForm()
     entries_page = Paginator(entries, 30).get_page(request.GET.get("entries_page"))
     from apps.finance.entry_actions import attach_entry_actions
     entries_page.object_list=attach_entry_actions(entries_page.object_list,event)
@@ -669,7 +671,7 @@ def _finance_context(request, event, expense_form=None):
         "legacy_refunds":Refund.objects.filter(order__event=event).filter(Q(channel=RefundChannel.UNKNOWN,state=RefundState.MANUAL_COMPLETED)|Q(order__charge_attempts__error_code='REFUND_CHANNEL_REVIEW')).distinct().select_related('order').order_by('-created_at')[:50],
         "refund_channel_pending":ChargeAttempt.objects.filter(order__event=event,error_code='REFUND_CHANNEL_REVIEW').exists(),
         "vendors": Vendor.objects.filter(organization=event.organization).order_by("name"),
-        "date_form": date_form, "expense_form": form, "expense_form_errors": form.errors,
+        "date_form": date_form, "expense_form": form, "expense_form_errors": form.errors, "movement_form": mv_form,
         "today": timezone.localdate().isoformat(),
         "expense_status": expense_status, "date_query": date_query,
         "filter_query": date_query + ('&status='+expense_status if expense_status else ''),
