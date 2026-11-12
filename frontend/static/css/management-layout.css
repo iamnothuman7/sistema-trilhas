@@ -1,0 +1,35 @@
+/*
+ * Ritmo vertical consistente da gestão.
+ * Garante o mesmo espaçamento entre todos os blocos principais de cada página,
+ * sem depender de cada template lembrar de aplicar uma classe de margem.
+ * Carregado por último em base_gestao.html.
+ */
+:root { --mg-stack: 24px; --mg-stack-tight: 14px; }
+
+/* Blocos diretos da área principal: zera margens herdadas e aplica espaçamento uniforme. */
+#mainContent > :not(dialog, datalist, script, template, style, input) { margin-top: 0; margin-bottom: 0; }
+#mainContent > :not(dialog, datalist, script, template, style, input) ~ :not(dialog, datalist, script, template, style, input) { margin-top: var(--mg-stack); }
+
+/* Abas logo acima do conteúdo que controlam ficam um pouco mais próximas. */
+#mainContent > :is(.compact-tabs, .raffle-tabs, .mp-panel-tabs) + :not(dialog, datalist, script, template, style, input) { margin-top: var(--mg-stack-tight); }
+
+/* Paginação acompanha a lista. */
+#mainContent > .mg-pagination { margin-top: var(--mg-stack-tight); }
+
+/* Cards empilhados dentro de wrappers simples também não se encostam. */
+.management-main :is(.mg-form-sheet, .usage-guide, .mg-scanner-shell) > .card + .card { margin-top: var(--mg-stack); }
+
+/* Estoque de camisetas: ações agrupadas à direita do título. */
+.stock-heading { align-items: flex-start; }
+.stock-heading > strong { min-width: 0; overflow-wrap: anywhere; line-height: 1.35; padding-top: 6px; }
+.stock-heading > .record-actions { display: inline-flex; flex-wrap: nowrap; gap: 6px; margin: 0 0 0 auto; flex-shrink: 0; }
+.stock-counts dd { white-space: nowrap; }
+
+@media (max-width: 768px) {
+  :root { --mg-stack: 16px; --mg-stack-tight: 12px; }
+}
+
+@media (max-width: 480px) {
+  .stock-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+  .stock-counts dd { font-size: 16px; }
+}
