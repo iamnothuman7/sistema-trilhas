@@ -15,7 +15,7 @@
         <label for="loginInput">E-mail ou usuário</label>
         <div class="auth-input-wrap">
             <i data-lucide="user-round" class="auth-input-icon" aria-hidden="true"></i>
-            <input type="text" name="email" id="loginInput" value="{{ request.POST.email|default:'' }}" placeholder="kelvim ou seu@email.com" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+            <input type="text" name="email" id="loginInput" value="{{ request.POST.email|default:'' }}" placeholder="Seu e-mail ou usuário" autocomplete="username" autocapitalize="none" spellcheck="false" required>
         </div>
     </div>
 
@@ -36,27 +36,6 @@
         <i data-lucide="arrow-right" aria-hidden="true"></i>
     </button>
 </form>
-
-<div class="auth-admin-hint" style="margin-top: 1.25rem; padding: 0.85rem 1rem; border-radius: 12px; background: rgba(245, 158, 11, 0.08); border: 1px dashed rgba(245, 158, 11, 0.35); text-align: center;">
-    <div style="font-size: 0.78rem; color: #f59e0b; font-weight: 600; margin-bottom: 0.35rem; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
-        <i data-lucide="shield-check" style="width: 15px; height: 15px;"></i> Acesso do Administrador
-    </div>
-    <div style="font-size: 0.75rem; color: var(--text-muted, #94a3b8); margin-bottom: 0.5rem;">
-        Usuário: <strong style="color: #fff;">kelvim</strong> &bull; Senha: <strong style="color: #fff;">morcego123</strong>
-    </div>
-    <button type="button" onclick="prefillAdmin()" style="font-size: 0.75rem; padding: 5px 12px; border-radius: 8px; width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.18); color: #fff; cursor: pointer; transition: all 0.2s;">
-        ⚡ Preencher credenciais de Kelvim
-    </button>
-</div>
-
-<script>
-function prefillAdmin() {
-    var loginInput = document.getElementById('loginInput');
-    var passwordInput = document.getElementById('passwordInput');
-    if (loginInput) loginInput.value = 'kelvim';
-    if (passwordInput) passwordInput.value = 'morcego123';
-}
-</script>
 <div class="auth-switch auth-login-links">
     <a href="{% url 'identity:password_reset' %}">Esqueci minha senha</a>
     <a href="{% url 'identity:register' %}{% if next_url %}?next={{ next_url|urlencode }}{% endif %}">Criar minha conta <i data-lucide="arrow-up-right" aria-hidden="true"></i></a>
