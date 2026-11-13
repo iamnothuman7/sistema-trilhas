@@ -5,7 +5,7 @@
 <div class="page-heading">
   <div>
     <h1>Patrocinadores</h1>
-    <p>Marcas, acordos e recebimentos desta edição.</p>
+    <p>{% if archived %}Cadastros excluídos, organizados por categoria.{% else %}Escolha uma categoria para consultar marcas e recebimentos.{% endif %}</p>
   </div>
   <div class="page-actions">
     {% if event and can_content %}
@@ -24,17 +24,18 @@
 </nav>
 {% endif %}
 
-<div class="record-actions" style="margin-bottom: 12px;">
-  <a class="btn btn-secondary btn-sm" href="{% url 'gestao:sponsor_bank' %}?event_id={{ event.id|default:'all' }}&archived={% if archived %}0{% else %}1{% endif %}">
+{% if show_records %}<div class="record-actions">
+  <a class="btn btn-secondary btn-sm" href="{{ archive_toggle_url }}">
     {% if archived %}Ver ativos{% else %}Ver excluídos{% endif %}
   </a>
-</div>
+</div>{% endif %}
 
 <details class="card compact-details sponsor-filter" {% if q or status %}open{% endif %}>
   <summary>Buscar e filtrar patrocinadores</summary>
   <form method="get" action="{% url 'gestao:sponsor_bank' %}" class="sp-filters sp-hub-filters compact-detail-body" role="search">
     <input type="hidden" name="archived" value="{% if archived %}1{% else %}0{% endif %}">
     <input type="hidden" name="event_id" value="{{ event.id|default:'all' }}">
+    <input type="hidden" name="tier" value="{{ selected_tier|default:'ALL' }}">
     <div class="form-group">
       <label for="sponsor-search" class="form-label">Patrocinador ou contato</label>
       <input id="sponsor-search" class="form-control" name="q" value="{{ q }}" maxlength="150" placeholder="Nome, contato, telefone ou e-mail">
@@ -59,7 +60,24 @@
   </form>
 </details>
 
-<p class="text-muted">{{ total_count }} patrocinador{{ total_count|pluralize:"es" }} encontrado{{ total_count|pluralize }}{% if event %} em {{ event.title }}{% endif %}.{% if can_finance and not event %} Os totais consideram os eventos com acesso financeiro para sua conta.{% endif %}</p>
+{% if not show_records %}
+<section class="management-category-grid" aria-label="Categorias de patrocinadores">
+  {% for category in categories %}
+  <a class="management-category-card" data-category="{{ category.key }}" href="{{ category.url }}" aria-label="{{ category.label }}: {{ category.count }} patrocinador{{ category.count|pluralize:'es' }}. Ver patrocinadores">
+    <span class="category-card-icon"><i data-lucide="{{ category.icon }}" aria-hidden="true"></i></span>
+    <span class="category-card-title">{{ category.label }}</span>
+    <strong class="category-card-count">{{ category.count }}</strong>
+    <span class="category-card-description">patrocinador{{ category.count|pluralize:'es' }}{% if archived %} excluído{{ category.count|pluralize }}{% endif %}</span>
+    <span class="category-card-link">Ver patrocinadores<i data-lucide="arrow-up-right" aria-hidden="true"></i></span>
+  </a>
+  {% endfor %}
+</section>
+<div class="management-group-tools">
+  <a href="{{ all_sponsors_url }}">Ver todos · {{ all_count }}</a>
+  <a href="{{ archive_toggle_url }}">{% if archived %}Ver ativos{% else %}Ver excluídos{% endif %}</a>
+</div>
+{% else %}
+<div class="page-heading"><div><h2>{{ selected_tier_label }}{% if archived %} · Excluídos{% endif %}</h2><p>{{ total_count }} patrocinador{{ total_count|pluralize:"es" }}</p></div><a class="btn btn-secondary" href="{{ categories_url }}"><i data-lucide="arrow-left" aria-hidden="true"></i>Categorias</a></div>
 
 <section class="card compact-panel">
   <div class="compact-records">
@@ -170,6 +188,7 @@
 </section>
 
 {% include 'gestao/sponsors/_pagination.html' %}
+{% endif %}
 
 {% if can_finance and not archived %}
 <details class="card compact-details mg-section-gap">
@@ -195,8 +214,8 @@
     {% if event %}
       <div class="page-actions mg-section-gap">
         <a class="btn btn-secondary" href="{% url 'gestao:finance' event.id %}"><i data-lucide="wallet" aria-hidden="true"></i>Financeiro principal</a>
-        <a class="btn btn-secondary" href="{% url 'gestao:reports' event.id %}?export=sponsorships"><i data-lucide="download" aria-hidden="true"></i>Exportar saldos</a>
-        <a class="btn btn-secondary" href="{% url 'gestao:reports' event.id %}?export=sponsor_receipts">Exportar recebimentos</a>
+        <a class="btn btn-secondary" href="{% url 'gestao:reports' event.id %}?export=sponsorships"><i data-lucide="download" aria-hidden="true"></i>Exportar saldos do evento</a>
+        <a class="btn btn-secondary" href="{% url 'gestao:reports' event.id %}?export=sponsor_receipts">Exportar recebimentos do evento</a>
       </div>
     {% endif %}
   {% endif %}

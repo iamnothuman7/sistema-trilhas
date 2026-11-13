@@ -132,6 +132,6 @@ class ManagementCrudCompleteTests(TestCase):
         sponsor=self.sponsor();self.receipt(sponsor);raffle,point,ticket=self.paper()
         for name in ['catalog','finance','sponsor_list','raffle_operations','raffle_finance','event_detail','team_management','shirt_stock']:
             with self.subTest(name=name):self.assertEqual(self.client.get(reverse('gestao:'+name,args=[self.event.pk])).status_code,200)
-        html=self.client.get(reverse('gestao:sponsor_list',args=[self.event.pk])).content.decode()
+        html=self.client.get(reverse('gestao:sponsor_list',args=[self.event.pk]),{'tier':'ALL'}).content.decode()
         self.assertIn('Excluir do evento',html);self.assertIn('Excluir marca',html)
         self.assertContains(self.client.get(reverse('gestao:raffle_finance',args=[self.event.pk])),reverse('gestao:raffle_ticket_edit',args=[self.event.pk,ticket.pk]))

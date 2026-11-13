@@ -12,12 +12,13 @@
 
 {% include 'gestao/finance/_navigation.html' %}
 
-<p class="form-help">Entradas avulsas entram no resultado e na exportação do financeiro. Recebimentos de inscrições e patrocínios são registrados nos seus próprios cadastros. Transferências próprias apenas documentam a mudança de conta.</p>
+<p class="form-help">Entradas recebidas fora de inscrições e patrocínios. Transferências entre contas próprias não alteram o resultado.</p>
 
 <nav class="compact-tabs" aria-label="Situação das movimentações">
-  <a href="?q={{ q|urlencode }}" {% if not archived %}aria-current="page"{% endif %}>Ativas</a>
-  <a href="?archived=1&q={{ q|urlencode }}" {% if archived %}aria-current="page"{% endif %}>Excluídas</a>
+  <a href="?q={{ q|urlencode }}" {% if not archived %}aria-current="page"{% endif %}>Ativas <span class="badge badge-info">{{ active_count }}</span></a>
+  <a href="?archived=1&q={{ q|urlencode }}" {% if archived %}aria-current="page"{% endif %}>Excluídas <span class="badge badge-info">{{ archived_count }}</span></a>
 </nav>
+{% if archived %}<p class="form-help">Estes registros não compõem os totais atuais. Restaurar recoloca a movimentação na lista ativa e volta a contabilizar seu valor.</p>{% endif %}
 
 <form method="get" class="mg-filter-row">
   <input type="hidden" name="archived" value="{% if archived %}1{% else %}0{% endif %}">

@@ -43,7 +43,15 @@ def expense_status(request, event_id, expense_id):
             return redirect(finance_return_url(request,event))
     context = _finance_context(request,event)
     target=finance_return_url(request,event)
-    context.update(status_form=form,status_expense=expense,management_workspace_url=target)
+    # The overview is grouped now. Keep a failed status correction visible even
+    # if its record was on another page or moved to another status meanwhile.
+    from django.core.paginator import Paginator
+    expense.refresh_from_db()
+    expense.edit_version = expense_version(expense)
+    focus_page = Paginator([expense], 1).get_page(1)
+    context.update(status_form=form,status_expense=expense,management_workspace_url=target,
+                   finance_section='expenses',expenses=[expense],expenses_page=focus_page,
+                   expense_heading='Conferir situação da conta')
     response=render(request,'gestao/finance/overview.html',context,status=400)
     response['HX-Replace-Url']=target
     return response

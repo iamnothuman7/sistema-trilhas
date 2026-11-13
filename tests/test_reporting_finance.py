@@ -394,15 +394,15 @@ class ReportingFinanceTests(TestCase):
             self.entry(FinancialEntryKind.RECEITA_MANUAL, 100, description=f"movimento-{index:02d}-teste",
                        recognized_at=timezone.now() - timedelta(days=index))
         url = reverse("gestao:finance", args=[self.event.pk])
-        first = self.client.get(url)
-        second = self.client.get(url, {"expenses_page": 2, "entries_page": 2})
-        self.assertEqual(len(first.context["expenses"]), 20)
-        self.assertEqual(len(first.context["entries"]), 30)
-        self.assertEqual(len(second.context["expenses"]), 1)
-        self.assertEqual(len(second.context["entries"]), 1)
-        self.assertNotContains(first, "compromisso-20-teste")
-        self.assertNotContains(first, "movimento-30-teste")
-        self.assertContains(second, "compromisso-20-teste")
-        self.assertContains(second, "movimento-30-teste")
-        self.assertNotContains(second, "compromisso-00-teste")
-        self.assertNotContains(second, "movimento-00-teste")
+        # Each table is now opened explicitly from its summary card.
+        for filters, field, page_key, prefix, size in [
+            ({"status": "ALL"}, "expenses", "expenses_page", "compromisso", 20),
+            ({"panel": "ledger"}, "entries", "entries_page", "movimento", 30),
+        ]:
+            first = self.client.get(url, filters)
+            second = self.client.get(url, {**filters, page_key: 2})
+            self.assertEqual(len(first.context[field]), size)
+            self.assertEqual(len(second.context[field]), 1)
+            self.assertNotContains(first, f"{prefix}-{size}-teste")
+            self.assertContains(second, f"{prefix}-{size}-teste")
+            self.assertNotContains(second, f"{prefix}-00-teste")

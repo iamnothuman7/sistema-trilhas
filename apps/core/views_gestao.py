@@ -637,28 +637,48 @@ def finance_overview(request, event_id):
 
 def _finance_context(request, event, expense_form=None):
     from apps.payments.models import Refund,RefundChannel,RefundState,ChargeAttempt
+    from django.db.models import Sum
+    from apps.finance.ledger_display import operational_financial_entries, mark_ledger_history
     date_form = DateRangeForm(request.GET)
     valid = date_form.is_valid()
     start = date_form.cleaned_data.get("date_start") if valid else None
     end = date_form.cleaned_data.get("date_end") if valid else None
-    entries = financial_entries(event, start, end).select_related('movement').order_by("-recognized_at", "-pk") if valid else FinancialEntry.objects.none()
-    expenses = in_period(Expense.objects.filter(event=event).select_related("vendor"), "due_at", start, end, date_field=True).order_by("-due_at", "-pk") if valid else Expense.objects.none()
+    ledger_history = request.GET.get('ledger_mode') == 'history'
+    current_entries = operational_financial_entries(event, start, end) if valid else FinancialEntry.objects.none()
+    entries = (financial_entries(event, start, end) if ledger_history and valid else current_entries).select_related('movement').order_by("-recognized_at", "-pk")
+    expense_groups = {}
+    for state, date_field in [('PENDING', 'due_at'), ('PAID', 'paid_at'), ('CANCELED', 'due_at')]:
+        rows = Expense.objects.filter(event=event, status=state).select_related('vendor')
+        expense_groups[state] = in_period(rows, date_field, start, end, date_field=True) if valid else rows.none()
     expense_status = request.GET.get('status','')
-    if expense_status in ('PAID','PENDING','CANCELED'):
-        expenses = expenses.filter(status=expense_status)
+    if expense_status in expense_groups:
+        expenses = expense_groups[expense_status]
     else:
-        expense_status = ''
+        expense_status = 'ALL' if expense_status == 'ALL' else ''
+        expenses = expense_groups['PENDING'] | expense_groups['PAID']
+    expenses = expenses.order_by('-due_at', '-pk')
+    finance_section = 'expenses' if expense_status else 'ledger' if request.GET.get('panel') == 'ledger' or request.GET.get('entries_page') or ledger_history else 'overview'
+    expense_counts = {state: rows.aggregate(count=Count('pk'), total=Sum('amount_cents')) for state, rows in expense_groups.items()}
     form = expense_form if expense_form is not None else ExpenseForm(event=event)
     from apps.finance.views_crud import MovementForm
     mv_form = MovementForm()
     entries_page = Paginator(entries, 30).get_page(request.GET.get("entries_page"))
     from apps.finance.entry_actions import attach_entry_actions
     entries_page.object_list=attach_entry_actions(entries_page.object_list,event)
+    if ledger_history:
+        entries_page.object_list = mark_ledger_history(entries_page.object_list, event)
     expenses_page = Paginator(expenses, 20).get_page(request.GET.get("expenses_page"))
     from apps.finance.forms import expense_version
     for expense in expenses_page.object_list:
         expense.edit_version = expense_version(expense)
     date_query = urlencode({key:value.isoformat() for key,value in date_form.cleaned_data.items() if value}) if valid else ''
+    finance_query = {key: value.isoformat() for key, value in date_form.cleaned_data.items() if value} if valid else {}
+    if expense_status:
+        finance_query['status'] = expense_status
+    elif finance_section == 'ledger':
+        finance_query['panel'] = 'ledger'
+        if ledger_history:
+            finance_query['ledger_mode'] = 'history'
     addon_orders = in_period(Order.objects.filter(event=event,lines__addon__isnull=False).distinct(), 'created_at', start, end).prefetch_related('lines','refunds').order_by('-created_at','-pk') if valid else Order.objects.none()
     addon_orders_page = Paginator(addon_orders,20).get_page(request.GET.get('addon_orders_page'))
     return {
@@ -674,7 +694,10 @@ def _finance_context(request, event, expense_form=None):
         "date_form": date_form, "expense_form": form, "expense_form_errors": form.errors, "movement_form": mv_form,
         "today": timezone.localdate().isoformat(),
         "expense_status": expense_status, "date_query": date_query,
-        "filter_query": date_query + ('&status='+expense_status if expense_status else ''),
+        "filter_query": urlencode(finance_query), "finance_section": finance_section,
+        "ledger_history": ledger_history, "current_entry_count": current_entries.count(),
+        "expense_groups": expense_counts,
+        "expense_heading": {'PENDING': 'Contas a pagar', 'PAID': 'Contas pagas', 'CANCELED': 'Contas excluídas e canceladas'}.get(expense_status, 'Todas as contas ativas'),
     }
 
 

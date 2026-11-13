@@ -7,12 +7,14 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_http_methods
 from django.views.decorators.cache import never_cache
 from uuid import UUID
+from urllib.parse import urlencode
 from django.http import Http404
+from django.urls import reverse
 
 from apps.core.permissions import management_required, accessible_events, can_manage_event
 from apps.core.utils import log_audit
 from .forms import SponsorForm
-from .models import Sponsor, SponsorProfile
+from .models import Sponsor, SponsorProfile, SponsorTier
 from .sponsor_images import sponsor_upload_transaction
 from .sponsor_duplicates import require_unique_sponsor_name
 from .sponsorships import (available_profiles, brand_values, can_edit_profile, decorate_balance,
@@ -55,7 +57,6 @@ def _sponsor_hub(request, event=None):
         sponsor.can_finance = scopes[sponsor.event_id].can_finance
         sponsor.can_content = scopes[sponsor.event_id].can_content
         sponsor.can_remove = sponsor.can_content and (sponsor.can_finance or (not sponsor.agreed_amount_cents and not sponsor.payments.exists()))
-    financial_sponsors = [sponsor for sponsor in sponsors if sponsor.can_finance]
     query = request.GET.get("q", "").strip()[:150]
     status = request.GET.get("status", "")
     by_profile = {}
@@ -85,9 +86,55 @@ def _sponsor_hub(request, event=None):
             "can_edit": not legacy and can_edit_profile(request.user, brand), "participations": participations,
             "link_events": [choice for choice in events if not legacy and not brand.archived_at and choice.can_content and
                 choice.organization_id == brand.organization_id and choice.pk not in linked_events]})
+    # Group brands before pagination, so the card counts describe the complete
+    # filtered scope. A shared brand counts once in each of its visible tiers.
+    tier_labels = {key: label.removeprefix("Cota ") for key, label in SponsorTier.choices}
+    tier_keys = list(SponsorTier.values)
+    existing_tiers = Sponsor.objects.filter(event__in=[event] if event else events).values_list("tier", flat=True).distinct()
+    for existing_tier in existing_tiers:
+        if existing_tier and existing_tier not in tier_labels:
+            tier_keys.append(existing_tier)
+            tier_labels[existing_tier] = existing_tier.replace("_", " ").capitalize()
+    tier_labels.update(ALL="Todos os patrocinadores", UNLINKED="Sem vínculo nesta seleção")
+    selected_tier = request.GET.get("tier", "").upper()
+    if selected_tier and selected_tier not in tier_labels:
+        raise Http404("Categoria de patrocínio não encontrada.")
+    if not selected_tier and (query or status) and request.GET.get("view") != "categories":
+        selected_tier = "ALL"
+    base_params = {"event_id": str(event.pk) if event else "all"}
+    if query:
+        base_params["q"] = query
+    if status:
+        base_params["status"] = status
+    if archived:
+        base_params["archived"] = "1"
+    def hub_url(**changes):
+        params = {**base_params, **changes}
+        return reverse("gestao:sponsor_bank") + "?" + urlencode({key: value for key, value in params.items() if value})
+    category_counts = {key: sum(any(s.tier == key for s in card["participations"]) for card in cards) for key in tier_keys}
+    category_counts["UNLINKED"] = sum(not card["participations"] for card in cards)
+    category_order = ["OURO", "PRATA", "BRONZE"] + [key for key in tier_keys if key not in {"OURO", "PRATA", "BRONZE"}]
+    if not event:
+        category_order.append("UNLINKED")
+    categories = [{"key": key, "label": tier_labels[key], "count": category_counts[key], "url": hub_url(tier=key),
+                   "icon": "building-2" if key == "UNLINKED" else "handshake" if key == "APOIO" else "medal"}
+                  for key in category_order if key in {"OURO", "PRATA", "BRONZE"} or category_counts[key] or selected_tier == key]
+    all_count = len(cards)
+    if selected_tier == "UNLINKED":
+        cards = [card for card in cards if not card["participations"]]
+    elif selected_tier and selected_tier != "ALL":
+        cards = [{**card, "participations": [s for s in card["participations"] if s.tier == selected_tier]}
+                 for card in cards if any(s.tier == selected_tier for s in card["participations"])]
+    financial_sponsors = [s for card in cards for s in card["participations"] if s.can_finance]
     page = Paginator(cards, 24).get_page(request.GET.get("page"))
+    page_params = {**base_params, "tier": selected_tier} if selected_tier else base_params
     return render(request, "gestao/sponsors/bank.html", {"event": event, "events": events,
         "cards": page, "page_obj": page, "q": query, "status": status,'archived':archived,
+        "categories": categories, "selected_tier": selected_tier, "selected_tier_label": tier_labels.get(selected_tier, ""),
+        "show_records": bool(selected_tier), "all_count": all_count,
+        "categories_url": hub_url(view="categories"), "all_sponsors_url": hub_url(tier="ALL"),
+        "archive_toggle_url": hub_url(archived="" if archived else "1", tier=selected_tier, view="categories" if not selected_tier else ""),
+        "pagination_query": urlencode(page_params),
         "totals": sponsor_totals(financial_sponsors),
         "can_finance": any(choice.can_finance for choice in events if event is None or choice.pk == event.pk),
         "can_create": any(choice.can_content for choice in events),

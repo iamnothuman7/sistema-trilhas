@@ -1,0 +1,28 @@
+{% load trilhas_ui %}
+<nav class="management-category-grid" aria-label="Organizar financeiro">
+  <a class="management-category-card" data-category="PENDING" href="?{{ date_query }}&status=PENDING#finance-details" {% if expense_status == 'PENDING' %}aria-current="page"{% endif %}>
+    <span class="category-card-icon"><i data-lucide="clock-3" aria-hidden="true"></i></span>
+    <span class="category-card-title">Contas a pagar</span>
+    <strong class="category-card-count">{{ expense_groups.PENDING.count }}<small>conta{{ expense_groups.PENDING.count|pluralize }}</small></strong>
+    <span class="category-card-description">R$ {{ expense_groups.PENDING.total|default:0|money }}</span>
+    <span class="category-card-link">Ver contas<i data-lucide="arrow-up-right" aria-hidden="true"></i></span>
+  </a>
+  <a class="management-category-card" data-category="PAID" href="?{{ date_query }}&status=PAID#finance-details" {% if expense_status == 'PAID' %}aria-current="page"{% endif %}>
+    <span class="category-card-icon"><i data-lucide="circle-check" aria-hidden="true"></i></span>
+    <span class="category-card-title">Contas pagas</span>
+    <strong class="category-card-count">{{ expense_groups.PAID.count }}<small>conta{{ expense_groups.PAID.count|pluralize }}</small></strong>
+    <span class="category-card-description">R$ {{ expense_groups.PAID.total|default:0|money }}</span>
+    <span class="category-card-link">Ver pagamentos<i data-lucide="arrow-up-right" aria-hidden="true"></i></span>
+  </a>
+  <a class="management-category-card" data-category="LEDGER" href="?{{ date_query }}&panel=ledger#finance-details" {% if finance_section == 'ledger' %}aria-current="page"{% endif %}>
+    <span class="category-card-icon"><i data-lucide="arrow-left-right" aria-hidden="true"></i></span>
+    <span class="category-card-title">Movimentações atuais</span>
+    <strong class="category-card-count">{{ current_entry_count }}<small>registro{{ current_entry_count|pluralize }}</small></strong>
+    <span class="category-card-description">Entradas e saídas válidas</span>
+    <span class="category-card-link">Ver movimentações<i data-lucide="arrow-up-right" aria-hidden="true"></i></span>
+  </a>
+</nav>
+<nav class="management-group-tools" aria-label="Outras consultas do financeiro">
+  <a href="?{{ date_query }}&status=ALL#finance-details">Todas as contas ativas</a>
+  <a href="?{{ date_query }}&status=CANCELED#finance-details">Excluídas e canceladas <span>{{ expense_groups.CANCELED.count }}</span></a>
+</nav>

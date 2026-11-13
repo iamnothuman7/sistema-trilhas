@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -83,11 +83,14 @@ def movement_list(request, event_id):
     event = request.management_event
     archived = request.GET.get('archived') == '1'
     query = request.GET.get('q','').strip()[:150]
-    rows = ManualMovement.objects.filter(event=event, archived_at__isnull=not archived)
+    rows = ManualMovement.objects.filter(event=event)
     if query:
         rows = rows.filter(Q(description__icontains=query) | Q(reference__icontains=query))
+    counts = rows.aggregate(active_count=Count('pk', filter=Q(archived_at__isnull=True)),
+                            archived_count=Count('pk', filter=Q(archived_at__isnull=False)))
+    rows = rows.filter(archived_at__isnull=not archived)
     return render(request, 'gestao/finance/movements.html', dict(event=event, archived=archived, q=query,
-        page_obj=Paginator(rows, 20).get_page(request.GET.get('page'))))
+        **counts, page_obj=Paginator(rows, 20).get_page(request.GET.get('page'))))
 
 
 @management_required
@@ -105,7 +108,7 @@ def movement_editor(request, event_id, movement_id=None, operation='edit'):
         back = candidate_back
     else:
         back = reverse('gestao:movement_list', args=[event.pk])
-        if row and row.archived_at: back += '?archived=1'
+        if row and row.archived_at and operation != 'restore': back += '?archived=1'
     if request.method == 'POST' and form.is_valid():
         try:
             if action:
@@ -116,7 +119,10 @@ def movement_editor(request, event_id, movement_id=None, operation='edit'):
         except (ValidationError, OSError) as error:
             form.add_error(None, error if isinstance(error, ValidationError) else 'Não foi possível salvar o comprovante. Nenhuma alteração foi concluída.')
         else:
-            messages.success(request, 'Movimentação salva. O extrato e os totais foram atualizados; nenhum dinheiro foi enviado ou devolvido.')
+            message = {'remove': 'Movimentação excluída da lista ativa e dos totais. O histórico continua em Excluídas.',
+                       'restore': 'Movimentação restaurada na lista ativa. O valor voltou a compor os totais.'}.get(
+                           operation, 'Movimentação salva. O extrato e os totais foram atualizados.')
+            messages.success(request, message + ' Nenhum dinheiro foi enviado ou devolvido.')
             return redirect(back)
     note = ('Excluir retira o valor dos totais e mantém o histórico em Excluídas. Restaurar volta a contabilizar o valor original.' if action else
         'Registre valores já recebidos fora de pedidos e patrocínios. Transferências entre contas próprias não são receita nem despesa e não mudam o resultado. Saídas operacionais ficam em Despesas.')

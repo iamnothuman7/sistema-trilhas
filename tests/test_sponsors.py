@@ -72,7 +72,7 @@ class SponsorManagementTests(TestCase):
         self.assertEqual(sponsor.tier, "PRATA")
         self.assertEqual(sponsor.sort_order, 3)
         self.assertTrue(AuditLog.objects.filter(action="SPONSOR_CREATED", event_id=self.event.pk).exists())
-        listing = self.client.get(self.url())
+        listing = self.client.get(self.url(), {"tier": "ALL"})
         self.assertContains(listing, "Espaço reservado para a imagem")
         self.assertContains(listing, "https://www.instagram.com/marca.trilha/")
 

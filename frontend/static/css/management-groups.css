@@ -1,0 +1,57 @@
+/* Shared category navigation for sponsorships and finance. */
+.management-category-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.management-category-card{--category-color:#a8a29e;display:grid;grid-template-columns:1fr auto;align-content:start;gap:10px;min-width:0;padding:20px;border:1px solid color-mix(in srgb,var(--category-color) 35%,var(--border));border-top:3px solid var(--category-color);border-radius:20px;background:linear-gradient(135deg,color-mix(in srgb,var(--category-color) 12%,var(--surface-solid)),var(--surface-solid));color:var(--text);text-decoration:none;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+.management-category-card[data-category=OURO],.management-category-card[data-category=PENDING]{--category-color:#d9a63a}
+.management-category-card[data-category=PRATA]{--category-color:#a5b4c4}
+.management-category-card[data-category=BRONZE]{--category-color:#bd815a}
+.management-category-card[data-category=PAID]{--category-color:#61ab84}
+.management-category-card[data-category=LEDGER]{--category-color:#829dca}
+.management-category-card[data-category=APOIO]{--category-color:#9597c1}
+.management-category-card:hover{transform:translateY(-2px);border-color:var(--category-color)}
+.management-category-card:focus-visible{outline:3px solid var(--primary);outline-offset:4px}
+.management-category-card[aria-current=page]{box-shadow:0 0 0 2px var(--category-color)}
+.category-card-icon{grid-column:2;grid-row:1/3;display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:color-mix(in srgb,var(--category-color) 17%,transparent);color:color-mix(in srgb,var(--category-color) 70%,var(--text))}
+.category-card-icon .lucide{width:21px;height:21px}
+.category-card-title{grid-column:1;grid-row:1;align-self:center;font-size:15px;font-weight:650;line-height:1.4;overflow-wrap:anywhere}
+.category-card-count{grid-column:1;grid-row:2;font-size:32px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums;min-width:0;overflow-wrap:anywhere}
+.category-card-count small{display:inline-block;font-size:12px;font-weight:400;color:var(--text-muted);margin-left:7px}
+.category-card-description{grid-column:1/-1;font-size:13px;color:var(--text-muted);line-height:1.5;overflow-wrap:anywhere}
+.category-card-link{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px solid color-mix(in srgb,var(--category-color) 24%,var(--border));font-size:12px;font-weight:600}
+.category-card-link .lucide{width:17px;height:17px}
+.management-group-tools{display:flex;flex-wrap:wrap;gap:8px 20px;color:var(--text-muted);font-size:12px}
+.management-group-tools a,.management-group-back{display:inline-flex;align-items:center;gap:8px;min-height:44px;color:inherit;text-underline-offset:4px}
+.management-group-tools span{padding:2px 6px;background:var(--surface);border-radius:6px;font-variant-numeric:tabular-nums}
+.management-group-back{font-size:13px;color:var(--text-muted);margin-bottom:12px;text-decoration:none}
+.management-group-back .lucide{width:16px;height:16px}
+.management-group-detail{min-width:0;scroll-margin-top:80px}
+.management-group-detail>.card{margin:0}
+.management-group-detail .compact-record-top{min-width:0}
+.finance-balance-bar{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 24px;border:1px solid var(--border);border-radius:18px;background:var(--surface)}
+.finance-balance-main{display:grid;gap:6px;min-width:0}
+.finance-balance-main>span{font-size:12px;color:var(--text-muted)}
+.finance-balance-main>strong{font-size:clamp(22px,2.5vw,30px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.finance-balance-bar dl{display:flex;gap:32px;margin:0}
+.finance-balance-bar dt{font-size:12px;color:var(--text-muted);margin-bottom:6px}
+.finance-balance-bar dd{font-size:15px;font-weight:600;margin:0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+@media(max-width:767px){
+ .management-category-grid{grid-template-columns:1fr;gap:10px}
+ .management-category-card{grid-template-columns:40px minmax(0,1fr) auto;gap:4px 12px;padding:14px;border-radius:16px;border-top-width:1px;border-left:3px solid var(--category-color)}
+ .category-card-icon{grid-column:1;grid-row:1/4;width:40px;height:40px;align-self:center;border-radius:12px}
+ .category-card-title{grid-column:2;grid-row:1;font-size:14px}
+ .category-card-count{grid-column:3;grid-row:1/3;align-self:center;max-width:110px;font-size:25px;text-align:right}
+ .category-card-count small{display:block;margin:2px 0 0;font-size:11px}
+ .category-card-description{grid-column:2;grid-row:2;font-size:12px}
+ .category-card-link{grid-column:2/4;grid-row:3;padding-top:5px;border:0;font-size:11px;color:var(--text-muted)}
+ .category-card-link .lucide{width:15px;height:15px}
+ .management-group-tools{gap:0 14px;font-size:12px}
+ .finance-balance-bar{padding:14px;display:grid;gap:14px;border-radius:16px}
+ .finance-balance-bar dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+ .finance-balance-bar dl>div{min-width:0}
+ .finance-balance-bar dd{font-size:14px}
+ .finance-balance-main>strong{font-size:26px}
+ .management-group-detail .stock-heading{flex-wrap:wrap;gap:10px}
+ .management-group-detail .stock-heading>.compact-record-name{flex:1 1 100%}
+ .management-group-detail .stock-heading>div:last-child{max-width:100%;flex-wrap:wrap}
+ .management-group-detail .stock-heading .compact-amount{white-space:normal;overflow-wrap:anywhere}
+}
+@media(prefers-reduced-motion:reduce){.management-category-card{transition:none}.management-category-card:hover{transform:none}}

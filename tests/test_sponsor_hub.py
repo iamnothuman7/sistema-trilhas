@@ -16,7 +16,7 @@ class SponsorHubTests(TestCase):
 
     def test_one_brand_card_collects_all_visible_events_and_one_menu_entry(self):
         Sponsor.objects.create(event=self.other, profile=self.profile, agreed_amount_cents=50000, **brand_values(self.profile))
-        response = self.client.get(self.url())
+        response = self.client.get(self.url(), {"tier": "ALL"})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context["cards"]), 1)
         self.assertEqual(len(response.context["cards"][0]["participations"]), 2)
@@ -27,7 +27,7 @@ class SponsorHubTests(TestCase):
 
     def test_event_filter_and_old_event_url_use_same_hub(self):
         profile = SponsorProfile.objects.create(organization=self.org, name="Sem evento ainda")
-        all_events = self.client.get(self.url())
+        all_events = self.client.get(self.url(), {"tier": "ALL"})
         self.assertContains(all_events, profile.name)
         for url, params in [(self.url(), {"event_id": str(self.event.pk)}),
                             (reverse("gestao:sponsor_list", args=[self.event.pk]), {})]:

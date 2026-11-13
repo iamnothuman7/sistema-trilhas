@@ -162,7 +162,7 @@ class FinanceCrudTests(TestCase):
 
     def test_finance_links_to_source_and_create_error_has_canonical_htmx_location(self):
         row=self.new();expense=self.create()
-        page=self.client.get(reverse('gestao:finance',args=[self.event.pk]))
+        page=self.client.get(reverse('gestao:finance',args=[self.event.pk]), {'panel': 'ledger'})
         self.assertContains(page,reverse('gestao:movement_edit',args=[self.event.pk,row.pk]))
         self.assertContains(page,reverse('gestao:expense_remove',args=[self.event.pk,expense.pk]))
         failed=self.client.post(reverse('gestao:add_expense',args=[self.event.pk]),self.expense_payload(amount='inválido'))

@@ -9,7 +9,7 @@
 <div class="page-heading">
     <div>
         <h1>Financeiro da edição</h1>
-        <p>Recebimentos, compromissos e resultado de {{ event.title }}.</p>
+        <p>Organize pagamentos e acompanhe o caixa do evento.</p>
     </div>
     <div class="page-actions">
         <a href="{% url 'gestao:export_financial' event_id=event.id %}?{{ filter_query }}" class="btn btn-secondary"><i data-lucide="download" aria-hidden="true"></i> Exportar extrato</a>
@@ -17,86 +17,52 @@
     </div>
 </div>
 
-<!-- Contagem Real do Financeiro (Hero Cards) -->
-<section class="mg-finance-hero-summary" aria-label="Contagem real do financeiro">
-    <div class="stat-grid stat-grid-financial-hero">
-        <!-- Quanto Tem -->
-        <article class="stat-card stat-card-hero stat-card-balance">
-            <div class="stat-card-header">
-                <span class="stat-label">Saldo em Caixa (Quanto Tem)</span>
-                <span class="stat-icon stat-icon-wallet"><i data-lucide="wallet" aria-hidden="true"></i></span>
-            </div>
-            <div class="stat-value {% if finance.net_cents < 0 %}text-danger{% else %}text-success{% endif %}">
-                R$ {{ finance.net_formatted|default:'0,00' }}
-            </div>
-            <p class="stat-foot">Disponível em caixa (Entradas - Saídas pagas)</p>
-        </article>
-
-        <!-- Quanto Entrou -->
-        <article class="stat-card stat-card-hero stat-card-income">
-            <div class="stat-card-header">
-                <span class="stat-label">Quanto Entrou (Receitas)</span>
-                <span class="stat-icon stat-icon-income"><i data-lucide="trending-up" aria-hidden="true"></i></span>
-            </div>
-            <div class="stat-value text-success">
-                R$ {{ finance.revenue_formatted|default:'0,00' }}
-            </div>
-            <p class="stat-foot">Inscrições, patrocínios recebidos e entradas avulsas</p>
-        </article>
-
-        <!-- Quanto Saiu -->
-        <article class="stat-card stat-card-hero stat-card-outflow">
-            <div class="stat-card-header">
-                <span class="stat-label">Quanto Saiu (Despesas)</span>
-                <span class="stat-icon stat-icon-outflow"><i data-lucide="trending-down" aria-hidden="true"></i></span>
-            </div>
-            <div class="stat-value text-warning">
-                R$ {{ finance.total_outflow_formatted|default:'0,00' }}
-            </div>
-            <p class="stat-foot">Despesas pagas (R$ {{ finance.paid_expenses_formatted|default:'0,00' }}), estornos e tarifas</p>
-        </article>
-    </div>
+<section class="finance-balance-bar" aria-label="Resumo do caixa">
+  <div class="finance-balance-main"><span>Saldo em caixa</span><strong data-finance-net class="{% if finance.net_cents < 0 %}text-danger{% else %}text-success{% endif %}">R$ {{ finance.net_formatted|default:'0,00' }}</strong></div>
+  <dl><div><dt>Entradas</dt><dd>R$ {{ finance.revenue_formatted|default:'0,00' }}</dd></div><div><dt>Saídas</dt><dd>R$ {{ finance.total_outflow_formatted|default:'0,00' }}</dd></div></dl>
 </section>
-
 {% include 'gestao/finance/_navigation.html' %}
-
-<details class="card compact-details mg-element-gap" {% if date_form.errors or date_query %}open{% endif %}><summary>Filtrar período</summary>
-    <form method="get" class="mg-finance-filters">
-        <div class="form-group"><label class="form-label" for="{{ date_form.date_start.id_for_label }}">Data inicial</label>{{ date_form.date_start }}{% if date_form.date_start.errors %}<div class="mg-field-errors">{{ date_form.date_start.errors }}</div>{% endif %}</div>
-        <div class="form-group"><label class="form-label" for="{{ date_form.date_end.id_for_label }}">Data final</label>{{ date_form.date_end }}{% if date_form.date_end.errors %}<div class="mg-field-errors">{{ date_form.date_end.errors }}</div>{% endif %}</div>
-        <button type="submit" class="btn btn-primary"><i data-lucide="list-filter" aria-hidden="true"></i> Aplicar período</button>
-        <a href="{% url 'gestao:finance' event_id=event.id %}" class="btn btn-secondary" data-workspace-reset>Limpar</a>
-    </form>
-    {% if date_form.non_field_errors %}<div class="mg-field-errors" role="alert">{{ date_form.non_field_errors }}</div>{% endif %}
+<details class="card compact-details" {% if date_form.errors or date_query %}open{% endif %}><summary>Filtrar período{% if date_query %} · filtro aplicado{% endif %}</summary>
+  <form method="get" class="mg-finance-filters">
+    {% if expense_status %}<input type="hidden" name="status" value="{{ expense_status }}">{% elif finance_section == 'ledger' %}<input type="hidden" name="panel" value="ledger">{% if ledger_history %}<input type="hidden" name="ledger_mode" value="history">{% endif %}{% endif %}
+    <div class="form-group"><label class="form-label" for="{{ date_form.date_start.id_for_label }}">Data inicial</label>{{ date_form.date_start }}{% if date_form.date_start.errors %}<div class="mg-field-errors">{{ date_form.date_start.errors }}</div>{% endif %}</div>
+    <div class="form-group"><label class="form-label" for="{{ date_form.date_end.id_for_label }}">Data final</label>{{ date_form.date_end }}{% if date_form.date_end.errors %}<div class="mg-field-errors">{{ date_form.date_end.errors }}</div>{% endif %}</div>
+    <button type="submit" class="btn btn-primary">Aplicar período</button><a href="{% url 'gestao:finance' event.id %}" class="btn btn-secondary" data-workspace-reset>Limpar</a>
+  </form>{% if date_form.non_field_errors %}<div class="mg-field-errors" role="alert">{{ date_form.non_field_errors }}</div>{% endif %}
 </details>
-
+{% include 'gestao/finance/_group_cards.html' %}
 {% if status_form.errors %}<div class="mg-form-errors" role="alert"><strong>A situação não foi alterada.</strong>{{ status_form.errors }} Confira o registro atualizado antes de tentar novamente.</div>{% endif %}
-
-{% include 'gestao/finance/_compact_expenses.html' %}
-
-<details class="card compact-details mg-section-gap"><summary>Detalhamento de compromissos e recebimentos</summary>
-<div class="stat-grid mg-finance-stats mg-section-gap">
-    <article class="stat-card"><div class="stat-label"><i data-lucide="arrow-down-left" aria-hidden="true"></i> Recebimentos totais</div><div class="stat-value">R$ {{ finance.revenue_formatted }}</div><p class="stat-foot">Pagamentos confirmados no período</p></article>
-    <article class="stat-card"><div class="stat-label"><i data-lucide="clock-3" aria-hidden="true"></i> Despesas pendentes</div><div class="stat-value">R$ {{ finance.pending_expenses_formatted }}</div><p class="stat-foot">Compromissos a pagar</p></article>
-    <article class="stat-card"><div class="stat-label"><i data-lucide="handshake" aria-hidden="true"></i> Patrocínios a receber</div><div class="stat-value">R$ {{ finance.sponsor_outstanding_formatted|default:'0,00' }}</div><p class="stat-foot">Saldos pendentes de marcas</p></article>
-    <article class="stat-card"><div class="stat-label"><i data-lucide="undo-2" aria-hidden="true"></i> Estornos</div><div class="stat-value">R$ {{ finance.refunds_formatted }}</div><p class="stat-foot">Devolvidos aos participantes</p></article>
-    <article class="stat-card"><div class="stat-label"><i data-lucide="percent" aria-hidden="true"></i> Tarifas</div><div class="stat-value">R$ {{ finance.fees_formatted }}</div><p class="stat-foot">Processamento de pagamentos</p></article>
-    <article class="stat-card"><div class="stat-label"><i data-lucide="receipt" aria-hidden="true"></i> Despesas pagas</div><div class="stat-value">R$ {{ finance.paid_expenses_formatted }}</div><p class="stat-foot">Saídas quitadas</p></article>
+{% if finance_section != 'overview' %}
+<div id="finance-details" class="management-group-detail">
+  <a class="management-group-back" href="?{{ date_query }}"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar ao resumo</a>
+  {% if finance_section == 'expenses' %}
+    {% include 'gestao/finance/_compact_expenses.html' %}
+  {% else %}
+  <section class="card compact-panel" aria-labelledby="ledger-title">
+    <div class="card-header"><div><h2 id="ledger-title" class="section-title">{% if ledger_history %}Histórico completo{% else %}Movimentações atuais{% endif %}</h2><p class="mg-section-description">{% if ledger_history %}Inclui exclusões, correções e os ajustes correspondentes.{% else %}Lançamentos válidos. Exclusões e versões anteriores ficam no histórico.{% endif %}</p></div></div>
+    <nav class="compact-tabs" aria-label="Consulta de movimentações"><a href="?{{ date_query }}&panel=ledger#finance-details" {% if not ledger_history %}aria-current="page"{% endif %}>Atuais</a><a href="?{{ date_query }}&panel=ledger&ledger_mode=history#finance-details" {% if ledger_history %}aria-current="page"{% endif %}>Histórico completo</a></nav>
+    {% include 'gestao/finance/_ledger.html' %}
+    {% if entries_page.paginator.num_pages > 1 %}<nav class="mg-pagination" aria-label="Páginas do extrato"><span>{{ entries_page.number }} / {{ entries_page.paginator.num_pages }}</span><div class="page-actions">{% if entries_page.has_previous %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.previous_page_number }}#finance-details">Anterior</a>{% endif %}{% if entries_page.has_next %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.next_page_number }}#finance-details">Próxima</a>{% endif %}</div></nav>{% endif %}
+    <p class="form-help">O saldo e a exportação do extrato consideram o histórico completo.</p>
+  </section>
+  {% endif %}
 </div>
-
-{% include "gestao/sponsors/_finance_summary.html" %}
-
-{% if finance.expense_reconciliation_delta_cents %}<div class="mg-form-errors" role="status"><strong>Conciliação pendente</strong>Há despesas que precisam de conciliação. O resultado de caixa considera as movimentações registradas no extrato.</div>{% endif %}
-
-{% include 'gestao/finance/_addon_orders.html' %}
-{% include 'gestao/finance/_refund_channels.html' %}
+{% endif %}
+<details class="card compact-details"><summary>Mais detalhes e relatórios</summary>
+  <div class="stat-grid mg-finance-stats mg-section-gap">
+    <article class="stat-card"><div class="stat-label">Recebimentos totais</div><div class="stat-value">R$ {{ finance.revenue_formatted }}</div></article>
+    <article class="stat-card"><div class="stat-label">Despesas pendentes</div><div class="stat-value">R$ {{ finance.pending_expenses_formatted }}</div></article>
+    <article class="stat-card"><div class="stat-label">Patrocínios a receber</div><div class="stat-value">R$ {{ finance.sponsor_outstanding_formatted|default:'0,00' }}</div></article>
+    <article class="stat-card"><div class="stat-label">Estornos</div><div class="stat-value">R$ {{ finance.refunds_formatted }}</div></article>
+    <article class="stat-card"><div class="stat-label">Tarifas</div><div class="stat-value">R$ {{ finance.fees_formatted }}</div></article>
+    <article class="stat-card"><div class="stat-label">Despesas pagas</div><div class="stat-value">R$ {{ finance.paid_expenses_formatted }}</div></article>
+  </div>
+  {% include 'gestao/sponsors/_finance_summary.html' %}
+  {% if finance.expense_reconciliation_delta_cents %}<div class="mg-form-errors" role="status"><strong>Conciliação pendente.</strong> O resultado de caixa considera as movimentações registradas no extrato.</div>{% endif %}
+  {% include 'gestao/finance/_addon_orders.html' %}
+  {% include 'gestao/finance/_refund_channels.html' %}
+  <a class="btn btn-secondary" href="{% url 'gestao:reports' event.id %}"><i data-lucide="chart-no-axes-column" aria-hidden="true"></i>Abrir relatórios</a>
 </details>
-
-<section class="card" aria-labelledby="ledger-title">
-    <div class="card-header"><div><h2 id="ledger-title" class="section-title">Extrato de movimentações</h2><p class="mg-section-description">Entradas, taxas e saídas reconhecidas no caixa da edição.</p></div></div>
-{% include 'gestao/finance/_ledger.html' %}
-    {% if entries_page.paginator.num_pages > 1 %}<nav class="mg-pagination" aria-label="Páginas do extrato"><span>Página {{ entries_page.number }} de {{ entries_page.paginator.num_pages }}</span><div class="page-actions">{% if entries_page.has_previous %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.previous_page_number }}&expenses_page={{ expenses_page.number }}">Anterior</a>{% endif %}{% if entries_page.has_next %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.next_page_number }}&expenses_page={{ expenses_page.number }}">Próxima</a>{% endif %}</div></nav>{% endif %}
-</section>
 
 <!-- Modal Unificado: Registrar Movimentação (Despesa ou Receita) -->
 <dialog id="movementModal" class="mg-dialog" aria-labelledby="movement-dialog-title">
@@ -185,29 +151,7 @@
     </div>
 </dialog>
 
-{% for exp in expenses %}{% if exp.status == 'PENDING' %}
-<dialog id="cancelExpense{{ exp.id }}" class="mg-dialog" aria-labelledby="cancel-title-{{ exp.id }}">
-    <div class="card mg-dialog-card">
-        <div class="card-header">
-            <h2 class="section-title" id="cancel-title-{{ exp.id }}">Cancelar despesa</h2>
-            <button type="button" class="btn btn-secondary btn-sm" aria-label="Fechar cancelamento" onclick="document.getElementById('cancelExpense{{ exp.id }}').close()"><i data-lucide="x" aria-hidden="true"></i></button>
-        </div>
-        <p class="mg-space-bottom">{{ exp.description }} · <strong>R$ {{ exp.amount_cents|money }}</strong></p>
-        <form method="post" action="{% url 'gestao:cancel_expense' event_id=event.id expense_id=exp.id %}">
-            {% csrf_token %}
-            <div class="form-group">
-                <label class="form-label" for="cancel-reason-{{ exp.id }}">Motivo do cancelamento</label>
-                <textarea id="cancel-reason-{{ exp.id }}" name="reason" class="form-control" rows="3" maxlength="500" required placeholder="Informe por que a despesa será cancelada."></textarea>
-                <p class="form-help">A justificativa será registrada no histórico de auditoria.</p>
-            </div>
-            <div class="mg-form-actions">
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('cancelExpense{{ exp.id }}').close()">Voltar</button>
-                <button type="submit" class="btn btn-danger">Cancelar despesa</button>
-            </div>
-        </form>
-    </div>
-</dialog>
-{% endif %}{% endfor %}
+
 {% endtimezone %}
 {% endblock %}
 

@@ -5,6 +5,7 @@
     <div class="compact-record-name">
       <strong>{{ entry.description }}</strong>
       <small>{{ entry.recognized_at|date:'d/m/Y H:i' }} · {{ entry.get_kind_display }}</small>
+      {% if ledger_history %}<span class="badge {% if entry.ledger_history_only %}badge-warning{% else %}badge-info{% endif %}">{{ entry.ledger_status_label }}</span>{% endif %}
     </div>
     <div style="display: flex; align-items: center; gap: 12px; margin-left: auto;">
       <strong class="compact-amount {% if entry.amount_cents_signed >= 0 %}text-success{% else %}mg-text-danger{% endif %}">{{ entry.formatted_amount }}</strong>

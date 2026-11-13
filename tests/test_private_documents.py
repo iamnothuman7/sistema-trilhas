@@ -119,7 +119,7 @@ class PrivateDocumentTests(TestCase):
             self.assertNotIn("/media/", rendered)
             self.assertIn(self.url(document), handler.private_document_link(document))
         self.client.force_login(self.user)
-        response = self.client.get(reverse("gestao:finance", kwargs={"event_id": self.event.pk}))
+        response = self.client.get(reverse("gestao:finance", kwargs={"event_id": self.event.pk}), {"status": "ALL"})
         self.assertContains(response, self.url())
 
     def test_private_storage_refuses_public_root_and_path_traversal(self):
