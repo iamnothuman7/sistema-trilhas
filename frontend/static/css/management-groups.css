@@ -10,6 +10,21 @@
 .management-category-card:hover{transform:translateY(-2px);border-color:var(--category-color)}
 .management-category-card:focus-visible{outline:3px solid var(--primary);outline-offset:4px}
 .management-category-card[aria-current=page]{box-shadow:0 0 0 2px var(--category-color)}
+.management-category-card[aria-expanded=true]{box-shadow:0 0 0 2px var(--category-color)}
+button.management-category-card{width:100%;text-align:left;font:inherit;cursor:pointer;appearance:none;-webkit-tap-highlight-color:transparent}
+.management-disclosure-grid{align-items:start}
+.management-disclosure-grid>.management-category-card{order:0;height:100%}
+.management-disclosure-grid>.management-category-panel{order:2;grid-column:1/-1;min-width:0}
+.management-disclosure-grid>.management-group-tools{order:3;grid-column:1/-1}
+.management-category-panel[hidden]{display:none!important}
+.management-category-panel>.card{margin:0}
+.management-category-panel{scroll-margin-top:80px}
+.management-category-panel .page-heading{gap:12px}
+.management-group-tools button,.management-category-panel [data-group-close]{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0;border:0;background:none;color:var(--text-muted);font:inherit;font-size:12px;cursor:pointer;text-align:left}
+.management-group-tools button:focus-visible,.management-category-panel [data-group-close]:focus-visible{outline:2px solid var(--primary);outline-offset:4px;border-radius:4px}
+.management-group-tools button[aria-expanded=true]{color:var(--text);text-decoration:underline;text-underline-offset:4px}
+.management-category-panel [data-group-close] .lucide{width:16px;height:16px}
+.management-category-card[aria-expanded=true] .category-card-link .lucide{transform:rotate(180deg)}
 .category-card-icon{grid-column:2;grid-row:1/3;display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:color-mix(in srgb,var(--category-color) 17%,transparent);color:color-mix(in srgb,var(--category-color) 70%,var(--text))}
 .category-card-icon .lucide{width:21px;height:21px}
 .category-card-title{grid-column:1;grid-row:1;align-self:center;font-size:15px;font-weight:650;line-height:1.4;overflow-wrap:anywhere}
@@ -20,7 +35,7 @@
 .category-card-link .lucide{width:17px;height:17px}
 .management-group-tools{display:flex;flex-wrap:wrap;gap:8px 20px;color:var(--text-muted);font-size:12px}
 .management-group-tools a,.management-group-back{display:inline-flex;align-items:center;gap:8px;min-height:44px;color:inherit;text-underline-offset:4px}
-.management-group-tools span{padding:2px 6px;background:var(--surface);border-radius:6px;font-variant-numeric:tabular-nums}
+.management-group-tools span:not([data-group-label]){padding:2px 6px;background:var(--surface);border-radius:6px;font-variant-numeric:tabular-nums}
 .management-group-back{font-size:13px;color:var(--text-muted);margin-bottom:12px;text-decoration:none}
 .management-group-back .lucide{width:16px;height:16px}
 .management-group-detail{min-width:0;scroll-margin-top:80px}
@@ -34,6 +49,11 @@
 .finance-balance-bar dt{font-size:12px;color:var(--text-muted);margin-bottom:6px}
 .finance-balance-bar dd{font-size:15px;font-weight:600;margin:0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 @media(max-width:767px){
+ .management-disclosure-grid>.management-category-card,.management-disclosure-grid>.management-category-panel,.management-disclosure-grid>.management-group-tools{order:initial}
+ .management-disclosure-grid>.management-category-card{height:auto}
+ .management-category-panel .page-heading h2{font-size:17px}
+ .management-category-panel .page-heading p{font-size:12px}
+ .management-category-panel .compact-record{padding-left:0;padding-right:0}
  .management-category-grid{grid-template-columns:1fr;gap:10px}
  .management-category-card{grid-template-columns:40px minmax(0,1fr) auto;gap:4px 12px;padding:14px;border-radius:16px;border-top-width:1px;border-left:3px solid var(--category-color)}
  .category-card-icon{grid-column:1;grid-row:1/4;width:40px;height:40px;align-self:center;border-radius:12px}

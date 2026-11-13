@@ -114,23 +114,34 @@ def _sponsor_hub(request, event=None):
     category_counts = {key: sum(any(s.tier == key for s in card["participations"]) for card in cards) for key in tier_keys}
     category_counts["UNLINKED"] = sum(not card["participations"] for card in cards)
     category_order = ["OURO", "PRATA", "BRONZE"] + [key for key in tier_keys if key not in {"OURO", "PRATA", "BRONZE"}]
-    if not event:
+    if not event or selected_tier == "UNLINKED":
         category_order.append("UNLINKED")
     categories = [{"key": key, "label": tier_labels[key], "count": category_counts[key], "url": hub_url(tier=key),
                    "icon": "building-2" if key == "UNLINKED" else "handshake" if key == "APOIO" else "medal"}
                   for key in category_order if key in {"OURO", "PRATA", "BRONZE"} or category_counts[key] or selected_tier == key]
     all_count = len(cards)
-    if selected_tier == "UNLINKED":
-        cards = [card for card in cards if not card["participations"]]
-    elif selected_tier and selected_tier != "ALL":
-        cards = [{**card, "participations": [s for s in card["participations"] if s.tier == selected_tier]}
-                 for card in cards if any(s.tier == selected_tier for s in card["participations"])]
     financial_sponsors = [s for card in cards for s in card["participations"] if s.can_finance]
-    page = Paginator(cards, 24).get_page(request.GET.get("page"))
+    def category_cards(key):
+        if key == "UNLINKED":
+            return [card for card in cards if not card["participations"]]
+        if key == "ALL":
+            return cards
+        return [{**card, "participations": [s for s in card["participations"] if s.tier == key]}
+                for card in cards if any(s.tier == key for s in card["participations"])]
+    # The first page of every group travels with the overview. Opening a card
+    # therefore only reveals existing HTML; pagination still fetches fresh data.
+    all_category = {"key": "ALL", "label": tier_labels["ALL"], "count": all_count}
+    for category in [*categories, all_category]:
+        category["page_obj"] = Paginator(category_cards(category["key"]), 24).get_page(
+            request.GET.get("page") if selected_tier == category["key"] else 1)
+        category["pagination_query"] = urlencode({**base_params, "tier": category["key"]})
+        category["expanded"] = selected_tier == category["key"]
+    selected_cards = category_cards(selected_tier or "ALL")
+    page = Paginator(selected_cards, 24).get_page(request.GET.get("page"))
     page_params = {**base_params, "tier": selected_tier} if selected_tier else base_params
     return render(request, "gestao/sponsors/bank.html", {"event": event, "events": events,
         "cards": page, "page_obj": page, "q": query, "status": status,'archived':archived,
-        "categories": categories, "selected_tier": selected_tier, "selected_tier_label": tier_labels.get(selected_tier, ""),
+        "categories": categories, "all_category": all_category, "selected_tier": selected_tier, "selected_tier_label": tier_labels.get(selected_tier, ""),
         "show_records": bool(selected_tier), "all_count": all_count,
         "categories_url": hub_url(view="categories"), "all_sponsors_url": hub_url(tier="ALL"),
         "archive_toggle_url": hub_url(archived="" if archived else "1", tier=selected_tier, view="categories" if not selected_tier else ""),
@@ -139,7 +150,7 @@ def _sponsor_hub(request, event=None):
         "can_finance": any(choice.can_finance for choice in events if event is None or choice.pk == event.pk),
         "can_create": any(choice.can_content for choice in events),
         "can_content": event is not None and can_manage_event(request.user, event, "content"),
-        "total_count": len(cards)})
+        "total_count": len(selected_cards)})
 
 
 def _sponsor_form(request, sponsor):

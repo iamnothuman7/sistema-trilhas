@@ -51,7 +51,8 @@ def expense_status(request, event_id, expense_id):
     focus_page = Paginator([expense], 1).get_page(1)
     context.update(status_form=form,status_expense=expense,management_workspace_url=target,
                    finance_section='expenses',expenses=[expense],expenses_page=focus_page,
-                   expense_heading='Conferir situação da conta')
+                   expense_heading='Conferir situação da conta',
+                   finance_error_expenses=[expense],finance_error_page=focus_page)
     response=render(request,'gestao/finance/overview.html',context,status=400)
     response['HX-Replace-Url']=target
     return response

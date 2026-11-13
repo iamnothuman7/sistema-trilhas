@@ -24,15 +24,9 @@
 </nav>
 {% endif %}
 
-{% if show_records %}<div class="record-actions">
-  <a class="btn btn-secondary btn-sm" href="{{ archive_toggle_url }}">
-    {% if archived %}Ver ativos{% else %}Ver excluídos{% endif %}
-  </a>
-</div>{% endif %}
-
 <details class="card compact-details sponsor-filter" {% if q or status %}open{% endif %}>
   <summary>Buscar e filtrar patrocinadores</summary>
-  <form method="get" action="{% url 'gestao:sponsor_bank' %}" class="sp-filters sp-hub-filters compact-detail-body" role="search">
+  <form method="get" action="{% url 'gestao:sponsor_bank' %}" class="sp-filters sp-hub-filters compact-detail-body" role="search" data-group-filter="sponsors">
     <input type="hidden" name="archived" value="{% if archived %}1{% else %}0{% endif %}">
     <input type="hidden" name="event_id" value="{{ event.id|default:'all' }}">
     <input type="hidden" name="tier" value="{{ selected_tier|default:'ALL' }}">
@@ -60,139 +54,31 @@
   </form>
 </details>
 
-{% if not show_records %}
-<section class="management-category-grid" aria-label="Categorias de patrocinadores">
+<section class="management-category-grid management-disclosure-grid" data-instant-groups="sponsors" data-group-scope="{{ event.id|default:'all' }}:{% if archived %}archived{% else %}active{% endif %}:{{ q|urlencode }}:{{ status|urlencode }}" data-group-selected="{{ selected_tier }}" data-group-query="tier" aria-label="Categorias de patrocinadores">
   {% for category in categories %}
-  <a class="management-category-card" data-category="{{ category.key }}" href="{{ category.url }}" aria-label="{{ category.label }}: {{ category.count }} patrocinador{{ category.count|pluralize:'es' }}. Ver patrocinadores">
+  <button type="button" class="management-category-card" data-category="{{ category.key }}" data-group-toggle="{{ category.key }}" aria-expanded="{{ category.expanded|yesno:'true,false' }}" aria-controls="sponsor-panel-{{ category.key }}">
     <span class="category-card-icon"><i data-lucide="{{ category.icon }}" aria-hidden="true"></i></span>
     <span class="category-card-title">{{ category.label }}</span>
     <strong class="category-card-count">{{ category.count }}</strong>
     <span class="category-card-description">patrocinador{{ category.count|pluralize:'es' }}{% if archived %} excluído{{ category.count|pluralize }}{% endif %}</span>
-    <span class="category-card-link">Ver patrocinadores<i data-lucide="arrow-up-right" aria-hidden="true"></i></span>
-  </a>
+    <span class="category-card-link"><span data-group-label data-group-collapsed-label="Ver patrocinadores">{% if category.expanded %}Recolher{% else %}Ver patrocinadores{% endif %}</span><i data-lucide="chevron-down" aria-hidden="true"></i></span>
+  </button>
+  <div id="sponsor-panel-{{ category.key }}" data-group-panel="{{ category.key }}" class="management-category-panel" {% if not category.expanded %}hidden{% endif %}>
+    {% include 'gestao/sponsors/_records.html' with cards=category.page_obj page_obj=category.page_obj pagination_query=category.pagination_query %}
+  </div>
   {% endfor %}
-</section>
-<div class="management-group-tools">
-  <a href="{{ all_sponsors_url }}">Ver todos · {{ all_count }}</a>
-  <a href="{{ archive_toggle_url }}">{% if archived %}Ver ativos{% else %}Ver excluídos{% endif %}</a>
-</div>
-{% else %}
-<div class="page-heading"><div><h2>{{ selected_tier_label }}{% if archived %} · Excluídos{% endif %}</h2><p>{{ total_count }} patrocinador{{ total_count|pluralize:"es" }}</p></div><a class="btn btn-secondary" href="{{ categories_url }}"><i data-lucide="arrow-left" aria-hidden="true"></i>Categorias</a></div>
-
-<section class="card compact-panel">
-  <div class="compact-records">
-  {% for card in cards %}{% with brand=card.brand %}
-    <article class="compact-record sponsor-compact-record">
-      <div class="sponsor-compact-heading">
-        {% if brand.logo_image %}
-          <img class="sponsor-compact-logo" src="{{ brand.display_logo_url }}" alt="" loading="lazy">
-        {% else %}
-          <span class="sponsor-compact-logo" role="img" aria-label="Espaço reservado para a imagem" title="Espaço reservado para a imagem"><i data-lucide="building-2" aria-hidden="true"></i></span>
-        {% endif %}
-        <div class="compact-record-name">
-          <strong>{{ brand.name }}</strong>
-          <small>{{ card.profile.contact_name|default:'Marca cadastrada' }}</small>
-        </div>
-
-        <div class="record-actions" aria-label="Ações da marca {{ brand.name }}">
-          {% if card.can_edit %}
-            <a class="btn-icon-action record-action" href="{% url 'gestao:sponsor_profile_edit' brand.id %}" aria-label="Editar cadastro e logo de {{ brand.name }}" title="Editar cadastro e logo de {{ brand.name }}"><i data-lucide="pencil" aria-hidden="true"></i></a>
-          {% endif %}
-          {% if card.can_remove %}
-            {% if brand.archived_at %}
-              <a class="btn-icon-action record-action" href="{% url 'gestao:sponsor_profile_restore' brand.id %}" aria-label="Restaurar marca" title="Restaurar marca"><i data-lucide="rotate-ccw" aria-hidden="true"></i></a>
-            {% else %}
-              <a class="btn-icon-action btn-icon-danger record-action" href="{% url 'gestao:sponsor_profile_remove' brand.id %}" aria-label="Excluir marca" title="Excluir marca"><i data-lucide="trash-2" aria-hidden="true"></i></a>
-            {% endif %}
-          {% endif %}
-        </div>
-      </div>
-
-      {% for sponsor in card.participations %}
-        <div class="sponsor-compact-participation">
-          <div class="sponsor-compact-balance">
-            {% if not event %}<small>{{ sponsor.event.title }}</small>{% endif %}
-            <span class="badge badge-info">{% if sponsor.can_finance %}{{ sponsor.payment_label }}{% elif sponsor.is_public %}Exibição autorizada{% else %}Oculto no site{% endif %}</span>
-            {% if sponsor.can_finance and sponsor.agreed_amount_cents != None %}
-              <strong>R$ {{ sponsor.agreed_amount_cents|money }}</strong>
-            {% endif %}
-          </div>
-          <div class="record-actions" aria-label="Ações de patrocínio">
-            {% if sponsor.can_finance and sponsor.agreed_amount_cents == None and not sponsor.archived_at %}
-              <a class="btn-icon-action record-action" href="{% url 'gestao:sponsor_agreement' sponsor.event_id sponsor.id %}" aria-label="Definir valor" title="Definir valor"><i data-lucide="wallet" aria-hidden="true"></i></a>
-            {% else %}
-              <a class="btn-icon-action record-action" href="{% url 'gestao:sponsor_detail' sponsor.event_id sponsor.id %}" aria-label="{% if sponsor.can_finance %}Valores e baixas{% else %}Ver participação{% endif %}" title="{% if sponsor.can_finance %}Valores e baixas{% else %}Ver participação{% endif %}"><i data-lucide="eye" aria-hidden="true"></i></a>
-            {% endif %}
-            {% if sponsor.archived_at %}
-              {% if sponsor.can_remove and not brand.archived_at %}
-                <a class="btn-icon-action record-action" href="{% url 'gestao:sponsor_restore' sponsor.event_id sponsor.id %}" aria-label="Restaurar participação" title="Restaurar participação"><i data-lucide="rotate-ccw" aria-hidden="true"></i></a>
-              {% endif %}
-            {% else %}
-              {% if sponsor.can_content and not sponsor.archived_at %}
-                <a class="btn-icon-action record-action" href="{% url 'gestao:sponsor_edit' sponsor.event_id sponsor.id %}" aria-label="Editar participação" title="Editar participação"><i data-lucide="pencil" aria-hidden="true"></i></a>
-              {% endif %}
-              {% if sponsor.can_remove %}
-                <a class="btn-icon-action btn-icon-danger record-action" href="{% url 'gestao:sponsor_remove' sponsor.event_id sponsor.id %}" aria-label="Excluir do evento" title="Excluir do evento"><i data-lucide="trash-2" aria-hidden="true"></i></a>
-              {% endif %}
-            {% endif %}
-          </div>
-        </div>
-      {% empty %}
-        <p class="form-help">Marca cadastrada. Vincule a um evento para definir o valor do patrocínio.</p>
-        {% if card.link_events %}
-          <details class="sp-event-picker">
-            <summary>Vincular a um evento</summary>
-            <div>
-              {% for choice in card.link_events %}
-                <a href="{% url 'gestao:sponsor_link' choice.id %}?profile={{ brand.id }}">{{ choice.title }}</a>
-              {% endfor %}
-            </div>
-          </details>
-        {% endif %}
-      {% endfor %}
-
-      <details class="compact-details">
-        <summary>Contato, exibição e histórico</summary>
-        <div class="compact-detail-body">
-          <p>{{ card.profile.contact_phone }} {{ card.profile.contact_email }}</p>
-          <div class="page-actions">
-            {% if brand.instagram_url %}
-              <a class="btn btn-secondary btn-sm" href="{{ brand.instagram_url }}" target="_blank" rel="noopener noreferrer">Instagram</a>
-            {% endif %}
-            {% for sponsor in card.participations %}
-              {% if sponsor.can_content and not sponsor.archived_at %}
-                <a class="btn btn-secondary btn-sm" href="{% url 'gestao:sponsor_edit' sponsor.event_id sponsor.id %}">Editar exibição{% if not event %} · {{ sponsor.event.title }}{% endif %}</a>
-              {% endif %}
-              {% if sponsor.can_finance and card.profile %}
-                <a class="btn btn-secondary btn-sm" href="{% url 'gestao:sponsor_history' sponsor.event_id card.profile.pk %}">Edições anteriores</a>
-              {% endif %}
-            {% endfor %}
-          </div>
-          {% if card.participations and card.link_events %}
-            <details class="sp-event-picker">
-              <summary>Adicionar a outro evento</summary>
-              <div>
-                {% for choice in card.link_events %}
-                  <a href="{% url 'gestao:sponsor_link' choice.id %}?profile={{ brand.id }}">{{ choice.title }}</a>
-                {% endfor %}
-              </div>
-            </details>
-          {% endif %}
-        </div>
-      </details>
-    </article>
-  {% endwith %}{% empty %}
-    <p class="empty-inline">Nenhum patrocinador encontrado. Ajuste os filtros ou cadastre um interessado.</p>
-  {% endfor %}
+  <div class="management-group-tools">
+    <button type="button" data-group-toggle="ALL" aria-expanded="{{ all_category.expanded|yesno:'true,false' }}" aria-controls="sponsor-panel-ALL"><span data-group-label data-group-collapsed-label="Ver todos · {{ all_count }}">{% if all_category.expanded %}Recolher{% else %}Ver todos · {{ all_count }}{% endif %}</span></button>
+    <a href="{{ archive_toggle_url }}">{% if archived %}Ver ativos{% else %}Ver excluídos{% endif %}</a>
+  </div>
+  <div id="sponsor-panel-ALL" data-group-panel="ALL" class="management-category-panel" {% if not all_category.expanded %}hidden{% endif %}>
+    {% include 'gestao/sponsors/_records.html' with category=all_category cards=all_category.page_obj page_obj=all_category.page_obj pagination_query=all_category.pagination_query %}
   </div>
 </section>
 
-{% include 'gestao/sponsors/_pagination.html' %}
-{% endif %}
-
 {% if can_finance and not archived %}
 <details class="card compact-details mg-section-gap">
-  <summary>Totais e exportações de patrocínios</summary>
+  <summary>Totais e exportações {% if event %}do evento{% else %}da seleção de eventos{% endif %}</summary>
   {% if can_finance %}
     <div class="stat-grid sp-summary mg-section-gap">
       <article class="stat-card">

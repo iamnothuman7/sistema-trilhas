@@ -1,5 +1,6 @@
 from datetime import timedelta
 from html import unescape
+import re
 
 from django.test import TestCase
 from django.urls import reverse
@@ -33,7 +34,14 @@ class FinanceGroupTests(TestCase):
         self.assertEqual(response.context['expense_groups'], {
             'PENDING': {'count': 1, 'total': 15000}, 'PAID': {'count': 1, 'total': 8000}, 'CANCELED': {'count': 1, 'total': 4500},
         })
-        self.assertNotContains(response, 'data-expense=')
+        self.assertEqual(response.context['finance_selected_group'], '')
+        panels = response.context['finance_primary_panels'] + response.context['finance_aux_panels']
+        self.assertTrue(all(not panel['is_open'] for panel in panels))
+        self.assertEqual({panel['key'] for panel in panels}, {'PENDING', 'PAID', 'CANCELED', 'ALL', 'LEDGER', 'HISTORY'})
+        for panel in panels:
+            self.assertContains(response, f'data-group-panel="{panel["key"]}" hidden')
+        ids = re.findall(r'\bid="([^"]+)"', response.content.decode())
+        self.assertEqual(len(ids), len(set(ids)), 'Preloaded panels must not duplicate dialog or form IDs.')
         self.assertNotContains(response, 'Conta fora do acesso')
         for status, item in [('PENDING', pending), ('PAID', paid), ('CANCELED', removed)]:
             page = self.client.get(self.url, {'status': status})
@@ -41,7 +49,9 @@ class FinanceGroupTests(TestCase):
             self.assertContains(page, f'data-expense="{item.pk}"')
         active = self.client.get(self.url, {'status': 'ALL'})
         self.assertEqual({row.pk for row in active.context['expenses']}, {pending.pk, paid.pk})
-        self.assertNotContains(active, 'Conta cancelada')
+        active_panel = next(panel for panel in active.context['finance_aux_panels'] if panel['key'] == 'ALL')
+        self.assertTrue(active_panel['is_open'])
+        self.assertNotIn(removed, active_panel['page'].object_list)
 
     def test_period_uses_payment_date_for_paid_accounts_and_due_date_for_pending(self):
         paid = self.create(description='Paga hoje com vencimento futuro', amount='75,00', due_at=(self.today + timedelta(days=20)).isoformat())
@@ -75,7 +85,7 @@ class FinanceGroupTests(TestCase):
         })
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.context['finance_section'], 'expenses')
-        self.assertContains(response, f'id="status-{expense.pk}"', status_code=400)
+        self.assertContains(response, f'id="status-ERROR-{expense.pk}"', status_code=400)
         expense.refresh_from_db()
         self.assertEqual(expense.status, 'PENDING')
         self.assertFalse(FinancialEntry.objects.exists())

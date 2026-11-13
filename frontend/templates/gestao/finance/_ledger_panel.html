@@ -1,0 +1,10 @@
+<section class="card compact-panel" aria-labelledby="ledger-title-{{ panel_key }}">
+  <div class="card-header"><div><h2 id="ledger-title-{{ panel_key }}" class="section-title">{% if ledger_history %}Histórico completo{% else %}Movimentações atuais{% endif %}</h2><p class="mg-section-description">{% if ledger_history %}Inclui exclusões, correções e os ajustes correspondentes.{% else %}Lançamentos válidos. Exclusões e versões anteriores ficam no histórico.{% endif %}</p></div></div>
+  <nav class="compact-tabs" aria-label="Consulta de movimentações">
+    <button type="button" data-group-toggle="LEDGER" aria-controls="finance-panel-LEDGER" aria-expanded="{% if finance_selected_group == 'LEDGER' %}true{% else %}false{% endif %}" {% if not ledger_history %}aria-current="page"{% endif %}>Atuais</button>
+    <button type="button" data-group-toggle="HISTORY" aria-controls="finance-panel-HISTORY" aria-expanded="{% if finance_selected_group == 'HISTORY' %}true{% else %}false{% endif %}" {% if ledger_history %}aria-current="page"{% endif %}>Histórico completo</button>
+  </nav>
+  {% include 'gestao/finance/_ledger.html' %}
+  {% if entries_page.paginator.num_pages > 1 %}<nav class="mg-pagination" aria-label="Páginas do extrato"><span>{{ entries_page.number }} / {{ entries_page.paginator.num_pages }}</span><div class="page-actions">{% if entries_page.has_previous %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.previous_page_number }}#finance-panel-{{ panel_key }}">Anterior</a>{% endif %}{% if entries_page.has_next %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.next_page_number }}#finance-panel-{{ panel_key }}">Próxima</a>{% endif %}</div></nav>{% endif %}
+  <p class="form-help">O saldo e a exportação do extrato consideram o histórico completo.</p>
+</section>

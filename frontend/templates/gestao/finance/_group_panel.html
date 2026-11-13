@@ -1,0 +1,8 @@
+<div id="finance-panel-{{ group.key }}" class="management-category-panel management-group-detail" data-group-panel="{{ group.key }}" {% if not group.is_open %}hidden{% endif %}>
+  <button type="button" class="management-group-back" data-group-close><i data-lucide="chevron-up" aria-hidden="true"></i>Recolher {{ group.title|lower }}</button>
+  {% if group.kind == 'expenses' %}
+    {% include 'gestao/finance/_compact_expenses.html' with expenses=group.page.object_list expenses_page=group.page expense_heading=group.title expense_status=group.key panel_key=group.key filter_query=group.query %}
+  {% else %}
+    {% include 'gestao/finance/_ledger_panel.html' with entries=group.page.object_list entries_page=group.page ledger_history=group.is_history panel_key=group.key filter_query=group.query %}
+  {% endif %}
+</div>

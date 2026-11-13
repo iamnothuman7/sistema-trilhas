@@ -23,7 +23,7 @@
 </section>
 {% include 'gestao/finance/_navigation.html' %}
 <details class="card compact-details" {% if date_form.errors or date_query %}open{% endif %}><summary>Filtrar período{% if date_query %} · filtro aplicado{% endif %}</summary>
-  <form method="get" class="mg-finance-filters">
+  <form method="get" class="mg-finance-filters" data-group-filter="finance">
     {% if expense_status %}<input type="hidden" name="status" value="{{ expense_status }}">{% elif finance_section == 'ledger' %}<input type="hidden" name="panel" value="ledger">{% if ledger_history %}<input type="hidden" name="ledger_mode" value="history">{% endif %}{% endif %}
     <div class="form-group"><label class="form-label" for="{{ date_form.date_start.id_for_label }}">Data inicial</label>{{ date_form.date_start }}{% if date_form.date_start.errors %}<div class="mg-field-errors">{{ date_form.date_start.errors }}</div>{% endif %}</div>
     <div class="form-group"><label class="form-label" for="{{ date_form.date_end.id_for_label }}">Data final</label>{{ date_form.date_end }}{% if date_form.date_end.errors %}<div class="mg-field-errors">{{ date_form.date_end.errors }}</div>{% endif %}</div>
@@ -32,21 +32,8 @@
 </details>
 {% include 'gestao/finance/_group_cards.html' %}
 {% if status_form.errors %}<div class="mg-form-errors" role="alert"><strong>A situação não foi alterada.</strong>{{ status_form.errors }} Confira o registro atualizado antes de tentar novamente.</div>{% endif %}
-{% if finance_section != 'overview' %}
-<div id="finance-details" class="management-group-detail">
-  <a class="management-group-back" href="?{{ date_query }}"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar ao resumo</a>
-  {% if finance_section == 'expenses' %}
-    {% include 'gestao/finance/_compact_expenses.html' %}
-  {% else %}
-  <section class="card compact-panel" aria-labelledby="ledger-title">
-    <div class="card-header"><div><h2 id="ledger-title" class="section-title">{% if ledger_history %}Histórico completo{% else %}Movimentações atuais{% endif %}</h2><p class="mg-section-description">{% if ledger_history %}Inclui exclusões, correções e os ajustes correspondentes.{% else %}Lançamentos válidos. Exclusões e versões anteriores ficam no histórico.{% endif %}</p></div></div>
-    <nav class="compact-tabs" aria-label="Consulta de movimentações"><a href="?{{ date_query }}&panel=ledger#finance-details" {% if not ledger_history %}aria-current="page"{% endif %}>Atuais</a><a href="?{{ date_query }}&panel=ledger&ledger_mode=history#finance-details" {% if ledger_history %}aria-current="page"{% endif %}>Histórico completo</a></nav>
-    {% include 'gestao/finance/_ledger.html' %}
-    {% if entries_page.paginator.num_pages > 1 %}<nav class="mg-pagination" aria-label="Páginas do extrato"><span>{{ entries_page.number }} / {{ entries_page.paginator.num_pages }}</span><div class="page-actions">{% if entries_page.has_previous %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.previous_page_number }}#finance-details">Anterior</a>{% endif %}{% if entries_page.has_next %}<a class="btn btn-secondary btn-sm" href="?{{ filter_query }}&entries_page={{ entries_page.next_page_number }}#finance-details">Próxima</a>{% endif %}</div></nav>{% endif %}
-    <p class="form-help">O saldo e a exportação do extrato consideram o histórico completo.</p>
-  </section>
-  {% endif %}
-</div>
+{% if finance_error_expenses %}
+  {% include 'gestao/finance/_compact_expenses.html' with expenses=finance_error_expenses expenses_page=finance_error_page expense_heading='Conferir situação da conta' panel_key='ERROR' %}
 {% endif %}
 <details class="card compact-details"><summary>Mais detalhes e relatórios</summary>
   <div class="stat-grid mg-finance-stats mg-section-gap">
@@ -182,6 +169,6 @@ function switchMovementTab(type) {
     }
 }
 </script>
-{% if status_form.errors %}<script>document.getElementById('status-{{ status_expense.id }}')?.showModal();</script>{% endif %}
+{% if status_form.errors %}<script>document.getElementById('status-ERROR-{{ status_expense.id }}')?.showModal();</script>{% endif %}
 {% if expense_form.errors %}<script>openMovementModal('despesa');</script>{% endif %}
 {% endblock %}

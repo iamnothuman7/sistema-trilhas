@@ -394,7 +394,8 @@ class ReportingFinanceTests(TestCase):
             self.entry(FinancialEntryKind.RECEITA_MANUAL, 100, description=f"movimento-{index:02d}-teste",
                        recognized_at=timezone.now() - timedelta(days=index))
         url = reverse("gestao:finance", args=[self.event.pk])
-        # Each table is now opened explicitly from its summary card.
+        # Selected pagination advances only that panel; other cards keep their
+        # bounded first page ready for an immediate disclosure.
         for filters, field, page_key, prefix, size in [
             ({"status": "ALL"}, "expenses", "expenses_page", "compromisso", 20),
             ({"panel": "ledger"}, "entries", "entries_page", "movimento", 30),
@@ -403,6 +404,6 @@ class ReportingFinanceTests(TestCase):
             second = self.client.get(url, {**filters, page_key: 2})
             self.assertEqual(len(first.context[field]), size)
             self.assertEqual(len(second.context[field]), 1)
-            self.assertNotContains(first, f"{prefix}-{size}-teste")
+            self.assertNotIn(f"{prefix}-{size}-teste", [row.description for row in first.context[field]])
             self.assertContains(second, f"{prefix}-{size}-teste")
-            self.assertNotContains(second, f"{prefix}-00-teste")
+            self.assertNotIn(f"{prefix}-00-teste", [row.description for row in second.context[field]])

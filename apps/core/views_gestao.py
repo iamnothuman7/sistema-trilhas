@@ -645,34 +645,50 @@ def _finance_context(request, event, expense_form=None):
     end = date_form.cleaned_data.get("date_end") if valid else None
     ledger_history = request.GET.get('ledger_mode') == 'history'
     current_entries = operational_financial_entries(event, start, end) if valid else FinancialEntry.objects.none()
-    entries = (financial_entries(event, start, end) if ledger_history and valid else current_entries).select_related('movement').order_by("-recognized_at", "-pk")
     expense_groups = {}
     for state, date_field in [('PENDING', 'due_at'), ('PAID', 'paid_at'), ('CANCELED', 'due_at')]:
         rows = Expense.objects.filter(event=event, status=state).select_related('vendor')
         expense_groups[state] = in_period(rows, date_field, start, end, date_field=True) if valid else rows.none()
     expense_status = request.GET.get('status','')
-    if expense_status in expense_groups:
-        expenses = expense_groups[expense_status]
-    else:
+    if expense_status not in expense_groups:
         expense_status = 'ALL' if expense_status == 'ALL' else ''
-        expenses = expense_groups['PENDING'] | expense_groups['PAID']
-    expenses = expenses.order_by('-due_at', '-pk')
     finance_section = 'expenses' if expense_status else 'ledger' if request.GET.get('panel') == 'ledger' or request.GET.get('entries_page') or ledger_history else 'overview'
     expense_counts = {state: rows.aggregate(count=Count('pk'), total=Sum('amount_cents')) for state, rows in expense_groups.items()}
     form = expense_form if expense_form is not None else ExpenseForm(event=event)
     from apps.finance.views_crud import MovementForm
-    mv_form = MovementForm()
-    entries_page = Paginator(entries, 30).get_page(request.GET.get("entries_page"))
+    mv_form = MovementForm(auto_id='movement_%s')
     from apps.finance.entry_actions import attach_entry_actions
-    entries_page.object_list=attach_entry_actions(entries_page.object_list,event)
-    if ledger_history:
-        entries_page.object_list = mark_ledger_history(entries_page.object_list, event)
-    expenses_page = Paginator(expenses, 20).get_page(request.GET.get("expenses_page"))
     from apps.finance.forms import expense_version
-    for expense in expenses_page.object_list:
-        expense.edit_version = expense_version(expense)
     date_query = urlencode({key:value.isoformat() for key,value in date_form.cleaned_data.items() if value}) if valid else ''
-    finance_query = {key: value.isoformat() for key, value in date_form.cleaned_data.items() if value} if valid else {}
+    date_params = {key: value.isoformat() for key, value in date_form.cleaned_data.items() if value} if valid else {}
+    # Load the first page of every panel with the screen. Expanding a card is a
+    # local disclosure; only pagination, filters and mutations need the server.
+    selected_group = (expense_status or ('HISTORY' if ledger_history else 'LEDGER')) if finance_section != 'overview' else ''
+    expense_titles = {'PENDING': 'Contas a pagar', 'PAID': 'Contas pagas', 'CANCELED': 'Contas excluídas e canceladas', 'ALL': 'Todas as contas ativas'}
+    panels = {}
+    for key in ('PENDING', 'PAID', 'CANCELED', 'ALL'):
+        rows = expense_groups[key] if key != 'ALL' else expense_groups['PENDING'] | expense_groups['PAID']
+        page = Paginator(rows.order_by('-due_at', '-pk'), 20).get_page(request.GET.get('expenses_page') if expense_status == key else 1)
+        for row in page.object_list:
+            row.edit_version = expense_version(row)
+        panels[key] = {'key': key, 'title': expense_titles[key], 'kind': 'expenses', 'page': page,
+                       'query': urlencode({**date_params, 'status': key}), 'is_open': selected_group == key,
+                       'count': page.paginator.count, 'total': expense_counts.get(key, {}).get('total', 0)}
+    for key in ('LEDGER', 'HISTORY'):
+        rows = (financial_entries(event, start, end) if valid else FinancialEntry.objects.none()) if key == 'HISTORY' else current_entries
+        page = Paginator(rows.select_related('movement').order_by('-recognized_at', '-pk'), 30).get_page(request.GET.get('entries_page') if selected_group == key else 1)
+        page.object_list = attach_entry_actions(page.object_list, event)
+        if key == 'HISTORY':
+            page.object_list = mark_ledger_history(page.object_list, event)
+        panels[key] = {'key': key, 'title': 'Histórico completo' if key == 'HISTORY' else 'Movimentações atuais',
+                       'kind': 'ledger', 'page': page, 'is_history': key == 'HISTORY',
+                       'query': urlencode({**date_params, 'panel': 'ledger', **({'ledger_mode': 'history'} if key == 'HISTORY' else {})}),
+                       'is_open': selected_group == key, 'count': page.paginator.count}
+    for key, icon, label in [('PENDING', 'clock-3', 'Ver contas'), ('PAID', 'circle-check', 'Ver pagamentos'), ('LEDGER', 'arrow-left-right', 'Ver movimentações')]:
+        panels[key].update(icon=icon, label=label)
+    entries_page = panels['HISTORY' if ledger_history else 'LEDGER']['page']
+    expenses_page = panels[expense_status or 'ALL']['page']
+    finance_query = dict(date_params)
     if expense_status:
         finance_query['status'] = expense_status
     elif finance_section == 'ledger':
@@ -695,9 +711,12 @@ def _finance_context(request, event, expense_form=None):
         "today": timezone.localdate().isoformat(),
         "expense_status": expense_status, "date_query": date_query,
         "filter_query": urlencode(finance_query), "finance_section": finance_section,
-        "ledger_history": ledger_history, "current_entry_count": current_entries.count(),
+        "ledger_history": ledger_history, "current_entry_count": panels['LEDGER']['count'],
         "expense_groups": expense_counts,
-        "expense_heading": {'PENDING': 'Contas a pagar', 'PAID': 'Contas pagas', 'CANCELED': 'Contas excluídas e canceladas'}.get(expense_status, 'Todas as contas ativas'),
+        "expense_heading": expense_titles.get(expense_status, 'Todas as contas ativas'),
+        "finance_primary_panels": [panels[key] for key in ('PENDING', 'PAID', 'LEDGER')],
+        "finance_aux_panels": [panels[key] for key in ('ALL', 'CANCELED', 'HISTORY')],
+        "finance_selected_group": selected_group,
     }
 
 

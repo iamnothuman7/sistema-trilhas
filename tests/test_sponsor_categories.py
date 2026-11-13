@@ -25,16 +25,20 @@ class SponsorCategoryTests(TestCase):
         return Sponsor.objects.create(event=event or self.event, profile=profile, tier=tier,
                                       **brand_values(profile), **fields)
 
-    def test_initial_view_has_categories_and_counts_without_long_record_list(self):
+    def test_initial_view_contains_prerendered_but_collapsed_category_pages(self):
         self.add('Patrocinador prata', 'PRATA')
         response = self.get(event_id=self.event.pk)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.counts(response), {'OURO': 1, 'PRATA': 1, 'BRONZE': 0})
         self.assertFalse(response.context['show_records'])
-        self.assertNotContains(response, self.profile.name)
-        self.assertNotContains(response, 'Patrocinador prata')
+        self.assertContains(response, self.profile.name)
+        self.assertContains(response, 'Patrocinador prata')
         self.assertContains(response, 'class="management-category-card"', count=3)
-        self.assertContains(response, 'tier=PRATA')
+        self.assertContains(response, 'data-group-toggle="PRATA"')
+        for category in response.context['categories']:
+            self.assertFalse(category['expanded'])
+            self.assertContains(response, f'id="sponsor-panel-{category["key"]}" data-group-panel="{category["key"]}" class="management-category-panel" hidden')
+        self.assertFalse(response.context['all_category']['expanded'])
 
     def test_shared_brand_counts_once_per_category_and_selected_tier_limits_participations(self):
         Sponsor.objects.create(event=self.other, profile=self.profile, tier='PRATA', **brand_values(self.profile))
@@ -50,6 +54,29 @@ class SponsorCategoryTests(TestCase):
     def test_same_tier_in_two_events_counts_one_brand(self):
         Sponsor.objects.create(event=self.other, profile=self.profile, tier='OURO', **brand_values(self.profile))
         self.assertEqual(self.counts(self.get())['OURO'], 1)
+
+    def test_each_panel_has_its_own_first_page_and_only_requested_panel_advances(self):
+        for number in range(25):
+            self.add(f'Prata para paginação {number:02}', 'PRATA')
+        initial = self.get(event_id=self.event.pk)
+        panels = {item['key']: item for item in initial.context['categories']}
+        self.assertEqual(len(panels['PRATA']['page_obj']), 24)
+        self.assertEqual(panels['PRATA']['count'], 25)
+        selected = self.get(event_id=self.event.pk, tier='PRATA', page=2)
+        panels = {item['key']: item for item in selected.context['categories']}
+        self.assertEqual(len(panels['PRATA']['page_obj']), 1)
+        self.assertEqual(panels['PRATA']['page_obj'].number, 2)
+        self.assertTrue(panels['PRATA']['expanded'])
+        self.assertFalse(panels['OURO']['expanded'])
+        self.assertEqual(panels['OURO']['page_obj'].number, 1)
+        self.assertEqual(selected.context['all_category']['page_obj'].number, 1)
+
+    def test_summary_is_stable_when_opening_other_groups_without_a_request(self):
+        self.add('Prata contratada', 'PRATA', agreed_amount_cents=25000)
+        initial = self.get(event_id=self.event.pk)
+        selected = self.get(event_id=self.event.pk, tier='PRATA')
+        self.assertEqual(initial.context['totals'], selected.context['totals'])
+        self.assertEqual(selected.context['totals']['agreed_cents'], 125000)
 
     def test_search_status_and_back_to_categories_keep_filters(self):
         self.add('Parceiro bronze', 'BRONZE', is_public=True)
@@ -85,10 +112,10 @@ class SponsorCategoryTests(TestCase):
         initial = self.get()
         self.assertEqual(self.counts(initial)['UNLINKED'], 1)
         self.assertEqual(self.counts(initial)['APOIO'], 1)
-        self.assertNotContains(initial, profile.name)
+        self.assertContains(initial, profile.name)
         unlinked = self.get(tier='UNLINKED')
         self.assertContains(unlinked, profile.name)
-        self.assertNotContains(unlinked, self.profile.name)
+        self.assertEqual([row['brand'].pk for row in unlinked.context['cards']], [profile.pk])
         self.assertContains(unlinked, 'Vincular a um evento')
         self.assertContains(self.get(tier='APOIO'), 'Apoiador legado')
         filtered = self.get(tier='APOIO', q='nenhum resultado')
