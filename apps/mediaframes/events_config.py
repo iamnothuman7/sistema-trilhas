@@ -16,8 +16,11 @@ DEFAULT_VERSION = "trilhao-fogo"
 
 BASE_LAYOUT = {
     "kind": "event",
-    "photo": {"x": 130, "y": 620, "width": 820, "height": 765},
-    "pop_out": 105,
+    "photo": {"x": 73, "y": 325, "width": 933, "height": 1015},
+    "cut": 25,
+    "pilot_box": {"x": 250, "y": 1528, "max_width": 725, "font_size": 44},
+    "team_box": {"x": 260, "y": 1641, "max_width": 715, "font_size": 38},
+    "pop_out": 0,
     "banner_y": 1358,
     "credit_y": 1605,
     "footer_y": 1680,
@@ -146,19 +149,22 @@ def get_event_versions(event=None):
     }
     for version in versions:
         version.update(details)
-        version["background_art"] = static("img/frames/trilhao-terra-story-v1.webp")
+        version["overlay_story"] = static("img/frames/frame_story_2027.png")
+        version["overlay_feed"] = static("img/frames/frame_feed_2027.png")
+        version["background_art"] = static("img/frames/frame_story_2027.png")
+        version["layout"]["overlay"] = static("img/frames/frame_story_2027.png")
         if is_third_trilhao:
-            version["layout"]["logo"] = {"x": 190, "y": 90, "width": 700, "height": 410}
             version["footer_title"] = venue.upper() or "LOCAL A CONFIRMAR"
             if version["id"] == DEFAULT_VERSION:
-                version["label"] = "Terra & Trilha · 3º Trilhão"
+                version["label"] = "Moldura Oficial 2027"
         version["feed_layout"] = {
             **deepcopy(version["layout"]),
-            "logo": {"x": 265, "y": 65, "width": 550, "height": 250},
-            "photo": {"x": 130, "y": 400, "width": 820, "height": 550},
-            "pop_out": 65, "banner_y": 940, "banner_scale": 0.78,
-            "stamp_y": 1030, "stamp_height": 54, "stamp_baseline": 1067,
-            "credit_y": 1102, "footer_y": 1120,
+            "photo": {"x": 167, "y": 189, "width": 746, "height": 690},
+            "cut": 22,
+            "pilot_box": {"x": 265, "y": 1032, "max_width": 670, "font_size": 34},
+            "team_box": {"x": 270, "y": 1111, "max_width": 665, "font_size": 30},
+            "overlay": static("img/frames/frame_feed_2027.png"),
+            "pop_out": 0,
         }
         version["filename"] = f"eu-vou-{event_slug}-{version['id']}.png"
     return versions

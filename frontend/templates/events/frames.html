@@ -78,7 +78,7 @@
           <div class="form-group" id="pilot-name-field" {% if artwork_subject == 'team' %}hidden{% endif %}><label class="form-label" for="pilot-name-input">Nome do piloto (opcional)</label><input id="pilot-name-input" class="form-control" type="text" maxlength="64" placeholder="Nome para aparecer na arte" autocomplete="off"></div>
           <div class="form-group"><label class="form-label" for="team-name-input">Nome da equipe ou cidade (opcional)</label><input id="team-name-input" class="form-control" type="text" maxlength="64" placeholder="Ex.: Equipe Morcego" autocomplete="off" list="confirmed-teams"><datalist id="confirmed-teams">{% for team in confirmed_teams %}<option value="{{ team.name }}">{{ team.count }} {% if team.count == 1 %}inscrição ativa{% else %}inscrições ativas{% endif %}</option>{% endfor %}</datalist></div>
         </div>
-        <p class="form-help">A arte de equipe usa a faixa “Equipe confirmada”. A foto é mantida inteira por padrão; você pode ampliar, mover ou preencher a moldura.</p>
+        <p class="form-help">A arte usa a moldura oficial com os campos de Piloto e Equipe. A foto é mantida com o fundo original; você pode ampliar e mover o enquadramento.</p>
       </section>{% else %}<section class="studio-panel">
         <h2 class="studio-section-title">2. Deixe com a sua cara</h2>
         <div class="studio-field-grid">
@@ -92,7 +92,7 @@
         </div>
       </section>
       <div class="studio-panel studio-tips">
-        <div><strong>Escolha sua foto</strong><p>Sua foto fica pronta para baixar com o fundo original. Se quiser o efeito 3D, use a remoção de fundo opcional.</p></div>
+        <div><strong>Escolha sua foto</strong><p>Sua foto é inserida com fundo natural na moldura oficial. Arraste e amplie para ajustar o melhor enquadramento.</p></div>
         <div><strong>Baixe e compartilhe</strong><p>Baixe seu Story (1080 × 1920), alterne para Feed (1080 × 1350) e baixe também. Sua foto permanece no editor.</p></div>
       </div>{% endif %}
     </div>
@@ -106,14 +106,13 @@
         <div class="studio-actions">
           {% if not internal_editor %}{% csrf_token %}{% endif %}
           <input id="photo-input" class="visually-hidden" type="file" tabindex="-1" accept="image/jpeg,image/png,image/webp">
-          {% if not internal_editor %}<label class="draft-preferences"><input id="remember-photo" type="checkbox"><span>Manter minha foto neste dispositivo<small>Por até 7 dias. Desmarque para apagar o rascunho salvo.</small></span></label>{% endif %}<p class="form-help">{% if internal_editor %}Foto do piloto, foto da equipe ou PNG com transparência. {% endif %}JPG, PNG ou WebP · até 15 MB.</p>
-          <div id="photo-controls" hidden>{% if internal_editor %}<div class="form-group"><label class="form-label" for="photo-fit">Enquadramento</label><select id="photo-fit" class="form-control"><option value="contain">Mostrar a foto inteira</option><option value="cover">Preencher a moldura</option></select></div>{% endif %}<p id="photo-help">Arraste a foto para ajustar o enquadramento.</p><div class="studio-zoom"><span>−</span><input id="zoom-input" type="range" min="1" max="2.5" step="0.01" value="1" aria-label="Ampliar a foto"><span>+</span></div>{% if internal_editor %}<button type="button" class="studio-text-button" id="center-photo-button">Restaurar enquadramento</button>{% endif %}</div>
+          {% if not internal_editor %}<label class="draft-preferences"><input id="remember-photo" type="checkbox"><span>Manter minha foto neste dispositivo<small>Por até 7 dias. Desmarque para apagar o rascunho salvo.</small></span></label>{% endif %}<p class="form-help">{% if internal_editor %}Foto do piloto, foto da equipe ou JPG/PNG. {% endif %}JPG, PNG ou WebP · até 15 MB.</p>
+          <div id="photo-controls" hidden><p id="photo-help">Arraste a foto para ajustar o enquadramento.</p><div class="studio-zoom"><span>−</span><input id="zoom-input" type="range" min="1" max="2.5" step="0.01" value="1" aria-label="Ampliar a foto"><span>+</span></div><button type="button" class="studio-text-button" id="center-photo-button">Restaurar enquadramento</button></div>
           <div class="studio-upload-actions">
             <button class="btn btn-primary btn-block btn-lg" id="upload-button" type="button"><i data-lucide="camera" aria-hidden="true"></i><span id="upload-label">{% if internal_editor %}Adicionar foto{% else %}Adicionar minha foto{% endif %}</span></button>
             <button class="btn btn-success btn-block btn-lg" id="download-button" type="button" disabled><i data-lucide="download" aria-hidden="true"></i><span id="download-label">Baixar meu story</span></button>
           </div>
-          <button class="btn btn-secondary btn-sm btn-block" id="retry-cutout-button" type="button" hidden><i data-lucide="refresh-cw" aria-hidden="true"></i> Remover fundo (opcional)</button><button class="btn btn-secondary btn-sm btn-block" id="original-photo-button" type="button" hidden>Usar foto original</button>
-          <p id="editor-status" role="status" aria-live="polite">{% if internal_editor %}Adicione a foto do piloto ou da equipe para começar.{% else %}Adicione sua foto. Você pode baixar com o fundo original ou removê-lo depois.{% endif %}</p>
+          <p id="editor-status" role="status" aria-live="polite">{% if internal_editor %}Adicione a foto do piloto ou da equipe para começar.{% else %}Adicione sua foto para começar. Arraste e amplie para ajustar.{% endif %}</p>
           <div class="studio-footer"><span id="export-note">PNG Alta Qualidade · 1080 × 1920</span><div class="studio-footer-actions"><button type="button" id="change-photo-button" class="studio-text-button" hidden>Trocar foto</button><button type="button" id="reset-button" class="studio-text-button" hidden>Recomeçar</button></div></div>
         </div>
       </section>

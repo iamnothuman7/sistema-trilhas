@@ -64,8 +64,8 @@ class Command(BaseCommand):
             lot.save()
 
         templates = [
-            (FrameFormat.FEED_1080x1350, "Moldura Oficial 2027 - Feed Instagram", 1350, "frames/overlays/frame_feed_2027.png", 1230),
-            (FrameFormat.STORY_1080x1920, "Moldura Oficial 2027 - Stories & Reels", 1920, "frames/overlays/frame_story_2027.png", 1740),
+            (FrameFormat.FEED_1080x1350, "Moldura Oficial 2027 - Feed Instagram", 1350, "frames/overlays/frame_feed_2027.png", 1032),
+            (FrameFormat.STORY_1080x1920, "Moldura Oficial 2027 - Stories & Reels", 1920, "frames/overlays/frame_story_2027.png", 1528),
         ]
         for fmt, title, height, asset, text_y in templates:
             FrameTemplate.objects.update_or_create(
