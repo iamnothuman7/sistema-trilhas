@@ -150,7 +150,8 @@ class Event(models.Model):
     @property
     def microsite_url(self):
         sub = self.subdomain or self.slug.replace("-", "")[:30]
-        return f"https://{sub}.equipemorcego.nabio.pro"
+        from django.conf import settings
+        return f"https://{sub}.{getattr(settings, 'SITE_DOMAIN', 'equipemorcego.com')}"
 
     @property
     def is_registration_open(self):

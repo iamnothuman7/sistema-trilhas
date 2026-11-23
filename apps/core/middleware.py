@@ -32,14 +32,16 @@ class EventSubdomainMiddleware:
     Detecta subdomínios de eventos (ex: 3trilhaotiangua.equipemorcego.nabio.pro)
     e injeta `request.current_event` e `request.is_event_subdomain = True`.
     """
-    BASE_DOMAINS = (
-        ".equipemorcego.nabio.pro",
+    LOCAL_DOMAINS = (
         ".localhost",
         ".127.0.0.1.nip.io",
     )
 
     def __init__(self, get_response):
         self.get_response = get_response
+        from django.conf import settings
+        site_domains = getattr(settings, "SITE_DOMAINS", None) or [getattr(settings, "SITE_DOMAIN", "equipemorcego.com")]
+        self.BASE_DOMAINS = tuple(f".{d}" for d in site_domains) + self.LOCAL_DOMAINS
 
     def __call__(self, request):
         request.current_event = None

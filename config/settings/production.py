@@ -4,6 +4,11 @@ from .base import *
 
 DEBUG = False
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]
+if ALLOWED_HOSTS and "*" not in ALLOWED_HOSTS:
+    for _domain in SITE_DOMAINS:
+        for _host in (_domain, f".{_domain}"):
+            if _host not in ALLOWED_HOSTS:
+                ALLOWED_HOSTS.append(_host)
 if not os.getenv("DJANGO_SECRET_KEY") or len(SECRET_KEY) < 50 or SECRET_KEY.startswith("django-insecure"):
     raise ImproperlyConfigured("Production requires a nondefault DJANGO_SECRET_KEY of at least 50 characters.")
 if not ALLOWED_HOSTS or "*" in ALLOWED_HOSTS:
@@ -32,4 +37,4 @@ EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ("true", "1")
 EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() in ("true", "1")
 EMAIL_TIMEOUT = 15
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "contato@equipemorcego.com.br")
-PUBLIC_SITE_URL = os.getenv("PUBLIC_SITE_URL", "https://equipemorcego.nabio.pro").rstrip("/")
+PUBLIC_SITE_URL = os.getenv("PUBLIC_SITE_URL", f"https://{SITE_DOMAIN}").rstrip("/")

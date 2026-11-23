@@ -48,7 +48,7 @@
       </ul>
       <div style="display: flex; flex-direction: column; gap: 8px;">
         <a class="payment-button payment-button-secondary" href="{% url 'identity:purchase_access' order.id %}">Criar minha arte de Story e Feed</a>
-        <a class="payment-button" style="background-color: #166534; color: #fff;" href="https://api.whatsapp.com/send?text=Inscri%C3%A7%C3%A3o%20confirmada%20no%20{{ order.event.title|urlencode }}!%20Pedido%20{{ order.merchant_reference }}%20pago.%20Acompanhe%20pelo%20site:%20https://equipemorcego.nabio.pro/minha-conta/" target="_blank" rel="noopener noreferrer"><i data-lucide="share-2" aria-hidden="true"></i> Compartilhar no WhatsApp</a>
+        <a class="payment-button" style="background-color: #166534; color: #fff;" href="https://api.whatsapp.com/send?text=Inscri%C3%A7%C3%A3o%20confirmada%20no%20{{ order.event.title|urlencode }}!%20Pedido%20{{ order.merchant_reference }}%20pago.%20Acompanhe%20pelo%20site:%20{{ request.scheme }}://{{ request.get_host }}/minha-conta/" target="_blank" rel="noopener noreferrer"><i data-lucide="share-2" aria-hidden="true"></i> Compartilhar no WhatsApp</a>
       </div>
       <p class="payment-help payment-muted">Sua credencial e comprovante oficial já estão liberados! Se desejar acessar sua conta futuramente, basta entrar com seu e-mail cadastrado.</p>
     </div>
@@ -100,7 +100,7 @@
         </ul>
         <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
           <a class="payment-button payment-button-secondary" href="{% url 'identity:purchase_access' order.id %}">Criar minha arte de Story / Feed</a>
-          <a class="payment-button" style="background-color: #166534; color: #fff;" href="https://api.whatsapp.com/send?text=Inscri%C3%A7%C3%A3o%20confirmada%20no%20{{ order.event.title|urlencode }}!%20Pedido%20{{ order.merchant_reference }}%20pago.%20Acompanhe%20pelo%20site:%20https://equipemorcego.nabio.pro/minha-conta/" target="_blank" rel="noopener noreferrer"><i data-lucide="share-2" aria-hidden="true"></i> Compartilhar Inscrição no WhatsApp</a>
+          <a class="payment-button" style="background-color: #166534; color: #fff;" href="https://api.whatsapp.com/send?text=Inscri%C3%A7%C3%A3o%20confirmada%20no%20{{ order.event.title|urlencode }}!%20Pedido%20{{ order.merchant_reference }}%20pago.%20Acompanhe%20pelo%20site:%20{{ request.scheme }}://{{ request.get_host }}/minha-conta/" target="_blank" rel="noopener noreferrer"><i data-lucide="share-2" aria-hidden="true"></i> Compartilhar Inscrição no WhatsApp</a>
         </div>
       {% elif order.status == 'PAID_NEEDS_REVIEW' %}
         <p>A organização precisa conferir o pagamento e a disponibilidade da reserva antes de liberar a inscrição. Não faça outro pagamento.</p>

@@ -11,7 +11,15 @@ from django.conf import settings
 from django.views.decorators.debug import sensitive_variables
 
 API_BASE = "https://api.mercadopago.com"
-DEFAULT_WEBHOOK_URL = "https://equipemorcego.nabio.pro/integracoes/mercadopago/webhook/"
+WEBHOOK_PATH = "/integracoes/mercadopago/webhook/"
+DEFAULT_WEBHOOK_URL = "https://equipemorcego.com" + WEBHOOK_PATH
+
+
+def default_webhook_url():
+    base = str(getattr(settings, "PUBLIC_SITE_URL", "") or "").rstrip("/")
+    if not base:
+        base = "https://" + str(getattr(settings, "SITE_DOMAIN", "equipemorcego.com"))
+    return base + WEBHOOK_PATH
 CONFIG_KEYS = ("access_token", "public_key", "webhook_secret", "collector_id", "webhook_url", "environment", "api_base")
 
 
@@ -61,7 +69,7 @@ def environment_configuration():
 
 def configured_webhook_url():
     # Server configuration only: never use an untrusted Host header or a user-submitted URL.
-    return str(getattr(settings, "MP_WEBHOOK_URL", "") or DEFAULT_WEBHOOK_URL).strip()
+    return str(getattr(settings, "MP_WEBHOOK_URL", "") or default_webhook_url()).strip()
 
 
 @sensitive_variables()

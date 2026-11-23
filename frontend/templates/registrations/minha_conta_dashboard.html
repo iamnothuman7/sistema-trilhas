@@ -75,7 +75,7 @@
                     <i data-lucide="image-down" aria-hidden="true"></i> Salvar Cartão na Galeria (PNG)
                 </a>
                 {% endif %}
-                <a href="https://api.whatsapp.com/send?text=Minha%20inscri%C3%A7%C3%A3o%20no%20{{ reg.event.title|urlencode }}%20est%C3%A1%20confirmada!%20Piloto:%20{{ reg.person.full_name|urlencode }}{% if reg.registration_number %}%20(%23{{ reg.registration_number|stringformat:'04d' }}){% endif %}.%20Meu%20comprovante:%20https://equipemorcego.nabio.pro/minha-conta/" target="_blank" rel="noopener noreferrer" class="public-button public-button--secondary" style="font-size: 0.85rem; padding: 8px 14px; background: #166534; color: #fff; border: 0;">
+                <a href="https://api.whatsapp.com/send?text=Minha%20inscri%C3%A7%C3%A3o%20no%20{{ reg.event.title|urlencode }}%20est%C3%A1%20confirmada!%20Piloto:%20{{ reg.person.full_name|urlencode }}{% if reg.registration_number %}%20(%23{{ reg.registration_number|stringformat:'04d' }}){% endif %}.%20Meu%20comprovante:%20{{ request.scheme }}://{{ request.get_host }}/minha-conta/" target="_blank" rel="noopener noreferrer" class="public-button public-button--secondary" style="font-size: 0.85rem; padding: 8px 14px; background: #166534; color: #fff; border: 0;">
                     <i data-lucide="share-2" aria-hidden="true"></i> Compartilhar no WhatsApp
                 </a>
                 {% if reg.pilot_art_available %}
