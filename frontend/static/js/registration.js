@@ -65,9 +65,49 @@ document.addEventListener('DOMContentLoaded', function () {
             cents += Number(lot.selectedOptions[0]?.dataset.cents || 0)
                 + Number(shirt.selectedOptions[0]?.dataset.extraCents || 0);
         });
-        total.textContent = formatter.format(cents / 100);
+
+        // Pontos extras do sorteio
+        const raffleInput = form.querySelector('[name="extra_raffle_qty"]');
+        if (raffleInput) {
+            const raffleQty = Number(raffleInput.value) || 0;
+            const rafflePrice = Number(raffleInput.dataset.priceCents) || 2000;
+            cents += raffleQty * rafflePrice;
+        }
+
+        // Itens adicionais (AddOns)
+        form.querySelectorAll('[data-addon-qty]').forEach(function (qtyInput) {
+            const qty = Number(qtyInput.value) || 0;
+            const price = Number(qtyInput.dataset.priceCents) || 0;
+            cents += qty * price;
+        });
+
+        const formatted = formatter.format(cents / 100);
+        total.textContent = formatted;
+        const submitBtn = form.querySelector('.registration-submit');
+        if (submitBtn && !submitBtn.disabled) {
+            submitBtn.innerHTML = 'Conferir pedido (' + formatted + ') <i data-lucide="arrow-right" aria-hidden="true"></i>';
+            if (window.renderTrilhasIcons) window.renderTrilhasIcons();
+        }
         syncBuyer();
     }
+
+    // Controle dos botões de incremento/decremento (-) (+)
+    form.addEventListener('click', function (event) {
+        const btn = event.target.closest('.btn-stepper');
+        if (btn) {
+            const targetId = btn.dataset.stepTarget;
+            const delta = Number(btn.dataset.delta) || 0;
+            const input = document.getElementById(targetId);
+            if (input) {
+                const min = Number(input.min) || 0;
+                const max = Number(input.max) || 999;
+                const current = Number(input.value) || 0;
+                const nextVal = Math.max(min, Math.min(max, current + delta));
+                input.value = nextVal;
+                refresh();
+            }
+        }
+    });
 
     addButton.addEventListener('click', function () {
         if (container.querySelectorAll('[data-participant]').length >= maxParticipants) return;

@@ -26,18 +26,35 @@ def issue_registration_ticket(reg):
 
 
 def activate_purchased_numbers(order):
+    from apps.registrations.models import Registration
+    first_reg = Registration.objects.filter(source_order_line__order=order).first()
     for line in order.lines.filter(raffle__isnull=False).select_related('raffle'):
-        raffle=MotorcycleRaffle.objects.select_for_update().get(pk=line.raffle_id)
-        existing=raffle.tickets.filter(order_line=line).count()
+        raffle = MotorcycleRaffle.objects.select_for_update().get(pk=line.raffle_id)
+        existing = raffle.tickets.filter(order_line=line).count()
         if existing:
-            if existing!=line.quantity:raise ValidationError('A quantidade de números emitidos exige conferência.')
+            if existing != line.quantity:
+                raise ValidationError('A quantidade de números emitidos exige conferência.')
             continue
-        number=_next_digital_number(raffle)
+        beneficiary_reg_id = line.linked_registration_id or (first_reg.pk if first_reg else None)
+        number = _next_digital_number(raffle)
         for _ in range(line.quantity):
-            if raffle.paper_start<=number<=raffle.paper_end:number=raffle.paper_end+1
-            RaffleTicket.objects.create(raffle=raffle,number=number,source='ONLINE',state='SOLD',order_line=line,
-                beneficiary_registration_id=line.linked_registration_id,buyer_name=line.intended_person_name,amount_cents=line.unit_cents,paid_at=timezone.now())
-            number+=1
+            if raffle.paper_start <= number <= raffle.paper_end:
+                number = raffle.paper_end + 1
+            while raffle.tickets.filter(number=number).exists():
+                number += 1
+            RaffleTicket.objects.create(
+                raffle=raffle,
+                number=number,
+                source='ONLINE',
+                state='SOLD',
+                order_line=line,
+                beneficiary_registration_id=beneficiary_reg_id,
+                buyer_name=line.intended_person_name or order.purchaser_name,
+                buyer_phone=line.intended_person_phone or order.purchaser_phone,
+                amount_cents=line.unit_cents,
+                paid_at=timezone.now()
+            )
+            number += 1
 
 
 def confirmed_registration_tickets(reg):

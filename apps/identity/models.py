@@ -115,6 +115,7 @@ class RoleChoices(models.TextChoices):
     LOGISTICS = "LOGISTICS", "Logística / Quartos / Transporte"
     CONTENT = "CONTENT", "Conteúdo / Mídia / Molduras"
     SAFETY = "SAFETY", "Apoio de Segurança / Ocorrências"
+    CUSTOM = "CUSTOM", "Personalizado"
 
 
 class EventMembership(models.Model):
@@ -126,6 +127,7 @@ class EventMembership(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="event_memberships")
     event = models.ForeignKey("events.Event", on_delete=models.CASCADE, blank=True, null=True, related_name="team_memberships")
     role_code = models.CharField("Papel", max_length=30, choices=RoleChoices.choices)
+    permissions_json = models.JSONField("Permissões Granulares por Aba", default=dict, blank=True)
     granted_by = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True, related_name="granted_memberships")
     created_at = models.DateTimeField(auto_now_add=True)
     revoked_at = models.DateTimeField("Revogado em", blank=True, null=True)

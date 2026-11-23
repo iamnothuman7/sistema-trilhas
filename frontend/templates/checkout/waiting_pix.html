@@ -27,7 +27,7 @@
         </div>
         <p class="payment-help">{% if is_homologation %}QR Code de homologação, apenas para testar a integração.{% else %}No celular, copie o código e pague no aplicativo do banco. Em outra tela, escaneie o QR Code.{% endif %}</p>
         <div id="pix-payable">
-        <button class="payment-button payment-full" id="copy-pix" type="button">Copiar código Pix</button>
+        <button class="payment-button payment-full" id="copy-pix" type="button" style="display: flex; align-items: center; justify-content: center; gap: 8px;"><i data-lucide="copy" aria-hidden="true"></i> Copiar código Pix</button>
         {% if charge.pix_qr_code %}<img class="payment-qr" src="data:image/png;base64,{{ charge.pix_qr_code }}" alt="QR Code Pix deste pedido" width="240" height="240">{% endif %}
         <details id="pix-code-details"><summary>Ver código Pix Copia e Cola</summary>
         <label for="pix-code" class="payment-muted">Código Pix Copia e Cola</label>

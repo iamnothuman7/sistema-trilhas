@@ -19,3 +19,72 @@
     .scanner-delivery-controls { width: 100%; }
     .scanner-delivery-controls .btn { flex: 1; min-height: 48px; }
 }
+
+/* Scanner quick stats side-by-side reduced */
+.scanner-compact-stats {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-bottom: 14px !important;
+}
+.scanner-compact-stats > article,
+.scanner-compact-stats > :last-child:nth-child(odd),
+.scanner-compact-stats .stat-card {
+    grid-column: auto !important;
+    padding: 8px 4px !important;
+    text-align: center !important;
+    border-radius: 12px !important;
+    background: var(--ui-panel, #241d18) !important;
+    border: 1px solid var(--ui-border, rgba(255, 255, 255, 0.08)) !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+}
+.scanner-compact-stats .stat-label {
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+    color: var(--ui-muted, #9c8e82) !important;
+    margin-bottom: 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+}
+.scanner-compact-stats .stat-value {
+    font-size: 1.45rem !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+    margin: 2px 0 !important;
+}
+.scanner-compact-stats small {
+    font-size: 0.65rem !important;
+    line-height: 1.15 !important;
+    color: var(--ui-muted, #9c8e82) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    display: block !important;
+}
+@media (max-width: 360px) {
+    .scanner-compact-stats {
+        gap: 6px !important;
+    }
+    .scanner-compact-stats .stat-card {
+        padding: 6px 2px !important;
+    }
+    .scanner-compact-stats .stat-label {
+        font-size: 0.65rem !important;
+    }
+    .scanner-compact-stats .stat-value {
+        font-size: 1.25rem !important;
+    }
+    .scanner-compact-stats small {
+        font-size: 0.6rem !important;
+    }
+}

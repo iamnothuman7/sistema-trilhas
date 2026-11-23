@@ -5,7 +5,7 @@ from datetime import timedelta
 from functools import wraps
 from django.contrib import messages
 from django.core import signing
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import IntegrityError, OperationalError, transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -43,6 +43,9 @@ def _payload_hash(post):
 @require_http_methods(["GET", "POST"])
 def manual_registration_create(request, event_id):
     event = request.management_event
+    from apps.core.permissions import has_event_permission
+    if not has_event_permission(request.user, event, "registrations", "create"):
+        raise PermissionDenied("Sua conta não tem permissão para realizar inscrições manuais.")
     can_receive = can_manage_event(request.user, event, "finance")
     token = signing.dumps({"key": str(uuid.uuid4()), "event": str(event.pk), "actor": str(request.user.pk)}, salt=FORM_SALT)
     form = ManualRegistrationForm(request.POST if request.method == "POST" else None, event=event, can_receive=can_receive,

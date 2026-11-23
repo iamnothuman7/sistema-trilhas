@@ -13,9 +13,44 @@
       <h2 id="payment-success-title">Pagamento confirmado!</h2>
       <p>{% if provider_verified %}O Mercado Pago aprovou seu pagamento de <strong>R$ {{ order.formatted_total }}</strong>.{% else %}Seu pedido de <strong>R$ {{ order.formatted_total }}</strong> está confirmado no sistema.{% endif %} Seu comprovante já está disponível.</p>
       {% if is_homologation %}<p class="payment-test-notice">Compra de teste aprovada. Nenhum valor real foi cobrado.</p>{% endif %}
-      <ul class="payment-list">{% for line in order.lines.all %}{% if line.registration %}<li><strong>{{ line.intended_person_name }}</strong><a class="payment-button" href="{% url 'minha_conta:registration_pdf' line.registration.id %}"><i data-lucide="file-down" aria-hidden="true"></i> Baixar comprovante em PDF</a></li>{% endif %}{% endfor %}</ul>
-      <a class="payment-button payment-button-secondary" href="{% url 'identity:purchase_access' order.id %}">Criar minha arte de Story e Feed</a>
-      <p class="payment-help payment-muted">No primeiro acesso, defina sua senha. A moldura de story e feed abre em seguida para as inscrições de piloto confirmadas. Cada participante precisa vincular sua inscrição e aceitar os termos para liberar o QR Code de credenciamento.</p>
+      <div class="payment-alert" style="background: rgba(234, 88, 12, 0.12); border: 1.5px solid #ea580c; color: #ffedd5; padding: 16px; border-radius: 12px; margin: 16px 0; text-align: left;">
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1rem; margin-bottom: 6px;">
+          <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: #f97316;"></i>
+          <span>ATENÇÃO: SALVE OU TIRE PRINT DO SEU COMPROVANTE AGORA!</span>
+        </div>
+        <p style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: #fed7aa;">
+          Este comprovante com <strong>QR Code</strong> é o seu documento oficial de credenciamento. Baixe o PDF abaixo ou tire print desta tela para apresentar na portaria no dia do evento.
+        </p>
+      </div>
+      <ul class="payment-list">
+        {% for line in order.lines.all %}
+          {% if line.registration %}
+            <li>
+              <strong>{{ line.intended_person_name }}</strong>
+              <a class="payment-button" href="{% url 'minha_conta:registration_pdf' line.registration.id %}"><i data-lucide="file-down" aria-hidden="true"></i> Baixar comprovante em PDF</a>
+            </li>
+          {% elif line.raffle %}
+            <li style="border-left: 3px solid #ea580c; padding-left: 12px;">
+              <strong><i data-lucide="ticket" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px; color: #ea580c;"></i>Pontos do Sorteio da Moto ({{ line.quantity }}x)</strong>
+              <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px;">
+                {% for ticket in line.raffle_tickets.all %}
+                  <span style="background: #ea580c; color: #fff; font-weight: 800; padding: 2px 8px; border-radius: 6px; font-size: 0.85rem;">#{{ ticket.number|stringformat:"04d" }}</span>
+                {% endfor %}
+              </div>
+            </li>
+          {% elif line.addon %}
+            <li>
+              <strong><i data-lucide="shopping-bag" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px; color: #f97316;"></i>{{ line.quantity }}x {{ line.addon.title }}</strong>
+              {% if line.intended_variant_code %}<small class="payment-muted">Tamanho: {{ line.intended_variant_code }}</small>{% endif %}
+            </li>
+          {% endif %}
+        {% endfor %}
+      </ul>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <a class="payment-button payment-button-secondary" href="{% url 'identity:purchase_access' order.id %}">Criar minha arte de Story e Feed</a>
+        <a class="payment-button" style="background-color: #166534; color: #fff;" href="https://api.whatsapp.com/send?text=Inscri%C3%A7%C3%A3o%20confirmada%20no%20{{ order.event.title|urlencode }}!%20Pedido%20{{ order.merchant_reference }}%20pago.%20Acompanhe%20pelo%20site:%20https://equipemorcego.nabio.pro/minha-conta/" target="_blank" rel="noopener noreferrer"><i data-lucide="share-2" aria-hidden="true"></i> Compartilhar no WhatsApp</a>
+      </div>
+      <p class="payment-help payment-muted">Sua credencial e comprovante oficial já estão liberados! Se desejar acessar sua conta futuramente, basta entrar com seu e-mail cadastrado.</p>
     </div>
   </dialog>
   {% endif %}
@@ -29,11 +64,44 @@
       {% if order.applied_coupon_code %}<p class="payment-muted">Cupom usado nesta compra: <strong>{{ order.applied_coupon_code }}</strong> · Desconto: R$ {{ order.formatted_discount }}</p>{% endif %}
       <p class="payment-muted">Itens: R$ {{ order.formatted_base_total }} · Taxa do pagamento: R$ {{ order.formatted_payment_fee }}</p><div class="payment-total"><span>Valor do pedido</span><strong>R$ {{ order.formatted_total }}</strong></div>
       {% if is_paid %}
-        <p>{% if provider_verified %}O Mercado Pago confirmou o pagamento.{% else %}O pedido consta como pago no sistema.{% endif %} Confira abaixo as inscrições vinculadas ao pedido.</p>
-        <p>Seu acesso fica vinculado à compra. Se esta é sua primeira inscrição, defina sua senha agora; se já tem conta, entre com a senha habitual. Depois, cada participante deve se vincular à própria inscrição e aceitar os termos para liberar a credencial.</p>
-        <a class="payment-button" href="{% url 'identity:purchase_access' order.id %}">Criar minha arte e acessar minha conta</a>
-        <ul class="payment-list">{% for line in order.lines.all %}<li><strong>{{ line.intended_person_name }}</strong><small class="payment-muted">{% if line.registration %}{{ line.registration.get_commercial_state_display }} · {{ line.registration.get_operational_state_display }}{% else %}A organização está preparando sua inscrição.{% endif %}</small>{% if line.registration %}<a class="payment-button payment-button-secondary" style="margin-top:12px" href="{% url 'minha_conta:registration_pdf' line.registration.id %}"><i data-lucide="file-down" aria-hidden="true"></i> Baixar comprovante em PDF</a><form method="post" action="{% url 'minha_conta:create_claim' line.registration.id %}" style="margin-top:12px">{% csrf_token %}<button type="submit" class="payment-button payment-button-secondary">Vincular ao participante</button></form>{% endif %}</li>{% endfor %}</ul>
-        <p class="payment-help payment-muted">A liberação para credenciamento depende também do aceite dos termos e das exigências do evento.</p>
+        <div class="payment-alert" style="background: rgba(234, 88, 12, 0.12); border: 1.5px solid #ea580c; color: #ffedd5; padding: 16px; border-radius: 12px; margin: 16px 0; text-align: left;">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1rem; margin-bottom: 6px;">
+            <i data-lucide="alert-triangle" style="width: 20px; height: 20px; color: #f97316;"></i>
+            <span>IMPORTANTE: SALVE SEU COMPROVANTE AGORA!</span>
+          </div>
+          <p style="margin: 0; font-size: 0.9rem; line-height: 1.5; color: #fed7aa;">
+            Sua inscrição está 100% confirmada e seus termos foram aceitos. <strong>Baixe o comprovante em PDF com QR Code abaixo</strong> para apresentar no dia do evento.
+          </p>
+        </div>
+        <p>{% if provider_verified %}O Mercado Pago confirmou o pagamento.{% else %}O pedido consta como pago no sistema.{% endif %} Veja sua inscrição e comprovante abaixo:</p>
+        <ul class="payment-list">
+          {% for line in order.lines.all %}
+            <li>
+              {% if line.registration %}
+                <strong>{{ line.intended_person_name }}</strong>
+                <small class="payment-muted">{{ line.registration.get_commercial_state_display }} · {{ line.registration.get_operational_state_display }}</small>
+                <a class="payment-button" style="margin-top:12px; background-color: #ea580c; color: #ffffff; font-weight: 700;" href="{% url 'minha_conta:registration_pdf' line.registration.id %}"><i data-lucide="file-down" aria-hidden="true"></i> Baixar Comprovante em PDF (1 Página)</a>
+              {% elif line.raffle %}
+                <strong style="color: #ea580c;"><i data-lucide="ticket" style="width: 18px; height: 18px; vertical-align: middle; margin-right: 4px; color: #ea580c;"></i>Seus Números da Sorte — Sorteio da Moto</strong>
+                <small class="payment-muted">{{ line.quantity }} cota(s) confirmada(s) para {{ line.intended_person_name }}</small>
+                <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px;">
+                  {% for ticket in line.raffle_tickets.all %}
+                    <span style="background: #ea580c; color: #fff; font-weight: 800; padding: 4px 10px; border-radius: 6px; font-size: 0.95rem;">#{{ ticket.number|stringformat:"04d" }}</span>
+                  {% empty %}
+                    <span class="badge badge-warning">Gerando números da sorte...</span>
+                  {% endfor %}
+                </div>
+              {% elif line.addon %}
+                <strong><i data-lucide="shopping-bag" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px; color: #f97316;"></i>{{ line.quantity }}x {{ line.addon.title }}</strong>
+                {% if line.intended_variant_code %}<small class="payment-muted">Variação/Tamanho: {{ line.intended_variant_code }}</small>{% endif %}
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+        <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 8px;">
+          <a class="payment-button payment-button-secondary" href="{% url 'identity:purchase_access' order.id %}">Criar minha arte de Story / Feed</a>
+          <a class="payment-button" style="background-color: #166534; color: #fff;" href="https://api.whatsapp.com/send?text=Inscri%C3%A7%C3%A3o%20confirmada%20no%20{{ order.event.title|urlencode }}!%20Pedido%20{{ order.merchant_reference }}%20pago.%20Acompanhe%20pelo%20site:%20https://equipemorcego.nabio.pro/minha-conta/" target="_blank" rel="noopener noreferrer"><i data-lucide="share-2" aria-hidden="true"></i> Compartilhar Inscrição no WhatsApp</a>
+        </div>
       {% elif order.status == 'PAID_NEEDS_REVIEW' %}
         <p>A organização precisa conferir o pagamento e a disponibilidade da reserva antes de liberar a inscrição. Não faça outro pagamento.</p>
       {% elif order.status == 'REFUNDED' or order.status == 'PARTIALLY_REFUNDED' %}
@@ -45,7 +113,7 @@
     <div class="payment-actions">
       {% if is_paid %}<a class="payment-button" href="{% url 'identity:purchase_access' order.id %}">Acessar minhas inscrições e termos</a>{% endif %}
       {% if order.status == 'RESERVED' or order.status == 'AWAITING_PAYMENT' %}<a class="payment-button" href="{% url 'checkout:order_payment' order.id %}">Acompanhar pagamento</a>{% endif %}
-      <a class="payment-button payment-button-secondary" href="{% url 'core:contact' %}">Falar com a organização</a>
+      <a class="payment-button payment-button-secondary" href="https://wa.me/5588992874581?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20com%20o%20pedido%20{{ order.merchant_reference }}" target="_blank" rel="noopener noreferrer"><i data-lucide="message-circle" aria-hidden="true"></i> Falar com a organização (WhatsApp)</a>
       <a class="payment-button payment-button-secondary" href="{% url 'events:detail' order.event.slug %}">Ver evento</a>
     </div>
   </div>

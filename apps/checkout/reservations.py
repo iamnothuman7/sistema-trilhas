@@ -15,7 +15,7 @@ from .models import Order, OrderLine, OrderStatus, OrderCoupon, ReceivableDue, D
 
 
 @transaction.atomic
-def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_code="", manual=False, check_budget=None):
+def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_code="", manual=False, check_budget=None, selected_addons=None, extra_raffle_tickets=0):
     coupon_code = str(coupon_code or '').strip().upper()
     num_participants = len(participants)
     participant_cpfs = {participant["cpf"] for participant in participants}
@@ -178,6 +178,100 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
     # Atualizar contador reservado no banco
     cap_resource.reserved_count += num_participants
     cap_resource.save()
+
+    first_registration = Registration.objects.filter(source_order_line__order=order).first()
+
+    # 3.1. Processar pontos extras do sorteio se solicitado
+    if extra_raffle_tickets > 0:
+        from apps.events.models_raffles import MotorcycleRaffle
+        raffle = MotorcycleRaffle.objects.filter(event=event).first()
+        if raffle:
+            raffle_unit_price = raffle.quota_price_cents or 2000
+            raffle_total_price = raffle_unit_price * extra_raffle_tickets
+            gross_total += raffle_total_price
+
+            raffle_resource, _ = CapacityResource.objects.select_for_update().get_or_create(
+                event=event, type="RAFFLE_TOTAL", reference_id=str(raffle.pk),
+                defaults={"capacity_total": raffle.quota_quantity or 10000}
+            )
+            raffle_resource.reserved_count += extra_raffle_tickets
+            raffle_resource.save(update_fields=["reserved_count"])
+
+            raffle_line = OrderLine.objects.create(
+                order=order,
+                raffle=raffle,
+                linked_registration_id=first_registration.pk if first_registration else None,
+                quantity=extra_raffle_tickets,
+                unit_cents=raffle_unit_price,
+                net_cents=raffle_total_price,
+                intended_person_name=buyer["name"],
+                intended_person_email=buyer["email"],
+                intended_person_phone=buyer["phone"],
+                item_snapshot_json={
+                    "kind": "RAFFLE",
+                    "product_name": f"Números Extras do Sorteio ({extra_raffle_tickets}x)",
+                    "price_cents": raffle_unit_price,
+                    "quantity": extra_raffle_tickets,
+                    "raffle_id": str(raffle.pk),
+                    "title": raffle.title,
+                }
+            )
+            CapacityHold.objects.create(
+                resource=raffle_resource,
+                order_id=order.id,
+                order_line_id=raffle_line.id,
+                quantity=extra_raffle_tickets,
+                status=HoldStatus.ACTIVE,
+                expires_at=hold_expires,
+                idempotency_key=f"HOLD-RAFFLE-{order.id}-{raffle_line.id}"
+            )
+
+    # 3.2. Processar produtos adicionais (AddOns)
+    if selected_addons:
+        from apps.catalog.models import AddOn
+        for addon_item in selected_addons:
+            addon = addon_item["addon"]
+            qty = addon_item["quantity"]
+            variant_code = addon_item.get("variant_code", "")
+            addon_price = addon.price_cents * qty
+            gross_total += addon_price
+
+            addon_resource, _ = CapacityResource.objects.select_for_update().get_or_create(
+                event=event, type="ADDON_TOTAL", reference_id=str(addon.pk),
+                defaults={"capacity_total": addon.max_quantity}
+            )
+            addon_resource.reserved_count += qty
+            addon_resource.save(update_fields=["reserved_count"])
+
+            addon_line = OrderLine.objects.create(
+                order=order,
+                addon=addon,
+                linked_registration_id=first_registration.pk if first_registration else None,
+                quantity=qty,
+                unit_cents=addon.price_cents,
+                net_cents=addon_price,
+                intended_person_name=buyer["name"],
+                intended_person_email=buyer["email"],
+                intended_person_phone=buyer["phone"],
+                intended_variant_code=variant_code,
+                item_snapshot_json={
+                    "kind": "ADDON",
+                    "product_name": addon.title,
+                    "price_cents": addon.price_cents,
+                    "quantity": qty,
+                    "variant_code": variant_code,
+                    "addon_id": str(addon.pk),
+                }
+            )
+            CapacityHold.objects.create(
+                resource=addon_resource,
+                order_id=order.id,
+                order_line_id=addon_line.id,
+                quantity=qty,
+                status=HoldStatus.ACTIVE,
+                expires_at=hold_expires,
+                idempotency_key=f"HOLD-ADDON-{order.id}-{addon_line.id}"
+            )
 
     # 4. Aplicar cupom se houver
     discount_total = 0

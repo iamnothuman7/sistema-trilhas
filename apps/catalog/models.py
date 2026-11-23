@@ -96,6 +96,7 @@ class AddOn(models.Model):
     event = models.ForeignKey("events.Event", on_delete=models.CASCADE, related_name="addons")
     title = models.CharField("Nome do Item Adicional", max_length=150)
     description = models.TextField("Descrição", blank=True)
+    image = models.ImageField("Foto do Produto Extra", upload_to="addons/", blank=True, null=True)
     variant_code = models.CharField("Tamanho / variação", max_length=30, blank=True)
     price_cents = models.PositiveBigIntegerField("Preço (centavos)", default=5000)
     max_quantity = models.PositiveIntegerField("Limite Disponível", default=100)

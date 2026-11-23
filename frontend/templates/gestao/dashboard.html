@@ -1,28 +1,184 @@
 {% extends 'gestao/base_gestao.html' %}{% load trilhas_ui %}
 {% block title %}Visão geral | Equipe Morcego{% endblock %}
 {% block gestao_header %}Visão geral{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Atalhos Rápidos da Gestão: 100% Horizontal Lado a Lado (Apenas Ícones Centralizados) */
+.compact-shortcuts {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  flex-wrap: nowrap !important; /* Jamais quebrar verticalmente */
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none !important;
+  padding: 4px 2px 14px 2px !important;
+  margin-bottom: 12px !important;
+}
+
+.compact-shortcuts::-webkit-scrollbar {
+  display: none !important;
+}
+
+.compact-shortcuts .shortcut-icon-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  flex: 0 0 48px !important;
+  border-radius: 14px !important;
+  background: var(--ui-panel, #241d18) !important;
+  border: 1.5px solid var(--ui-border, rgba(236, 206, 181, 0.18)) !important;
+  color: var(--ui-text, #faf5ee) !important;
+  text-decoration: none !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+}
+
+.compact-shortcuts .shortcut-icon-btn:hover {
+  background: var(--ui-hover, #3a3028) !important;
+  border-color: #ea580c !important;
+  color: #ea580c !important;
+  transform: translateY(-2px);
+}
+
+.compact-shortcuts .shortcut-icon-btn:active {
+  transform: scale(0.94);
+}
+
+.compact-shortcuts .shortcut-icon-btn svg,
+.compact-shortcuts .shortcut-icon-btn i {
+  width: 22px !important;
+  height: 22px !important;
+  stroke-width: 2.2px !important;
+}
+
+@media (max-width: 580px) {
+  .compact-shortcuts {
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+  .compact-shortcuts .shortcut-icon-btn {
+    flex: 0 0 46px !important;
+    min-width: 46px !important;
+    width: 46px !important;
+    max-width: 46px !important;
+    height: 46px !important;
+    border-radius: 12px !important;
+  }
+  .compact-shortcuts .shortcut-icon-btn svg,
+  .compact-shortcuts .shortcut-icon-btn i {
+    width: 20px !important;
+    height: 20px !important;
+  }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="page-heading"><div><h1>Visão geral</h1><p>{% if selected_event %}{{ selected_event.title }}{% else %}Escolha uma edição para acompanhar a operação.{% endif %}</p></div>{% if selected_event %}<a class="btn btn-secondary" href="{% url 'events:detail' selected_event.slug %}" target="_blank" rel="noopener">Ver site do evento</a>{% endif %}</div>
+<div class="page-heading">
+  <div>
+    <h1>Visão geral</h1>
+    <p>{% if selected_event %}{{ selected_event.title }}{% else %}Escolha uma edição para acompanhar a operação.{% endif %}</p>
+  </div>
+  {% if selected_event %}
+    <a class="btn btn-secondary" href="{% url 'events:detail' selected_event.slug %}" target="_blank" rel="noopener">
+      <i data-lucide="external-link" style="width: 15px; height: 15px; margin-right: 6px;"></i>Ver site do evento
+    </a>
+  {% endif %}
+</div>
+
 {% if selected_event %}
-<nav class="compact-shortcuts" aria-label="Atalhos do evento">
-{% if management_permissions.registrations %}<a class="btn btn-secondary" href="{% url 'gestao:registration_list' selected_event.id %}"><i data-lucide="users-round"></i>Inscrições</a>{% endif %}
-{% if management_permissions.finance %}<a class="btn btn-secondary" href="{% url 'gestao:finance' selected_event.id %}"><i data-lucide="wallet"></i>Financeiro</a>{% endif %}
-{% if management_permissions.sponsors %}<a class="btn btn-secondary" href="{% url 'gestao:sponsor_list' selected_event.id %}"><i data-lucide="handshake"></i>Patrocinadores</a>{% endif %}
-{% if management_permissions.catalog %}<a class="btn btn-secondary" href="{% url 'gestao:shirt_stock' selected_event.id %}"><i data-lucide="shirt"></i>Camisetas / estoque</a>{% endif %}
-{% if management_permissions.events %}<a class="btn btn-secondary" href="{% url 'gestao:raffle_management' selected_event.id %}"><i data-lucide="ticket"></i>Sorteio</a>{% endif %}
-{% if management_permissions.checkin %}<a class="btn btn-secondary" href="{% url 'gestao:credenciamento' selected_event.id %}"><i data-lucide="scan-line"></i>Credenciamento</a>{% endif %}
+<nav class="compact-shortcuts" aria-label="Atalhos rápidos do evento">
+{% if management_permissions.registrations %}<a class="shortcut-icon-btn" href="{% url 'gestao:registration_list' selected_event.id %}" title="Inscrições" aria-label="Inscrições"><i data-lucide="users-round" aria-hidden="true"></i></a>{% endif %}
+{% if management_permissions.finance %}<a class="shortcut-icon-btn" href="{% url 'gestao:finance' selected_event.id %}" title="Financeiro" aria-label="Financeiro"><i data-lucide="wallet" aria-hidden="true"></i></a>{% endif %}
+{% if management_permissions.sponsors %}<a class="shortcut-icon-btn" href="{% url 'gestao:sponsor_list' selected_event.id %}" title="Patrocinadores" aria-label="Patrocinadores"><i data-lucide="handshake" aria-hidden="true"></i></a>{% endif %}
+{% if management_permissions.catalog %}<a class="shortcut-icon-btn" href="{% url 'gestao:shirt_stock' selected_event.id %}" title="Camisetas e Estoque" aria-label="Camisetas e Estoque"><i data-lucide="shirt" aria-hidden="true"></i></a>{% endif %}
+{% if selected_event.motorcycle_raffle and management_permissions.events %}<a class="shortcut-icon-btn" href="{% url 'gestao:raffle_operations' selected_event.id %}" title="Sorteio da Moto" aria-label="Sorteio da Moto"><i data-lucide="ticket" aria-hidden="true"></i></a>{% endif %}
+{% if management_permissions.checkin %}<a class="shortcut-icon-btn" href="{% url 'gestao:credenciamento' selected_event.id %}" title="Credenciamento" aria-label="Credenciamento"><i data-lucide="scan-line" aria-hidden="true"></i></a>{% endif %}
 </nav>
+
 <section class="stat-grid audit-dashboard-stats mg-section-gap" aria-label="Indicadores do evento">
-<article class="stat-card"><span class="stat-label">Inscrições confirmadas</span><div class="stat-value">{{ kpi.active_confirmed }}</div><p class="stat-foot">{{ kpi.vacancies_left }} vagas disponíveis</p>{% if management_permissions.registrations %}<a class="stat-manage" href="{% url 'gestao:registration_list' selected_event.id %}?status=ACTIVE">Gerenciar inscrições</a>{% endif %}</article>
-<article class="stat-card"><span class="stat-label">Presenças</span><div class="stat-value">{{ kpi.checked_in_count }}</div><p class="stat-foot">{{ kpi.ready_for_checkin }} aptos a entrar</p>{% if management_permissions.checkin %}<a class="stat-manage" href="{% url 'gestao:credenciamento' selected_event.id %}">Abrir credenciamento</a>{% endif %}</article>
-{% if management_permissions.finance %}<article class="stat-card"><span class="stat-label">Saldo do evento</span><div class="stat-value">R$ {{ kpi.net_profit_cents|money }}</div><p class="stat-foot">Receitas menos tarifas, saídas e devoluções reais</p><a class="stat-manage" href="{% url 'gestao:finance' selected_event.id %}">Ver movimentações</a></article><article class="stat-card"><span class="stat-label">A pagar</span><div class="stat-value">R$ {{ kpi.pending_expenses_cents|money }}</div><p class="stat-foot">Despesas ainda sem baixa</p><a class="stat-manage" href="{% url 'gestao:finance' selected_event.id %}?status=PENDING">Gerenciar despesas</a></article>{% endif %}
+  <article class="stat-card app-stat-card" {% if management_permissions.registrations %}style="cursor:pointer;" onclick="window.location.href='{% url 'gestao:registration_list' selected_event.id %}?status=ACTIVE'"{% endif %}>
+    <div class="stat-card-header">
+      <span class="stat-label">Inscrições confirmadas</span>
+      <div class="stat-icon-badge"><i data-lucide="users-round"></i></div>
+    </div>
+    <div class="stat-value">{{ kpi.active_confirmed }}</div>
+    <div class="stat-card-footer">
+      <span class="stat-foot-pill"><i data-lucide="ticket"></i> {{ kpi.vacancies_left }} vagas livres</span>
+      {% if management_permissions.registrations %}
+      <span class="stat-action-chip"><span>Gerenciar</span><i data-lucide="chevron-right"></i></span>
+      {% endif %}
+    </div>
+  </article>
+
+  <article class="stat-card app-stat-card" {% if management_permissions.checkin %}style="cursor:pointer;" onclick="window.location.href='{% url 'gestao:credenciamento' selected_event.id %}'"{% endif %}>
+    <div class="stat-card-header">
+      <span class="stat-label">Presenças / Portaria</span>
+      <div class="stat-icon-badge"><i data-lucide="scan-line"></i></div>
+    </div>
+    <div class="stat-value">{{ kpi.checked_in_count }}</div>
+    <div class="stat-card-footer">
+      <span class="stat-foot-pill"><i data-lucide="check-circle-2"></i> {{ kpi.ready_for_checkin }} aptos</span>
+      {% if management_permissions.checkin %}
+      <span class="stat-action-chip"><span>Portaria</span><i data-lucide="chevron-right"></i></span>
+      {% endif %}
+    </div>
+  </article>
+
+  {% if selected_event.motorcycle_raffle %}
+  <article class="stat-card app-stat-card" {% if management_permissions.events %}style="cursor:pointer;" onclick="window.location.href='{% url 'gestao:raffle_operations' selected_event.id %}'"{% endif %}>
+    <div class="stat-card-header">
+      <span class="stat-label">Sorteio da Moto</span>
+      <div class="stat-icon-badge" style="color: #ea580c;"><i data-lucide="ticket"></i></div>
+    </div>
+    <div class="stat-value" style="color: #f97316;">{{ raffle_tickets_count }}</div>
+    <div class="stat-card-footer">
+      <span class="stat-foot-pill"><i data-lucide="sparkles"></i> Números emitidos</span>
+      {% if management_permissions.events %}
+      <span class="stat-action-chip"><span>Ver lista</span><i data-lucide="chevron-right"></i></span>
+      {% endif %}
+    </div>
+  </article>
+  {% endif %}
+
+  {% if management_permissions.finance %}
+  <article class="stat-card app-stat-card" style="cursor:pointer;" onclick="window.location.href='{% url 'gestao:finance' selected_event.id %}'">
+    <div class="stat-card-header">
+      <span class="stat-label">Saldo do Evento</span>
+      <div class="stat-icon-badge" style="color: #10b981;"><i data-lucide="wallet"></i></div>
+    </div>
+    <div class="stat-value" {% if kpi.net_profit_cents >= 0 %}style="color: #10b981;"{% endif %}>R$ {{ kpi.net_profit_cents|money }}</div>
+    <div class="stat-card-footer">
+      <span class="stat-foot-pill"><i data-lucide="shield-check"></i> Receita líquida</span>
+      <span class="stat-action-chip"><span>Extrato</span><i data-lucide="chevron-right"></i></span>
+    </div>
+  </article>
+
+  <article class="stat-card app-stat-card" style="cursor:pointer;" onclick="window.location.href='{% url 'gestao:finance' selected_event.id %}?status=PENDING'">
+    <div class="stat-card-header">
+      <span class="stat-label">Contas a Pagar</span>
+      <div class="stat-icon-badge" style="color: #f59e0b;"><i data-lucide="receipt"></i></div>
+    </div>
+    <div class="stat-value" style="color: #fbbf24;">R$ {{ kpi.pending_expenses_cents|money }}</div>
+    <div class="stat-card-footer">
+      <span class="stat-foot-pill"><i data-lucide="clock"></i> Despesas pendentes</span>
+      <span class="stat-action-chip"><span>Pagar</span><i data-lucide="chevron-right"></i></span>
+    </div>
+  </article>
+  {% endif %}
 </section>
 <div class="audit-dashboard-grid mg-section-gap">
 <section class="card compact-panel"><div class="card-header"><h2 class="section-title">Camisetas</h2>{% if management_permissions.catalog %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:shirt_stock' selected_event.id %}">Gerenciar estoque</a>{% endif %}</div><dl class="stock-counts"><div><dt>Disponíveis</dt><dd>{% if kpi.shirts_stock_configured %}{{ kpi.shirts_available }}{% else %}—{% endif %}</dd></div><div><dt>Reservadas</dt><dd>{{ kpi.shirts_reserved }}</dd></div><div><dt>A entregar</dt><dd>{{ kpi.shirts_total|subtract:kpi.shirts_delivered }}</dd></div><div><dt>Entregues</dt><dd>{{ kpi.shirts_delivered }}</dd></div></dl><p class="form-help">{% if kpi.shirts_stock_configured %}Disponíveis considera os tamanhos com estoque cadastrado.{% else %}Cadastre as quantidades por tamanho para controlar o saldo disponível.{% endif %}</p></section>
-{% if management_permissions.sponsors %}<section class="card compact-panel"><div class="card-header"><h2 class="section-title">Patrocinadores</h2><a class="btn btn-secondary btn-sm" href="{% url 'gestao:sponsor_list' selected_event.id %}">Ver patrocinadores</a></div>{% if management_permissions.finance %}<div class="finance-summary"><span>Recebido nesta edição</span><strong>R$ {{ kpi.sponsor_received_cents|money }}</strong></div><div class="finance-summary"><span>Falta receber</span><strong>R$ {{ kpi.sponsor_outstanding_cents|money }}</strong></div>{% endif %}<a class="stat-manage" href="{% url 'gestao:sponsor_leads' selected_event.id %}">Organizar interessados e visitas</a><p class="form-help">Histórico de edições anteriores não compõe estes valores.</p></section>{% endif %}
+{% if management_permissions.sponsors %}<section class="card compact-panel"><div class="card-header"><h2 class="section-title">Patrocinadores</h2><a class="btn btn-secondary btn-sm" href="{% url 'gestao:sponsor_list' selected_event.id %}">Ver patrocinadores</a></div>{% if management_permissions.finance %}<div class="finance-summary"><span>Recebido nesta edição</span><strong>R$ {{ kpi.sponsor_received_cents|money }}</strong></div><div class="finance-summary"><span>Falta receber</span><strong>R$ {{ kpi.sponsor_outstanding_cents|money }}</strong></div>{% endif %}<a class="btn btn-secondary btn-sm" style="margin-top: 12px; width: 100%; display: inline-flex; justify-content: center; align-items: center; gap: 6px;" href="{% url 'gestao:sponsor_leads' selected_event.id %}"><i data-lucide="kanban" style="width: 14px; height: 14px;"></i>Organizar interessados e visitas</a><p class="form-help">Histórico de edições anteriores não compõe estes valores.</p></section>{% endif %}
 </div>
-{% if management_permissions.finance %}<details class="card compact-details mg-section-gap"><summary>Composição do saldo</summary><div class="compact-detail-body"><div class="finance-summary"><span>Recebimentos reais</span><strong>R$ {{ kpi.total_received_cents|money }}</strong></div><div class="finance-summary"><span>Devoluções reais</span><span>R$ {{ kpi.total_refunds_cents|money }}</span></div><div class="finance-summary"><span>Tarifas</span><span>R$ {{ kpi.total_fees_cents|money }}</span></div><div class="finance-summary"><span>Despesas pagas</span><span>R$ {{ kpi.total_expenses_cents|money }}</span></div><a class="btn btn-secondary" href="{% url 'gestao:reports' selected_event.id %}">Relatórios e exportações</a></div></details>{% endif %}
+{% if management_permissions.finance %}<details class="card compact-details mg-section-gap"><summary><span><i data-lucide="pie-chart" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px; color: #f97316;"></i>Composição do saldo</span></summary><div class="compact-detail-body"><div class="finance-summary"><span>Recebimentos reais</span><strong>R$ {{ kpi.total_received_cents|money }}</strong></div><div class="finance-summary"><span>Devoluções reais</span><span>R$ {{ kpi.total_refunds_cents|money }}</span></div><div class="finance-summary"><span>Tarifas</span><span>R$ {{ kpi.total_fees_cents|money }}</span></div><div class="finance-summary"><span>Despesas pagas</span><span>R$ {{ kpi.total_expenses_cents|money }}</span></div><a class="btn btn-secondary" style="margin-top: 12px; display: inline-flex; align-items: center; gap: 6px;" href="{% url 'gestao:reports' selected_event.id %}"><i data-lucide="file-spreadsheet" style="width: 15px; height: 15px;"></i>Relatórios e exportações</a></div></details>{% endif %}
 {% if show_recent_orders %}<section class="card compact-panel"><div class="card-header"><h2 class="section-title">Últimos pedidos</h2></div>{% for order in recent_orders %}<div class="compact-record"><div class="stock-heading"><div class="compact-record-name"><strong>{{ order.purchaser_name }}</strong><small>{{ order.merchant_reference }} · {{ order.created_at|date:'d/m H:i' }}</small></div>{% if management_permissions.finance %}<strong class="compact-amount">R$ {{ order.total_cents|money }}</strong>{% endif %}</div><span class="badge {% if order.status == 'PAID' %}badge-success{% else %}badge-info{% endif %}">{{ order.get_status_display }}</span></div>{% empty %}<p class="empty-inline">Aguardando os primeiros pedidos válidos desta edição.</p>{% endfor %}</section>{% endif %}
-{% if show_recent_checkins %}<details class="card compact-details mg-section-gap"><summary>Últimas presenças</summary><div class="compact-records">{% for checkin in recent_checkins %}<div class="compact-record stock-heading"><strong>{{ checkin.registration.person.full_name }}</strong><span>{{ checkin.occurred_at|date:'d/m H:i' }}</span></div>{% empty %}<p class="empty-inline">Nenhuma presença registrada.</p>{% endfor %}</div></details>{% endif %}
+{% if show_recent_checkins %}<details class="card compact-details mg-section-gap"><summary><span><i data-lucide="user-check" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 8px; color: #f97316;"></i>Últimas presenças</span></summary><div class="compact-records">{% for checkin in recent_checkins %}<div class="compact-record stock-heading"><strong>{{ checkin.registration.person.full_name }}</strong><span>{{ checkin.occurred_at|date:'d/m H:i' }}</span></div>{% empty %}<p class="empty-inline">Nenhuma presença registrada.</p>{% endfor %}</div></details>{% endif %}
 {% else %}<section class="card"><p>Nenhum evento cadastrado.</p>{% if management_can_create_events %}<a class="btn btn-primary" href="{% url 'gestao:event_create' %}">Criar primeira edição</a>{% endif %}</section>{% endif %}
 {% endblock %}

@@ -40,8 +40,13 @@
 .stat-manage{display:inline-flex;align-items:center;min-height:44px;font-size:12px;color:inherit;text-decoration:underline;text-underline-offset:3px}
 .audit-dashboard-stats .stat-card{gap:6px}
 .audit-dashboard-stats .stat-value{font-size:clamp(19px,2vw,30px)}
-.compact-shortcuts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-.compact-shortcuts .btn{font-size:13px;min-height:44px}
+.compact-shortcuts{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:4px 2px 14px 2px;margin-bottom:12px}
+.compact-shortcuts::-webkit-scrollbar{display:none}
+.compact-shortcuts .shortcut-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;min-width:48px;flex:0 0 48px;border-radius:14px;background:var(--ui-panel,#241d18);border:1.5px solid var(--ui-border,rgba(236,206,181,0.18));color:var(--ui-text,#faf5ee);text-decoration:none;transition:all .15s ease;box-shadow:0 2px 8px rgba(0,0,0,0.15)}
+.compact-shortcuts .shortcut-icon-btn:hover{background:var(--ui-hover,#3a3028);border-color:#ea580c;color:#ea580c;transform:translateY(-2px)}
+.compact-shortcuts .shortcut-icon-btn:active{transform:scale(.94)}
+.compact-shortcuts .shortcut-icon-btn svg,.compact-shortcuts .shortcut-icon-btn i{width:22px;height:22px;stroke-width:2.2px}
+@media(max-width:580px){.compact-shortcuts{justify-content:center;gap:8px}.compact-shortcuts .shortcut-icon-btn{flex:0 0 46px;width:46px;height:46px;min-width:46px;max-width:46px;border-radius:12px}.compact-shortcuts .shortcut-icon-btn svg,.compact-shortcuts .shortcut-icon-btn i{width:20px;height:20px}}
 .compact-panel.card>.card-header{margin-bottom:10px;padding-bottom:0}
 .compact-panel .compact-record{margin:0}
 .compact-panel .compact-details{margin:0}
@@ -305,4 +310,223 @@
   .compact-panel.card{padding:12px}
   .compact-record{padding:10px 0}
   .sponsor-compact-participation{flex-direction:row;align-items:center}
+}
+
+
+/* ========================================================
+   iOS Liquid Glass Bottom Navigation (Estilo iPhone)
+   ======================================================== */
+@media (max-width: 900px) {
+  .management-main {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .mobile-nav {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 6px !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    height: 56px !important;
+    min-height: 56px !important;
+    padding: 4px 8px calc(6px + env(safe-area-inset-bottom, 0px)) 8px !important;
+    background: rgba(22, 17, 14, 0.82) !important;
+    backdrop-filter: blur(28px) saturate(210%) brightness(1.1) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(1.1) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 -1px 0 0 rgba(255, 255, 255, 0.08), 0 -10px 30px rgba(0, 0, 0, 0.5) !important;
+    box-sizing: content-box !important;
+  }
+  [data-theme="light"] .mobile-nav {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 -1px 0 0 rgba(255, 255, 255, 0.6), 0 -6px 24px rgba(0, 0, 0, 0.08) !important;
+  }
+  .mobile-nav a,
+  .mobile-nav button {
+    display: flex !important;
+    flex: 1 1 0 !important;
+    max-width: 68px !important;
+    min-width: 0 !important;
+    height: 46px !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.55) !important;
+    padding: 3px 2px !important;
+    border-radius: 12px !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  [data-theme="light"] .mobile-nav a,
+  [data-theme="light"] .mobile-nav button {
+    color: rgba(0, 0, 0, 0.55) !important;
+  }
+  .mobile-nav a .lucide,
+  .mobile-nav button .lucide {
+    width: 22px !important;
+    height: 22px !important;
+    stroke-width: 2 !important;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  .mobile-nav a span,
+  .mobile-nav button span {
+    font-size: 10px !important;
+    font-weight: 550 !important;
+    letter-spacing: -0.2px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+  .mobile-nav a:hover,
+  .mobile-nav button:hover {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+  .mobile-nav a:active,
+  .mobile-nav button:active {
+    transform: scale(0.92) !important;
+    opacity: 0.8 !important;
+  }
+  .mobile-nav a.is-active,
+  .mobile-nav button.is-active {
+    color: #f97316 !important;
+    background: rgba(234, 88, 12, 0.14) !important;
+    border: 1px solid rgba(234, 88, 12, 0.35) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 10px rgba(234, 88, 12, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+  .mobile-nav a.is-active .lucide,
+  .mobile-nav button.is-active .lucide {
+    color: #f97316 !important;
+    transform: translateY(-1px) scale(1.05) !important;
+  }
+}
+
+
+/* ========================================================
+   MORCEGO SIGNATURE CUSTOM FORM CONTROLS (UNIFIED & UNIQUE)
+   ======================================================== */
+select,
+select.form-control,
+.management-main select,
+.registration-page select,
+.payment-page select,
+.auth-page select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  display: block !important;
+  width: 100% !important;
+  min-height: 48px !important;
+  padding: 12px 42px 12px 16px !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  color: var(--ui-text, #faf5ee) !important;
+  background-color: var(--ui-panel, #241d18) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23ea580c' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 18px 18px !important;
+  border: 1.5px solid var(--ui-border, rgba(236, 206, 181, 0.2)) !important;
+  border-radius: 13px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  cursor: pointer !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+select:hover:not(:disabled),
+select.form-control:hover:not(:disabled) {
+  border-color: rgba(234, 88, 12, 0.6) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23f97316' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+select:focus,
+select:focus-visible,
+select.form-control:focus,
+select.form-control:focus-visible {
+  outline: none !important;
+  border-color: #ea580c !important;
+  background-color: var(--ui-panel-solid, #2b231d) !important;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+}
+
+select:disabled,
+select.form-control:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%2380756b' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+}
+
+select option,
+select optgroup {
+  background-color: #1c1714 !important;
+  color: #faf5ee !important;
+  padding: 12px 16px !important;
+  font-size: 14px !important;
+  font-family: inherit !important;
+}
+
+select option:checked {
+  background: #ea580c !important;
+  color: #ffffff !important;
+}
+
+input[type="checkbox"] {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  display: inline-grid !important;
+  place-content: center !important;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  margin: 0 !important;
+  vertical-align: middle !important;
+  background-color: var(--ui-panel, #241d18) !important;
+  border: 1.5px solid var(--ui-border, rgba(236, 206, 181, 0.25)) !important;
+  border-radius: 7px !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+input[type="checkbox"]:hover:not(:disabled) {
+  border-color: #ea580c !important;
+  transform: scale(1.04) !important;
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: 2px solid #ea580c !important;
+  outline-offset: 2px !important;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #ea580c !important;
+  border-color: #ea580c !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-size: 14px 14px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.45) !important;
 }

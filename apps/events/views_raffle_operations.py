@@ -94,16 +94,45 @@ def raffle_operations(request, event_id):
     points=raffle.sales_points.annotate(total=Count('tickets'),sold=Count('tickets',filter=Q(tickets__state='SOLD')),
         received=Sum('tickets__amount_cents',filter=Q(tickets__state='SOLD'))).order_by('name')
     tickets=raffle.tickets.select_related('point','registration__person').order_by('number')
-    number=request.GET.get('number','').strip();state=request.GET.get('state','')
-    if number.isascii() and number.isdigit() and len(number)<=10: tickets=tickets.filter(number=int(number))
-    elif number: tickets=tickets.none()
-    if state in RaffleTicket.State.values: tickets=tickets.filter(state=state)
-    return render(request,'gestao/raffles/operations.html',{'event':request.management_event,'raffle':raffle,'points':points,
-        'active_points':points.filter(active=True),
-        'page_obj':Paginator(tickets,50).get_page(request.GET.get('page')),'ticket_states':RaffleTicket.State.choices,
-        'total':raffle.tickets.count(),'confirmed':tickets_for_event(raffle).filter(state='SOLD').count(),
-        'paper_count':raffle.paper_end-raffle.paper_start+1,'number_filter':number,'state_filter':state,
-        'pagination_query': urlencode({'number': number, 'state': state})}, status=status)
+    
+    q = request.GET.get('q', '').strip()
+    source_filter = request.GET.get('source', '').strip()
+    state = request.GET.get('state', '').strip()
+
+    if q:
+        if q.isdigit() and len(q) <= 10:
+            tickets = tickets.filter(Q(number=int(q)) | Q(buyer_phone__icontains=q) | Q(registration__person__phone__icontains=q))
+        else:
+            tickets = tickets.filter(Q(buyer_name__icontains=q) | Q(registration__person__full_name__icontains=q))
+            
+    if source_filter in ('REGISTRATION', 'ONLINE', 'PAPER'):
+        tickets = tickets.filter(source=source_filter)
+        
+    if state in RaffleTicket.State.values:
+        tickets = tickets.filter(state=state)
+
+    total_confirmed = raffle.tickets.filter(state='SOLD').count()
+    registration_count = raffle.tickets.filter(source='REGISTRATION', state='SOLD').count()
+    online_count = raffle.tickets.filter(source='ONLINE', state='SOLD').count()
+    online_revenue = raffle.tickets.filter(source='ONLINE', state='SOLD').aggregate(s=Sum('amount_cents'))['s'] or 0
+
+    return render(request, 'gestao/raffles/operations.html', {
+        'event': request.management_event,
+        'raffle': raffle,
+        'points': points,
+        'active_points': points.filter(active=True),
+        'page_obj': Paginator(tickets, 50).get_page(request.GET.get('page')),
+        'ticket_states': RaffleTicket.State.choices,
+        'total': raffle.tickets.count(),
+        'confirmed': total_confirmed,
+        'registration_count': registration_count,
+        'online_count': online_count,
+        'online_revenue_reais': Decimal(online_revenue) / 100,
+        'q': q,
+        'source_filter': source_filter,
+        'state_filter': state,
+        'pagination_query': urlencode({'q': q, 'source': source_filter, 'state': state}),
+    }, status=status)
 
 
 @management_required

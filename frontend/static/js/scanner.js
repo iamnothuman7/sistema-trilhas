@@ -124,21 +124,42 @@ window.EventScanner = class EventScanner {
         try {
             await this.prepareDecoder();
             if (generation !== this.cameraGeneration) return;
-            const constraints = deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: this.cameraFacing } };
-            let stream;
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { ...constraints, width: { ideal: 1280 }, height: { ideal: 720 } } });
-            } catch (error) {
-                if (!['OverconstrainedError', 'NotFoundError'].includes(error.name)) throw error;
-                if (generation !== this.cameraGeneration) return;
-                stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+            let stream = null;
+            const attempts = [
+                deviceId ? { video: { deviceId: { exact: deviceId } }, audio: false } : null,
+                { video: { facingMode: { ideal: this.cameraFacing }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+                { video: { facingMode: { ideal: this.cameraFacing } }, audio: false },
+                { video: { facingMode: this.cameraFacing }, audio: false },
+                { video: true, audio: false }
+            ].filter(Boolean);
+
+            let lastError = null;
+            for (const constraint of attempts) {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia(constraint);
+                    if (stream) break;
+                } catch (err) {
+                    lastError = err;
+                    if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+                        throw err;
+                    }
+                }
+            }
+            if (!stream) {
+                throw lastError || new Error('CAMERA_FAILED');
             }
             if (generation !== this.cameraGeneration) { stream.getTracks().forEach(track => track.stop()); return; }
             this.stream = stream;
-            this.video.srcObject = stream;
             this.video.muted = true;
             this.video.setAttribute('playsinline', '');
-            await this.video.play();
+            this.video.setAttribute('webkit-playsinline', '');
+            this.video.srcObject = stream;
+            try {
+                await this.video.play();
+            } catch (playErr) {
+                this.video.muted = true;
+                await this.video.play();
+            }
             if (generation !== this.cameraGeneration) return;
             this.deviceId = stream.getVideoTracks()[0]?.getSettings?.().deviceId || '';
             try { this.devices = (await navigator.mediaDevices.enumerateDevices()).filter(device => device.kind === 'videoinput'); } catch (_) { this.devices = []; }
@@ -305,81 +326,150 @@ window.EventScanner = class EventScanner {
         const eligible = data.eligible !== false && data.commercial_state === 'ACTIVE' && ['READY', 'CHECKED_IN'].includes(data.operational_state);
         const hasCheckedIn = Boolean(data.has_checked_in);
         const card = this.node('div', 'card mg-scanner-participant');
+        
+        // Cabeçalho do Piloto
         const heading = this.node('div', 'mg-row mg-element-gap');
         const person = this.node('div');
         person.append(
             this.node('h2', 'section-title', '#' + (data.number || '—') + ' · ' + (data.name || 'Participante')),
             this.node('p', 'text-muted mg-meta', 'Equipe: ' + (data.team || '—') + ' · Cidade: ' + (data.city || '—') + ' · Categoria: ' + (data.category || '—')),
-            this.node('p', 'mg-strong mg-text-brand', 'Camiseta: ' + (data.shirt_size || '—'))
+            this.node('p', 'mg-strong mg-text-brand', 'Camiseta do Piloto: Tamanho ' + (data.shirt_size || '—'))
         );
-        const status = hasCheckedIn ? 'Presença confirmada' : eligible ? 'Aguardando check-in' : 'Inscrição com pendência';
-        heading.append(person, this.node('span', 'badge ' + (hasCheckedIn ? 'badge-success' : 'badge-warning'), status));
+        const statusText = hasCheckedIn ? 'Presença Confirmada' : eligible ? 'Apto para Check-in' : 'Pendente';
+        heading.append(person, this.node('span', 'badge ' + (hasCheckedIn ? 'badge-success' : 'badge-warning'), statusText));
         card.append(heading);
+
         this.actionMessage = this.node('div', 'alert alert-error mg-element-gap');
         this.actionMessage.setAttribute('role', 'alert');
         this.actionMessage.hidden = true;
         card.append(this.actionMessage);
-        if (!eligible) card.append(this.node('p', 'alert alert-warning mg-element-gap', 'Credenciamento e entregas indisponíveis. ' + (data.blocked_reason || 'A inscrição precisa estar ativa e liberada para participação.')));
-        if (hasCheckedIn) {
-            card.append(this.node('p', 'alert alert-success mg-element-gap', 'Presença registrada' + (data.checked_in_at ? ' às ' + data.checked_in_at : '') + '.'));
-        } else if (eligible) {
-            const checkin = this.node('button', 'btn btn-primary btn-block mg-element-gap');
-            checkin.type = 'button';
-            checkin.append(this.icon('scan-line'), document.createTextNode('Confirmar presença'));
-            checkin.addEventListener('click', () => this.confirmCheckin(data.registration_id, checkin));
-            card.append(checkin);
+
+        if (!eligible) {
+            card.append(this.node('p', 'alert alert-warning mg-element-gap', 'Inscrição com pendência: ' + (data.blocked_reason || 'Consulte a organização.')));
+            this.resultContainer.replaceChildren(card);
+            return;
         }
-        const benefits = this.node('div', 'mg-inset-card');
-        benefits.append(this.node('h3', 'section-title', 'Kits e materiais'));
+
         const entitlements = Array.isArray(data.entitlements) ? data.entitlements : [];
-        entitlements.forEach(entitlement => {
-            const remaining = Math.max(0, Number(entitlement.quantity_total) - Number(entitlement.quantity_used));
-            const row = this.node('div', 'mg-row mg-scanner-benefit');
-            const description = this.node('div');
-            description.append(
-                this.node('strong', '', entitlement.title),
-                this.node('p', 'text-muted mg-meta', 'Entregue: ' + (entitlement.quantity_used ?? 0) + ' / ' + (entitlement.quantity_total ?? 0) + ' · Restante: ' + remaining)
+        const kitBenefits = entitlements.filter(e => e.benefit_type !== 'ADICIONAL');
+        const extraBenefits = entitlements.filter(e => e.benefit_type === 'ADICIONAL');
+
+        // SEÇÃO 1: KIT DO PILOTO (Botão Único em Destaque)
+        const kitSection = this.node('div', 'mg-inset-card mg-element-gap');
+        kitSection.style.border = '2px solid #22c55e';
+        kitSection.style.borderRadius = '12px';
+        kitSection.style.padding = '16px';
+        kitSection.style.backgroundColor = 'rgba(34, 197, 94, 0.05)';
+
+        const kitHeader = this.node('div', 'mg-row');
+        const kitTitle = this.node('h3', 'section-title');
+        kitTitle.style.display = 'inline-flex';
+        kitTitle.style.alignItems = 'center';
+        kitTitle.style.gap = '6px';
+        kitTitle.append(this.icon('package'), document.createTextNode('Kit Oficial do Piloto'));
+
+        kitHeader.append(
+            kitTitle,
+            this.node('span', 'badge badge-success', 'Camiseta ' + (data.shirt_size || 'M'))
+        );
+        kitSection.append(kitHeader);
+
+        const kitConsumed = kitBenefits.length > 0 && kitBenefits.every(e => e.is_consumed || e.quantity_used >= e.quantity_total);
+        if (kitConsumed && hasCheckedIn) {
+            const deliveredBadge = this.node('div', 'alert alert-success');
+            deliveredBadge.style.display = 'flex';
+            deliveredBadge.style.alignItems = 'center';
+            deliveredBadge.style.gap = '8px';
+            deliveredBadge.append(
+                this.icon('check-circle-2'),
+                document.createTextNode('Kit Oficial do Piloto já entregue' + (data.checked_in_at ? ' (Check-in às ' + data.checked_in_at + ')' : '') + '.')
             );
-            row.append(description);
-            const consumed = entitlement.is_consumed || Number(entitlement.quantity_used) >= Number(entitlement.quantity_total);
-            if (entitlement.state === 'REVOKED') row.append(this.node('span', 'badge badge-danger', 'Revogado'));
-            else if (consumed) row.append(this.node('span', 'badge badge-success', 'Retirado'));
-            else if (!eligible) row.append(this.node('span', 'badge badge-warning', 'Indisponível'));
-            else {
-                const controls = this.node('div', 'scanner-delivery-controls');
-                const pending = this.deliveryIntentions[entitlement.id];
-                let quantityInput;
-                if (remaining > 1) {
-                    const label = this.node('label', '', 'Quantidade a entregar');
-                    quantityInput = this.node('input', 'form-control scanner-quantity');
-                    quantityInput.type = 'number';
-                    quantityInput.min = '1';
-                    quantityInput.max = String(Math.min(remaining, 1000));
-                    quantityInput.value = String(pending?.quantity || 1);
-                    quantityInput.readOnly = Boolean(pending);
-                    label.append(quantityInput);
-                    controls.append(label);
+            kitSection.append(deliveredBadge);
+        } else {
+            const deliverKitBtn = this.node('button', 'btn btn-primary btn-block');
+            deliverKitBtn.style.backgroundColor = '#16a34a';
+            deliverKitBtn.style.fontSize = '1.05rem';
+            deliverKitBtn.style.padding = '14px';
+            deliverKitBtn.style.fontWeight = '700';
+            deliverKitBtn.type = 'button';
+            deliverKitBtn.append(this.icon('package-check'), document.createTextNode(' ENTREGAR KIT DO PILOTO (TAMANHO ' + (data.shirt_size || 'M') + ')'));
+            deliverKitBtn.addEventListener('click', async () => {
+                if (!hasCheckedIn) {
+                    await this.confirmCheckin(data.registration_id, deliverKitBtn);
                 }
-                const deliver = this.node('button', 'btn btn-sm btn-secondary');
-                deliver.type = 'button';
-                deliver.append(this.icon('package-check'), document.createTextNode(pending ? 'Conferir entrega pendente' : remaining > 1 ? 'Confirmar entrega' : 'Entregar 1 unidade'));
-                deliver.addEventListener('click', () => this.deliverBenefit(entitlement.id, deliver, pending?.quantity || Number(quantityInput?.value || 1)));
-                controls.append(deliver);
-                row.append(controls);
-            }
-            benefits.append(row);
-        });
-        if (!entitlements.length) benefits.append(this.node('p', 'text-muted mg-meta', 'Nenhum kit cadastrado para esta modalidade.'));
-        card.append(benefits);
-        const history = this.node('section', 'scanner-delivery-history');
-        history.append(this.node('h3', 'section-title', 'Histórico de entregas'));
+                for (const b of kitBenefits) {
+                    if (!b.is_consumed && b.quantity_used < b.quantity_total) {
+                        await this.deliverBenefit(b.id, deliverKitBtn, b.quantity_total - b.quantity_used);
+                    }
+                }
+            });
+            kitSection.append(deliverKitBtn);
+        }
+        card.append(kitSection);
+
+        // SEÇÃO 2: PRODUTOS EXTRAS COMPRADOS
+        const extraSection = this.node('div', 'mg-inset-card mg-element-gap');
+        extraSection.style.borderRadius = '12px';
+        extraSection.style.padding = '16px';
+        const extraTitle = this.node('h3', 'section-title');
+        extraTitle.style.display = 'inline-flex';
+        extraTitle.style.alignItems = 'center';
+        extraTitle.style.gap = '6px';
+        extraTitle.append(this.icon('shopping-bag'), document.createTextNode('Produtos Extras Comprados'));
+        extraSection.append(extraTitle);
+
+        if (!extraBenefits.length) {
+            extraSection.append(this.node('p', 'text-muted mg-meta', 'Nenhum produto extra vinculado a esta inscrição.'));
+        } else {
+            extraBenefits.forEach(extra => {
+                const remaining = Math.max(0, Number(extra.quantity_total) - Number(extra.quantity_used));
+                const extraRow = this.node('div', 'mg-row mg-scanner-benefit');
+                extraRow.style.padding = '10px 0';
+                extraRow.style.borderBottom = '1px solid var(--border)';
+                const desc = this.node('div');
+                desc.append(
+                    this.node('strong', '', extra.title),
+                    this.node('p', 'text-muted mg-meta', 'Quantidade: ' + extra.quantity_total + ' · Já entregue: ' + extra.quantity_used + ' · Restante: ' + remaining)
+                );
+                extraRow.append(desc);
+
+                if (extra.is_consumed || remaining === 0) {
+                    const deliveredTag = this.node('span', 'badge badge-success');
+                    deliveredTag.style.display = 'inline-flex';
+                    deliveredTag.style.alignItems = 'center';
+                    deliveredTag.style.gap = '4px';
+                    deliveredTag.append(this.icon('check'), document.createTextNode('Entregue'));
+                    extraRow.append(deliveredTag);
+                } else {
+                    const deliverExtraBtn = this.node('button', 'btn btn-sm btn-secondary');
+                    deliverExtraBtn.type = 'button';
+                    deliverExtraBtn.append(this.icon('package-check'), document.createTextNode('Entregar ' + remaining + ' un'));
+                    deliverExtraBtn.addEventListener('click', () => this.deliverBenefit(extra.id, deliverExtraBtn, remaining));
+                    extraRow.append(deliverExtraBtn);
+                }
+                extraSection.append(extraRow);
+            });
+        }
+        card.append(extraSection);
+
+        // SEÇÃO 3: HISTÓRICO EXPANSÍVEL (VER MAIS)
+        const detailsWrapper = this.node('details', 'mg-element-gap');
+        const summary = this.node('summary', 'text-muted', 'Ver histórico detalhado de entregas');
+        summary.style.cursor = 'pointer';
+        summary.style.fontSize = '0.85rem';
+        summary.style.padding = '8px 0';
+        detailsWrapper.append(summary);
+
+        const historyList = this.node('ul');
         const deliveries = Array.isArray(data.delivery_history) ? data.delivery_history : [];
         if (deliveries.length) {
-            const list = this.node('ul');
-            deliveries.forEach(item => list.append(this.node('li', '', item.occurred_at + ' · ' + item.quantity + ' × ' + item.title + ' · ' + (item.action === 'REVERSED' ? 'Estorno por ' : 'Entregue por ') + item.operator)));
-            history.append(list, this.node('p', 'text-muted mg-meta', 'Até 20 movimentações mais recentes desta inscrição.'));
-        } else history.append(this.node('p', 'text-muted', 'Nenhuma entrega registrada para esta inscrição.'));
-        card.append(history);
+            deliveries.forEach(item => historyList.append(this.node('li', 'text-muted mg-meta', item.occurred_at + ' · ' + item.quantity + ' × ' + item.title + ' · Por ' + item.operator)));
+        } else {
+            historyList.append(this.node('li', 'text-muted mg-meta', 'Nenhuma movimentação anterior registrada.'));
+        }
+        detailsWrapper.append(historyList);
+        card.append(detailsWrapper);
+
         this.resultContainer.replaceChildren(card);
         window.renderTrilhasIcons?.(this.resultContainer);
     }

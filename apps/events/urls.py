@@ -14,5 +14,6 @@ urlpatterns = [
     path("eventos/<slug:slug>/patrocinadores/", views.event_sponsors, name="sponsors"),
     path("eventos/<slug:slug>/molduras/", views.event_frames, name="frames"),
     path("eventos/<slug:slug>/sorteio/", views_raffles.raffle_detail, name="raffle"),
+    path("eventos/<slug:slug>/sorteio/comprar/", views_raffles.raffle_standalone_buy, name="raffle_buy"),
     path("eventos/<slug:slug>/sorteio/interesse/", views_raffles.raffle_interest, name="raffle_interest"),
 ]

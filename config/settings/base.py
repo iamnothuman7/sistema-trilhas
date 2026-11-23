@@ -65,6 +65,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "apps.identity.middleware.AuthenticationRateLimitMiddleware",
     "apps.core.middleware.EventSubdomainMiddleware",
+    "apps.core.middleware.TrafficAnalyticsMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.HtmxNavigationMiddleware",

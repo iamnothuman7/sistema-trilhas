@@ -56,6 +56,8 @@ def dashboard(request):
     show_recent_orders = bool(event and (can_manage_event(request.user, event, "finance") or
                                         can_manage_event(request.user, event, "registrations")))
     show_recent_checkins = bool(event and can_manage_event(request.user, event, "checkin"))
+    raffle = getattr(event, 'motorcycle_raffle', None) if event else None
+    raffle_tickets_count = raffle.tickets.count() if raffle else 0
     # The overview obeys the same capabilities as each detailed workspace.
     recent_orders = Order.objects.filter(event=event,is_test=False).exclude(lines__registration__archived_at__isnull=False).order_by("-created_at")[:8] if show_recent_orders else []
     recent_checkins = CheckinRecord.objects.filter(event=event,registration__archived_at__isnull=True,registration__commercial_state='ACTIVE',registration__source_order_line__order__is_test=False).select_related("registration", "registration__person").order_by("-occurred_at")[:6] if show_recent_checkins else []
@@ -68,6 +70,7 @@ def dashboard(request):
         "recent_checkins": recent_checkins,
         "show_recent_orders": show_recent_orders,
         "show_recent_checkins": show_recent_checkins,
+        "raffle_tickets_count": raffle_tickets_count,
     })
 
 
@@ -390,11 +393,21 @@ def credenciamento_scanner(request, event_id):
     Leitura de QR Code pela câmera ou digitação rápida do código.
     """
     event = get_object_or_404(Event.objects.select_related("theme"), id=event_id)
-    recent_checkins = CheckinRecord.objects.filter(event=event).select_related("registration", "registration__person").order_by("-occurred_at")[:10]
+    recent_checkins = CheckinRecord.objects.filter(event=event).select_related(
+        "registration", "registration__person"
+    ).prefetch_related("registration__entitlements").order_by("-occurred_at")[:10]
+    total_confirmed = Registration.objects.filter(event=event, commercial_state="ACTIVE").count()
+    total_checked_in = CheckinRecord.objects.filter(event=event).count()
+    total_pending = max(0, total_confirmed - total_checked_in)
 
     return render(request, "gestao/credenciamento/scanner.html", {
         "event": event,
         "recent_checkins": recent_checkins,
+        "stats": {
+            "confirmed": total_confirmed,
+            "checked_in": total_checked_in,
+            "pending": total_pending,
+        },
     })
 
 
@@ -499,6 +512,10 @@ def credenciamento_confirm_api(request, event_id):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
     from apps.registrations.eligibility import credential_is_available
+    from apps.core.permissions import has_event_permission
+    event = get_object_or_404(Event, id=event_id)
+    if not has_event_permission(request.user, event, "checkin", "checkin"):
+        return JsonResponse({"success": False, "error": "Sua conta não tem permissão para confirmar check-in."}, status=403)
 
     try:
         reg_id = uuid.UUID(request.POST.get("registration_id", ""))
@@ -539,6 +556,8 @@ def deliver_benefit_api(request, event_id):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
     from apps.registrations.eligibility import credential_is_available
+    from apps.core.permissions import has_event_permission
+    event = get_object_or_404(Event, id=event_id)
 
     try:
         ent_id = uuid.UUID(request.POST.get("entitlement_id", ""))
@@ -557,6 +576,11 @@ def deliver_benefit_api(request, event_id):
         ent = Entitlement.objects.select_for_update().filter(id=ent_id, registration_id=reg.pk).first()
         if not ent:
             return JsonResponse({"success": False, "error": "Benefício não encontrado."}, status=404)
+
+        is_kit = ent.benefit_type in ("KIT", "SHIRT")
+        required_act = "deliver_kit" if is_kit else "deliver_addon"
+        if not has_event_permission(request.user, event, "checkin", required_act):
+            return JsonResponse({"success": False, "error": f"Sua conta não tem permissão para {'entregar kit/camiseta' if is_kit else 'entregar produtos extras'}."}, status=403)
 
         source_key = f"DELIVER-{ent.id}-{idempotency_key}"
         previous = Consumption.objects.filter(entitlement=ent, source_key=source_key, action="DELIVERED").first()
@@ -607,21 +631,31 @@ def deliver_benefit_api(request, event_id):
 @staff_required_custom
 @never_cache
 @require_GET
+@management_required
 def catalog_management(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     from django.db.models import Prefetch
-    from apps.catalog.models import ProductVariant
-    products = Product.objects.filter(event=event,active=True).prefetch_related(Prefetch('lots',queryset=Lot.objects.filter(active=True)),Prefetch('variants',queryset=ProductVariant.objects.filter(active=True)))
-    coupons = Coupon.objects.filter(event=event,active=True).order_by("-valid_until")
-    inventory = InventoryItem.objects.filter(event=event)
-    from apps.checkout.addons import inventory_items
+    products = Product.objects.filter(event=event, active=True).prefetch_related(
+        Prefetch('lots', queryset=Lot.objects.filter(active=True).order_by('opens_at'))
+    )
+    coupons = Coupon.objects.filter(event=event, active=True).order_by("-valid_until")
 
     return render(request, "gestao/catalog/catalog.html", {
         "event": event,
         "products": products,
         "coupons": coupons,
-        "inventory": inventory,
-        "addons": inventory_items(event, active=True),
+    })
+
+
+@management_required
+def addons_management(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    from apps.checkout.addons import inventory_items
+    addons = inventory_items(event, active=None)
+
+    return render(request, "gestao/catalog/addons.html", {
+        "event": event,
+        "addons": addons,
     })
 
 
@@ -723,8 +757,11 @@ def _finance_context(request, event, expense_form=None):
 @staff_required_custom
 @require_POST
 def add_expense(request, event_id):
-    from apps.core.permissions import require_event_access
+    from apps.core.permissions import require_event_access, has_event_permission
+    from django.core.exceptions import PermissionDenied
     event = require_event_access(request, event_id, action="finance")
+    if not has_event_permission(request.user, event, "finance", "add_expense"):
+        raise PermissionDenied("Sua conta não tem permissão para cadastrar despesas.")
     form = ExpenseForm(request.POST, request.FILES, event=event)
     if form.is_valid():
         try:
@@ -749,8 +786,11 @@ def add_expense(request, event_id):
 @require_POST
 def pay_expense(request, event_id, expense_id):
     from django import forms
-    from apps.core.permissions import require_event_access
+    from apps.core.permissions import require_event_access, has_event_permission
+    from django.core.exceptions import PermissionDenied
     event = require_event_access(request, event_id, action="finance")
+    if not has_event_permission(request.user, event, "finance", "pay_expense"):
+        raise PermissionDenied("Sua conta não tem permissão para dar baixa em despesas.")
     get_object_or_404(Expense, pk=expense_id, event=event)
     try:
         paid_at = forms.DateField(input_formats=["%Y-%m-%d"]).clean(request.POST.get("paid_at") or timezone.localdate().isoformat())
@@ -779,13 +819,43 @@ def cancel_expense(request, event_id, expense_id):
 
 @staff_required_custom
 @never_cache
-@require_GET
 def frame_management(request, event_id):
     event = request.management_event
     from apps.mediaframes.events_config import get_event_versions
+    from apps.mediaframes.models import FrameTemplate, FrameFormat
+
+    if request.method == "POST":
+        action = request.POST.get("action", "create")
+        if action == "delete":
+            tmpl_id = request.POST.get("template_id")
+            FrameTemplate.objects.filter(event=event, id=tmpl_id).delete()
+            messages.success(request, "Moldura personalizada excluída.")
+            return redirect("gestao:frames", event_id=event.pk)
+
+        title = request.POST.get("title", f"Moldura Oficial {event.title}").strip()
+        format_val = request.POST.get("format", FrameFormat.STORY_1080x1920)
+        overlay_file = request.FILES.get("overlay_asset")
+        if not overlay_file:
+            messages.error(request, "Selecione o arquivo PNG transparente da moldura.")
+        else:
+            w, h = (1080, 1350) if format_val == FrameFormat.FEED_1080x1350 else (1080, 1920)
+            FrameTemplate.objects.create(
+                event=event,
+                title=title,
+                format=format_val,
+                width=w,
+                height=h,
+                overlay_asset=overlay_file,
+                is_active=True
+            )
+            messages.success(request, f"Moldura '{title}' salva com sucesso!")
+            return redirect("gestao:frames", event_id=event.pk)
+
+    custom_templates = FrameTemplate.objects.filter(event=event).order_by("-created_at")
     return render(request, "gestao/mediaframes/frame_list.html", {
         "event": event,
         "official_version": get_event_versions(event)[0],
+        "custom_templates": custom_templates,
         "frame_formats": [
             {"id": "story", "label": "Story", "dimensions": "1080 × 1920", "ratio": "9:16"},
             {"id": "feed", "label": "Feed", "dimensions": "1080 × 1350", "ratio": "4:5"},
@@ -795,16 +865,23 @@ def frame_management(request, event_id):
 
 @staff_required_custom
 def export_participants(request, event_id):
+    from apps.core.permissions import has_event_permission
+    from django.core.exceptions import PermissionDenied
     event = get_object_or_404(Event, id=event_id)
+    if not has_event_permission(request.user, event, "registrations", "export"):
+        raise PermissionDenied("Sua conta não tem permissão para exportar a lista de participantes.")
     log_audit(actor=request.user, event_id=event.id, action="EXPORT_PARTICIPANTS_CSV", entity_type="Event", entity_id=event.id, request=request)
     return export_participants_csv(event)
 
 
 @staff_required_custom
 def export_financial(request, event_id):
-    from apps.core.permissions import require_event_access
+    from apps.core.permissions import require_event_access, has_event_permission
+    from django.core.exceptions import PermissionDenied
     from django.http import HttpResponseBadRequest
     event = require_event_access(request, event_id, action="finance")
+    if not has_event_permission(request.user, event, "finance", "export"):
+        raise PermissionDenied("Sua conta não tem permissão para exportar a conciliação financeira.")
     form = DateRangeForm(request.GET)
     if not form.is_valid():
         return HttpResponseBadRequest("Período inválido. Confira as datas do relatório.")

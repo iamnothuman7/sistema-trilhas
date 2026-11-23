@@ -44,9 +44,8 @@ def private_checkout(view):
 
 def _registration_context(request, event, products, active_lots):
     buyer = {}
-    for field, user_field in (("name", "full_name"), ("email", "email"), ("phone", "phone"), ("document", "")):
-        buyer[field] = request.POST.get(f"purchaser_{field}", "") if request.method == "POST" else (
-            getattr(request.user, user_field, "") if request.user.is_authenticated and user_field else "")
+    for field in ("name", "email", "phone", "document"):
+        buyer[field] = request.POST.get(f"purchaser_{field}", "") if request.method == "POST" else ""
     rows = []
     names = request.POST.getlist("participant_name[]")[:settings.CHECKOUT_MAX_PARTICIPANTS] if request.method == "POST" else []
     for index, name in enumerate(names):
@@ -72,11 +71,17 @@ def _registration_context(request, event, products, active_lots):
         if not product.includes_shirt:
             sizes = [("", "Esta inscrição não inclui camiseta", 0,None)]
         shirt_options.extend({"product_id":str(product.pk),"code":code,"label":label,"extra_cents":extra,"sold_out":available==0} for code,label,extra,available in sizes)
+    from apps.catalog.models import AddOn
+    from apps.events.models import MotorcycleRaffle
+    available_addons = list(AddOn.objects.filter(event=event, active=True))
+    raffle = MotorcycleRaffle.objects.filter(event=event, is_public=True).first()
     return {"event": event, "products": products, "active_lots": active_lots, "shirt_options": shirt_options, "vehicle_choices": VehicleType.choices,
-            "buyer_is_participant": request.method != "POST" or request.POST.get("buyer_is_participant") == "on",
+            "buyer_is_participant": request.method == "POST" and request.POST.get("buyer_is_participant") == "on",
             "buyer": buyer, "participant_rows": rows, "coupon_code": request.POST.get("coupon_code", ""),
             "max_participants": settings.CHECKOUT_MAX_PARTICIPANTS,
-            "payments_available": not MercadoPagoGateway().configuration_issues()}
+            "payments_available": not MercadoPagoGateway().configuration_issues(),
+            "available_addons": available_addons,
+            "raffle": raffle}
 
 
 @private_checkout
@@ -158,6 +163,10 @@ def start_registration(request, event_slug):
             messages.error(request, "Por favor, preencha todos os campos obrigatórios do comprador e dos pilotos.")
             return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots))
 
+        if request.POST.get("terms_accepted") != "on":
+            messages.error(request, "É obrigatório ler e aceitar os termos de responsabilidade e regulamento para continuar.")
+            return render(request, "checkout/registration_form.html", _registration_context(request, event, products, active_lots), status=400)
+
         errors = []
         try:
             validate_email(purchaser_email)
@@ -197,7 +206,11 @@ def start_registration(request, event_slug):
                         raise ValidationError("E-mail muito longo.")
                 except ValidationError:
                     errors.append(f"{label}: informe um e-mail válido ou deixe esse campo em branco.")
-            if participant["state"] and not re.fullmatch(r"[A-Z]{2}", participant["state"]):
+            if not participant["city"]:
+                errors.append(f"{label}: informe ou selecione sua cidade.")
+            if not participant["state"]:
+                errors.append(f"{label}: selecione seu estado (UF).")
+            elif not re.fullmatch(r"[A-Z]{2}", participant["state"]):
                 errors.append(f"{label}: informe a UF com duas letras, como CE.")
             if any(len(participant[field]) > limit for field, limit in (("phone", 30), ("city", 100), ("team", 120), ("shirt", 30))):
                 errors.append(f"{label}: revise o tamanho dos campos de telefone, cidade, equipe e camiseta.")
@@ -222,11 +235,35 @@ def start_registration(request, event_slug):
                 if not decision.allowed:
                     raise ReservationLimit(decision)
 
+        # Pontos extras do sorteio e itens adicionais
+        from apps.catalog.models import AddOn
+        extra_raffle_qty = 0
+        try:
+            extra_raffle_qty = max(0, min(50, int(request.POST.get("extra_raffle_qty", 0))))
+        except (ValueError, TypeError):
+            extra_raffle_qty = 0
+
+        selected_addons = []
+        for addon in AddOn.objects.filter(event=event, active=True):
+            raw_qty = request.POST.get(f"addon_qty_{addon.pk}", "0")
+            try:
+                qty = int(raw_qty)
+            except (ValueError, TypeError):
+                qty = 0
+            if qty > 0:
+                variant_code = request.POST.get(f"addon_variant_{addon.pk}", "").strip()
+                selected_addons.append({
+                    "addon": addon,
+                    "quantity": min(qty, addon.max_quantity),
+                    "variant_code": variant_code,
+                })
+
         try:
             order = reserve_order(event=event, participants=participants,
                 buyer={"name": purchaser_name, "email": purchaser_email, "phone": purchaser_phone, "document": purchaser_doc},
                 purchaser_user=request.user if request.user.is_authenticated else None,
-                coupon_code=coupon_code, check_budget=check_budget)
+                coupon_code=coupon_code, check_budget=check_budget,
+                selected_addons=selected_addons, extra_raffle_tickets=extra_raffle_qty)
         except ValidationError as exc:
             for error in exc.messages:
                 messages.error(request, error)

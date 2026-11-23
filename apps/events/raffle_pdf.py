@@ -16,19 +16,19 @@ def build_tickets_pdf(raffle, tickets, *, globo=False):
     pages=max(1,(len(tickets)+per_page-1)//per_page)
     for page in range(pages):
         pdf.setFillColor(HexColor('#17120f'));pdf.setFont('Helvetica-Bold',12)
-        title='Números confirmados para recorte' if globo else 'Bilhetes em papel · canhoto e participante'
+        title='Números confirmados para o globo' if globo else 'Comprovantes de Números da Sorte'
         pdf.drawString(margin,height-32,title)
         pdf.setFont('Helvetica',9)
         pdf.drawString(margin,height-48,raffle.event.title[:95])
         pdf.drawRightString(width-margin,22,f'Página {page+1} de {pages}')
         if not tickets:
-            pdf.drawString(margin,height-95,'Nenhum bilhete disponível para esta seleção. Gere o lote no painel interno.')
+            pdf.drawString(margin,height-95,'Nenhum bilhete disponível para esta seleção.')
         for index,ticket in enumerate(tickets[page*per_page:(page+1)*per_page]):
             col,row=index%columns,index//columns;x=margin+col*cell_width;y=height-70-(row+1)*cell_height
             pdf.setStrokeColor(HexColor('#a8a29e'));pdf.setDash(3,3);pdf.rect(x,y,cell_width,cell_height);pdf.setDash()
             if globo:
                 pdf.setFont('Helvetica-Bold',30);pdf.drawCentredString(x+cell_width/2,y+cell_height*.42,f'{ticket.number:04d}')
-                pdf.setFont('Helvetica',7);pdf.drawCentredString(x+cell_width/2,y+12,{'REGISTRATION':'INSCRIÇÃO','ONLINE':'EXTRA ONLINE','PAPER':'PAPEL'}[ticket.source])
+                pdf.setFont('Helvetica',7);pdf.drawCentredString(x+cell_width/2,y+12,{'REGISTRATION':'INSCRIÇÃO PILOTO','ONLINE':'EXTRA ONLINE','PAPER':'DIGITAL'}.get(ticket.source, 'DIGITAL'))
             else:
                 split=x+cell_width*.36
                 pdf.setDash(3,3);pdf.line(split,y,split,y+cell_height);pdf.setDash()

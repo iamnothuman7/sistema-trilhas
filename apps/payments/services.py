@@ -20,7 +20,7 @@ from apps.events.models import LegalDocumentVersion
 from apps.finance.models import FinancialEntry, FinancialEntryKind
 from apps.registrations.models import (
     Registration, CommercialState, OperationalState, RegistrationCredential,
-    Entitlement, EntitlementState,
+    Entitlement, EntitlementState, BenefitType,
 )
 from .gateway import MercadoPagoGateway, GatewayError
 from .models import ChargeAttempt, ChargeState, PaymentAllocation, PaymentMethod, PaymentTransaction, Refund, RefundState, RefundChannel
@@ -119,25 +119,33 @@ def _commit_capacity(order, approved_at):
         if resource_id and (len(shirt_holds)!=1 or shirt_holds[0].resource_id!=resource_id or shirt_holds[0].quantity!=1):
             return False
     addon_lines = list(order.lines.filter(addon__isnull=False))
-    raffle_lines=list(order.lines.filter(raffle__isnull=False))
+    raffle_lines = list(order.lines.filter(raffle__isnull=False))
     if raffle_lines:
         from apps.events.models_raffles import MotorcycleRaffle
-        raffles=list(MotorcycleRaffle.objects.select_for_update().filter(pk__in=[line.raffle_id for line in raffle_lines]))
-        if any(hasattr(raffle,'result') for raffle in raffles):return False
-        registrations={line.linked_registration_id for line in raffle_lines}
-        eligible=Registration.objects.filter(pk__in=registrations,event_id=order.event_id,commercial_state='ACTIVE',
-            archived_at__isnull=True,source_order_line__order__status=OrderStatus.PAID).count()
-        if None in registrations or eligible!=len(registrations):return False
-        raffle_holds={hold.order_line_id:hold for hold in holds if resources[hold.resource_id].type=='RAFFLE_TOTAL'}
-        if set(raffle_holds)!={line.pk for line in raffle_lines}:return False
-        if any(raffle_holds[line.pk].quantity!=line.quantity or resources[raffle_holds[line.pk].resource_id].reference_id!=str(line.raffle_id) for line in raffle_lines):return False
-    if addon_lines:
-        registrations = {line.linked_registration_id for line in addon_lines}
-        eligible = Registration.objects.filter(pk__in=registrations, event_id=order.event_id,
-            commercial_state='ACTIVE', source_order_line__order__status=OrderStatus.PAID).count()
-        if None in registrations or eligible != len(registrations):
+        raffles = list(MotorcycleRaffle.objects.select_for_update().filter(pk__in=[line.raffle_id for line in raffle_lines]))
+        if any(hasattr(raffle, "result") for raffle in raffles):
             return False
-        addon_holds = {hold.order_line_id:hold for hold in holds if resources[hold.resource_id].type == 'ADDON_TOTAL'}
+        registrations = {line.linked_registration_id for line in raffle_lines if line.linked_registration_id}
+        if registrations:
+            order_reg_ids = set(order.lines.filter(registration__isnull=False).values_list("registration__pk", flat=True))
+            eligible = Registration.objects.filter(pk__in=registrations, event_id=order.event_id,
+                commercial_state__in=[CommercialState.ACTIVE, CommercialState.RESERVED], archived_at__isnull=True).count()
+            if eligible + len(registrations.intersection(order_reg_ids)) < len(registrations):
+                return False
+        raffle_holds = {hold.order_line_id: hold for hold in holds if resources[hold.resource_id].type == "RAFFLE_TOTAL"}
+        if set(raffle_holds) != {line.pk for line in raffle_lines}:
+            return False
+        if any(raffle_holds[line.pk].quantity != line.quantity or resources[raffle_holds[line.pk].resource_id].reference_id != str(line.raffle_id) for line in raffle_lines):
+            return False
+    if addon_lines:
+        registrations = {line.linked_registration_id for line in addon_lines if line.linked_registration_id}
+        if registrations:
+            order_reg_ids = set(order.lines.filter(registration__isnull=False).values_list("registration__pk", flat=True))
+            eligible = Registration.objects.filter(pk__in=registrations, event_id=order.event_id,
+                commercial_state__in=[CommercialState.ACTIVE, CommercialState.RESERVED], archived_at__isnull=True).count()
+            if eligible + len(registrations.intersection(order_reg_ids)) < len(registrations):
+                return False
+        addon_holds = {hold.order_line_id: hold for hold in holds if resources[hold.resource_id].type == "ADDON_TOTAL"}
         if set(addon_holds) != {line.pk for line in addon_lines}:
             return False
         if any(addon_holds[line.pk].quantity != line.quantity or
@@ -306,9 +314,60 @@ def _activate_registrations(order):
         for kind, title in benefits:
             Entitlement.objects.get_or_create(registration=reg, benefit_type=kind,
                 defaults={"title": title, "quantity_total": 1, "state": EntitlementState.AVAILABLE})
+
+        # Aceite de termos inline na inscrição: cria o vínculo e aceites para emissão imediata da credencial
+        from apps.identity.models import User, UserPersonLink
+        from apps.registrations.models import TermsAcceptance
+        p = reg.person
+        user_email = (p.email or order.purchaser_email or "").strip().lower()
+        if user_email:
+            u, _ = User.objects.get_or_create(
+                email=user_email,
+                defaults={
+                    "full_name": p.full_name or order.purchaser_name,
+                    "phone": p.phone or order.purchaser_phone,
+                    "is_active": True,
+                }
+            )
+            UserPersonLink.objects.get_or_create(user=u, person=p, defaults={"method": "CHECKOUT_INLINE_TERMS"})
+            for doc in required_documents_for_registration(reg):
+                TermsAcceptance.objects.get_or_create(
+                    registration=reg,
+                    document_version=doc,
+                    accepting_user=u,
+                    defaults={
+                        "evidence_hash": f"inline_checkout_{doc.pk}_{reg.pk}",
+                        "ip_address": "127.0.0.1",
+                        "user_agent": "Checkout Inline Acceptance",
+                    }
+                )
+
         activate_registration_if_eligible(reg)
         from apps.events.raffle_operations import issue_registration_ticket
         issue_registration_ticket(reg)
+
+    # Entitlements para itens adicionais comprados junto ao pedido
+    first_reg = Registration.objects.filter(source_order_line__order=order).first()
+    for addon_line in order.lines.filter(addon__isnull=False).select_related("addon"):
+        target_reg = None
+        if addon_line.linked_registration_id:
+            target_reg = Registration.objects.filter(pk=addon_line.linked_registration_id).first()
+        if not target_reg:
+            target_reg = first_reg
+        if target_reg:
+            label = f"{addon_line.addon.title}"
+            if addon_line.intended_variant_code:
+                label += f" ({addon_line.intended_variant_code})"
+            Entitlement.objects.get_or_create(
+                registration=target_reg,
+                source_order_line=addon_line,
+                benefit_type=BenefitType.ADICIONAL,
+                defaults={
+                    "title": label,
+                    "quantity_total": addon_line.quantity,
+                    "state": EntitlementState.AVAILABLE,
+                }
+            )
 
 
 def _suspend_registrations(order, *, canceled=False):

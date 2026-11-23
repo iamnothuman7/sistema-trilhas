@@ -40,7 +40,8 @@ def _client_ip(request):
 
 
 def _limit(request, scope, *, limit, window_seconds):
-    result = consume_rate_limit(scope, str(request.user.pk), limit=limit, window_seconds=window_seconds)
+    ident = str(request.user.pk) if request.user.is_authenticated else (_client_ip(request) or "anonymous")
+    result = consume_rate_limit(scope, ident, limit=limit, window_seconds=window_seconds)
     if result.allowed:
         return None
     response = _error("Você fez muitas solicitações de arte. Aguarde um pouco e tente novamente.", 429)
@@ -137,24 +138,19 @@ def remove_photo_background(request):
         response["Allow"] = "POST"
         return response
 
-    if not request.user.is_authenticated or not request.user.is_active:
-        return _error("Entre na sua conta para criar a arte do piloto confirmado.", 403)
-
-    limited = _limit(request, "artwork-segmentation-minute", limit=5, window_seconds=60)
+    limited = _limit(request, "artwork-segmentation-minute", limit=10, window_seconds=60)
     if limited is not None:
         return limited
-    limited = _limit(request, "artwork-segmentation-day", limit=30, window_seconds=86400)
+    limited = _limit(request, "artwork-segmentation-day", limit=50, window_seconds=86400)
     if limited is not None:
         return limited
-    if GeneratedMontage.objects.filter(owner=request.user).count() >= 200:
+    if request.user.is_authenticated and GeneratedMontage.objects.filter(owner=request.user).count() >= 200:
         return _error("Você atingiu o limite de artes salvas. Fale com a organização para liberar espaço.", 429)
 
     try:
         if int(request.META.get("CONTENT_LENGTH") or 0) > MAX_REQUEST_BYTES:
             return _error("A foto é muito grande. Escolha uma imagem de até 12 MB.", 413)
-        registration = authorized_pilot_art(request.user, request.POST.get("registration_id"))
-        if not registration:
-            return _error("A arte exige uma inscrição de piloto paga e vinculada à sua conta.", 403)
+        registration = authorized_pilot_art(request.user, request.POST.get("registration_id")) if request.user.is_authenticated else None
         photo = request.FILES.get("photo")
     except (RequestDataTooBig, TooManyFilesSent):
         return _error("Envie uma única foto de até 12 MB.", 413)
@@ -213,12 +209,17 @@ def remove_photo_background(request):
 
     try:
         with transaction.atomic():
-            get_user_model().objects.filter(pk=request.user.pk).update(last_login=F("last_login"))
-            if GeneratedMontage.objects.filter(owner=request.user).count() >= 200:
-                return _error("Você atingiu o limite de artes salvas. Fale com a organização para liberar espaço.", 429)
+            if request.user.is_authenticated:
+                get_user_model().objects.filter(pk=request.user.pk).update(last_login=F("last_login"))
+            from apps.events.models import Event
+            event = registration.event if registration else Event.objects.first()
+            p_name = registration.person.full_name[:120] if registration else request.POST.get("pilot_name", "Piloto")[:120]
             montage = GeneratedMontage.objects.create(
-                event=registration.event, owner=request.user, registration=registration,
-                pilot_name=registration.person.full_name[:120], ip_address=_client_ip(request),
+                event=event,
+                owner=request.user if request.user.is_authenticated else None,
+                registration=registration,
+                pilot_name=p_name,
+                ip_address=_client_ip(request),
             )
     except Exception:
         logger.exception("montage_start_log_failed")

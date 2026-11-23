@@ -1,0 +1,611 @@
+/* ==========================================================================
+   EQUIPE MORCEGO — NATIVE PRO APP SYSTEM (Internal Management UI)
+   Transforms the internal web dashboard into a true high-end mobile & desktop app.
+   Inspired by Apple HIG, Linear, Stripe and modern iOS/iPadOS design systems.
+   ========================================================================== */
+
+:root {
+  --app-bg: #120f0c;
+  --app-card-bg: linear-gradient(155deg, rgba(36, 29, 24, 0.88) 0%, rgba(22, 17, 14, 0.96) 100%);
+  --app-card-border: rgba(255, 255, 255, 0.09);
+  --app-card-hover-border: rgba(234, 88, 12, 0.45);
+  --app-card-shadow: 0 8px 26px -4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --app-primary: #ea580c;
+  --app-primary-hover: #f97316;
+  --app-primary-glow: rgba(234, 88, 12, 0.35);
+  --app-text: #faf5ee;
+  --app-text-muted: #a8a29e;
+  --app-text-dim: #78716c;
+  --app-radius-sm: 10px;
+  --app-radius-md: 14px;
+  --app-radius-lg: 20px;
+  --app-radius-xl: 26px;
+}
+
+/* 1. APP CANVAS & SMOOTHING */
+body {
+  background-color: var(--app-bg) !important;
+  background-image: 
+    radial-gradient(ellipse at 50% -10%, rgba(234, 88, 12, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 90% 40%, rgba(180, 83, 9, 0.06) 0%, transparent 50%),
+    linear-gradient(180deg, #16120f 0%, #100d0b 100%) !important;
+  color: var(--app-text) !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
+  overscroll-behavior-y: none;
+}
+
+/* Eliminate ALL 2000s web underlines across the entire management system */
+.management-workspace a,
+.management-main a,
+.stat-manage,
+.table a,
+.list-row a,
+.compact-record a {
+  text-decoration: none !important;
+}
+
+/* 2. TOPBAR (APP HEADER FROSTED GLASS) */
+.management-topbar {
+  background: rgba(20, 16, 13, 0.82) !important;
+  backdrop-filter: blur(28px) saturate(200%) brightness(1.05) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(1.05) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45) !important;
+  height: 60px !important;
+  padding: 0 20px !important;
+}
+
+.topbar-breadcrumb {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.topbar-breadcrumb strong {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #faf5ee !important;
+  letter-spacing: -0.02em !important;
+}
+
+.user-avatar {
+  background: linear-gradient(135deg, #f97316 0%, #c2410c 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(234, 88, 12, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+/* 3. WORKSPACE & EVENT SELECTOR PILL */
+.management-event-context {
+  background: linear-gradient(145deg, rgba(34, 27, 22, 0.85) 0%, rgba(20, 16, 13, 0.95) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  padding: 12px 16px !important;
+  margin-bottom: 20px !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+}
+
+.management-event-switcher {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex: 1 1 auto !important;
+}
+
+.management-event-switcher label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: #f97316 !important;
+  white-space: nowrap !important;
+  margin-bottom: 0 !important;
+}
+
+.management-event-switcher label i,
+.management-event-switcher label svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.management-event-control {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.management-event-control select {
+  background-color: rgba(22, 17, 14, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  color: #faf5ee !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  min-height: 44px !important;
+  padding: 8px 36px 8px 14px !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.2s ease !important;
+}
+
+.management-event-control select:hover,
+.management-event-control select:focus {
+  border-color: #ea580c !important;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.2) !important;
+}
+
+#management-scope-note {
+  font-size: 11px !important;
+  color: #a8a29e !important;
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+/* 4. PAGE HERO HEADING */
+.page-heading {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  margin-bottom: 18px !important;
+}
+
+.page-heading h1 {
+  font-size: clamp(22px, 3.2vw, 30px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  color: #faf5ee !important;
+  margin: 0 0 4px 0 !important;
+  line-height: 1.15 !important;
+}
+
+.page-heading p {
+  font-size: 13px !important;
+  color: #a8a29e !important;
+  margin: 0 !important;
+  font-weight: 500 !important;
+}
+
+.page-heading .btn-secondary {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #faf5ee !important;
+  border-radius: 12px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 8px 14px !important;
+  min-height: 40px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.2s ease !important;
+}
+
+.page-heading .btn-secondary:hover {
+  background: rgba(234, 88, 12, 0.15) !important;
+  border-color: #ea580c !important;
+  color: #f97316 !important;
+  transform: translateY(-1px);
+}
+
+/* 5. NATIVE APP STAT CARDS (INDICADORES) */
+.stat-grid {
+  display: grid !important;
+  gap: 14px !important;
+  margin-bottom: 22px !important;
+}
+
+.stat-card {
+  position: relative !important;
+  background: var(--app-card-bg) !important;
+  border: 1px solid var(--app-card-border) !important;
+  border-radius: var(--app-radius-lg) !important;
+  box-shadow: var(--app-card-shadow) !important;
+  padding: 18px 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  overflow: hidden !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+.stat-card::after {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 1px !important;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent) !important;
+}
+
+.stat-card:hover {
+  border-color: var(--app-card-hover-border) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.65), 0 0 18px rgba(234, 88, 12, 0.16) !important;
+}
+
+.stat-card:active {
+  transform: scale(0.985) !important;
+}
+
+.stat-card-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+}
+
+.stat-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: var(--app-text-muted) !important;
+  line-height: 1.3 !important;
+  margin: 0 !important;
+}
+
+.stat-icon-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 10px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f97316 !important;
+  flex-shrink: 0 !important;
+}
+
+.stat-icon-badge svg,
+.stat-icon-badge i {
+  width: 16px !important;
+  height: 16px !important;
+  stroke-width: 2.2 !important;
+}
+
+.stat-value {
+  font-size: clamp(26px, 3.2vw, 34px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  color: #faf5ee !important;
+  line-height: 1.15 !important;
+  font-variant-numeric: tabular-nums !important;
+  margin: 4px 0 6px 0 !important;
+}
+
+.stat-card-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  margin-top: auto !important;
+  padding-top: 8px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.stat-foot-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-size: 11.5px !important;
+  color: var(--app-text-muted) !important;
+  font-weight: 500 !important;
+}
+
+.stat-foot-pill svg,
+.stat-foot-pill i {
+  width: 13px !important;
+  height: 13px !important;
+  color: #f97316 !important;
+}
+
+.stat-action-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 11.5px !important;
+  font-weight: 650 !important;
+  color: #f97316 !important;
+  background: rgba(234, 88, 12, 0.12) !important;
+  border: 1px solid rgba(234, 88, 12, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 4px 8px !important;
+  transition: all 0.15s ease !important;
+}
+
+.stat-card:hover .stat-action-chip {
+  background: rgba(234, 88, 12, 0.25) !important;
+  border-color: #ea580c !important;
+  transform: translateX(2px) !important;
+}
+
+.stat-action-chip svg,
+.stat-action-chip i {
+  width: 13px !important;
+  height: 13px !important;
+  stroke-width: 2.5 !important;
+}
+
+/* 6. HORIZONTAL QUICK SHORTCUTS DOCK */
+.compact-shortcuts {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  padding: 4px 2px 14px 2px !important;
+  margin-bottom: 12px !important;
+}
+
+.compact-shortcuts::-webkit-scrollbar {
+  display: none !important;
+}
+
+.compact-shortcuts .shortcut-icon-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 50px !important;
+  height: 50px !important;
+  min-width: 50px !important;
+  flex: 0 0 50px !important;
+  border-radius: 15px !important;
+  background: linear-gradient(145deg, rgba(38, 30, 25, 0.9) 0%, rgba(22, 17, 14, 0.98) 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.11) !important;
+  color: #faf5ee !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.compact-shortcuts .shortcut-icon-btn:hover {
+  background: linear-gradient(145deg, rgba(234, 88, 12, 0.22) 0%, rgba(38, 30, 25, 0.95) 100%) !important;
+  border-color: #ea580c !important;
+  color: #f97316 !important;
+  transform: translateY(-2px) scale(1.04) !important;
+  box-shadow: 0 8px 20px rgba(234, 88, 12, 0.25) !important;
+}
+
+.compact-shortcuts .shortcut-icon-btn:active {
+  transform: scale(0.93) !important;
+}
+
+.compact-shortcuts .shortcut-icon-btn svg,
+.compact-shortcuts .shortcut-icon-btn i {
+  width: 22px !important;
+  height: 22px !important;
+  stroke-width: 2.2 !important;
+}
+
+/* 7. APP CARDS & PANELS */
+.card,
+.compact-panel.card {
+  background: var(--app-card-bg) !important;
+  border: 1px solid var(--app-card-border) !important;
+  border-radius: var(--app-radius-lg) !important;
+  box-shadow: var(--app-card-shadow) !important;
+  padding: 20px !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+}
+
+.card-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin-bottom: 16px !important;
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.card-header .section-title,
+.card-header h2,
+.card-header h3 {
+  font-size: 17px !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.02em !important;
+  color: #faf5ee !important;
+  margin: 0 !important;
+}
+
+/* Camisetas metric grid */
+.stock-counts {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin: 12px 0 10px !important;
+}
+
+.stock-counts > div {
+  background: rgba(18, 14, 12, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  border-radius: 12px !important;
+  padding: 10px 12px !important;
+  text-align: center !important;
+}
+
+.stock-counts dt {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #a8a29e !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  margin-bottom: 4px !important;
+}
+
+.stock-counts dd {
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  color: #faf5ee !important;
+  font-variant-numeric: tabular-nums !important;
+  margin: 0 !important;
+}
+
+/* Accordion details (Details / Summary) */
+details.compact-details {
+  background: var(--app-card-bg) !important;
+  border: 1px solid var(--app-card-border) !important;
+  border-radius: var(--app-radius-lg) !important;
+  padding: 14px 18px !important;
+  box-shadow: var(--app-card-shadow) !important;
+  transition: all 0.2s ease !important;
+}
+
+details.compact-details > summary {
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: #faf5ee !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  user-select: none !important;
+  list-style: none !important;
+}
+
+details.compact-details > summary::before {
+  display: none !important;
+  content: "" !important;
+}
+
+details.compact-details > summary::-webkit-details-marker {
+  display: none !important;
+}
+
+details.compact-details > summary::after {
+  content: "" !important;
+  display: inline-block !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-right: 2px solid #f97316 !important;
+  border-bottom: 2px solid #f97316 !important;
+  transform: rotate(-45deg) !important;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+details.compact-details[open] > summary::after {
+  transform: rotate(45deg) !important;
+}
+
+/* Finance summary rows */
+.finance-summary {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  font-size: 13.5px !important;
+}
+
+.finance-summary:last-child {
+  border-bottom: none !important;
+}
+
+.finance-summary strong {
+  color: #faf5ee !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 14px !important;
+}
+
+/* 8. BADGES & STATUS PILLS */
+.badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 9px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.02em !important;
+}
+
+.badge-success {
+  background: rgba(34, 197, 94, 0.12) !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+  color: #4ade80 !important;
+}
+
+.badge-warning,
+.badge-info {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  color: #fbbf24 !important;
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #f87171 !important;
+}
+
+/* 9. MOBILE RESPONSIVE OPTIMIZATIONS (APP VIEW) */
+@media (max-width: 767px) {
+  .management-main {
+    padding: 16px 14px calc(90px + env(safe-area-inset-bottom, 0px)) 14px !important;
+  }
+
+  .management-event-context {
+    padding: 12px 14px !important;
+    gap: 10px !important;
+    border-radius: 16px !important;
+  }
+
+  .page-heading {
+    margin-bottom: 14px !important;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .stat-card {
+    padding: 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .stat-value {
+    font-size: clamp(21px, 6vw, 26px) !important;
+  }
+
+  .stock-counts {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .compact-shortcuts {
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  .compact-shortcuts .shortcut-icon-btn {
+    flex: 0 0 46px !important;
+    min-width: 46px !important;
+    width: 46px !important;
+    max-width: 46px !important;
+    height: 46px !important;
+    border-radius: 13px !important;
+  }
+}
+
+@media (max-width: 375px) {
+  .stat-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

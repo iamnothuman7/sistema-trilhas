@@ -1,20 +1,154 @@
 {% extends "gestao/base_gestao.html" %}
-{% block title %}Ranking e nomes | {{ event.title }}{% endblock %}
-{% block gestao_header %}Ranking e nomes{% endblock %}
+{% load trilhas_ui static %}
+
+{% block title %}Ranking e Equipes | {{ event.title }}{% endblock %}
+{% block gestao_header %}Ranking e equipes{% endblock %}
+
 {% block content %}
-<div class="page-heading"><div><h1>Ranking de equipes e cidades</h1><p>{{ event.title }} · {{ ranking.confirmed_count }} inscrições ativas com pagamento confirmado.</p></div><a class="btn btn-secondary" href="{% url 'events:detail' slug=event.slug %}#ranking" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i>Conferir no site</a></div>
-<div class="alert"><i data-lucide="info" aria-hidden="true"></i><span>Acentos, letras maiúsculas e espaços são agrupados automaticamente. Use uma correção para grafias diferentes do mesmo nome. As inscrições originais e os dados das pessoas permanecem intactos.</span></div>
-<div class="panel-grid mg-section-gap">
-    <section class="card"><div class="card-header"><div><h2>Corrigir nome de equipe</h2><p>Ex.: “Trilheros da Serra” → “Trilheiros da Serra”.</p></div></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="save_team">{% if team_form.errors %}<div class="mg-form-errors" role="alert"><strong>Revise a correção.</strong>{{ team_form.non_field_errors }}</div>{% endif %}{% for field in team_form %}<div class="form-group"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}<div class="mg-field-errors">{{ field.errors }}</div></div>{% endfor %}<button class="btn btn-primary" type="submit"><i data-lucide="check" aria-hidden="true"></i>Salvar correção da equipe</button></form></section>
-    <section class="card"><div class="card-header"><div><h2>Corrigir nome de cidade</h2><p>A correção vale somente para a UF escolhida.</p></div></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="save_city">{% if city_form.errors %}<div class="mg-form-errors" role="alert"><strong>Revise a correção.</strong>{{ city_form.non_field_errors }}</div>{% endif %}{% for field in city_form %}<div class="form-group"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}<div class="mg-field-errors">{{ field.errors }}</div></div>{% endfor %}<button class="btn btn-primary" type="submit"><i data-lucide="check" aria-hidden="true"></i>Salvar correção da cidade</button></form></section>
+<div class="page-heading">
+    <div>
+        <h1>Ranking e Correção de Equipes</h1>
+        <p>{{ event.title }} · {{ ranking.confirmed_count }} inscrições ativas confirmadas. Padronize variações de nomes para somar os pontos da mesma equipe.</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-secondary" href="{% url 'events:detail' slug=event.slug %}#ranking" target="_blank" rel="noopener">
+            <i data-lucide="external-link" aria-hidden="true"></i> Ver no site público
+        </a>
+    </div>
 </div>
-<datalist id="rankingTeams">{% for name in raw_team_names %}<option value="{{ name }}">{% endfor %}</datalist><datalist id="rankingCities">{% for name in raw_city_names %}<option value="{{ name }}">{% endfor %}</datalist>
-<div class="panel-grid mg-section-gap">
-    <section class="card"><div class="card-header"><h2>Correções de equipes</h2></div><p class="form-help">Para alterar uma correção, salve novamente o mesmo nome informado com o novo nome de exibição.</p>{% for alias in team_aliases %}<div class="list-row"><div><strong>{{ alias.source_name }}</strong><small>Exibir como: {{ alias.canonical_name }}</small></div><form method="post" onsubmit="return confirm('Remover esta correção e recalcular o ranking com os nomes das inscrições?')">{% csrf_token %}<input type="hidden" name="action" value="delete_team"><input type="hidden" name="alias_id" value="{{ alias.pk }}"><button type="submit" class="btn btn-secondary btn-sm record-action" aria-label="Remover correção de {{ alias.source_name }}" title="Remover correção de {{ alias.source_name }}"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Remover</span></button></form></div>{% empty %}<p class="text-muted">Nenhuma correção manual de equipe.</p>{% endfor %}</section>
-    <section class="card"><div class="card-header"><h2>Correções de cidades</h2></div><p class="form-help">Cidades de UFs diferentes nunca são unidas por uma correção.</p>{% for alias in city_aliases %}<div class="list-row"><div><strong>{{ alias.source_name }} / {{ alias.state|default:"UF não informada" }}</strong><small>Exibir como: {{ alias.canonical_name }}</small></div><form method="post" onsubmit="return confirm('Remover esta correção e recalcular o ranking com os nomes das inscrições?')">{% csrf_token %}<input type="hidden" name="action" value="delete_city"><input type="hidden" name="alias_id" value="{{ alias.pk }}"><button type="submit" class="btn btn-secondary btn-sm record-action" aria-label="Remover correção de {{ alias.source_name }}" title="Remover correção de {{ alias.source_name }}"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Remover</span></button></form></div>{% empty %}<p class="text-muted">Nenhuma correção manual de cidade.</p>{% endfor %}</section>
+
+<div class="alert alert-info mg-section-gap">
+    <i data-lucide="info" aria-hidden="true"></i>
+    <span>As cidades já são padronizadas diretamente na busca da inscrição. Esta tela serve exclusivamente para unificar variações de grafia de equipes (ex.: “Trilheiros da Serra” e “Trilheros da Serra”).</span>
 </div>
-<div class="panel-grid">
-    <section class="card"><div class="card-header"><h2>Equipes · {{ ranking.team_group_count }}</h2></div><div class="table-responsive"><table class="table"><thead><tr><th scope="col">Posição</th><th scope="col">Equipe</th><th scope="col">Inscrições confirmadas</th></tr></thead><tbody>{% for row in ranking.teams %}<tr><td>{{ row.rank }}º</td><td>{{ row.name }}</td><td>{{ row.count }}</td></tr>{% empty %}<tr><td colspan="3" class="mg-table-empty">Nenhuma equipe com inscrição ativa e pagamento confirmado.</td></tr>{% endfor %}</tbody></table></div></section>
-    <section class="card"><div class="card-header"><h2>Cidades · {{ ranking.city_group_count }}</h2></div><div class="table-responsive"><table class="table"><thead><tr><th scope="col">Posição</th><th scope="col">Cidade / UF</th><th scope="col">Inscrições confirmadas</th></tr></thead><tbody>{% for row in ranking.cities %}<tr><td>{{ row.rank }}º</td><td>{{ row.name }} / {{ row.state|default:"UF não informada" }}</td><td>{{ row.count }}</td></tr>{% empty %}<tr><td colspan="3" class="mg-table-empty">Nenhuma cidade com inscrição ativa e pagamento confirmado.</td></tr>{% endfor %}</tbody></table></div></section>
+
+<div class="panel-grid mg-section-gap" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+    <!-- Formulário de Correção de Equipe -->
+    <section class="card">
+        <div class="card-header">
+            <div>
+                <h2>Corrigir / Padronizar Equipe</h2>
+                <p>Unifique apelidos ou grafias diferentes para uma única equipe oficial.</p>
+            </div>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_team">
+            {% if team_form.errors %}
+                <div class="mg-form-errors" role="alert">
+                    <strong>Revise a correção.</strong>{{ team_form.non_field_errors }}
+                </div>
+            {% endif %}
+            {% for field in team_form %}
+                <div class="form-group">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    <div class="mg-field-errors">{{ field.errors }}</div>
+                </div>
+            {% endfor %}
+            <button class="btn btn-primary" type="submit" style="margin-top: 10px;">
+                <i data-lucide="check" aria-hidden="true"></i> Salvar correção da equipe
+            </button>
+        </form>
+    </section>
+
+    <!-- Lista de Correções Ativas de Equipes -->
+    <section class="card">
+        <div class="card-header">
+            <div>
+                <h2>Correções Ativas ({{ team_aliases.count }})</h2>
+                <p>Nomes padronizados aplicados ao ranking.</p>
+            </div>
+        </div>
+        <div class="compact-records">
+            {% for alias in team_aliases %}
+                <article class="compact-record" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--color-border);">
+                    <div>
+                        <strong style="display: block; color: var(--color-text-strong);">{{ alias.source_name }}</strong>
+                        <small class="text-brand">Exibir como: <strong>{{ alias.canonical_name }}</strong></small>
+                    </div>
+                    <form method="post" onsubmit="return confirm('Remover esta correção e recalcular o ranking?')">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete_team">
+                        <input type="hidden" name="alias_id" value="{{ alias.pk }}">
+                        <button type="submit" class="btn btn-danger btn-sm record-action" aria-label="Remover correção" title="Remover correção">
+                            <i data-lucide="trash-2" aria-hidden="true"></i>
+                        </button>
+                    </form>
+                </article>
+            {% empty %}
+                <p class="text-muted" style="margin: 12px 0;">Nenhuma correção de equipe cadastrada. Os nomes informados nas inscrições estão sendo usados diretamente.</p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+
+<datalist id="rankingTeams">
+    {% for name in raw_team_names %}<option value="{{ name }}">{% endfor %}
+</datalist>
+
+<!-- Rankings em Formato Reduzido -->
+<div class="panel-grid mg-section-gap" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+    <!-- Ranking de Equipes -->
+    <section class="card">
+        <div class="card-header">
+            <h2>Ranking de Equipes ({{ ranking.team_group_count }})</h2>
+        </div>
+        <div class="table-responsive">
+            <table class="table" data-mobile-cards>
+                <thead>
+                    <tr>
+                        <th scope="col" style="width: 70px;">Posição</th>
+                        <th scope="col">Equipe</th>
+                        <th scope="col">Pilotos Confirmados</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in ranking.teams %}
+                    <tr>
+                        <td data-label="Posição"><strong>{{ row.rank }}º</strong></td>
+                        <td data-label="Equipe"><strong>{{ row.name }}</strong></td>
+                        <td data-label="Pilotos"><strong class="text-brand">{{ row.count }}</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="mg-table-empty">Nenhuma equipe com pilotos confirmados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Ranking de Cidades (Padronizadas na Inscrição) -->
+    <section class="card">
+        <div class="card-header">
+            <h2>Ranking de Cidades ({{ ranking.city_group_count }})</h2>
+        </div>
+        <div class="table-responsive">
+            <table class="table" data-mobile-cards>
+                <thead>
+                    <tr>
+                        <th scope="col" style="width: 70px;">Posição</th>
+                        <th scope="col">Cidade / UF</th>
+                        <th scope="col">Pilotos Confirmados</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in ranking.cities %}
+                    <tr>
+                        <td data-label="Posição"><strong>{{ row.rank }}º</strong></td>
+                        <td data-label="Cidade">{{ row.name }} / {{ row.state|default:"CE" }}</td>
+                        <td data-label="Pilotos"><strong class="text-brand">{{ row.count }}</strong></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="mg-table-empty">Nenhuma cidade com pilotos confirmados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 </div>
 {% endblock %}

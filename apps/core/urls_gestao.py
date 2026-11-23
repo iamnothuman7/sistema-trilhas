@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views_gestao
+from . import views_analytics
 from apps.reporting import exports
 from apps.reporting import views as reporting_views
 from apps.events import views_sponsors
@@ -64,6 +65,7 @@ urlpatterns = [
     path('eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/editar/',registration_views.registration_edit,name='registration_edit'),
     path('eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/devolucao/',registration_views.registration_refund,name='registration_refund'),
     path("eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/remover/", views_cleanup.registration_remove, name="registration_remove"),
+    path("eventos/<uuid:event_id>/inscricoes/zerar-testes/", views_cleanup.reset_test_data_view, name="reset_test_data"),
     path("eventos/<uuid:event_id>/inscricoes/manual/", views_manual.manual_registration_create, name="manual_registration_create"),
     path("eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/recebimento/", views_manual.manual_registration_payment, name="manual_registration_payment"),
     path("eventos/<uuid:event_id>/inscricoes/<uuid:reg_id>/renovar-acesso/", views_manual.manual_registration_renew_link, name="manual_registration_renew_link"),
@@ -79,6 +81,7 @@ urlpatterns = [
 
     # Catálogo e Lotes
     path('eventos/<uuid:event_id>/camisetas/',views_stock.shirt_stock,name='shirt_stock'),
+    path("eventos/<uuid:event_id>/produtos-extras/", views_gestao.addons_management, name="addons"),
     path("eventos/<uuid:event_id>/catalogo/", views_gestao.catalog_management, name="catalog"),
     path("eventos/<uuid:event_id>/catalogo/lotes/<uuid:lot_id>/remover/", catalog_views.lot_remove, name="lot_remove"),
     path("eventos/<uuid:event_id>/catalogo/<str:kind>/novo/", catalog_views.catalog_editor, name="catalog_create"),
@@ -149,4 +152,7 @@ urlpatterns = [
 
     # Auditoria
     path("auditoria/", views_gestao.audit_log_view, name="audit_log"),
+
+    # Métricas de Acessos e Tráfego
+    path("metricas/", views_analytics.analytics_overview, name="analytics"),
 ]

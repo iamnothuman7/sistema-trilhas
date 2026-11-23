@@ -995,17 +995,39 @@
         });
         if (!delivery.ok) throw new Error('A inscrição não está disponível para esta arte. Atualize a página e confira sua conta.');
       }
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
       const name = (isTeamArtwork() ? state.teamName : state.pilotName).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 64);
-      anchor.download = internalEditor
+      const filename = internalEditor
         ? `${isTeamArtwork() ? 'equipe-confirmada' : 'piloto'}-${name || 'arte'}-${activeVersion.id}-${activeFormat}.png`
         : (activeVersion.filename || 'eu-vou-equipe-morcego.png').replace(/\.png$/i, `-${activeFormat}.png`);
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      const file = new File([blob], filename, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] }) && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: `Minha arte oficial - ${activeFormat === 'feed' ? 'Feed' : 'Story'}`,
+          });
+        } catch (shareErr) {
+          if (shareErr.name !== 'AbortError') {
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = filename;
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+          }
+        }
+      } else {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = filename;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      }
       announce(`${activeFormat === 'feed' ? 'Feed' : 'Story'} baixado! Você também pode selecionar ${activeFormat === 'feed' ? 'Story' : 'Feed'} e baixar a outra versão com a mesma foto.`);
     } catch (error) {
       announce(error.message || 'Não foi possível baixar agora. Tente novamente.', true);

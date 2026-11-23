@@ -31,5 +31,26 @@ def shirt_stock(request,event_id):
         else:
             messages.success(request,'Estoque salvo. Inscrições e visão geral usam estas mesmas quantidades.')
             return redirect('gestao:shirt_stock',event_id=event.pk)
-    return render(request,'gestao/catalog/stock.html',{'event':event,'rows':shirt_rows(event),
-        'products':event.products.filter(includes_shirt=True),'form':form},status=400 if form.errors else 200)
+
+    rows = shirt_rows(event)
+    total_received = sum(r['total'] or 0 for r in rows)
+    total_delivered = sum(r['delivered'] or 0 for r in rows)
+    total_confirmed = sum(r['confirmed'] or 0 for r in rows)
+    total_out = total_delivered + total_confirmed
+    total_remaining = max(0, total_received - total_out)
+
+    consignment_summary = {
+        'total_received': total_received,
+        'total_delivered': total_delivered,
+        'total_confirmed': total_confirmed,
+        'total_out': total_out,
+        'total_remaining': total_remaining,
+    }
+
+    return render(request,'gestao/catalog/stock.html',{
+        'event': event,
+        'rows': rows,
+        'products': event.products.filter(includes_shirt=True),
+        'form': form,
+        'consignment': consignment_summary,
+    }, status=400 if form.errors else 200)

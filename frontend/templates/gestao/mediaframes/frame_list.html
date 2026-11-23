@@ -8,12 +8,81 @@
 {% block content %}
 <div class="page-heading mg-section-gap">
     <div>
-        <h1>Molduras digitais</h1>
-        <p class="text-muted">Crie artes de pilotos e equipes com foto, ajuste o enquadramento e baixe Story e Feed.</p>
+        <h1>Molduras digitais do evento</h1>
+        <p class="text-muted">Personalize e gerencie as molduras oficiais (PNG transparente para Feed e Story) para os participantes gerarem suas artes com IA.</p>
     </div>
-    <div class="page-actions"><a class="btn btn-primary" href="{% url 'gestao:official_frame_preview' event.id %}"><i data-lucide="user-round" aria-hidden="true"></i>Criar arte de piloto</a><a class="btn btn-secondary" href="{% url 'gestao:official_frame_preview' event.id %}?tipo=equipe"><i data-lucide="users-round" aria-hidden="true"></i>Criar arte de equipe</a></div>
+    <div class="page-actions">
+        <a class="btn btn-primary" href="{% url 'gestao:official_frame_preview' event.id %}"><i data-lucide="user-round" aria-hidden="true"></i>Testar estúdio no painel</a>
+        <a class="btn btn-secondary" href="{% url 'events:frames' event.slug %}" target="_blank"><i data-lucide="external-link" aria-hidden="true"></i>Ver página pública</a>
+    </div>
 </div>
 
+<!-- Upload de Nova Moldura Personalizada (PNG Transparente) -->
+<section class="card mg-section-gap" style="padding: 24px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface);">
+    <h2 style="font-size: 1.2rem; margin: 0 0 8px 0; color: var(--text-main); display: flex; align-items: center; gap: 8px;"><i data-lucide="plus-circle" style="width: 20px; height: 20px; color: var(--accent-morcego);"></i> Cadastrar / Enviar Nova Moldura PNG</h2>
+    <p class="text-muted" style="margin-bottom: 20px; font-size: 0.9rem;">
+        Envie a arte oficial em <strong>PNG transparente (sem fundo)</strong>. O sistema utilizará a IA (U2Net) para recortar a foto do cliente e posicioná-la por trás ou em efeito 3D pop-out.
+    </p>
+
+    <form method="post" enctype="multipart/form-data" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; align-items: flex-end;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+
+        <div class="form-group" style="margin: 0;">
+            <label class="form-label" for="frameTitle">Título da Moldura *</label>
+            <input type="text" id="frameTitle" name="title" class="form-control" required placeholder="Ex.: Moldura Oficial Trilhão 2027" value="Moldura Oficial {{ event.title }}">
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+            <label class="form-label" for="frameFormat">Formato da Imagem *</label>
+            <select id="frameFormat" name="format" class="form-control" required>
+                <option value="STORY_1080x1920">Story / Reels (1080 × 1920 px - 9:16)</option>
+                <option value="FEED_1080x1350">Feed Instagram (1080 × 1350 px - 4:5)</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+            <label class="form-label" for="frameFile">Arquivo PNG Transparente *</label>
+            <input type="file" id="frameFile" name="overlay_asset" accept="image/png" class="form-control" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="height: 48px;">
+            <i data-lucide="upload" aria-hidden="true"></i> Salvar Moldura
+        </button>
+    </form>
+</section>
+
+<!-- Lista de Molduras Personalizadas Enviadas -->
+{% if custom_templates %}
+<section class="card mg-section-gap" style="padding: 24px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface);">
+    <h2 style="font-size: 1.2rem; margin: 0 0 16px 0; color: var(--text-main); display: flex; align-items: center; gap: 8px;"><i data-lucide="image" style="width: 20px; height: 20px; color: var(--accent-morcego);"></i> Molduras Personalizadas Deste Evento ({{ custom_templates.count }})</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px;">
+        {% for tmpl in custom_templates %}
+        <div style="border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--surface-hover); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                {% if tmpl.overlay_asset %}
+                <div style="height: 180px; background: #000; border-radius: 8px; margin-bottom: 12px; display: grid; place-items: center; overflow: hidden; border: 1px dashed #4b5563;">
+                    <img src="{{ tmpl.overlay_asset.url }}" alt="{{ tmpl.title }}" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                </div>
+                {% endif %}
+                <strong style="font-size: 1rem; color: var(--text-main); display: block;">{{ tmpl.title }}</strong>
+                <span class="badge badge-success" style="margin-top: 4px; display: inline-block;">{{ tmpl.get_format_display }}</span>
+                <p class="text-muted" style="font-size: 0.8rem; margin: 8px 0 0 0;">Cadastrada em {{ tmpl.created_at|date:"d/m/Y H:i" }}</p>
+            </div>
+            <form method="post" onsubmit="return confirm('Tem certeza que deseja excluir esta moldura?');" style="margin-top: 14px;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="template_id" value="{{ tmpl.id }}">
+                <button type="submit" class="btn btn-sm btn-danger btn-block"><i data-lucide="trash-2" aria-hidden="true"></i> Excluir Moldura</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Prévia do Tema Oficial -->
 {% include "gestao/mediaframes/_official_catalog.html" %}
+
 {% endblock %}
 {% block extra_js %}<script src="{% static 'js/story_studio.js' %}?v=workspace20261027"></script>{% endblock %}

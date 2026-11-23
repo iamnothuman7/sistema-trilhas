@@ -1,16 +1,142 @@
-{% extends 'gestao/base_gestao.html' %}
-{% block title %}Camisetas e estoque | {{ event.title }}{% endblock %}
-{% block gestao_header %}Camisetas e estoque{% endblock %}
+{% extends 'gestao/base_gestao.html' %}{% load trilhas_ui static %}
+{% block title %}Estoque de camisetas | {{ event.title }}{% endblock %}
+{% block gestao_header %}Estoque de camisetas{% endblock %}
 {% block content %}
-<div class="page-heading"><div><h1>Camisetas e estoque</h1><p>Modelos, tamanhos e disponibilidade desta edição.</p></div><a class="btn btn-secondary" href="{% url 'gestao:catalog' event.id %}">Catálogo e lotes</a></div>
-<details class="card compact-details mg-section-gap"><summary>Como funcionam as quantidades</summary><div class="compact-detail-body"><p><strong>Disponíveis:</strong> total menos reservas, confirmadas e entregues. <strong>Reservadas:</strong> compras aguardando pagamento, por até 35 minutos. <strong>Confirmadas:</strong> unidades pagas ainda não entregues. <strong>Entregues:</strong> unidades retiradas.</p><p>Confirmar o pagamento apenas converte a reserva; não desconta novamente. Cancelar libera unidades não entregues. Uma camiseta já entregue continua fora do estoque, mesmo com o cancelamento da inscrição.</p><p>Sem quantidade cadastrada, o tamanho permanece sem limite de estoque, como antes. Cadastre o total real para controlar a disponibilidade. Vagas do evento são um controle separado.</p></div></details>
+<div class="page-heading">
+    <div>
+        <h1>Estoque de Camisetas Consignadas</h1>
+        <p>{{ event.title }} · Controle de entradas da fábrica, entregas aos pilotos e acerto de devolução.</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-secondary" href="{% url 'gestao:addons' event.id %}"><i data-lucide="shopping-bag" aria-hidden="true"></i> Produtos extras</a>
+        <a class="btn btn-secondary" href="{% url 'gestao:catalog' event.id %}"><i data-lucide="ticket" aria-hidden="true"></i> Lotes de inscrição</a>
+    </div>
+</div>
+
+<!-- Balanço Consignado com o Fornecedor -->
+<div class="stat-grid mg-section-gap">
+    <article class="stat-card">
+        <div class="stat-label">Total Recebido</div>
+        <div class="stat-value">{{ consignment.total_received }}</div>
+        <small class="text-muted">Entrada do Fabricante</small>
+    </article>
+    <article class="stat-card">
+        <div class="stat-label">Entregues no Evento</div>
+        <div class="stat-value text-success">{{ consignment.total_delivered }}</div>
+        <small class="text-muted">Kits Retirados</small>
+    </article>
+    <article class="stat-card">
+        <div class="stat-label">Aguardando Retirada</div>
+        <div class="stat-value text-warning">{{ consignment.total_confirmed }}</div>
+        <small class="text-muted">Inscrições Pagas</small>
+    </article>
+    <article class="stat-card">
+        <div class="stat-label">Sobra a Devolver</div>
+        <div class="stat-value text-primary">{{ consignment.total_remaining }}</div>
+        <small class="text-muted">Saldo Físico no Estoque</small>
+    </article>
+</div>
+
+<div class="alert alert-info mg-section-gap">
+    <i data-lucide="info" aria-hidden="true"></i>
+    <span><strong>Acerto Consignado:</strong> No encerramento do evento, devolva as <strong>{{ consignment.total_remaining }} camisetas restantes</strong> ao fornecedor e pague apenas as <strong>{{ consignment.total_out }} unidades distribuídas</strong>.</span>
+</div>
+
 {% if form.errors %}<div class="mg-form-errors" role="alert">{{ form.errors }}</div>{% endif %}
-<section class="card compact-panel"><div class="compact-records">
-{% for row in rows %}<article class="compact-record">
-<div class="stock-heading"><strong>{{ row.variant.product.name }} · {{ row.variant.label }}</strong><div class="record-actions">{% if not row.variant.active %}<span class="badge">Fora de venda</span>{% endif %}<a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:catalog_edit' event.id 'tamanho' row.variant.pk %}" aria-label="Editar tamanho" title="Editar tamanho"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar tamanho</span></a>{% if row.variant.active %}<a class="btn btn-danger btn-sm record-action" href="{% url 'gestao:catalog_remove' event.id 'tamanho' row.variant.pk %}" aria-label="Excluir tamanho" title="Excluir tamanho"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir tamanho</span></a>{% else %}<a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:catalog_restore' event.id 'tamanho' row.variant.pk %}" aria-label="Restaurar tamanho" title="Restaurar tamanho"><i data-lucide="rotate-ccw" aria-hidden="true"></i><span class="record-action-label">Restaurar tamanho</span></a>{% endif %}</div></div>
-<dl class="stock-counts"><div><dt>Disponível</dt><dd>{{ row.available|default_if_none:'Sem limite' }}</dd></div><div><dt>Reservada</dt><dd>{{ row.reserved }}</dd></div><div><dt>Confirmada</dt><dd>{{ row.confirmed }}</dd></div><div><dt>Entregue</dt><dd>{{ row.delivered }}</dd></div></dl>
-<details class="compact-details" {% if form.errors and form.cleaned_data.variant == row.variant.pk %}open{% endif %}><summary>{% if row.resource %}Ajustar total: {{ row.total }}{% else %}Cadastrar quantidade disponível{% endif %}</summary><form method="post" class="stock-edit" data-workspace-private>{% csrf_token %}<input type="hidden" name="variant" value="{{ row.variant.pk }}"><input type="hidden" name="version" value="{{ row.version }}"><div class="form-group"><label class="form-label" for="stock-{{ row.variant.pk }}">Total de unidades (inclui as já reservadas e entregues)</label><input class="form-control" type="number" inputmode="numeric" name="total" id="stock-{{ row.variant.pk }}" min="0" max="1000000" value="{{ row.total|default_if_none:'' }}" required></div><button type="submit" class="btn btn-primary">Salvar estoque</button></form></details>
-</article>{% empty %}<p class="empty-inline">Cadastre os tamanhos abaixo para começar a organizar as camisetas.</p>{% endfor %}
-</div></section>
-<section class="card mg-section-gap"><h2 class="section-title">Cadastrar modelo ou tamanho</h2><div class="page-actions">{% for product in products %}<a class="btn btn-secondary" href="{% url 'gestao:catalog_create' event.id 'tamanho' %}?product={{ product.id }}">Adicionar tamanho · {{ product.name }}</a>{% endfor %}<a class="btn btn-secondary" href="{% url 'gestao:catalog_create' event.id 'produto' %}">Novo modelo / modalidade</a></div></section>
+
+<!-- Grade de Tamanhos em Estilo Reduzido -->
+<section class="card mg-section-gap">
+    <div class="card-header">
+        <div>
+            <h2>Grade de Camisetas por Tamanho</h2>
+            <p>Acompanhe o estoque e ajuste as quantidades por tamanho.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table" data-mobile-cards>
+            <thead>
+                <tr>
+                    <th scope="col">Tamanho</th>
+                    <th scope="col">Total Cadastrado</th>
+                    <th scope="col">Entregues</th>
+                    <th scope="col">Confirmadas</th>
+                    <th scope="col">Disponível</th>
+                    <th scope="col">Situação</th>
+                    <th scope="col">Ajustar Quantidade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td data-label="Tamanho">
+                        <strong>{{ row.variant.product.name }}</strong>
+                        <span class="badge badge-brand" style="margin-left: 6px;">{{ row.variant.label }}</span>
+                    </td>
+                    <td data-label="Total">
+                        <strong>{{ row.total|default:'Ilimitado' }}</strong>
+                    </td>
+                    <td data-label="Entregues" class="text-success">
+                        {{ row.delivered }}
+                    </td>
+                    <td data-label="Confirmadas" class="text-warning">
+                        {{ row.confirmed }}
+                    </td>
+                    <td data-label="Disponível">
+                        <strong class="text-primary">{{ row.available|default:'Livre' }}</strong>
+                    </td>
+                    <td data-label="Situação">
+                        {% if not row.variant.active %}
+                            <span class="badge badge-warning">Fora de venda</span>
+                        {% else %}
+                            <span class="badge badge-success">Ativo</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Ajustar">
+                        <details class="compact-details" {% if form.errors and form.cleaned_data.variant == row.variant.pk %}open{% endif %}>
+                            <summary style="cursor: pointer; font-size: 0.85rem; padding: 4px 8px;" class="btn btn-secondary btn-sm">
+                                <i data-lucide="edit-3" aria-hidden="true"></i> Ajustar
+                            </summary>
+                            <form method="post" style="margin-top: 8px; display: flex; gap: 6px; align-items: center;" data-workspace-private>
+                                {% csrf_token %}
+                                <input type="hidden" name="variant" value="{{ row.variant.pk }}">
+                                <input type="hidden" name="version" value="{{ row.version }}">
+                                <input class="form-control form-control-sm" type="number" inputmode="numeric" name="total" min="0" max="1000000" value="{{ row.total|default_if_none:'' }}" placeholder="Qtd total" required style="max-width: 110px;">
+                                <button type="submit" class="btn btn-primary btn-sm">Salvar</button>
+                            </form>
+                        </details>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="mg-table-empty">
+                        Nenhum tamanho cadastrado. Cadastre os tamanhos abaixo para organizar as camisetas do evento.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Seção Reduzida: Cadastrar Novos Tamanhos -->
+<details class="card compact-details mg-section-gap">
+    <summary><i data-lucide="plus-circle" aria-hidden="true"></i> Cadastrar novo tamanho ou modelo de camiseta</summary>
+    <div style="padding-top: 12px;" class="page-actions">
+        {% for product in products %}
+            <a class="btn btn-secondary" href="{% url 'gestao:catalog_create' event.id 'tamanho' %}?product={{ product.id }}"><i data-lucide="plus" aria-hidden="true"></i> Adicionar tamanho para {{ product.name }}</a>
+        {% endfor %}
+        <a class="btn btn-secondary" href="{% url 'gestao:catalog_create' event.id 'produto' %}"><i data-lucide="tag" aria-hidden="true"></i> Nova modalidade / produto</a>
+    </div>
+</details>
+
+<!-- Informações Operacionais (Recolhidas por Padrão) -->
+<details class="card compact-details">
+    <summary><i data-lucide="help-circle" aria-hidden="true"></i> Como funciona o cálculo de estoque</summary>
+    <div style="padding-top: 10px; font-size: 0.9rem; line-height: 1.6; color: var(--color-text-muted);">
+        <p><strong>Disponíveis:</strong> Total cadastrado menos reservas, pagas confirmadas e entregues.</p>
+        <p><strong>Reservadas:</strong> Inscrições em preenchimento ou aguardando Pix (tempo limite de 35 minutos).</p>
+        <p><strong>Confirmadas:</strong> Inscrições pagas cujo kit ainda não foi retirado no credenciamento.</p>
+        <p><strong>Entregues:</strong> Kits já entregues pelo operador no credenciamento via scanner.</p>
+    </div>
+</details>
 {% endblock %}

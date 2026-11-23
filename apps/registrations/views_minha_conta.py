@@ -113,6 +113,7 @@ def registration_journey(reg, user, terms=None):
 @never_cache
 def dashboard(request):
     from apps.mediaframes.access import available_pilot_art
+    from apps.events.raffle_operations import confirmed_registration_tickets
     art_ids = {reg.pk for reg in available_pilot_art(request.user)}
     registrations = visible_registrations(request.user).select_related(
         "event", "event__theme", "person", "credential", "source_order_line__order"
@@ -120,6 +121,7 @@ def dashboard(request):
     for reg in registrations:
         reg.journey = registration_journey(reg, request.user)
         reg.pilot_art_available = reg.pk in art_ids
+        reg.confirmed_raffle_numbers = list(confirmed_registration_tickets(reg).values_list('number', flat=True))
     return render(request, "registrations/minha_conta_dashboard.html", {"registrations": registrations})
 
 

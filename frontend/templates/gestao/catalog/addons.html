@@ -1,0 +1,118 @@
+{% extends "gestao/base_gestao.html" %}
+{% load trilhas_ui static %}
+
+{% block title %}Produtos extras & loja | {{ event.title }}{% endblock %}
+{% block gestao_header %}Produtos extras{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <h1>Produtos Extras & Loja Oficial</h1>
+        <p>{{ event.title }} · Itens comercializados no checkout da inscrição (estilo iFood) e entregues no credenciamento.</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary" href="{% url 'gestao:catalog_create' event_id=event.id kind='adicional' %}">
+            <i data-lucide="plus" aria-hidden="true"></i> Novo produto extra
+        </a>
+        <a class="btn btn-secondary" href="{% url 'gestao:shirt_stock' event.id %}">
+            <i data-lucide="shirt" aria-hidden="true"></i> Estoque de camisetas
+        </a>
+        <a class="btn btn-secondary" href="{% url 'gestao:catalog' event.id %}">
+            <i data-lucide="ticket" aria-hidden="true"></i> Lotes de inscrição
+        </a>
+    </div>
+</div>
+
+<section class="card mg-section-gap">
+    <div class="card-header">
+        <div>
+            <h2>Itens Cadastrados</h2>
+            <p>Gerencie preços, fotos, estoque e variações dos produtos da loja.</p>
+        </div>
+    </div>
+    <div class="table-responsive">
+        <table class="table" data-mobile-cards>
+            <thead>
+                <tr>
+                    <th scope="col" style="width: 60px;">Foto</th>
+                    <th scope="col">Produto / Variação</th>
+                    <th scope="col">Preço</th>
+                    <th scope="col">Estoque</th>
+                    <th scope="col">Vendidos</th>
+                    <th scope="col">Disponível</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in addons %}
+                <tr>
+                    <td data-label="Foto">
+                        {% if item.image %}
+                            <img src="{{ item.image.url }}" alt="{{ item.title }}" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid var(--color-border);">
+                        {% else %}
+                            <div style="width: 44px; height: 44px; border-radius: 6px; background: var(--color-surface-sunken); display: flex; align-items: center; justify-content: center; color: var(--color-text-muted);">
+                                <i data-lucide="shopping-bag" aria-hidden="true"></i>
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td data-label="Produto">
+                        <strong>{{ item.title }}</strong>
+                        {% if item.variant_code %}
+                            <span class="badge badge-brand" style="margin-left: 4px;">{{ item.variant_code }}</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Preço">
+                        <strong class="text-brand">R$ {{ item.formatted_price }}</strong>
+                    </td>
+                    <td data-label="Estoque">
+                        {{ item.max_quantity }}
+                    </td>
+                    <td data-label="Vendidos">
+                        <strong>{{ item.sold_quantity }}</strong>
+                    </td>
+                    <td data-label="Disponível">
+                        <strong class="text-primary">{{ item.available_quantity }}</strong>
+                    </td>
+                    <td data-label="Status">
+                        {% if item.active %}
+                            <span class="badge badge-success">Ativo</span>
+                        {% else %}
+                            <span class="badge badge-warning">Desativado</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Ações">
+                        <div class="record-actions">
+                            <a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:catalog_edit' event_id=event.id kind='adicional' object_id=item.pk %}" aria-label="Editar {{ item.title }}" title="Editar {{ item.title }}">
+                                <i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar</span>
+                            </a>
+                            <a class="btn btn-danger btn-sm record-action" href="{% url 'gestao:catalog_remove' event.id 'adicional' item.pk %}" aria-label="Excluir {{ item.title }}" title="Excluir {{ item.title }}">
+                                <i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir</span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="mg-table-empty">
+                        <p style="margin: 0 0 10px 0;">Nenhum produto extra cadastrado para esta edição.</p>
+                        <a class="btn btn-primary btn-sm" href="{% url 'gestao:catalog_create' event_id=event.id kind='adicional' %}">
+                            <i data-lucide="plus" aria-hidden="true"></i> Cadastrar primeiro produto extra
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Dica Didática para o Organizador -->
+<details class="card compact-details">
+    <summary><i data-lucide="help-circle" aria-hidden="true"></i> Como os produtos extras aparecem no site?</summary>
+    <div style="padding-top: 10px; font-size: 0.9rem; line-height: 1.6; color: var(--color-text-muted);">
+        <p>Os produtos cadastrados aqui aparecem automaticamente na parte inferior do formulário de inscrição, estilo cross-sell (iFood), permitindo que o participante adicione camisetas extras, bonés e troféus ao mesmo pedido Pix.</p>
+        <p>No credenciamento, ao ler o QR Code do comprovante do piloto no celular, o operador vê imediatamente a lista de produtos extras comprados para efetuar a entrega rápida.</p>
+    </div>
+</details>
+{% endblock %}

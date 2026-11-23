@@ -3,29 +3,87 @@
 {% block content %}
 <div class="public-page participant-page">
   <header class="public-heading-row">
-    <div class="public-intro"><span class="public-eyebrow">Meu perfil</span><h1>Minhas inscrições</h1><p>Olá{% if request.user.full_name %}, {{ request.user.full_name }}{% endif %}! Acompanhe sua inscrição, pegue seu QR Code e crie sua arte aqui.</p></div>
+    <div class="public-intro"><span class="public-eyebrow">Meu perfil</span><h1>Minhas inscrições</h1><p>Olá{% if request.user.full_name %}, {{ request.user.full_name }}{% endif %}! Acompanhe suas inscrições em linha única, baixe seus comprovantes e acerte seus detalhes.</p></div>
     <div class="public-actions"><a href="{% url 'events:list' %}" class="public-button public-button--secondary"><i data-lucide="ticket" aria-hidden="true"></i> Ver eventos</a><a href="{% url 'identity:logout' %}" class="public-button public-button--secondary"><i data-lucide="log-out" aria-hidden="true"></i> Sair</a></div>
   </header>
   <section class="public-section" aria-label="Suas inscrições">
     {% if registrations %}
-    <div class="participant-grid">
+    <div class="participant-single-rows" style="display: flex; flex-direction: column; gap: 12px;">
       {% for reg in registrations %}
-      <article class="public-card participant-registration">
-        <div class="participant-summary">
-        <div class="public-card-head"><span class="public-eyebrow">{{ reg.category_name }}</span>{% if reg.registration_number %}<span class="public-registration-number">#{{ reg.registration_number }}</span>{% endif %}</div>
-        <h2>{{ reg.event.title }}</h2>
-        <p class="participant-name">{{ reg.person.full_name }}</p>
-        <p class="public-muted public-small">{{ reg.event.starts_at|date:"d/m/Y" }} · {{ reg.event.venue|default:reg.event.city }}</p>
+      <article class="participant-single-row-card" style="background: var(--surface, #18181b); border: 1px solid var(--border, #27272a); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+        <!-- Linha Única Resumida -->
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                {% if reg.registration_number %}
+                <span style="background: #ea580c; color: #fff; font-weight: 800; font-size: 0.95rem; padding: 4px 10px; border-radius: 6px; flex-shrink: 0;">#{{ reg.registration_number|stringformat:"04d" }}</span>
+                {% else %}
+                <span style="background: #4b5563; color: #fff; font-weight: 700; font-size: 0.85rem; padding: 4px 8px; border-radius: 6px; flex-shrink: 0;">#PENDENTE</span>
+                {% endif %}
+                <div style="min-width: 0;">
+                    <strong style="display: block; font-size: 1rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ reg.person.full_name }}</strong>
+                    <span style="font-size: 0.8rem; color: #a1a1aa;">{{ reg.category_name }} · Camiseta {{ reg.shirt_size|default:'—' }} · {{ reg.event.title }}</span>
+                    {% if reg.confirmed_raffle_numbers %}
+                    <div style="margin-top: 6px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: #fb923c; display: inline-flex; align-items: center; gap: 4px;"><i data-lucide="ticket" style="width: 14px; height: 14px;"></i> Sorteio:</span>
+                        {% for num in reg.confirmed_raffle_numbers %}
+                        <span style="background: #ea580c; color: #fff; font-weight: 800; font-size: 0.8rem; padding: 1px 6px; border-radius: 4px;">#{{ num|stringformat:"04d" }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                {% if reg.commercial_state == 'ACTIVE' and reg.source_order_line.order.status == 'PAID' %}
+                <span class="badge badge-success" style="font-size: 0.8rem; padding: 4px 8px;">CONFIRMADO</span>
+                <a href="{% url 'minha_conta:registration_pdf' registration_id=reg.id %}" class="btn btn-sm btn-primary" style="background: #ea580c; border: 0; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;" hx-boost="false">
+                    <i data-lucide="file-down" style="width: 16px; height: 16px;"></i> PDF 1 Pág
+                </a>
+                {% else %}
+                <span class="badge badge-warning" style="font-size: 0.8rem; padding: 4px 8px;">AGUARDANDO PAGAMENTO</span>
+                {% endif %}
+
+                <button type="button" class="btn btn-sm btn-secondary" onclick="const det = document.getElementById('details-{{ reg.id }}'); det.hidden = !det.hidden; this.querySelector('span').textContent = det.hidden ? 'Ver completo' : 'Ocultar';" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border);">
+                    <span>Ver completo</span> <i data-lucide="chevron-down" style="width: 14px; height: 14px;"></i>
+                </button>
+            </div>
         </div>
-        <div class="participant-options">
-        <div class="participant-next participant-next--{{ reg.journey.tone }}"><i data-lucide="{{ reg.journey.icon }}" aria-hidden="true"></i><div><strong>{{ reg.journey.title }}</strong><p>{{ reg.journey.message }}</p></div></div>
-        <div class="participant-actions">
-          <a href="{{ reg.journey.url }}" class="public-button public-button--primary" data-registration-next hx-boost="false"><i data-lucide="{{ reg.journey.icon }}" aria-hidden="true"></i> {{ reg.journey.label }}</a>
-          {% if reg.pilot_art_available %}<a href="{% url 'events:frames' slug=reg.event.slug %}?inscricao={{ reg.id }}" class="public-button public-button--secondary" hx-boost="false"><i data-lucide="image" aria-hidden="true"></i> Criar story e feed</a>{% endif %}
-          {% if reg.commercial_state == 'ACTIVE' and reg.source_order_line.order.status == 'PAID' %}<a href="{% url 'minha_conta:registration_pdf' registration_id=reg.id %}" class="public-button public-button--secondary" hx-boost="false"><i data-lucide="download" aria-hidden="true"></i> Comprovante PDF</a>{% endif %}
-        </div>
-        {% url 'minha_conta:registration_detail' registration_id=reg.id as detail_url %}
-        {% if reg.journey.url != detail_url %}<a href="{{ detail_url }}" class="participant-detail-link">Detalhes da inscrição e do kit <i data-lucide="arrow-right" aria-hidden="true"></i></a>{% endif %}
+
+        <!-- Conteúdo Expandido (Ver Completo) -->
+        <div id="details-{{ reg.id }}" hidden style="border-top: 1px solid var(--border, #27272a); padding: 18px; background: rgba(0,0,0,0.25);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 16px;">
+                <div>
+                    <span style="font-size: 0.75rem; color: #a1a1aa; text-transform: uppercase;">Cidade / Equipe</span>
+                    <p style="margin: 2px 0 0 0; font-size: 0.95rem; color: #fff;">{{ reg.person.city|default:'—' }}/{{ reg.person.state|default:'—' }} · {{ reg.team_name|default:'Sem equipe' }}</p>
+                </div>
+                <div>
+                    <span style="font-size: 0.75rem; color: #a1a1aa; text-transform: uppercase;">Veículo / Modalidade</span>
+                    <p style="margin: 2px 0 0 0; font-size: 0.95rem; color: #fff;">{{ reg.get_vehicle_type_display|default:'Moto' }}</p>
+                </div>
+                <div>
+                    <span style="font-size: 0.75rem; color: #a1a1aa; text-transform: uppercase;">Situação Operacional</span>
+                    <p style="margin: 2px 0 0 0; font-size: 0.95rem; color: #fff;">{{ reg.get_operational_state_display }}</p>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a href="{% url 'minha_conta:registration_detail' registration_id=reg.id %}" class="public-button public-button--primary" style="font-size: 0.85rem; padding: 8px 14px;">
+                    <i data-lucide="qr-code" aria-hidden="true"></i> Abrir Credencial Completa e QR Code
+                </a>
+                {% if reg.commercial_state == 'ACTIVE' and reg.source_order_line.order.status == 'PAID' %}
+                <a href="{% url 'minha_conta:credential_image' reg.id %}" class="public-button public-button--secondary" style="font-size: 0.85rem; padding: 8px 14px;" hx-boost="false">
+                    <i data-lucide="image-down" aria-hidden="true"></i> Salvar Cartão na Galeria (PNG)
+                </a>
+                {% endif %}
+                <a href="https://api.whatsapp.com/send?text=Minha%20inscri%C3%A7%C3%A3o%20no%20{{ reg.event.title|urlencode }}%20est%C3%A1%20confirmada!%20Piloto:%20{{ reg.person.full_name|urlencode }}{% if reg.registration_number %}%20(%23{{ reg.registration_number|stringformat:'04d' }}){% endif %}.%20Meu%20comprovante:%20https://equipemorcego.nabio.pro/minha-conta/" target="_blank" rel="noopener noreferrer" class="public-button public-button--secondary" style="font-size: 0.85rem; padding: 8px 14px; background: #166534; color: #fff; border: 0;">
+                    <i data-lucide="share-2" aria-hidden="true"></i> Compartilhar no WhatsApp
+                </a>
+                {% if reg.pilot_art_available %}
+                <a href="{% url 'events:frames' slug=reg.event.slug %}?inscricao={{ reg.id }}" class="public-button public-button--secondary" style="font-size: 0.85rem; padding: 8px 14px;" hx-boost="false">
+                    <i data-lucide="image" aria-hidden="true"></i> Criar Story e Feed
+                </a>
+                {% endif %}
+            </div>
         </div>
       </article>
       {% endfor %}

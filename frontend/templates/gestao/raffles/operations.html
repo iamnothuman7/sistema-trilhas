@@ -1,14 +1,153 @@
 {% extends 'gestao/base_gestao.html' %}{% load trilhas_ui static %}
+{% block title %}Números da Sorte | {{ event.title }}{% endblock %}
 {% block extra_head %}<link rel="stylesheet" href="{% static 'css/raffle.css' %}?v=20261028-audit">{% endblock %}
-{% block gestao_header %}Bilhetes e pontos do sorteio{% endblock %}
+{% block gestao_header %}Números da Sorte{% endblock %}
 {% block content %}
 {% include 'gestao/raffles/_tabs.html' with current='operations' %}
-<header class="page-heading"><div><h1>Bilhetes e pontos</h1><p>{{ raffle.title }} · Cada inscrição paga recebe um número. O papel usa a faixa {{ raffle.paper_start }} a {{ raffle.paper_end }}: {{ paper_count }} bilhetes, incluindo as duas extremidades.</p></div><a class="btn btn-secondary" href="{% url 'gestao:raffle_management' event.id %}">Configurar sorteio</a></header>
-<div class="page-actions mg-section-gap"><a class="btn btn-primary" href="{% url 'gestao:raffle_print' event.id %}">Imprimir bilhetes com canhoto</a><a class="btn btn-secondary" href="{% url 'gestao:raffle_print' event.id %}?formato=globo">Imprimir números confirmados para globo</a><a class="btn btn-secondary" href="{% url 'gestao:reports' event.id %}?export=raffle">Exportar relatório CSV</a></div>
-<div class="form-grid mg-section-gap"><section class="card mg-stack"><h2>1. Gerar numeração em papel</h2><p>{{ total }} número(s) registrados · {{ confirmed }} confirmado(s). Gerar novamente adiciona somente números que faltam.</p><form method="post">{% csrf_token %}<button class="btn btn-primary" name="action" value="batch" type="submit">Gerar faixa {{ raffle.paper_start }}–{{ raffle.paper_end }}</button></form></section><section class="card"><h2>2. Cadastrar ponto</h2><form method="post" class="mg-stack">{% csrf_token %}<input type="hidden" name="action" value="point"><label>Nome<input class="form-control" name="name" maxlength="120" required></label><label>Contato<input class="form-control" name="contact" maxlength="150"></label><button class="btn btn-primary" type="submit">Cadastrar ponto</button></form></section></div>
-<div class="form-grid mg-section-gap"><section class="card"><h2>3. Entregar bilhetes a um ponto</h2><form method="post" class="mg-stack">{% csrf_token %}<input type="hidden" name="action" value="distribute"><label>Ponto<select class="form-control" name="point" required>{% for point in active_points %}<option value="{{ point.pk }}">{{ point.name }}</option>{% endfor %}</select></label><div class="form-grid"><label>Do número<input class="form-control" type="number" name="start" min="{{ raffle.paper_start }}" max="{{ raffle.paper_end }}" required></label><label>Até o número<input class="form-control" type="number" name="end" min="{{ raffle.paper_start }}" max="{{ raffle.paper_end }}" required></label></div><button class="btn btn-primary" type="submit">Registrar entrega ao ponto</button></form></section>
-<section class="card"><h2>4. Confirmar bilhete recebido</h2><form method="post" class="mg-stack">{% csrf_token %}<input type="hidden" name="action" value="sale"><label>Número do bilhete<input class="form-control" type="number" name="number" required></label><label>Comprador<input class="form-control" name="buyer_name" maxlength="150" required></label><label>WhatsApp<input class="form-control" name="buyer_phone" data-mask="phone" maxlength="30"></label><label>Valor recebido (R$)<input class="form-control" name="amount" inputmode="decimal" required></label><label class="mg-check-row"><input type="checkbox" name="confirmed" required>Conferi o recebimento integral deste bilhete.</label><button class="btn btn-primary" type="submit">Dar baixa e lançar no financeiro</button></form></section></div>
-<section class="card mg-section-gap"><h2>Resumo por ponto</h2><div class="table-responsive"><table class="table"><thead><tr><th>Ponto</th><th>Bilhetes</th><th>Confirmados</th><th>Recebido</th><th>Ações</th></tr></thead><tbody>{% for point in points %}<tr><td>{{ point.name }}<small>{{ point.contact }}{% if not point.active %} · Excluído / inativo{% endif %}</small></td><td>{{ point.total }}</td><td>{{ point.sold }}</td><td>R$ {{ point.received|default:0|money }}</td><td><div class="record-actions"><a class="btn btn-secondary btn-sm" href="{% url 'gestao:raffle_point_edit' event.id point.pk %}">{% if point.active %}Editar{% else %}Editar / restaurar{% endif %}</a>{% if point.active %}<a class="btn btn-danger btn-sm record-action" href="{% url 'gestao:raffle_point_remove' event.id point.pk %}" aria-label="Excluir" title="Excluir"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir</span></a>{% endif %}</div></td></tr>{% empty %}<tr><td colspan="4">Nenhum ponto cadastrado.</td></tr>{% endfor %}</tbody></table></div></section>
-<section class="card"><h2>Consultar números</h2><form method="get" class="form-grid"><label>Número<input class="form-control" name="number" inputmode="numeric" value="{{ number_filter }}"></label><label>Situação<select class="form-control" name="state"><option value="">Todas</option>{% for value,label in ticket_states %}<option value="{{ value }}"{% if state_filter == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label><button class="btn btn-primary" type="submit">Filtrar</button></form><div class="table-responsive"><table class="table"><thead><tr><th>Número</th><th>Origem</th><th>Participante / comprador</th><th>Ponto</th><th>Situação</th><th>Ações</th></tr></thead><tbody>{% for ticket in page_obj %}<tr><td><strong>{{ ticket.number }}</strong></td><td>{{ ticket.get_source_display }}</td><td>{% if ticket.registration %}{{ ticket.registration.person.full_name }}{% else %}{{ ticket.buyer_name|default:'—' }}{% endif %}</td><td>{{ ticket.point|default:'—' }}</td><td>{{ ticket.get_state_display }}</td><td>{% if ticket.source == 'PAPER' and ticket.state != 'VOID' %}<div class="record-actions"><a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:raffle_ticket_edit' event.id ticket.pk %}" aria-label="Editar" title="Editar"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar</span></a><a class="btn btn-danger btn-sm record-action" href="{% url 'gestao:raffle_ticket_remove' event.id ticket.pk %}" aria-label="Excluir / cancelar" title="Excluir / cancelar"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir / cancelar</span></a></div>{% elif ticket.registration %}<a class="btn btn-secondary btn-sm" href="{% url 'gestao:registration_detail' event.id ticket.registration_id %}">Ver inscrição</a>{% elif ticket.order_line_id %}<a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:raffle_finance' event.id %}" aria-label="Gerenciar compra" title="Gerenciar compra"><i data-lucide="arrow-up-right" aria-hidden="true"></i><span class="record-action-label">Gerenciar compra</span></a>{% endif %}</td></tr>{% empty %}<tr><td colspan="5">Nenhum número nesta seleção.</td></tr>{% endfor %}</tbody></table></div>{% include 'gestao/partials/pagination.html' %}</section>
-<details class="card mg-space-top"><summary>Cancelar um bilhete em papel</summary><form method="post" class="mg-stack">{% csrf_token %}<input type="hidden" name="action" value="void"><label>Número<input class="form-control" type="number" name="number" required></label><label>Motivo<textarea class="form-control" name="reason" minlength="10" maxlength="1000" required></textarea></label><label class="mg-check-row"><input type="checkbox" name="returned">Se o bilhete estava pago, confirmei a devolução do valor ao comprador.</label><button class="btn btn-secondary" type="submit">Cancelar bilhete</button></form></details>
+<header class="page-heading">
+    <div>
+        <h1>Números da Sorte</h1>
+        <p>{{ raffle.title }} · Sistema 100% digital: cada piloto recebe 1 número incluso e extras são vendidos online.</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary" href="{% url 'gestao:reports' event.id %}?export=raffle"><i data-lucide="download" aria-hidden="true"></i> Exportar lista (CSV)</a>
+        <a class="btn btn-secondary" href="{% url 'gestao:raffle_print' event.id %}?formato=globo" target="_blank" rel="noopener"><i data-lucide="printer" aria-hidden="true"></i> Imprimir para globo (PDF)</a>
+        <a class="btn btn-secondary" href="{% url 'gestao:raffle_management' event.id %}"><i data-lucide="settings" aria-hidden="true"></i> Configurar sorteio</a>
+    </div>
+</header>
+
+<div class="stat-grid mg-section-gap">
+    <article class="stat-card">
+        <div class="stat-label">Total de Números Ativos</div>
+        <div class="stat-value">{{ confirmed }}</div>
+        <small class="text-muted">Concorrendo ao Sorteio</small>
+    </article>
+    <article class="stat-card">
+        <div class="stat-label">Inclusos em Inscrições</div>
+        <div class="stat-value text-success">{{ registration_count }}</div>
+        <small class="text-muted">1 Número por Piloto Pago</small>
+    </article>
+    <article class="stat-card">
+        <div class="stat-label">Extras Online Vendidos</div>
+        <div class="stat-value text-primary">{{ online_count }}</div>
+        <small class="text-muted">Comprados no Site e Checkout</small>
+    </article>
+    <article class="stat-card">
+        <div class="stat-label">Arrecadação de Extras</div>
+        <div class="stat-value text-brand">R$ {{ online_revenue_reais|money }}</div>
+        <small class="text-muted">Receita Bruta do Sorteio</small>
+    </article>
+</div>
+
+<section class="card mg-section-gap">
+    <div class="card-header">
+        <div>
+            <h2>Consultar Números Emitidos</h2>
+            <p>Busque por número da sorte, nome do piloto ou telefone.</p>
+        </div>
+    </div>
+    <form method="get" class="form-grid" style="grid-template-columns: 2fr 1fr auto; gap: 10px; align-items: end; margin-bottom: 16px;">
+        <label class="form-group" style="margin: 0;">
+            <span class="form-label">Buscar número, nome ou telefone</span>
+            <input class="form-control" name="q" value="{{ q }}" placeholder="Ex: 42 ou Nome do participante">
+        </label>
+        <label class="form-group" style="margin: 0;">
+            <span class="form-label">Origem</span>
+            <select class="form-control" name="source">
+                <option value="">Todas as origens</option>
+                <option value="REGISTRATION"{% if source_filter == 'REGISTRATION' %} selected{% endif %}>Inscrição de Piloto</option>
+                <option value="ONLINE"{% if source_filter == 'ONLINE' %} selected{% endif %}>Compra Online Avulsa</option>
+            </select>
+        </label>
+        <button class="btn btn-primary" type="submit"><i data-lucide="search" aria-hidden="true"></i> Filtrar</button>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table" data-mobile-cards>
+            <thead>
+                <tr>
+                    <th scope="col">Número</th>
+                    <th scope="col">Origem</th>
+                    <th scope="col">Participante / Comprador</th>
+                    <th scope="col">Contato</th>
+                    <th scope="col">Emissão</th>
+                    <th scope="col">Situação</th>
+                    <th scope="col">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticket in page_obj %}
+                <tr>
+                    <td data-label="Número">
+                        <strong style="font-size: 1.15rem; color: #ea580c;">#{{ ticket.number|stringformat:"04d" }}</strong>
+                    </td>
+                    <td data-label="Origem">
+                        {% if ticket.source == 'REGISTRATION' %}
+                            <span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;"><i data-lucide="gift" style="width: 14px; height: 14px;"></i> Inscrição Piloto</span>
+                        {% elif ticket.source == 'ONLINE' %}
+                            <span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><i data-lucide="ticket" style="width: 14px; height: 14px;"></i> Compra Online</span>
+                        {% else %}
+                            <span class="badge">Avulso</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Participante">
+                        {% if ticket.registration %}
+                            <strong>{{ ticket.registration.person.full_name }}</strong>
+                            <small class="text-muted" style="display: block;">Inscrição #{{ ticket.registration.number|default:ticket.registration.pk|slice:":8" }}</small>
+                        {% else %}
+                            <strong>{{ ticket.buyer_name|default:'Comprador Online' }}</strong>
+                        {% endif %}
+                    </td>
+                    <td data-label="Contato">
+                        {% if ticket.registration %}
+                            {{ ticket.registration.person.phone|default:'—' }}
+                        {% else %}
+                            {{ ticket.buyer_phone|default:ticket.buyer_email|default:'—' }}
+                        {% endif %}
+                    </td>
+                    <td data-label="Emissão">
+                        {{ ticket.created_at|date:"d/m/Y H:i" }}
+                    </td>
+                    <td data-label="Situação">
+                        <span class="badge badge-success">Confirmado</span>
+                    </td>
+                    <td data-label="Ações">
+                        {% if ticket.registration %}
+                            <a class="btn btn-secondary btn-sm" href="{% url 'gestao:registration_detail' event.id ticket.registration_id %}">Ver inscrição</a>
+                        {% elif ticket.order_line_id %}
+                            <a class="btn btn-secondary btn-sm" href="{% url 'gestao:raffle_finance' event.id %}">Ver pedido</a>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="mg-table-empty">
+                        {% if q or source_filter %}
+                            Nenhum número encontrado para os filtros aplicados.
+                        {% else %}
+                            Nenhum número da sorte emitido ainda. Os números aparecerão automaticamente conforme as inscrições e compras forem confirmadas.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <nav class="mg-pagination" aria-label="Navegação de números">
+        <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+        <div class="page-actions">
+            {% if page_obj.has_previous %}
+                <a class="btn btn-secondary" href="?{{ pagination_query }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+                <a class="btn btn-secondary" href="?{{ pagination_query }}&page={{ page_obj.next_page_number }}">Próxima</a>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+</section>
 {% endblock %}

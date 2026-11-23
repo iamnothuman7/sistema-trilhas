@@ -86,3 +86,38 @@ class OutboxMessage(models.Model):
 
     def __str__(self):
         return f"{self.event_name} ({self.dedupe_key}) - {self.status}"
+
+
+class PageViewRecord(models.Model):
+    """
+    Registro leve de métricas de tráfego e acessos do site e sistema em tempo real.
+    Rastreia visualizações, abas abertas, dispositivos e canais de origem.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    path = models.CharField("Caminho / URL", max_length=500, db_index=True)
+    page_name = models.CharField("Nome da Página / Aba", max_length=150, db_index=True)
+    visitor_hash = models.CharField("Hash do Visitante", max_length=64, db_index=True)
+    session_id = models.CharField("ID da Sessão", max_length=64, blank=True, null=True, db_index=True)
+    device_type = models.CharField("Dispositivo", max_length=20, default="MOBILE", db_index=True)
+    os_name = models.CharField("Sistema Operacional", max_length=50, blank=True, default="Desconhecido")
+    browser = models.CharField("Navegador", max_length=50, blank=True, default="Desconhecido")
+    referrer_source = models.CharField("Origem", max_length=100, default="Direto", db_index=True)
+    referrer_url = models.CharField("URL Origem", max_length=500, blank=True, null=True)
+    ip_address = models.GenericIPAddressField("IP", blank=True, null=True)
+    is_staff_view = models.BooleanField("Acesso de Operador/Staff", default=False, db_index=True)
+    event_id = models.UUIDField("ID do Evento", blank=True, null=True, db_index=True)
+    created_at = models.DateTimeField("Data e Hora", default=timezone.now, db_index=True)
+
+    class Meta:
+        verbose_name = "Métrica de Acesso"
+        verbose_name_plural = "Métricas de Acesso"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["created_at", "page_name"]),
+            models.Index(fields=["created_at", "device_type"]),
+            models.Index(fields=["created_at", "referrer_source"]),
+        ]
+
+    def __str__(self):
+        return f"{self.created_at.strftime('%d/%m %H:%M')} - {self.page_name} ({self.device_type})"
+

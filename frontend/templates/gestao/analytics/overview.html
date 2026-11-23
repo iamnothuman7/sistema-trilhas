@@ -1,0 +1,423 @@
+{% extends "gestao/base_gestao.html" %}
+{% load static %}
+
+{% block title %}Métricas de Acesso | Gestão Morcego{% endblock %}
+{% block gestao_header %}Métricas de Acesso e Tráfego{% endblock %}
+
+{% block extra_head %}
+<style>
+.analytics-hero-stats {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  margin-bottom: 20px !important;
+}
+@media (max-width: 768px) {
+  .analytics-hero-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+}
+.analytics-stat-card {
+  padding: 14px 16px !important;
+  background: var(--ui-panel, #241d18) !important;
+  border: 1.5px solid var(--ui-border, rgba(255, 255, 255, 0.08)) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+.analytics-stat-label {
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.03em !important;
+  color: var(--ui-muted, #9c8e82) !important;
+  margin-bottom: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+.analytics-stat-value {
+  font-size: 1.7rem !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+  color: var(--ui-text, #faf5ee) !important;
+  margin: 2px 0 4px 0 !important;
+}
+.analytics-stat-sub {
+  font-size: 0.72rem !important;
+  color: var(--ui-muted, #9c8e82) !important;
+}
+
+/* Filter Pills */
+.analytics-filters-bar {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin-bottom: 20px !important;
+  padding: 12px 16px !important;
+  background: var(--ui-panel, #241d18) !important;
+  border: 1px solid var(--ui-border) !important;
+  border-radius: 14px !important;
+}
+.filter-pills-group {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+.filter-pill {
+  padding: 6px 12px !important;
+  border-radius: 20px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--ui-muted, #a39589) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid transparent !important;
+  text-decoration: none !important;
+  transition: all 0.2s ease !important;
+}
+.filter-pill:hover {
+  color: #faf5ee !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+.filter-pill.is-active {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.4) !important;
+}
+
+/* Gráfico de Barras Diário */
+.analytics-chart-panel {
+  padding: 18px 20px !important;
+  background: var(--ui-panel, #241d18) !important;
+  border: 1.5px solid var(--ui-border) !important;
+  border-radius: 16px !important;
+  margin-bottom: 20px !important;
+}
+.chart-bars-container {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  height: 120px !important;
+  padding-top: 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.chart-col {
+  flex: 1 1 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  height: 100% !important;
+  justify-content: flex-end !important;
+  min-width: 0 !important;
+}
+.chart-bar {
+  width: 100% !important;
+  max-width: 38px !important;
+  background: linear-gradient(180deg, #f97316 0%, #ea580c 100%) !important;
+  border-radius: 6px 6px 0 0 !important;
+  transition: height 0.4s ease, opacity 0.2s ease !important;
+  position: relative !important;
+}
+.chart-bar:hover {
+  filter: brightness(1.15) !important;
+}
+.chart-bar-count {
+  position: absolute !important;
+  top: -20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: var(--ui-brand-ink, #ffb079) !important;
+  white-space: nowrap !important;
+}
+.chart-label {
+  font-size: 10px !important;
+  color: var(--ui-muted, #9c8e82) !important;
+  margin-top: 6px !important;
+  text-align: center !important;
+}
+
+/* Grids de Informação */
+.analytics-grid-two {
+  display: grid !important;
+  grid-template-columns: 1.5fr 1fr !important;
+  gap: 20px !important;
+  margin-bottom: 20px !important;
+}
+@media (max-width: 900px) {
+  .analytics-grid-two {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Progress bar inside lists */
+.bar-track {
+  width: 100% !important;
+  height: 7px !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-radius: 4px !important;
+  overflow: hidden !important;
+  margin-top: 5px !important;
+}
+.bar-fill {
+  height: 100% !important;
+  border-radius: 4px !important;
+  background: linear-gradient(90deg, #ea580c, #f97316) !important;
+  transition: width 0.5s ease !important;
+}
+
+/* Recent views feed */
+.recent-view-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 10px 0 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  font-size: 13px !important;
+}
+.recent-view-row:last-child {
+  border-bottom: none !important;
+}
+.recent-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 11px !important;
+  padding: 2px 8px !important;
+  border-radius: 6px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--ui-muted) !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mg-section-gap">
+  <!-- Top Bar com Título -->
+  <div class="page-heading" style="margin-bottom: 16px;">
+    <div>
+      <span class="badge badge-success" style="font-size: 0.72rem; padding: 2px 8px; letter-spacing: 0.04em; margin-bottom: 4px;">ANALYTICS EM TEMPO REAL</span>
+      <h1 style="font-size: 1.6rem; margin: 4px 0 2px 0;">Métricas de Acesso e Tráfego</h1>
+      <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 0;">
+        Acompanhe visualizações, abas mais abertas, dispositivos dos visitantes e canais de entrada.
+      </p>
+    </div>
+  </div>
+
+  <!-- Barra de Filtros de Período e Tipo -->
+  <div class="analytics-filters-bar">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="calendar" style="width: 16px; height: 16px; color: #ea580c;"></i>
+      <span style="font-size: 12px; font-weight: 600; color: var(--ui-muted);">Período:</span>
+      <div class="filter-pills-group">
+        <a href="?period=today&traffic={{ traffic_type }}{% if event %}&event_id={{ event.id }}{% endif %}" class="filter-pill {% if period == 'today' %}is-active{% endif %}">Hoje</a>
+        <a href="?period=24h&traffic={{ traffic_type }}{% if event %}&event_id={{ event.id }}{% endif %}" class="filter-pill {% if period == '24h' %}is-active{% endif %}">24h</a>
+        <a href="?period=7d&traffic={{ traffic_type }}{% if event %}&event_id={{ event.id }}{% endif %}" class="filter-pill {% if period == '7d' %}is-active{% endif %}">7 dias</a>
+        <a href="?period=30d&traffic={{ traffic_type }}{% if event %}&event_id={{ event.id }}{% endif %}" class="filter-pill {% if period == '30d' %}is-active{% endif %}">30 dias</a>
+        <a href="?period=all&traffic={{ traffic_type }}{% if event %}&event_id={{ event.id }}{% endif %}" class="filter-pill {% if period == 'all' %}is-active{% endif %}">Tudo</a>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <i data-lucide="users" style="width: 16px; height: 16px; color: #ea580c;"></i>
+      <span style="font-size: 12px; font-weight: 600; color: var(--ui-muted);">Origem:</span>
+      <div class="filter-pills-group">
+        <a href="?period={{ period }}&traffic=public{% if event %}&event_id={{ event.id }}{% endif %}" class="filter-pill {% if traffic_type == 'public' %}is-active{% endif %}">Público</a>
+        <a href="?period={{ period }}&traffic=staff{% if event %}&event_id={{ event.id }}{% endif %}" class="filter-pill {% if traffic_type == 'staff' %}is-active{% endif %}">Gestão</a>
+        <a href="?period={{ period }}&traffic=all{% if event %}&event_id={{ event.id }}{% endif %}" class="filter-pill {% if traffic_type == 'all' %}is-active{% endif %}">Todos</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards Hero de Indicadores Rápidos -->
+  <div class="analytics-hero-stats">
+    <div class="analytics-stat-card">
+      <div class="analytics-stat-label">
+        <i data-lucide="eye" style="width: 15px; height: 15px; color: #ea580c;"></i>
+        Visualizações
+      </div>
+      <div class="analytics-stat-value">{{ total_views }}</div>
+      <div class="analytics-stat-sub">Páginas abertas no período</div>
+    </div>
+
+    <div class="analytics-stat-card">
+      <div class="analytics-stat-label">
+        <i data-lucide="user-check" style="width: 15px; height: 15px; color: #a9dfba;"></i>
+        Visitantes Únicos
+      </div>
+      <div class="analytics-stat-value" style="color: #a9dfba;">{{ unique_visitors }}</div>
+      <div class="analytics-stat-sub">Pessoas diferentes que acessaram</div>
+    </div>
+
+    <div class="analytics-stat-card">
+      <div class="analytics-stat-label">
+        <i data-lucide="smartphone" style="width: 15px; height: 15px; color: #ffb079;"></i>
+        Acessos no Celular
+      </div>
+      <div class="analytics-stat-value" style="color: #ffb079;">{{ mobile_pct }}%</div>
+      <div class="analytics-stat-sub">{{ mobile_count }} via smartphone vs {{ desktop_count }} no PC</div>
+    </div>
+
+    <div class="analytics-stat-card">
+      <div class="analytics-stat-label">
+        <i data-lucide="zap" style="width: 15px; height: 15px; color: #facc15;"></i>
+        Visualizações Hoje
+      </div>
+      <div class="analytics-stat-value" style="color: #facc15;">{{ today_count }}</div>
+      <div class="analytics-stat-sub">Desde 00:00 de hoje</div>
+    </div>
+  </div>
+
+  <!-- Gráfico de Acessos dos Últimos 7 Dias -->
+  <div class="analytics-chart-panel">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+      <h3 style="font-size: 14px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="trending-up" style="width: 16px; height: 16px; color: #ea580c;"></i>
+        Tendência de Acessos por Dia (Últimos 7 dias)
+      </h3>
+      <small class="text-muted" style="font-size: 11px;">Visualizações diárias</small>
+    </div>
+    <div class="chart-bars-container">
+      {% for d in daily_stats %}
+      <div class="chart-col">
+        <div class="chart-bar" style="height: {{ d.bar_pct }}%;">
+          <span class="chart-bar-count">{{ d.views }}</span>
+        </div>
+        <span class="chart-label">{{ d.label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Grid Principal: Abas Mais Acessadas + Origens do Tráfego -->
+  <div class="analytics-grid-two">
+    <!-- Abas / Páginas Mais Populares -->
+    <div class="card" style="padding: 18px 20px; background: var(--ui-panel); border: 1.5px solid var(--ui-border); border-radius: 16px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+        <h3 style="font-size: 15px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="layers" style="width: 17px; height: 17px; color: #ea580c;"></i>
+          Abas e Páginas Mais Acessadas
+        </h3>
+        <span class="badge badge-info" style="font-size: 11px;">{{ top_pages|length }} páginas</span>
+      </div>
+
+      <div class="mg-stack" style="gap: 12px;">
+        {% for p in top_pages %}
+        <div style="padding-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 13px;">
+            <div style="font-weight: 600; color: var(--ui-text);">
+              {{ p.name }}
+              <small class="text-muted" style="display: block; font-size: 11px; font-weight: 400;">{{ p.path }}</small>
+            </div>
+            <div style="text-align: right; white-space: nowrap;">
+              <strong style="font-size: 14px; color: #ea580c;">{{ p.views }}</strong>
+              <small class="text-muted" style="font-size: 11px; margin-left: 4px;">({{ p.pct }}%)</small>
+            </div>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width: {{ p.bar_width }}%;"></div>
+          </div>
+        </div>
+        {% empty %}
+        <p class="text-muted" style="font-size: 13px; text-align: center; padding: 20px 0;">Nenhum acesso registrado no período selecionado.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Origens de Tráfego e Dispositivos -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <!-- De onde o pessoal está vindo -->
+      <div class="card" style="padding: 18px 20px; background: var(--ui-panel); border: 1.5px solid var(--ui-border); border-radius: 16px;">
+        <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 14px 0; display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="share-2" style="width: 17px; height: 17px; color: #a9dfba;"></i>
+          Origem do Tráfego (De onde vieram)
+        </h3>
+        <div class="mg-stack" style="gap: 10px;">
+          {% for src in top_sources %}
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px;">
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                <i data-lucide="{{ src.icon }}" style="width: 14px; height: 14px; color: #ea580c;"></i>
+                {{ src.source }}
+              </span>
+              <span><strong>{{ src.views }}</strong> <small class="text-muted">({{ src.pct }}%)</small></span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: {{ src.bar_width }}%; background: linear-gradient(90deg, #10b981, #059669);"></div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Dispositivos & Navegadores -->
+      <div class="card" style="padding: 18px 20px; background: var(--ui-panel); border: 1.5px solid var(--ui-border); border-radius: 16px;">
+        <h3 style="font-size: 15px; font-weight: 700; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="monitor-smartphone" style="width: 17px; height: 17px; color: #ffb079;"></i>
+          Dispositivos & Navegadores
+        </h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <div style="padding: 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.04); text-align: center;">
+            <i data-lucide="smartphone" style="width: 20px; height: 20px; color: #ea580c; margin-bottom: 4px;"></i>
+            <div style="font-size: 16px; font-weight: 800;">{{ mobile_pct }}%</div>
+            <small class="text-muted" style="font-size: 10px;">Celular / Mobile</small>
+          </div>
+          <div style="padding: 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.04); text-align: center;">
+            <i data-lucide="laptop" style="width: 20px; height: 20px; color: #38bdf8; margin-bottom: 4px;"></i>
+            <div style="font-size: 16px; font-weight: 800;">{{ desktop_pct }}%</div>
+            <small class="text-muted" style="font-size: 10px;">Computador / PC</small>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: var(--ui-muted);">
+          <strong>Navegadores mais usados:</strong>
+          {% for b in browsers %}
+            <span class="recent-badge" style="margin: 2px 2px;">{{ b.browser }} ({{ b.views }})</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feed de Últimos Acessos ao Vivo (Tempo Real) -->
+  <div class="card" style="padding: 18px 20px; background: var(--ui-panel); border: 1.5px solid var(--ui-border); border-radius: 16px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+      <h3 style="font-size: 15px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="activity" style="width: 17px; height: 17px; color: #ea580c;"></i>
+        Feed de Acessos Recentes (Tempo Real)
+      </h3>
+      <span class="badge badge-success" style="font-size: 11px;">Ao vivo</span>
+    </div>
+
+    <div>
+      {% for v in recent_views %}
+      <div class="recent-view-row">
+        <div>
+          <strong>{{ v.page_name }}</strong>
+          <div style="font-size: 11px; color: var(--ui-muted); display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+            <code>{{ v.path }}</code>
+            <span>&bull;</span>
+            <span class="recent-badge"><i data-lucide="{% if v.device_type == 'MOBILE' %}smartphone{% else %}laptop{% endif %}" style="width: 12px; height: 12px;"></i> {{ v.os_name }} ({{ v.browser }})</span>
+            <span>&bull;</span>
+            <span class="recent-badge">{{ v.referrer_source }}</span>
+          </div>
+        </div>
+        <div style="text-align: right; white-space: nowrap; font-size: 11px; color: var(--ui-muted);">
+          {{ v.created_at|date:"d/m H:i:s" }}
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted" style="text-align: center; padding: 20px 0; font-size: 13px;">Ainda não há registros recentes.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

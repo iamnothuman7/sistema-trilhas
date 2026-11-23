@@ -59,7 +59,7 @@ class AddOnForm(CatalogForm):
 
     class Meta:
         model = AddOn
-        fields = ['title', 'description', 'variant_code', 'price', 'max_quantity', 'active']
+        fields = ['title', 'description', 'image', 'variant_code', 'price', 'max_quantity', 'active']
         widgets = {'description': forms.Textarea(attrs={'rows':3})}
         help_texts = {'variant_code':'Ex.: P, M, G ou uma variação do produto. Cadastre um item separado para cada estoque.'}
 

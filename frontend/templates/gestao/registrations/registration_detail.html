@@ -20,8 +20,8 @@
             </div>
         </div>
         <div class="page-actions">
-            {% if not reg.archived_at %}<a class="btn btn-secondary record-action" href="{% url 'gestao:registration_edit' event.id reg.id %}" aria-label="Editar cadastro" title="Editar cadastro"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar cadastro</span></a>{% if management_permissions.finance and reg.source_order_line.order.status == 'PAID' %}<a class="btn btn-secondary" href="{% url 'gestao:registration_refund' event.id reg.id %}">Cancelar e registrar devolução</a>{% endif %}{% endif %}
-            <a class="btn btn-secondary" href="{% url 'minha_conta:registration_pdf' reg.id %}"><i data-lucide="file-down" aria-hidden="true"></i> Comprovante PDF</a>
+            {% if not reg.archived_at %}{% if user_perms.registrations.edit %}<a class="btn btn-secondary record-action" href="{% url 'gestao:registration_edit' event.id reg.id %}" aria-label="Editar cadastro" title="Editar cadastro"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar cadastro</span></a>{% endif %}{% if user_perms.registrations.cancel and management_permissions.finance and reg.source_order_line.order.status == 'PAID' %}<a class="btn btn-secondary" href="{% url 'gestao:registration_refund' event.id reg.id %}">Cancelar e registrar devolução</a>{% endif %}{% endif %}
+            {% if user_perms.registrations.print or user_perms.registrations.view %}<a class="btn btn-secondary" href="{% url 'minha_conta:registration_pdf' reg.id %}"><i data-lucide="file-down" aria-hidden="true"></i> Comprovante PDF</a>{% endif %}
             <span class="badge {% if reg.commercial_state == 'ACTIVE' %}badge-success{% else %}badge-warning{% endif %}">
                 {{ reg.get_commercial_state_display }}
             </span>

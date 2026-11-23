@@ -1,9 +1,821 @@
 {% extends 'gestao/base_gestao.html' %}
-{% block title %}Equipe e acessos | {{ event.title }}{% endblock %}
-{% block gestao_header %}Equipe e acessos{% endblock %}
+{% load static %}
+{% block title %}Equipe e Acessos | {{ event.title }}{% endblock %}
+{% block gestao_header %}Equipe e Acessos{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Estilos Exclusivos para Gestão de Permissões por Abas (Estilo App Mobile & Desktop) */
+.team-access-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.team-card {
+  background: var(--ui-panel, #1c1815);
+  border: 1px solid var(--ui-border, #312922);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+html[data-theme="light"] .team-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.team-form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-group-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group-custom label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+html[data-theme="light"] .form-group-custom label {
+  color: #1e293b;
+}
+
+.form-control-custom {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  border-radius: 12px;
+  border: 1.5px solid var(--ui-border, #40362c);
+  background: var(--ui-input, #25201a);
+  color: #f8fafc;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+html[data-theme="light"] .form-control-custom {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.form-control-custom:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.btn-link-action {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #60a5fa;
+  font-size: 0.82rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+html[data-theme="light"] .btn-link-action {
+  color: #2563eb;
+}
+
+.btn-link-action:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+
+/* Divisor de Permissões */
+.permissions-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--ui-border, #3a3129);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #38bdf8;
+  text-transform: uppercase;
+}
+
+html[data-theme="light"] .permissions-divider {
+  border-top-color: #e2e8f0;
+  color: #0284c7;
+}
+
+/* Abas Horizontais com Rolagem Suave (Estilo App) */
+.permissions-tabs-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 10px 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.permissions-tabs-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.tab-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  border: 1px solid var(--ui-border, #3a3129);
+  background: var(--ui-input, #25201a);
+  color: #a8a29e;
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+html[data-theme="light"] .tab-pill-btn {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+.tab-pill-btn:hover {
+  border-color: #cbd5e1;
+  color: #ffffff;
+}
+
+.tab-pill-btn.is-active {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+}
+
+/* Painel de Conteúdo da Aba */
+.permission-tab-pane {
+  display: block;
+}
+
+.permission-tab-pane.is-hidden {
+  display: none;
+}
+
+.pane-box {
+  background: var(--ui-bg, #171310);
+  border: 1.5px solid var(--ui-border, #312922);
+  border-radius: 16px;
+  padding: 18px;
+}
+
+html[data-theme="light"] .pane-box {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.pane-header-caption {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #38bdf8;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+html[data-theme="light"] .pane-header-caption {
+  color: #0284c7;
+}
+
+/* Grid de Cards de Permissão */
+.perm-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.perm-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--ui-panel, #25201a);
+  border: 1.5px solid var(--ui-border, #3d342b);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+html[data-theme="light"] .perm-card {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.perm-card:hover {
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.perm-card.is-checked {
+  border-color: #0284c7;
+  background: rgba(2, 132, 199, 0.15);
+}
+
+html[data-theme="light"] .perm-card.is-checked {
+  border-color: #0284c7;
+  background: rgba(2, 132, 199, 0.06);
+}
+
+.perm-card input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.perm-card-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.perm-custom-checkbox {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  background: var(--ui-bg, #171310);
+  color: transparent;
+  transition: all 0.15s ease;
+}
+
+html[data-theme="light"] .perm-custom-checkbox {
+  background: #ffffff;
+  border-color: #94a3b8;
+}
+
+.perm-card.is-checked .perm-custom-checkbox {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+}
+
+.perm-custom-checkbox svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 3.2px;
+}
+
+.perm-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.perm-text strong {
+  font-size: 0.88rem;
+  color: #f8fafc;
+}
+
+html[data-theme="light"] .perm-text strong {
+  color: #0f172a;
+}
+
+.perm-text small {
+  font-size: 0.74rem;
+  color: #a8a29e;
+  line-height: 1.25;
+}
+
+html[data-theme="light"] .perm-text small {
+  color: #64748b;
+}
+
+/* Botões do Rodapé */
+.form-bottom-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ui-border, #312922);
+}
+
+html[data-theme="light"] .form-bottom-actions {
+  border-top-color: #e2e8f0;
+}
+
+.btn-save-permissions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 12px;
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-save-permissions:hover {
+  background: #0369a1;
+  box-shadow: 0 6px 18px rgba(2, 132, 199, 0.45);
+  transform: translateY(-1px);
+}
+
+/* Lista de Membros da Edição */
+.member-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--ui-panel, #25201a);
+  border: 1px solid var(--ui-border, #3a3129);
+  gap: 14px;
+}
+
+html[data-theme="light"] .member-list-item {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+.member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.member-info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.member-info-header strong {
+  font-size: 0.95rem;
+  color: #f8fafc;
+}
+
+html[data-theme="light"] .member-info-header strong {
+  color: #0f172a;
+}
+
+.member-email {
+  font-size: 0.82rem;
+  color: var(--text-muted, #64748b);
+}
+
+.member-tabs-badge-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.badge-tab-pill {
+  font-size: 0.70rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(2, 132, 199, 0.10);
+  color: #0284c7;
+  border: 1px solid rgba(2, 132, 199, 0.20);
+}
+
+[data-theme="dark"] .badge-tab-pill {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.member-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .member-list-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .member-actions-row {
+    width: 100%;
+    justify-content: flex-end;
+    border-top: 1px solid var(--border-subtle, #e2e8f0);
+    padding-top: 10px;
+    margin-top: 6px;
+  }
+  .form-bottom-actions {
+    flex-direction: column-reverse;
+  }
+  .form-bottom-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<header class="page-heading"><div><h1>Equipe e acessos</h1><p>Crie acessos individuais e escolha o que cada pessoa pode usar nesta edição.</p></div></header>
-{% if new_access %}<section class="card mg-element-gap" data-workspace-private><h2>Acesso criado</h2><p>Guarde a senha antes de sair desta tela. Ela aparece somente agora.</p><dl><dt>E-mail</dt><dd>{{ new_access.email }}</dd><dt>Senha inicial</dt><dd><code>{{ new_access.password }}</code></dd></dl><p>Endereço para entrar: <strong>{{ request.scheme }}://{{ request.get_host }}/login/</strong></p></section>{% endif %}
-<div class="form-grid"><section class="card"><h2>Adicionar colaborador</h2><form method="post" class="mg-stack" data-workspace-private>{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}{% include 'gestao/events/_field.html' %}{% endfor %}<p class="form-help">Credenciamento permite consultar QR e entregar kits. Atendimento permite consultar e cadastrar inscrições. Financeiro e Conteúdo são acessos separados.</p><button class="btn btn-primary" type="submit">Criar ou conceder acesso</button></form></section>
-<section class="card"><h2>Equipe desta edição</h2><div class="mg-stack">{% for member in members %}<article class="mg-row mg-row-divider"><div><strong>{{ member.user.full_name }}</strong><p>{{ member.user.email }}</p>{% for role in member.roles %}<span class="badge badge-info">{{ role }}</span> {% endfor %}</div>{% if member.editable %}<div class="record-actions"><a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:team_edit' event.id member.user.id %}" aria-label="Editar acesso" title="Editar acesso"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar acesso</span></a><form method="post" action="{% url 'gestao:team_revoke' event.id member.user.id %}">{% csrf_token %}<button class="btn btn-secondary record-action" type="submit" aria-label="Excluir acesso" title="Excluir acesso"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir acesso</span></button></form></div>{% endif %}</article>{% empty %}<p>Nenhum colaborador adicional cadastrado nesta edição.</p>{% endfor %}</div></section></div>
+<div class="team-access-container">
+  <header class="page-heading">
+    <div>
+      <h1>Equipe e Gestão de Acessos</h1>
+      <p>Configure com precisão quais abas e quais operações cada colaborador pode realizar nesta edição.</p>
+    </div>
+  </header>
+
+  {% if form_errors %}
+  <div class="alert alert-danger" role="alert">
+    <i data-lucide="alert-triangle"></i>
+    <div>
+      {% for err in form_errors %}
+      <div>{{ err }}</div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if new_access %}
+  <section class="card" style="border-left: 4px solid #10b981;">
+    <div style="display: flex; align-items: center; gap: 8px; color: #10b981; font-weight: 700; margin-bottom: 6px;">
+      <i data-lucide="check-circle-2"></i>
+      <span>Acesso Criado com Sucesso!</span>
+    </div>
+    <p style="font-size: 0.9rem; margin-bottom: 12px;">Guarde a senha inicial abaixo para repassar ao colaborador. Ela não será exibida novamente.</p>
+    <div style="background: var(--ui-input, #25201a); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--ui-border, #3a3129); display: flex; flex-direction: column; gap: 6px;">
+      <div><strong>E-mail de Login:</strong> <code>{{ new_access.email }}</code></div>
+      <div><strong>Senha Inicial:</strong> <code style="font-size: 1.05rem; font-weight: 800; color: #38bdf8;">{{ new_access.password }}</code></div>
+      <div style="margin-top: 4px; font-size: 0.8rem; color: var(--ui-muted, #a8a29e);">Link de acesso: <strong>{{ request.scheme }}://{{ request.get_host }}/login/</strong></div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Formulário Principal: Estilo App idêntico ao solicitado -->
+  <section class="team-card">
+    <form method="post" id="teamAccessForm" class="team-form-grid" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="member_id" id="inputMemberId" value="">
+
+      <!-- Seletor do Colaborador a Editar -->
+      <div class="form-group-custom">
+        <label for="memberSelector">
+          <span>Colaborador Vinculado</span>
+        </label>
+        <select class="form-control-custom" id="memberSelector">
+          <option value="">Nenhum funcionário vinculado (Novo Cadastro)</option>
+          {% for m in members %}
+          <option value="{{ m.user_id }}" {% if selected_user_id == m.user_id %}selected{% endif %}>
+            {{ m.full_name }} ({{ m.email }}) — {{ m.role_label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Nome Completo -->
+      <div class="form-group-custom">
+        <label for="inputFullName">
+          <span>Nome Completo *</span>
+        </label>
+        <input type="text" name="full_name" id="inputFullName" class="form-control-custom" placeholder="Ex: Carlos Oliveira" required>
+      </div>
+
+      <!-- E-mail de Acesso -->
+      <div class="form-group-custom">
+        <label for="inputEmail">
+          <span>E-mail de Acesso *</span>
+        </label>
+        <input type="email" name="email" id="inputEmail" class="form-control-custom" placeholder="carlos@exemplo.com" required>
+      </div>
+
+      <!-- Senha de Acesso -->
+      <div class="form-group-custom">
+        <label for="inputPassword">
+          <span>Senha de Acesso</span>
+        </label>
+        <input type="password" name="password" id="inputPassword" class="form-control-custom" placeholder="••••••••" autocomplete="new-password">
+        <small style="font-size: 0.74rem; color: var(--text-muted, #64748b);">Deixe em branco para manter a senha existente ou gerar uma senha automática.</small>
+      </div>
+
+      <!-- Cargo / Perfil com Botão Rápido -->
+      <div class="form-group-custom">
+        <label for="selectRolePreset">
+          <span>Cargo / Perfil *</span>
+          <button type="button" class="btn-link-action" id="btnPresetAdminTotal" title="Marcar todas as abas e permissões">
+            <i data-lucide="zap"></i> Liberar Perfil Total (Admin)
+          </button>
+        </label>
+        <select name="role_preset" id="selectRolePreset" class="form-control-custom">
+          <option value="CUSTOM" selected>Personalizado (Configuração manual)</option>
+          <option value="ADMIN">Administrador Total (Todas as abas liberadas)</option>
+          <option value="PDV">Vendedor de Ponto (PDV - Apenas Emitir e Imprimir)</option>
+          <option value="VENDEDOR">Vendedor / Inscrições Balcão</option>
+          <option value="CREDENCIAMENTO">Operador de Credenciamento (Portaria / Kits)</option>
+          <option value="FINANCEIRO">Caixa / Financeiro (Entradas e Saídas)</option>
+          <option value="PISTA">Fiscal de Pista / Apoio & Sorteio</option>
+        </select>
+      </div>
+
+      <!-- Divisor com Ícone de Chave -->
+      <div class="permissions-divider">
+        <i data-lucide="key-round"></i>
+        <span>CONFIGURAÇÃO DE PERMISSÕES POR ABAS</span>
+      </div>
+
+      <!-- Abas Horizontais com Ícones -->
+      <div class="permissions-tabs-nav" role="tablist" id="permTabsNav">
+        {% for tab in tab_definitions %}
+        <button type="button" class="tab-pill-btn {% if forloop.first %}is-active{% endif %}" role="tab" data-tab-id="{{ tab.id }}" id="tabBtn_{{ tab.id }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+          <i data-lucide="{{ tab.icon }}"></i>
+          <span>{{ tab.name }}</span>
+        </button>
+        {% endfor %}
+      </div>
+
+      <!-- Conteúdo de Cada Aba -->
+      <div class="permissions-tab-contents" id="permTabContents">
+        {% for tab in tab_definitions %}
+        <div class="permission-tab-pane {% if not forloop.first %}is-hidden{% endif %}" id="pane_{{ tab.id }}" role="tabpanel" aria-labelledby="tabBtn_{{ tab.id }}">
+          <div class="pane-box">
+            <div class="pane-header-caption">{{ tab.header }}</div>
+            <div class="perm-cards-grid">
+              {% for act in tab.actions %}
+              <label class="perm-card" id="card_{{ tab.id }}_{{ act.0 }}">
+                <input type="checkbox" name="perm_{{ tab.id }}_{{ act.0 }}" id="chk_{{ tab.id }}_{{ act.0 }}" value="1" class="perm-checkbox" data-tab="{{ tab.id }}" data-action="{{ act.0 }}">
+                <div class="perm-card-content">
+                  <span class="perm-custom-checkbox">
+                    <i data-lucide="check"></i>
+                  </span>
+                  <div class="perm-text">
+                    <strong>{{ act.1 }}</strong>
+                    <small>{{ act.2 }}</small>
+                  </div>
+                </div>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Ações do Rodapé -->
+      <div class="form-bottom-actions">
+        <button type="button" class="btn btn-secondary" id="btnCancelForm">Cancelar</button>
+        <button type="submit" class="btn-save-permissions">
+          <i data-lucide="check-circle-2"></i> Salvar Usuário & Permissões
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Lista de Colaboradores Desta Edição -->
+  <section class="team-card">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+      <h2 style="font-size: 1.1rem; margin: 0;">Equipe desta Edição</h2>
+      <span class="badge badge-info">{{ members|length }} colaborador{{ members|length|pluralize:"es" }}</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      {% for m in members %}
+      <div class="member-list-item" id="memberItem_{{ m.user_id }}">
+        <div class="member-info">
+          <div class="member-info-header">
+            <strong>{{ m.full_name }}</strong>
+            <span class="badge badge-secondary" style="font-size: 0.72rem;">{{ m.role_label }}</span>
+          </div>
+          <div class="member-email">{{ m.email }}</div>
+          <div class="member-tabs-badge-list">
+            {% for t_name in m.granted_tabs %}
+            <span class="badge-tab-pill">{{ t_name }}</span>
+            {% empty %}
+            <span style="font-size: 0.72rem; color: var(--text-muted, #64748b);">Sem abas atribuídas</span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="member-actions-row">
+          {% if m.editable %}
+          <button type="button" class="btn btn-secondary btn-sm" onclick="selectMemberForEdit('{{ m.user_id }}')" title="Editar permissões deste colaborador">
+            <i data-lucide="pencil"></i> Editar
+          </button>
+          <form method="post" action="{% url 'gestao:team_revoke' event.id m.user_id %}" onsubmit="return confirm('Deseja realmente remover o acesso de {{ m.full_name|escapejs }} deste evento?');" style="display: inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary btn-sm" title="Remover acesso deste evento" style="color: #ef4444;">
+              <i data-lucide="trash-2"></i> Remover
+            </button>
+          </form>
+          {% else %}
+          <span style="font-size: 0.76rem; color: var(--text-muted, #64748b);"><i data-lucide="shield"></i> Administrador Geral</span>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div style="text-align: center; padding: 24px 12px; color: var(--text-muted, #64748b);">
+        <i data-lucide="users" style="width: 32px; height: 32px; margin-bottom: 8px; opacity: 0.5;"></i>
+        <p>Nenhum colaborador adicional cadastrado nesta edição ainda.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<!-- Dados Serializados e Script de Interatividade -->
+<script>
+  window.__TEAM_MEMBERS__ = {{ members_json|safe }};
+  window.__ROLE_PRESETS__ = {{ role_presets_json|safe }};
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const memberSelector = document.getElementById('memberSelector');
+    const inputMemberId = document.getElementById('inputMemberId');
+    const inputFullName = document.getElementById('inputFullName');
+    const inputEmail = document.getElementById('inputEmail');
+    const inputPassword = document.getElementById('inputPassword');
+    const selectRolePreset = document.getElementById('selectRolePreset');
+    const btnPresetAdminTotal = document.getElementById('btnPresetAdminTotal');
+    const btnCancelForm = document.getElementById('btnCancelForm');
+    const allCheckboxes = document.querySelectorAll('.perm-checkbox');
+
+    // Atualiza estado visual do card ao marcar/desmarcar checkbox
+    function updateCardState(checkbox) {
+      const card = checkbox.closest('.perm-card');
+      if (!card) return;
+      if (checkbox.checked) {
+        card.classList.add('is-checked');
+      } else {
+        card.classList.remove('is-checked');
+      }
+    }
+
+    allCheckboxes.forEach(chk => {
+      chk.addEventListener('change', function () {
+        updateCardState(this);
+        // Ao mexer em qualquer checkbox manualmente, muda o select de cargo para "Personalizado"
+        if (selectRolePreset.value !== 'CUSTOM') {
+          // Mantém se estiver desmarcando ou marcando fora do preset
+          selectRolePreset.value = 'CUSTOM';
+        }
+      });
+      // Inicia estado
+      updateCardState(chk);
+    });
+
+    // Alternância de Abas Horizontais
+    const tabButtons = document.querySelectorAll('.tab-pill-btn');
+    const tabPanes = document.querySelectorAll('.permission-tab-pane');
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', function () {
+        const tabId = this.dataset.tabId;
+        tabButtons.forEach(b => {
+          b.classList.remove('is-active');
+          b.setAttribute('aria-selected', 'false');
+        });
+        tabPanes.forEach(p => p.classList.add('is-hidden'));
+
+        this.classList.add('is-active');
+        this.setAttribute('aria-selected', 'true');
+        const activePane = document.getElementById(`pane_${tabId}`);
+        if (activePane) {
+          activePane.classList.remove('is-hidden');
+        }
+      });
+    });
+
+    // Aplica um conjunto de permissões no form
+    function applyPermissions(permsDict) {
+      allCheckboxes.forEach(chk => {
+        const tab = chk.dataset.tab;
+        const act = chk.dataset.action;
+        const tabActions = permsDict[tab] || [];
+        chk.checked = Array.isArray(tabActions) && tabActions.includes(act);
+        updateCardState(chk);
+      });
+    }
+
+    // Marca todas as permissões (Admin Total)
+    function applyAdminTotal() {
+      selectRolePreset.value = 'ADMIN';
+      allCheckboxes.forEach(chk => {
+        chk.checked = true;
+        updateCardState(chk);
+      });
+    }
+
+    btnPresetAdminTotal.addEventListener('click', function (e) {
+      e.preventDefault();
+      applyAdminTotal();
+    });
+
+    // Ao mudar o select de perfil / cargo
+    selectRolePreset.addEventListener('change', function () {
+      const selected = this.value;
+      if (selected === 'ADMIN') {
+        applyAdminTotal();
+      } else if (window.__ROLE_PRESETS__[selected]) {
+        applyPermissions(window.__ROLE_PRESETS__[selected]);
+      }
+    });
+
+    // Limpa o formulário para Novo Cadastro
+    function resetForm() {
+      inputMemberId.value = '';
+      inputFullName.value = '';
+      inputEmail.value = '';
+      inputPassword.value = '';
+      memberSelector.value = '';
+      selectRolePreset.value = 'CUSTOM';
+      allCheckboxes.forEach(chk => {
+        chk.checked = false;
+        updateCardState(chk);
+      });
+    }
+
+    btnCancelForm.addEventListener('click', function () {
+      resetForm();
+    });
+
+    // Selecionar colaborador para edição
+    window.selectMemberForEdit = function (userId) {
+      const member = window.__TEAM_MEMBERS__[userId];
+      if (!member) return;
+
+      memberSelector.value = userId;
+      inputMemberId.value = userId;
+      inputFullName.value = member.full_name;
+      inputEmail.value = member.email;
+      inputPassword.value = '';
+      inputPassword.placeholder = '(Inalterada - preencha só para redefinir)';
+
+      selectRolePreset.value = member.role_preset || 'CUSTOM';
+
+      if (member.role_preset === 'ADMIN') {
+        applyAdminTotal();
+      } else if (member.permissions_json && Object.keys(member.permissions_json).length > 0) {
+        applyPermissions(member.permissions_json);
+      } else if (window.__ROLE_PRESETS__[member.role_preset]) {
+        applyPermissions(window.__ROLE_PRESETS__[member.role_preset]);
+      } else {
+        // Fallback limpo
+        allCheckboxes.forEach(chk => {
+          chk.checked = false;
+          updateCardState(chk);
+        });
+      }
+
+      // Rola suavemente até o formulário
+      document.getElementById('teamAccessForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    memberSelector.addEventListener('change', function () {
+      const userId = this.value;
+      if (userId) {
+        selectMemberForEdit(userId);
+      } else {
+        resetForm();
+        inputPassword.placeholder = '••••••••';
+      }
+    });
+
+    // Se veio parâmetro edit_user na URL
+    const preselected = '{{ selected_user_id }}';
+    if (preselected && window.__TEAM_MEMBERS__[preselected]) {
+      selectMemberForEdit(preselected);
+    }
+
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  });
+</script>
 {% endblock %}

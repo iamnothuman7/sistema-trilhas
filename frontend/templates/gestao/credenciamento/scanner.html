@@ -3,24 +3,115 @@
 
 {% block title %}Scanner de Credenciamento | {{ event.title }}{% endblock %}
 {% block gestao_header %}Credenciamento: {{ event.title }}{% endblock %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/scanner.css' %}?v=scanner20261027-htmx">{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/scanner.css' %}?v=scanner20261119-compact">
+<style>
+.scanner-compact-stats {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-bottom: 14px !important;
+}
+.scanner-compact-stats > article,
+.scanner-compact-stats > :last-child:nth-child(odd),
+.scanner-compact-stats .stat-card {
+    grid-column: auto !important;
+    padding: 8px 4px !important;
+    text-align: center !important;
+    border-radius: 12px !important;
+    background: var(--ui-panel, #241d18) !important;
+    border: 1px solid var(--ui-border, rgba(255, 255, 255, 0.08)) !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+}
+.scanner-compact-stats .stat-label {
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.02em !important;
+    color: var(--ui-muted, #9c8e82) !important;
+    margin-bottom: 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+}
+.scanner-compact-stats .stat-value {
+    font-size: 1.45rem !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+    margin: 2px 0 !important;
+}
+.scanner-compact-stats small {
+    font-size: 0.65rem !important;
+    line-height: 1.15 !important;
+    color: var(--ui-muted, #9c8e82) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+    display: block !important;
+}
+@media (max-width: 360px) {
+    .scanner-compact-stats {
+        gap: 6px !important;
+    }
+    .scanner-compact-stats .stat-card {
+        padding: 6px 2px !important;
+    }
+    .scanner-compact-stats .stat-label {
+        font-size: 0.65rem !important;
+    }
+    .scanner-compact-stats .stat-value {
+        font-size: 1.25rem !important;
+    }
+    .scanner-compact-stats small {
+        font-size: 0.6rem !important;
+    }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="mg-scanner-shell" data-event-scanner="{{ event.id }}"
      data-lookup-url="{% url 'gestao:credenciamento_lookup' event_id=event.id %}"
      data-confirm-url="{% url 'gestao:credenciamento_confirm' event_id=event.id %}"
      data-deliver-url="{% url 'gestao:deliver_benefit' event_id=event.id %}">
-    <div class="mg-align-center mg-element-gap">
-        <span class="badge badge-success">CREDENCIAMENTO</span>
-        <h1>
+    <div class="mg-align-center mg-element-gap" style="text-align: center; margin-bottom: 12px;">
+        <span class="badge badge-success" style="font-size: 0.72rem; padding: 2px 8px; letter-spacing: 0.04em;">CREDENCIAMENTO</span>
+        <h1 style="font-size: 1.4rem; margin: 4px 0 2px 0;">
             Credenciamento e kits
         </h1>
-        <p class="text-muted">
+        <p class="text-muted" style="font-size: 0.82rem; margin-bottom: 0;">
             Leia o QR Code ou busque o participante para registrar a presença e as entregas.
         </p>
     </div>
 
+    <!-- Contadores Rápidos de Campo (Reduzidos e Lado a Lado) -->
+    <div class="scanner-compact-stats">
+        <article class="stat-card">
+            <div class="stat-label" title="Credenciados">Credenciados</div>
+            <div class="stat-value text-success">{{ stats.checked_in }}</div>
+            <small class="text-muted">Presentes</small>
+        </article>
+        <article class="stat-card">
+            <div class="stat-label" title="Aguardando">Aguardando</div>
+            <div class="stat-value text-warning">{{ stats.pending }}</div>
+            <small class="text-muted">A chegar</small>
+        </article>
+        <article class="stat-card">
+            <div class="stat-label" title="Total Inscritos">Inscritos</div>
+            <div class="stat-value text-brand" style="color: #ea580c;">{{ stats.confirmed }}</div>
+            <small class="text-muted">Confirmados</small>
+        </article>
+    </div>
+
     <!-- Câmera do Scanner -->
+    {% if user_perms.checkin.scan %}
     <section class="card mg-element-gap" aria-labelledby="camera-title">
     <h2 class="section-title" id="camera-title">Ler a credencial</h2>
     <div class="scanner-viewport">
@@ -35,8 +126,10 @@
     <p id="cameraStatus" class="text-muted scanner-camera-status" role="status" aria-live="polite">A câmera abre após seu toque. A leitura consulta a ficha; presença e entrega exigem confirmação.</p>
     <details class="scanner-photo-option"><summary>Usar uma foto do QR</summary><label class="form-label" for="scannerPhoto">Fotografar ou escolher imagem da credencial</label><input type="file" id="scannerPhoto" class="form-control" accept="image/jpeg,image/png,image/webp"><p class="text-muted mg-meta">JPG, PNG ou WebP, até 15 MB e 24 megapixels. A foto é lida no celular e não é enviada ao servidor.</p></details>
     </section>
+    {% endif %}
 
     <!-- Busca Rápida Manual -->
+    {% if user_perms.checkin.search %}
     <div class="card mg-element-gap">
         <div class="mg-scanner-search">
             <input type="hidden" id="scannerCSRF" value="{{ csrf_token }}">
@@ -46,6 +139,7 @@
             </button>
         </div>
     </div>
+    {% endif %}
 
     <!-- Resultado do Participante / Ficha de Entrega -->
     <div id="scannerResult" class="mg-section-gap">
@@ -64,6 +158,11 @@
                         <strong>#{{ checkin.registration.registration_number }} - {{ checkin.registration.person.full_name }}</strong>
                         <div class="text-muted mg-meta">
                             Camiseta: Tam. {{ checkin.registration.shirt_size }}
+                            {% for ent in checkin.registration.entitlements.all %}
+                                {% if ent.benefit_type == 'ADICIONAL' and ent.quantity_used > 0 %}
+                                    &bull; <span class="badge badge-info" style="font-size: 0.75rem;">+ {{ ent.title }}</span>
+                                {% endif %}
+                            {% endfor %}
                         </div>
                     </div>
                     <div class="mg-strong text-success">

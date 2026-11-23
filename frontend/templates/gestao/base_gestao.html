@@ -15,12 +15,116 @@
 <link rel="stylesheet" href="{% static 'css/management-mobile.css' %}?v=20261105-touch-actions">
 <link rel="stylesheet" href="{% static 'css/management-layout.css' %}?v=20261112-stack">
 <link rel="stylesheet" href="{% static 'css/management-groups.css' %}?v=20261113-instant-groups">
+<link rel="stylesheet" href="{% static 'css/management-app-pro.css' %}?v=20261119-native-app">
 {% include "includes/htmx_head.html" %}
 <script src="{% static 'js/management-state.js' %}?v=20261029-status-return"></script>
 <script src="{% static 'js/management-groups.js' %}?v=20261113-instant-groups" defer></script>
 <script src="{% static 'js/main.js' %}?v=20261026" defer></script>
 <script src="{% static 'vendor/lucide/lucide.min.js' %}" defer></script>
 <script src="{% static 'js/icons.js' %}" defer></script>
+<style id="ios-glass-navigation">
+/* ========================================================
+   iOS Liquid Glass Bottom Navigation (Estilo iPhone)
+   ======================================================== */
+@media (max-width: 900px) {
+  .management-main {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .mobile-nav {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 6px !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 1000 !important;
+    height: 56px !important;
+    min-height: 56px !important;
+    padding: 4px 8px calc(6px + env(safe-area-inset-bottom, 0px)) 8px !important;
+    background: rgba(22, 17, 14, 0.82) !important;
+    backdrop-filter: blur(28px) saturate(210%) brightness(1.1) !important;
+    -webkit-backdrop-filter: blur(28px) saturate(210%) brightness(1.1) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 0 -1px 0 0 rgba(255, 255, 255, 0.08), 0 -10px 30px rgba(0, 0, 0, 0.5) !important;
+    box-sizing: content-box !important;
+  }
+  [data-theme="light"] .mobile-nav {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.12) !important;
+    box-shadow: 0 -1px 0 0 rgba(255, 255, 255, 0.6), 0 -6px 24px rgba(0, 0, 0, 0.08) !important;
+  }
+  .mobile-nav a,
+  .mobile-nav button {
+    display: flex !important;
+    flex: 1 1 0 !important;
+    max-width: 68px !important;
+    min-width: 0 !important;
+    height: 46px !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.55) !important;
+    padding: 3px 2px !important;
+    border-radius: 12px !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  [data-theme="light"] .mobile-nav a,
+  [data-theme="light"] .mobile-nav button {
+    color: rgba(0, 0, 0, 0.55) !important;
+  }
+  .mobile-nav a .lucide,
+  .mobile-nav button .lucide {
+    width: 22px !important;
+    height: 22px !important;
+    stroke-width: 2 !important;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  .mobile-nav a span,
+  .mobile-nav button span {
+    font-size: 10px !important;
+    font-weight: 550 !important;
+    letter-spacing: -0.2px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 100% !important;
+  }
+  .mobile-nav a:hover,
+  .mobile-nav button:hover {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+  .mobile-nav a:active,
+  .mobile-nav button:active {
+    transform: scale(0.92) !important;
+    opacity: 0.8 !important;
+  }
+  .mobile-nav a.is-active,
+  .mobile-nav button.is-active {
+    color: #f97316 !important;
+    background: rgba(234, 88, 12, 0.14) !important;
+    border: 1px solid rgba(234, 88, 12, 0.35) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 2px 10px rgba(234, 88, 12, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+  .mobile-nav a.is-active .lucide,
+  .mobile-nav button.is-active .lucide {
+    color: #f97316 !important;
+    transform: translateY(-1px) scale(1.05) !important;
+  }
+}
+</style>
 </head>
 <body hx-boost="true" hx-ext="head-support" hx-history="false">
 <a class="skip-link" href="#mainContent">Ir para o conteúdo</a>
@@ -32,24 +136,30 @@
 <div class="sidebar-section-label">Principal</div>
 <a class="sidebar-link {% if current == 'usage_guide' %}is-active{% endif %}"{% if current == 'usage_guide' %} aria-current="page"{% endif %} data-workspace-tab="usage_guide" href="{% url 'gestao:usage_guide' %}{% if ev %}?event_id={{ ev.id }}{% endif %}" title="Como usar"><i data-lucide="book-open" aria-hidden="true"></i><span class="sidebar-label">Como usar</span></a>
 <a class="sidebar-link {% if current == 'dashboard' %}is-active{% endif %}"{% if current == 'dashboard' %} aria-current="page"{% endif %} data-workspace-tab="dashboard" href="{% url 'gestao:dashboard' %}{% if ev %}?event_id={{ ev.id }}{% endif %}" title="Visão geral"><i data-lucide="layout-dashboard"></i><span class="sidebar-label">Visão geral</span></a>
+<a class="sidebar-link {% if current == 'analytics' %}is-active{% endif %}"{% if current == 'analytics' %} aria-current="page"{% endif %} data-workspace-tab="analytics" href="{% url 'gestao:analytics' %}{% if ev %}?event_id={{ ev.id }}{% endif %}" title="Métricas de acessos e tráfego"><i data-lucide="bar-chart-3"></i><span class="sidebar-label">Métricas de acesso</span></a>
 {% if management_permissions.events %}<a class="sidebar-link {% if current == 'event_list' or current == 'event_create' %}is-active{% endif %}"{% if current == 'event_list' or current == 'event_create' %} aria-current="page"{% endif %} data-workspace-tab="event_list" href="{% url 'gestao:event_list' %}" title="Eventos e edições"><i data-lucide="calendar-days"></i><span class="sidebar-label">Eventos e edições</span></a>{% endif %}
 {% if management_permissions.sponsors %}<a class="sidebar-link {% if management_switch_module == 'sponsor_leads' or current == 'sponsor_history' or current == 'sponsor_bank' or current == 'sponsor_profile_create' or current == 'sponsor_profile_edit' or current == 'sponsor_list' or current == 'sponsor_create' or current == 'sponsor_edit' or current == 'sponsor_detail' or current == 'sponsor_link' or current == 'sponsor_agreement' or current == 'sponsor_receipt' or current == 'sponsor_reversal' %}is-active{% endif %}"{% if management_switch_module == 'sponsor_leads' or current == 'sponsor_history' or current == 'sponsor_bank' or current == 'sponsor_profile_create' or current == 'sponsor_profile_edit' or current == 'sponsor_list' or current == 'sponsor_create' or current == 'sponsor_edit' or current == 'sponsor_detail' or current == 'sponsor_link' or current == 'sponsor_agreement' or current == 'sponsor_receipt' or current == 'sponsor_reversal' %} aria-current="page"{% endif %} data-workspace-tab="sponsor_bank" href="{% url 'gestao:sponsor_bank' %}{% if ev %}?event_id={{ ev.id }}{% endif %}" title="Patrocinadores"><i data-lucide="handshake"></i><span class="sidebar-label">Patrocinadores</span></a>{% endif %}
 {% if ev %}
 <div class="sidebar-section-label">Operação do evento</div>
-{% if management_permissions.registrations %}<a class="sidebar-link {% if current == 'ranking_management' %}is-active{% endif %}"{% if current == 'ranking_management' %} aria-current="page"{% endif %} data-workspace-tab="ranking_management" href="{% url 'gestao:ranking_management' event_id=ev.id %}" title="Equipes e cidades"><i data-lucide="chart-no-axes-column-increasing"></i><span class="sidebar-label">Equipes e cidades</span></a>{% endif %}
+{% if management_permissions.registrations %}<a class="sidebar-link {% if current == 'ranking_management' %}is-active{% endif %}"{% if current == 'ranking_management' %} aria-current="page"{% endif %} data-workspace-tab="ranking_management" href="{% url 'gestao:ranking_management' event_id=ev.id %}" title="Equipes e ranking"><i data-lucide="chart-no-axes-column-increasing"></i><span class="sidebar-label">Equipes e ranking</span></a>{% endif %}
 {% if management_permissions.registrations %}<a class="sidebar-link {% if management_switch_module == 'registration_list' %}is-active{% endif %}"{% if management_switch_module == 'registration_list' %} aria-current="page"{% endif %} data-workspace-tab="registration_list" href="{% url 'gestao:registration_list' event_id=ev.id %}" title="Inscrições"><i data-lucide="users-round"></i><span class="sidebar-label">Inscrições</span></a>{% endif %}
 {% if management_permissions.checkin %}<a class="sidebar-link {% if current == 'credenciamento' %}is-active{% endif %}"{% if current == 'credenciamento' %} aria-current="page"{% endif %} data-workspace-tab="credenciamento" href="{% url 'gestao:credenciamento' event_id=ev.id %}" title="Credenciamento"><i data-lucide="scan-line"></i><span class="sidebar-label">Credenciamento</span></a>{% endif %}
-{% if management_permissions.catalog %}<a class="sidebar-link {% if current == 'catalog' or current == 'catalog_create' or current == 'catalog_edit' or current == 'lot_remove' %}is-active{% endif %}"{% if current == 'catalog' or current == 'catalog_create' or current == 'catalog_edit' or current == 'lot_remove' %} aria-current="page"{% endif %} data-workspace-tab="catalog" href="{% url 'gestao:catalog' event_id=ev.id %}" title="Catálogo e lotes"><i data-lucide="ticket"></i><span class="sidebar-label">Catálogo e lotes</span></a>{% endif %}
+{% if management_permissions.catalog %}
+<a class="sidebar-link {% if current == 'catalog' or current == 'catalog_create' or current == 'catalog_edit' or current == 'lot_remove' %}is-active{% endif %}"{% if current == 'catalog' or current == 'catalog_create' or current == 'catalog_edit' or current == 'lot_remove' %} aria-current="page"{% endif %} data-workspace-tab="catalog" href="{% url 'gestao:catalog' event_id=ev.id %}" title="Lotes de inscrição"><i data-lucide="ticket"></i><span class="sidebar-label">Lotes de inscrição</span></a>
+<a class="sidebar-link {% if current == 'addons' %}is-active{% endif %}"{% if current == 'addons' %} aria-current="page"{% endif %} data-workspace-tab="addons" href="{% url 'gestao:addons' event_id=ev.id %}" title="Produtos extras"><i data-lucide="shopping-bag"></i><span class="sidebar-label">Produtos extras</span></a>
+<a class="sidebar-link {% if current == 'shirt_stock' %}is-active{% endif %}"{% if current == 'shirt_stock' %} aria-current="page"{% endif %} data-workspace-tab="shirt_stock" href="{% url 'gestao:shirt_stock' ev.id %}" title="Estoque de camisetas"><i data-lucide="shirt"></i><span class="sidebar-label">Estoque de camisetas</span></a>
+{% if ev.motorcycle_raffle %}<a class="sidebar-link {% if management_switch_module == 'raffle_management' or management_switch_module == 'raffle_finance' or current == 'raffle_operations' or current == 'raffle_draw' %}is-active{% endif %}"{% if management_switch_module == 'raffle_management' or management_switch_module == 'raffle_finance' or current == 'raffle_operations' or current == 'raffle_draw' %} aria-current="page"{% endif %} data-workspace-tab="{% if management_permissions.events %}raffle_management{% else %}raffle_finance{% endif %}" href="{% if management_permissions.events %}{% url 'gestao:raffle_operations' event_id=ev.id %}{% else %}{% url 'gestao:raffle_finance' event_id=ev.id %}{% endif %}" title="Sorteio da moto"><i data-lucide="ticket"></i><span class="sidebar-label">Sorteio da moto</span></a>{% endif %}
+{% endif %}
 {% if management_permissions.finance %}<a class="sidebar-link {% if management_switch_module == 'finance' %}is-active{% endif %}"{% if management_switch_module == 'finance' %} aria-current="page"{% endif %} data-workspace-tab="finance" href="{% url 'gestao:finance' event_id=ev.id %}" title="Financeiro"><i data-lucide="wallet"></i><span class="sidebar-label">Financeiro</span></a><a class="sidebar-link {% if current == 'reports' %}is-active{% endif %}"{% if current == 'reports' %} aria-current="page"{% endif %} data-workspace-tab="reports" href="{% url 'gestao:reports' event_id=ev.id %}" title="Relatórios"><i data-lucide="chart-no-axes-combined"></i><span class="sidebar-label">Relatórios</span></a>{% endif %}
 {% if management_permissions.content %}<a class="sidebar-link {% if current == 'frames' or current == 'team_frame_editor' or current == 'official_frame_preview' %}is-active{% endif %}"{% if current == 'frames' or current == 'team_frame_editor' or current == 'official_frame_preview' %} aria-current="page"{% endif %} data-workspace-tab="frames" href="{% url 'gestao:frames' event_id=ev.id %}" title="Molduras digitais"><i data-lucide="images"></i><span class="sidebar-label">Molduras digitais</span></a>{% endif %}
 {% if management_permissions.content %}<a class="sidebar-link {% if current == 'event_appearance' %}is-active{% endif %}"{% if current == 'event_appearance' %} aria-current="page"{% endif %} data-workspace-tab="event_appearance" href="{% url 'gestao:event_appearance' event_id=ev.id %}" title="Aparência da edição"><i data-lucide="palette"></i><span class="sidebar-label">Aparência da edição</span></a>{% endif %}
 <div class="sidebar-section-label">Administração</div>
 {% if management_permissions.team %}<a class="sidebar-link {% if current == 'team_management' %}is-active{% endif %}"{% if current == 'team_management' %} aria-current="page"{% endif %} data-workspace-tab="team_management" href="{% url 'gestao:team_management' event_id=ev.id %}" title="Equipe e acessos"><i data-lucide="user-cog"></i><span class="sidebar-label">Equipe e acessos</span></a>{% endif %}
-{% if management_permissions.events or management_permissions.finance and ev.motorcycle_raffle %}<a class="sidebar-link {% if management_switch_module == 'raffle_management' or management_switch_module == 'raffle_finance' %}is-active{% endif %}"{% if management_switch_module == 'raffle_management' or management_switch_module == 'raffle_finance' %} aria-current="page"{% endif %} data-workspace-tab="{% if management_permissions.events %}raffle_management{% else %}raffle_finance{% endif %}" href="{% if management_permissions.events %}{% url 'gestao:raffle_management' event_id=ev.id %}{% else %}{% url 'gestao:raffle_finance' event_id=ev.id %}{% endif %}" title="Sorteio da moto"><i data-lucide="ticket"></i><span class="sidebar-label">Sorteio da moto</span></a>{% endif %}
+
 
 {% if management_permissions.events %}<a class="sidebar-link {% if current == 'event_detail' or current == 'event_edit' %}is-active{% endif %}"{% if current == 'event_detail' or current == 'event_edit' %} aria-current="page"{% endif %} data-workspace-tab="event_detail" href="{% url 'gestao:event_detail' event_id=ev.id %}" title="Configurações do evento"><i data-lucide="settings-2"></i><span class="sidebar-label">Configurações</span></a>{% endif %}
 {% endif %}
-{% if ev and management_permissions.catalog %}<a class="sidebar-link {% if current == 'shirt_stock' %}is-active{% endif %}" {% if current == 'shirt_stock' %}aria-current="page"{% endif %} data-workspace-tab="shirt_stock" href="{% url 'gestao:shirt_stock' ev.id %}" title="Camisetas e estoque"><i data-lucide="shirt"></i><span class="sidebar-label">Camisetas e estoque</span></a>{% endif %}
+
 {% if management_can_view_mp %}<a class="sidebar-link {% if current == 'mercadopago_connection' or current == 'mercadopago_fees' %}is-active{% endif %}"{% if current == 'mercadopago_connection' or current == 'mercadopago_fees' %} aria-current="page"{% endif %} data-workspace-tab="mercadopago_connection" href="{% url 'gestao:mercadopago_connection' %}" title="Conexão Mercado Pago"><i data-lucide="plug-zap"></i><span class="sidebar-label">Mercado Pago</span></a>{% endif %}
 {% if management_permissions.audit %}<a class="sidebar-link {% if current == 'audit_log' %}is-active{% endif %}"{% if current == 'audit_log' %} aria-current="page"{% endif %} data-workspace-tab="audit_log" href="{% url 'gestao:audit_log' %}{% if ev %}?event_id={{ ev.id }}{% endif %}" title="Auditoria"><i data-lucide="shield-check"></i><span class="sidebar-label">Auditoria</span></a>{% endif %}
 </nav>
@@ -60,7 +170,34 @@
 {% if messages %}<div class="management-messages" aria-live="polite">{% for message in messages %}<div class="alert alert-{{ message.tags }}" role="status"><i data-lucide="info"></i><span>{{ message }}</span></div>{% endfor %}</div>{% endif %}
 <main class="management-main" id="mainContent" tabindex="-1" data-workspace-user="{{ request.user.pk }}" data-workspace-event="{{ management_event.pk|default:'global' }}" data-workspace-module="{{ management_switch_module }}" data-workspace-url="{{ management_workspace_url|default:request.get_full_path }}">{% include "gestao/partials/event_switcher.html" %}{% block content %}{% endblock %}</main>
 </div>
-<nav class="mobile-nav" aria-label="Navegação rápida"><a class="{% if current == 'dashboard' %}is-active{% endif %}"{% if current == 'dashboard' %} aria-current="page"{% endif %} data-workspace-tab="dashboard" href="{% url 'gestao:dashboard' %}{% if ev %}?event_id={{ ev.id }}{% endif %}"><i data-lucide="layout-dashboard"></i><span>Início</span></a>{% if ev and management_permissions.registrations %}<a class="{% if management_switch_module == 'registration_list' %}is-active{% endif %}"{% if management_switch_module == 'registration_list' %} aria-current="page"{% endif %} data-workspace-tab="registration_list" href="{% url 'gestao:registration_list' event_id=ev.id %}"><i data-lucide="users-round"></i><span>Inscrições</span></a>{% endif %}{% if ev and management_permissions.checkin %}<a class="{% if current == 'credenciamento' %}is-active{% endif %}"{% if current == 'credenciamento' %} aria-current="page"{% endif %} data-workspace-tab="credenciamento" href="{% url 'gestao:credenciamento' event_id=ev.id %}"><i data-lucide="scan-line"></i><span>Scanner</span></a>{% endif %}{% if ev and management_permissions.finance %}<a class="{% if management_switch_module == 'finance' %}is-active{% endif %}"{% if management_switch_module == 'finance' %} aria-current="page"{% endif %} data-workspace-tab="finance" href="{% url 'gestao:finance' event_id=ev.id %}"><i data-lucide="wallet"></i><span>Financeiro</span></a>{% endif %}<button type="button" data-menu-toggle aria-label="Abrir todos os módulos" aria-controls="managementSidebar" aria-expanded="false"><i data-lucide="menu"></i><span>Mais</span></button></nav>
+<nav class="mobile-nav" aria-label="Navegação rápida">
+  <a class="mobile-nav-item {% if current == 'dashboard' %}is-active{% endif %}"{% if current == 'dashboard' %} aria-current="page"{% endif %} data-workspace-tab="dashboard" href="{% url 'gestao:dashboard' %}{% if ev %}?event_id={{ ev.id }}{% endif %}">
+    <i data-lucide="layout-dashboard"></i>
+    <span>Início</span>
+  </a>
+  {% if ev and management_permissions.registrations %}
+  <a class="mobile-nav-item {% if management_switch_module == 'registration_list' %}is-active{% endif %}"{% if management_switch_module == 'registration_list' %} aria-current="page"{% endif %} data-workspace-tab="registration_list" href="{% url 'gestao:registration_list' event_id=ev.id %}">
+    <i data-lucide="users-round"></i>
+    <span>Inscrições</span>
+  </a>
+  {% endif %}
+  {% if ev and management_permissions.checkin %}
+  <a class="mobile-nav-item {% if current == 'credenciamento' %}is-active{% endif %}"{% if current == 'credenciamento' %} aria-current="page"{% endif %} data-workspace-tab="credenciamento" href="{% url 'gestao:credenciamento' event_id=ev.id %}" aria-label="Credenciamento">
+    <i data-lucide="scan-line"></i>
+    <span>Scanner</span>
+  </a>
+  {% endif %}
+  {% if ev and management_permissions.finance %}
+  <a class="mobile-nav-item {% if management_switch_module == 'finance' %}is-active{% endif %}"{% if management_switch_module == 'finance' %} aria-current="page"{% endif %} data-workspace-tab="finance" href="{% url 'gestao:finance' event_id=ev.id %}">
+    <i data-lucide="wallet"></i>
+    <span>Financeiro</span>
+  </a>
+  {% endif %}
+  <button type="button" class="mobile-nav-item mobile-nav-more" data-menu-toggle aria-label="Abrir todos os módulos" aria-controls="managementSidebar" aria-expanded="false">
+    <i data-lucide="menu"></i>
+    <span>Mais</span>
+  </button>
+</nav>
 {% endwith %}
 <script src="{% static 'js/management.js' %}?v=20261028-mobile-records"></script>
 {% block extra_js %}{% endblock %}

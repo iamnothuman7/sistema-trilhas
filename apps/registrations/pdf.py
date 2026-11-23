@@ -87,95 +87,105 @@ def build_registration_pdf(reg, *, generated_at=None):
     width, height = A4
     available = width - 80
     title = "Comprovante de inscrição" if state["confirmed"] else "Situação da inscrição"
-    document = SimpleDocTemplate(output, pagesize=A4, rightMargin=40, leftMargin=40,
-        topMargin=113, bottomMargin=54, title=title, author="Equipe Morcego", pageCompression=1)
+    document = SimpleDocTemplate(output, pagesize=A4, rightMargin=36, leftMargin=36,
+        topMargin=96, bottomMargin=36, title=title, author="Equipe Morcego", pageCompression=1)
 
     def decorate(canvas, doc):
         canvas.saveState()
-        canvas.setFillColor(colors.HexColor("#191d1a")); canvas.rect(0, height-87, width, 87, fill=1, stroke=0)
+        canvas.setFillColor(colors.HexColor("#191d1a")); canvas.rect(0, height-80, width, 80, fill=1, stroke=0)
         logo = Path(settings.BASE_DIR) / "frontend/static/img/logo-nav.webp"
         if logo.is_file():
-            canvas.drawImage(ImageReader(str(logo)), 40, height-74, width=64, height=53, preserveAspectRatio=True, mask="auto")
-        canvas.setFont("TrilhasPDFBold", 14); canvas.setFillColor(colors.white)
-        canvas.drawString(119, height-39, "EQUIPE MORCEGO")
-        canvas.setFont("TrilhasPDF", 9); canvas.setFillColor(colors.HexColor("#d1d8d2"))
-        canvas.drawString(119, height-57, "Área do participante")
-        canvas.setFillColor(orange); canvas.rect(0, height-91, width, 4, fill=1, stroke=0)
-        canvas.setStrokeColor(colors.HexColor("#dfe4df")); canvas.line(40, 47, width-40, 47)
-        canvas.setFont("TrilhasPDF", 7); canvas.setFillColor(muted)
-        canvas.drawString(40, 35, f"Emitido em {issued:%d/%m/%Y às %H:%M} ({reg.event.timezone})")
-        canvas.drawString(40, 24, "Documento pessoal - consulte a situação atual na área do participante")
-        canvas.drawRightString(width-40, 24, f"Página {doc.page}")
+            canvas.drawImage(ImageReader(str(logo)), 36, height-68, width=56, height=48, preserveAspectRatio=True, mask="auto")
+        canvas.setFont("TrilhasPDFBold", 13); canvas.setFillColor(colors.white)
+        canvas.drawString(104, height-36, "EQUIPE MORCEGO")
+        canvas.setFont("TrilhasPDF", 8.5); canvas.setFillColor(colors.HexColor("#d1d8d2"))
+        canvas.drawString(104, height-52, "Comprovante Oficial de Inscrição e Credenciamento")
+        canvas.setFillColor(orange); canvas.rect(0, height-84, width, 4, fill=1, stroke=0)
+        canvas.setStrokeColor(colors.HexColor("#dfe4df")); canvas.line(36, 32, width-36, 32)
+        canvas.setFont("TrilhasPDF", 6.5); canvas.setFillColor(muted)
+        canvas.drawString(36, 22, f"Emitido em {issued:%d/%m/%Y às %H:%M} ({reg.event.timezone}) · Apresente este documento no credenciamento")
+        canvas.drawRightString(width-36, 22, "Página 1 de 1")
         canvas.restoreState()
 
     story = [paragraph(title, "title"), paragraph(reg.event.title, "heading")]
     status_box = Table([[paragraph(state["label"], "status")]], colWidths=[available])
     status_box.setStyle(TableStyle([("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#fff2e8")),
         ("BOX", (0,0), (-1,-1), .6, colors.HexColor("#fed7aa")),
-        ("LEFTPADDING", (0,0), (-1,-1), 12), ("TOPPADDING", (0,0), (-1,-1), 10), ("BOTTOMPADDING", (0,0), (-1,-1), 10)]))
-    story += [status_box, Spacer(1, 12)]
+        ("LEFTPADDING", (0,0), (-1,-1), 10), ("TOPPADDING", (0,0), (-1,-1), 6), ("BOTTOMPADDING", (0,0), (-1,-1), 6)]))
+    story += [status_box, Spacer(1, 8)]
     if not state["confirmed"]:
         story.append(paragraph("Este documento informa a situação atual. Não confirma a participação nem autoriza o credenciamento ou a retirada de benefícios."))
+
     details = [
         ("PARTICIPANTE", reg.person.full_name),
         ("INSCRIÇÃO", f"#{reg.registration_number}" if reg.registration_number else "Número ainda não atribuído"),
         ("MODALIDADE", reg.category_name),
+        ("CIDADE / UF", f"{reg.person.city}/{reg.person.state}" if reg.person.city and reg.person.state else "Não informada"),
         ("EQUIPE", reg.team_name or reg.person.team_name or "Não informada"),
         ("CAMISETA", (reg.shirt_size or "Não informada") + (" · " + reg.get_vehicle_type_display() if reg.vehicle_type else "")),
-        ("EVENTO", f"{starts:%d/%m/%Y %H:%M} a {ends:%d/%m/%Y %H:%M} ({reg.event.timezone})"),
+        ("EVENTO", f"{starts:%d/%m/%Y %H:%M} a {ends:%d/%m/%Y %H:%M}"),
         ("LOCAL", reg.event.venue or "A confirmar pela organização"),
-        ("PAGAMENTO", reg.source_order_line.order.get_status_display()),
-        ("OPERAÇÃO", reg.get_operational_state_display() if state["qr_available"] else "Credenciamento e retirada bloqueados no momento"),
+        ("SITUAÇÃO", "CONFIRMADO (Apto para Retirada de Kit)" if state["qr_available"] else "Aguardando Confirmação"),
     ]
     from apps.events.models_raffles import RaffleTicket
     from apps.events.raffle_operations import confirmed_registration_tickets
     ticket = RaffleTicket.objects.filter(registration=reg, state='SOLD').first() if state['confirmed'] else None
     if ticket:
-        details.append(('NÚMERO DO SORTEIO', str(ticket.number)))
+        details.append(('SORTEIO MOTO', f"Número da Sorte: #{ticket.number} (1 Ponto Incluso)"))
+    extra_tickets = list(confirmed_registration_tickets(reg).filter(source='ONLINE').values_list('number', flat=True)) if state['confirmed'] else []
+    if extra_tickets:
+        details.append(('PONTOS EXTRAS', ' · '.join(str(n) for n in extra_tickets[:15])))
+
     order = reg.source_order_line.order
     if order.applied_coupon_code:
-        details.append(('CUPOM NA COMPRA', f'{order.applied_coupon_code} · Desconto no pedido: R$ {order.formatted_discount}'))
-    if order.payment_fee_cents:
-        details.append(('VALOR DO PEDIDO', f'Itens R$ {order.formatted_base_total} + tarifa R$ {order.formatted_payment_fee} = R$ {order.formatted_total}'))
-    data_table = Table([[paragraph(label, "label"), paragraph(value)] for label, value in details], colWidths=[95, available-95])
-    data_table.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "TOP"), ("LEFTPADDING", (0,0), (-1,-1), 0),
-        ("TOPPADDING", (0,0), (-1,-1), 2.5), ("BOTTOMPADDING", (0,0), (-1,-1), 2.5),
+        details.append(('CUPOM', f'{order.applied_coupon_code} (Desconto: R$ {order.formatted_discount})'))
+
+    left_table = Table([[paragraph(label, "label"), paragraph(value)] for label, value in details], colWidths=[80, available - 220])
+    left_table.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "MIDDLE"), ("LEFTPADDING", (0,0), (-1,-1), 0),
+        ("TOPPADDING", (0,0), (-1,-1), 2), ("BOTTOMPADDING", (0,0), (-1,-1), 2),
         ("LINEBELOW", (0,0), (-1,-2), .3, colors.HexColor("#e9ece8"))]))
-    story.append(data_table)
-    extra_tickets=list(confirmed_registration_tickets(reg).filter(source='ONLINE').values_list('number',flat=True)) if state['confirmed'] else []
-    if extra_tickets:
-        story.append(paragraph('Números extras confirmados no sorteio','heading'))
-        for offset in range(0,len(extra_tickets),20):
-            story.append(paragraph(' · '.join(str(number) for number in extra_tickets[offset:offset+20])))
+
     if state["qr_available"]:
         qr_buffer = BytesIO()
-        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=4)
+        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=6, border=2)
         qr.add_data(reg.credential.raw_token); qr.make(fit=True)
         qr.make_image(fill_color="black", back_color="white").save(qr_buffer, format="PNG"); qr_buffer.seek(0)
-        qr_cell = [Image(qr_buffer, width=126, height=126), paragraph(reg.credential.raw_token, "token")]
-        content = [paragraph("Sua credencial", "heading"), paragraph("Apresente o QR Code à equipe para consultar a inscrição e os benefícios disponíveis."),
-            paragraph("O pagamento e o aceite foram conferidos na emissão. Cancelamento, revogação ou alteração posterior podem impedir o uso.", "small")]
-        credential = Table([[content, qr_cell]], colWidths=[available-170, 170])
-        credential.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "MIDDLE"), ("ALIGN", (1,0), (1,0), "CENTER"),
-            ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#f6f8f5")), ("LEFTPADDING", (0,0), (-1,-1), 12),
-            ("TOPPADDING", (0,0), (-1,-1), 8), ("BOTTOMPADDING", (0,0), (-1,-1), 8)]))
-        story += [Spacer(1, 12), credential]
+        qr_cell = [
+            Image(qr_buffer, width=105, height=105),
+            Spacer(1, 3),
+            paragraph(f"#{reg.registration_number}" if reg.registration_number else "", "status"),
+            paragraph(reg.credential.raw_token[:16] + "...", "token")
+        ]
+        qr_box = Table([[qr_cell]], colWidths=[130])
+        qr_box.setStyle(TableStyle([("ALIGN", (0,0), (-1,-1), "CENTER"), ("VALIGN", (0,0), (-1,-1), "MIDDLE"),
+            ("BACKGROUND", (0,0), (-1,-1), colors.HexColor("#f8fafc")), ("BOX", (0,0), (-1,-1), .5, colors.HexColor("#e2e8f0")),
+            ("TOPPADDING", (0,0), (-1,-1), 6), ("BOTTOMPADDING", (0,0), (-1,-1), 6),
+            ("LEFTPADDING", (0,0), (-1,-1), 6), ("RIGHTPADDING", (0,0), (-1,-1), 6)]))
+        main_grid = Table([[left_table, qr_box]], colWidths=[available - 138, 138])
     else:
-        story += [Spacer(1, 9), paragraph("QR Code indisponível", "heading"), paragraph(state["reason"])]
+        main_grid = Table([[left_table]], colWidths=[available])
+
+    main_grid.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "TOP")]))
+    story += [main_grid, Spacer(1, 10)]
+
     benefits = list(reg.entitlements.all().order_by("benefit_type", "pk"))
     if benefits:
-        story.append(paragraph("Benefícios da inscrição", "heading"))
-        rows = [[paragraph("BENEFÍCIO", "label"), paragraph("ENTREGUE", "label"), paragraph("SITUAÇÃO", "label")]]
+        story.append(paragraph("Itens e Benefícios a Retirar no Evento", "heading"))
+        rows = [[paragraph("ITEM", "label"), paragraph("QUANTIDADE", "label"), paragraph("SITUAÇÃO", "label")]]
         for benefit in benefits:
-            situation = "Revogado" if benefit.state == EntitlementState.REVOKED else (
-                "Concluído" if not benefit.remaining else (f"{benefit.remaining} disponível(is)" if state["qr_available"] else f"Saldo {benefit.remaining}; retirada bloqueada"))
+            situation = "Entregue" if not benefit.remaining else "Disponível para Retirada"
             rows.append([paragraph(benefit.title), paragraph(f"{benefit.quantity_used}/{benefit.quantity_total}"), paragraph(situation)])
-        table = Table(rows, colWidths=[available-180, 70, 110], repeatRows=1)
-        table.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "TOP"), ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f1f3ef")),
-            ("LINEBELOW", (0,0), (-1,-1), .3, colors.HexColor("#e1e5de")), ("TOPPADDING", (0,0), (-1,-1), 5)]))
-        story.append(table)
-    story.append(paragraph("Credenciamento e retirada", "heading"))
-    for index, instruction in enumerate(PICKUP_INSTRUCTIONS, 1):
-        story.append(paragraph(f"{index}. {instruction}", "small")); story.append(Spacer(1, 2))
+        table = Table(rows, colWidths=[available-170, 75, 95], repeatRows=1)
+        table.setStyle(TableStyle([("VALIGN", (0,0), (-1,-1), "TOP"), ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#f1f5f9")),
+            ("LINEBELOW", (0,0), (-1,-1), .3, colors.HexColor("#e2e8f0")), ("TOPPADDING", (0,0), (-1,-1), 4), ("BOTTOMPADDING", (0,0), (-1,-1), 4)]))
+        story += [table, Spacer(1, 8)]
+
+    story.append(paragraph("Instruções de Credenciamento", "heading"))
+    instructions_text = (
+        "1. Apresente este comprovante (impresso ou no celular) na portaria do evento juntamente com documento oficial com foto. "
+        "2. A entrega do kit oficial e camiseta será realizada conforme o tamanho indicado acima. "
+        "3. Em caso de dúvidas ou necessidade de transferência, contate a organização oficial da Equipe Morcego."
+    )
+    story.append(paragraph(instructions_text, "small"))
     document.build(story, onFirstPage=decorate, onLaterPages=decorate)
     return output.getvalue()

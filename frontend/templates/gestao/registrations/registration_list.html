@@ -10,18 +10,23 @@
         <p class="text-muted">Consulte participantes, pagamentos e entregas desta edição.</p>
     </div>
     <div class="page-actions">
-        <a href="{% url 'gestao:manual_registration_create' event.id %}" class="btn btn-primary"><i data-lucide="user-plus" aria-hidden="true"></i>Inscrição manual</a>
-        <a href="{% url 'gestao:credenciamento' event_id=event.id %}" class="btn btn-success">
+        {% if user_perms.registrations.create %}<a href="{% url 'gestao:manual_registration_create' event.id %}" class="btn btn-primary"><i data-lucide="user-plus" aria-hidden="true"></i>Inscrição manual</a>{% endif %}
+        {% if management_permissions.checkin %}<a href="{% url 'gestao:credenciamento' event_id=event.id %}" class="btn btn-success">
             <i data-lucide="scan-line" aria-hidden="true"></i> Abrir credenciamento
-        </a>
-        <a href="{% url 'gestao:export_participants' event_id=event.id %}" class="btn btn-secondary">
+        </a>{% endif %}
+        {% if user_perms.registrations.export %}<a href="{% url 'gestao:export_participants' event_id=event.id %}" class="btn btn-secondary">
             <i data-lucide="download" aria-hidden="true"></i> Exportar lista
+        </a>{% endif %}
+        {% if request.user.is_superuser %}
+        <a href="{% url 'gestao:reset_test_data' event_id=event.id %}" class="btn btn-outline-danger" style="border-color: #ef4444; color: #dc2626;" title="Limpar todas as inscrições e dados de teste">
+            <i data-lucide="trash-2" aria-hidden="true"></i> Zerar Testes
         </a>
+        {% endif %}
     </div>
 </div>
 
 <!-- Filtros de Busca -->
-<div class="alert" role="note"><span>Pagamento aprovado confirma automaticamente. “Pendente Termos” depende apenas do aceite do participante.</span></div>
+<div class="alert" role="note"><span>Pagamentos Pix aprovados confirmam a inscrição e liberam o QR Code de credenciamento na hora.</span></div>
 <div class="card mg-element-gap">
     <form method="GET" class="mg-registration-filters">
         <div class="mg-search-row">
@@ -109,7 +114,7 @@
                         <td>
                             <a href="{% url 'gestao:registration_detail' event_id=event.id reg_id=reg.id %}" class="btn btn-sm btn-secondary">
                                 Ver Ficha
-                            </a>{% if not reg.archived_at %}<a class="btn btn-sm btn-secondary record-action" href="{% url 'gestao:registration_edit' event.id reg.id %}" aria-label="Editar" title="Editar"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar</span></a>{% if reg.source_order_line.order.status == 'PAID' or reg.source_order_line.order.status == 'PARTIALLY_REFUNDED' %}{% if management_permissions.finance %}<a class="btn btn-sm btn-secondary" href="{% url 'gestao:registration_refund' event.id reg.id %}">Cancelar e registrar devolução</a>{% endif %}{% elif reg.commercial_state != 'ACTIVE' %}<a class="btn btn-sm btn-secondary record-action" href="{% url 'gestao:registration_remove' event.id reg.id %}" aria-label="Remover reserva" title="Remover reserva"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Remover reserva</span></a>{% endif %}{% endif %}
+                            </a>{% if not reg.archived_at %}{% if user_perms.registrations.edit %}<a class="btn btn-sm btn-secondary record-action" href="{% url 'gestao:registration_edit' event.id reg.id %}" aria-label="Editar" title="Editar"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar</span></a>{% endif %}{% if user_perms.registrations.cancel %}{% if reg.source_order_line.order.status == 'PAID' or reg.source_order_line.order.status == 'PARTIALLY_REFUNDED' %}{% if management_permissions.finance %}<a class="btn btn-sm btn-secondary" href="{% url 'gestao:registration_refund' event.id reg.id %}">Cancelar e registrar devolução</a>{% endif %}{% elif reg.commercial_state != 'ACTIVE' %}<a class="btn btn-sm btn-secondary record-action" href="{% url 'gestao:registration_remove' event.id reg.id %}" aria-label="Remover reserva" title="Remover reserva"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Remover reserva</span></a>{% endif %}{% endif %}{% endif %}
                         </td>
                     </tr>
                 {% empty %}

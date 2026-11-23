@@ -24,7 +24,7 @@
       });
     });
   }
-  function select(board, selected, remember = true) {
+  function select(board, selected, remember = true, immediate = false) {
     const panels = own(board, '[data-group-panel]');
     if (!panels.some(panel => panel.dataset.groupPanel === selected)) selected = '';
     own(board, '[data-group-toggle]').forEach(button => {
@@ -37,7 +37,34 @@
         label.textContent = open ? 'Recolher' : label.dataset.collapsedLabel;
       }
     });
-    panels.forEach(panel => { panel.hidden = panel.dataset.groupPanel !== selected; });
+
+    panels.forEach(panel => {
+      const willOpen = panel.dataset.groupPanel === selected;
+      if (immediate) {
+        panel.hidden = !willOpen;
+        panel.classList.toggle('is-open', willOpen);
+      } else {
+        if (willOpen) {
+          panel.hidden = false;
+          panel.classList.remove('is-open');
+          void panel.offsetHeight; // Force reflow
+          requestAnimationFrame(() => {
+            panel.classList.add('is-open');
+          });
+        } else if (panel.classList.contains('is-open')) {
+          panel.classList.remove('is-open');
+          setTimeout(() => {
+            if (!panel.classList.contains('is-open')) {
+              panel.hidden = true;
+            }
+          }, 360);
+        } else {
+          panel.hidden = true;
+          panel.classList.remove('is-open');
+        }
+      }
+    });
+
     board.dataset.groupOpen = selected;
     filter(board, selected);
     if (remember) {
@@ -61,13 +88,13 @@
         if (!labelled.has(panel.id)) { panel.setAttribute('aria-labelledby', button.id); labelled.add(panel.id); }
       });
       const key = keyFor(board);
-      select(board, selections.has(key) ? selections.get(key) : board.dataset.groupSelected || '');
+      select(board, selections.has(key) ? selections.get(key) : board.dataset.groupSelected || '', false, true);
     });
     window.trilhasWorkspace?.register('instant-groups', {
       capture: () => boards().map(board => [keyFor(board), board.dataset.groupOpen || '']),
       restore: saved => {
         const state = new Map(saved || []);
-        boards().forEach(board => { if (state.has(keyFor(board))) select(board, state.get(keyFor(board))); });
+        boards().forEach(board => { if (state.has(keyFor(board))) select(board, state.get(keyFor(board)), false, true); });
       },
     });
   }

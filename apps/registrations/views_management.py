@@ -23,6 +23,9 @@ def _get_reg(event,reg_id):
 @require_http_methods(['GET','POST'])
 def registration_edit(request,event_id,reg_id):
     event=request.management_event;reg=_get_reg(event,reg_id)
+    from apps.core.permissions import has_event_permission
+    if not has_event_permission(request.user, event, "registrations", "edit"):
+        raise PermissionDenied("Sua conta não tem permissão para editar inscrições.")
     form=RegistrationEditForm(request.POST if request.method=='POST' else None,registration=reg)
     if request.method=='POST' and form.is_valid():
         try:edit_registration(event=event,reg_id=reg.pk,data=form.cleaned_data,actor=request.user,request=request)
@@ -38,6 +41,9 @@ def registration_edit(request,event_id,reg_id):
 @require_http_methods(['GET','POST'])
 def registration_refund(request,event_id,reg_id):
     event=request.management_event;reg=_get_reg(event,reg_id);order=reg.source_order_line.order
+    from apps.core.permissions import has_event_permission
+    if not has_event_permission(request.user, event, "registrations", "cancel"):
+        raise PermissionDenied("Sua conta não tem permissão para cancelar ou estornar inscrições.")
     return _refund_form(request,event,reg,order)
 
 

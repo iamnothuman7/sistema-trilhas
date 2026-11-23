@@ -14,6 +14,7 @@ from .permissions import accessible_events, management_required, require_event_a
 MODULES = {
     'sponsor_leads':('sponsors',True),
     'shirt_stock':('catalog',True),
+    'addons':('catalog',True),
     "dashboard": ("view", False), "usage_guide": ("view", False),
     "event_list": ("events", False), "event_detail": ("events", True),
     "event_edit": ("events", True), "event_appearance": ("content", True),
@@ -23,6 +24,7 @@ MODULES = {
     "frames": ("content", True), "team_frame_editor": ("content", True),
     "raffle_management": ("events", True), "sponsor_bank": ("sponsors", False),
     "mercadopago_connection": ("view", False), "audit_log": ("audit", False),
+    "analytics": ("view", False),
     "team_management": ("team", True),
 }
 PARENTS = {

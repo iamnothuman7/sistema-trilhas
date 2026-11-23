@@ -118,3 +118,159 @@ def _manage_form(request,event,raffle):
         'digital_count':eligible_tickets(raffle).filter(source='REGISTRATION').count() if tickets is not None else 0,
         'paper_sold':eligible_tickets(raffle).filter(source='PAPER').count() if tickets is not None else 0,
     }, status=400 if request.method == "POST" else 200)
+
+
+def calculate_raffle_price_cents(quantity):
+    """
+    Desconto progressivo de 5 em 5:
+    1 Ponto = R$ 20,00
+    Combo 5 Pontos = R$ 80,00
+    Combo 10 Pontos = R$ 150,00
+    Combo 15 Pontos = R$ 210,00
+    Combo 20 Pontos = R$ 260,00
+    """
+    if quantity <= 0:
+        return 0
+    table = {1: 2000, 5: 8000, 10: 15000, 15: 21000, 20: 26000}
+    if quantity in table:
+        return table[quantity]
+    q = quantity
+    total = 0
+    while q >= 20:
+        total += 26000
+        q -= 20
+    while q >= 15:
+        total += 21000
+        q -= 15
+    while q >= 10:
+        total += 15000
+        q -= 10
+    while q >= 5:
+        total += 8000
+        q -= 5
+    total += q * 2000
+    return total
+
+
+@require_http_methods(["GET", "POST"])
+def raffle_standalone_buy(request, slug):
+    """
+    Fluxo de compra avulsa de números da sorte no site principal com descontos de 5 em 5.
+    Não exige ser piloto nem ter inscrição ativa.
+    """
+    event = get_event_resilient(slug, request)
+    raffle = get_object_or_404(MotorcycleRaffle, event=event, is_public=True)
+    
+    from apps.payments.gateway import MercadoPagoGateway
+    payments_available = not MercadoPagoGateway().configuration_issues()
+    
+    combos = [
+        {"qty": 1, "label": "1 Ponto", "price_reais": "20,00", "economy": None, "popular": False},
+        {"qty": 5, "label": "5 Pontos", "price_reais": "80,00", "economy": "Economize R$ 20", "popular": True},
+        {"qty": 10, "label": "10 Pontos", "price_reais": "150,00", "economy": "Economize R$ 50", "popular": False},
+        {"qty": 15, "label": "15 Pontos", "price_reais": "210,00", "economy": "Economize R$ 90", "popular": False},
+        {"qty": 20, "label": "20 Pontos", "price_reais": "260,00", "economy": "Economize R$ 140", "popular": False},
+    ]
+
+    buyer_name = request.POST.get("buyer_name", "").strip() if request.method == "POST" else ""
+    buyer_phone = request.POST.get("buyer_phone", "").strip() if request.method == "POST" else ""
+    buyer_email = request.POST.get("buyer_email", "").strip().lower() if request.method == "POST" else ""
+    buyer_doc = request.POST.get("buyer_document", "").strip() if request.method == "POST" else ""
+
+    try:
+        quantity = int(request.POST.get("quantity", "5"))
+    except (ValueError, TypeError):
+        quantity = 5
+    quantity = max(1, min(100, quantity))
+
+    if request.method == "POST":
+        if not buyer_name or not buyer_phone or not buyer_email:
+            messages.error(request, "Por favor, preencha seu nome, WhatsApp e e-mail para receber seus números da sorte.")
+            return render(request, "events/raffle_buy.html", {
+                "event": event, "raffle": raffle, "combos": combos,
+                "payments_available": payments_available, "quantity": quantity,
+                "buyer_name": buyer_name, "buyer_phone": buyer_phone, "buyer_email": buyer_email, "buyer_doc": buyer_doc
+            }, status=400)
+            
+        import secrets
+        from datetime import timedelta
+        from apps.checkout.models import Order, OrderLine, OrderStatus, ReceivableDue
+        from apps.catalog.models import CapacityResource, CapacityHold, HoldStatus
+        
+        total_cents = calculate_raffle_price_cents(quantity)
+        hold_expires = timezone.now() + timedelta(minutes=35)
+        
+        with transaction.atomic():
+            resource, _ = CapacityResource.objects.select_for_update().get_or_create(
+                event=event, type="RAFFLE_TOTAL", reference_id=str(raffle.pk),
+                defaults={"capacity_total": raffle.quota_quantity or 10000}
+            )
+            resource.reserved_count += quantity
+            resource.save(update_fields=["reserved_count"])
+            
+            ref_code = f"SO-{event.edition_number:02d}-{secrets.token_hex(3).upper()}"
+            order = Order.objects.create(
+                event=event,
+                merchant_reference=ref_code,
+                purchaser_user=request.user if request.user.is_authenticated else None,
+                purchaser_name=buyer_name,
+                purchaser_email=buyer_email,
+                purchaser_phone=buyer_phone,
+                purchaser_document=buyer_doc,
+                status=OrderStatus.RESERVED,
+                expires_at=hold_expires,
+                currency="BRL",
+                gross_cents=total_cents,
+                total_cents=total_cents,
+            )
+            
+            unit_price = total_cents // quantity
+            line = OrderLine.objects.create(
+                order=order,
+                raffle=raffle,
+                quantity=quantity,
+                unit_cents=unit_price,
+                net_cents=total_cents,
+                intended_person_name=buyer_name,
+                intended_person_email=buyer_email,
+                intended_person_phone=buyer_phone,
+                item_snapshot_json={
+                    "kind": "RAFFLE",
+                    "product_name": f"Pontos do Sorteio da Moto ({quantity}x)",
+                    "price_cents": unit_price,
+                    "total_cents": total_cents,
+                    "quantity": quantity,
+                    "raffle_id": str(raffle.pk),
+                    "title": raffle.title,
+                }
+            )
+            
+            CapacityHold.objects.create(
+                resource=resource,
+                order_id=order.id,
+                order_line_id=line.id,
+                quantity=quantity,
+                status=HoldStatus.ACTIVE,
+                expires_at=hold_expires,
+                idempotency_key=f"HOLD-RAFFLE-{order.id}-{line.id}"
+            )
+            
+            ReceivableDue.objects.create(order=order, due_at=hold_expires, amount_cents=total_cents)
+            
+        authorized_ids = request.session.get("checkout_order_ids", [])
+        request.session["checkout_order_ids"] = [str(v) for v in authorized_ids[-49:]] + [str(order.id)]
+        return redirect("checkout:order_payment", order_id=order.id)
+
+    return render(request, "events/raffle_buy.html", {
+        "event": event, "raffle": raffle, "combos": combos,
+        "payments_available": payments_available, "quantity": quantity,
+        "buyer_name": buyer_name, "buyer_phone": buyer_phone, "buyer_email": buyer_email, "buyer_doc": buyer_doc
+    })
+
+
+def raffle_root_shortcut(request):
+    event = Event.objects.filter(status__in=[EventStatus.PUBLISHED, EventStatus.IN_PROGRESS]).order_by("-starts_at").first()
+    if event:
+        return redirect("events:raffle_buy", slug=event.slug)
+    return redirect("events:list")
+

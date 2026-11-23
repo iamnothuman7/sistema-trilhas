@@ -26,6 +26,7 @@ urlpatterns = [
     path("", include("apps.mediaframes.urls")),
 
     # Portal Público e Microsites dos Eventos
+    path("sorteio/", include([path("", __import__("apps.events.views_raffles", fromlist=["raffle_root_shortcut"]).raffle_root_shortcut, name="raffle_root_shortcut")])),
     path("", include("apps.events.urls")),
     path("", include("apps.core.urls_public")),
 ]

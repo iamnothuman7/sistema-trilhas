@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Comprar Pontos da Sorte — {{ raffle.motorcycle_model|default:raffle.title }} | Equipe Morcego{% endblock %}
+
+{% block extra_head %}
+{% include "checkout/_payment_styles.html" %}
+<style>
+.raffle-hero-banner {
+    background: linear-gradient(135deg, #18181b 0%, #09090b 100%);
+    border: 1px solid #27272a;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 24px;
+    color: #fff;
+    text-align: center;
+}
+.raffle-combos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+}
+.raffle-combo-card {
+    border: 2px solid #3f3f46;
+    background: #18181b;
+    border-radius: 12px;
+    padding: 16px 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s ease;
+    position: relative;
+    user-select: none;
+}
+.raffle-combo-card:hover {
+    border-color: #ea580c;
+    background: #27272a;
+}
+.raffle-combo-card.active {
+    border-color: #ea580c;
+    background: #431407;
+    box-shadow: 0 0 0 2px #ea580c;
+}
+.raffle-combo-card .badge-popular {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ea580c;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    text-transform: uppercase;
+}
+.raffle-combo-qty {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #f4f4f5;
+    margin-bottom: 4px;
+}
+.raffle-combo-price {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #fb923c;
+}
+.raffle-combo-economy {
+    display: block;
+    font-size: 0.75rem;
+    color: #34d399;
+    font-weight: 600;
+    margin-top: 4px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="payment-page registration-page">
+    <a href="{% url 'events:raffle' slug=event.slug %}" class="public-back">
+        <i data-lucide="arrow-left" aria-hidden="true"></i> Voltar ao sorteio
+    </a>
+
+    <header class="registration-intro">
+        <span class="payment-kicker">Sorteio da Moto · Concorra Agora</span>
+        <h1>{{ raffle.title }}</h1>
+        <p class="payment-muted">
+            Adquira seus pontos da sorte avulsos com desconto progressivo (de 5 em 5 pontos). Não é necessário ser piloto inscrito.
+        </p>
+    </header>
+
+    <div class="raffle-hero-banner">
+        {% if raffle.primary_image %}
+        <img src="{{ raffle.primary_image.url }}" alt="{{ raffle.motorcycle_model }}" style="max-height: 200px; width: auto; object-fit: contain; margin: 0 auto 16px auto; display: block; border-radius: 8px;">
+        {% endif %}
+        <h2 style="font-size: 1.5rem; margin: 0 0 6px 0; color: #fb923c;">{{ raffle.motorcycle_model|default:"Prêmio Oficial" }}</h2>
+        {% if raffle.description %}
+        <p style="color: #a1a1aa; font-size: 0.9rem; max-width: 600px; margin: 0 auto 12px auto;">{{ raffle.description }}</p>
+        {% endif %}
+        {% if raffle.draw_at %}
+        <span style="display: inline-flex; align-items: center; gap: 6px; background: #27272a; padding: 4px 12px; border-radius: 999px; font-size: 0.85rem; color: #e4e4e7;">
+            <i data-lucide="calendar" style="width: 14px; height: 14px; color: #fb923c;"></i> Sorteio em: <strong>{{ raffle.draw_at|date:"d/m/Y às H:i" }}</strong>
+        </span>
+        {% endif %}
+    </div>
+
+    <form method="post" id="raffleBuyForm">
+        {% csrf_token %}
+
+        <!-- Seção 1: Escolha da Quantidade / Combos -->
+        <section class="payment-card">
+            <header class="card-header">
+                <div>
+                    <h2>1. Escolha a quantidade de pontos</h2>
+                    <span class="registration-caption">Aproveite os combos promocionais com desconto automático</span>
+                </div>
+            </header>
+
+            <div class="raffle-combos-grid">
+                {% for combo in combos %}
+                <div class="raffle-combo-card{% if combo.qty == quantity %} active{% endif %}" data-combo-qty="{{ combo.qty }}">
+                    {% if combo.popular %}<span class="badge-popular">Mais Vendido</span>{% endif %}
+                    <div class="raffle-combo-qty">{{ combo.label }}</div>
+                    <div class="raffle-combo-price">R$ {{ combo.price_reais }}</div>
+                    {% if combo.economy %}<span class="raffle-combo-economy">{{ combo.economy }}</span>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #27272a; border-radius: 8px; margin-top: 12px; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <span style="font-size: 0.85rem; color: #d4d4d8; display: block;">Ou digite outra quantidade:</span>
+                    <small style="color: #a1a1aa;">Descontos aplicados automaticamente a cada 5 pontos</small>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button type="button" class="btn-stepper" id="btnRaffleMinus" style="padding: 6px 14px; background: #3f3f46; color: #fff; border: 0; border-radius: 6px; font-size: 1.1rem; cursor: pointer;">-</button>
+                    <input type="number" id="raffleQuantity" name="quantity" min="1" max="100" value="{{ quantity }}" style="width: 54px; text-align: center; font-weight: 800; font-size: 1.1rem; padding: 6px 0; border-radius: 6px; border: 1px solid #52525b; background: #18181b; color: #fff;">
+                    <button type="button" class="btn-stepper" id="btnRafflePlus" style="padding: 6px 14px; background: #3f3f46; color: #fff; border: 0; border-radius: 6px; font-size: 1.1rem; cursor: pointer;">+</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seção 2: Dados do Comprador -->
+        <section class="payment-card">
+            <header class="card-header">
+                <div>
+                    <h2>2. Seus dados para o sorteio</h2>
+                    <span class="registration-caption">Seus números serão vinculados a estes dados e enviados por WhatsApp</span>
+                </div>
+            </header>
+
+            <div class="registration-grid">
+                <label class="form-label registration-wide">Nome completo *
+                    <input name="buyer_name" class="form-control" autocomplete="name" required value="{{ buyer_name }}" placeholder="Ex.: João da Silva">
+                </label>
+                <label class="form-label">WhatsApp com DDD *
+                    <input type="tel" name="buyer_phone" data-mask="phone" placeholder="(88) 99999-9999" inputmode="tel" class="form-control" autocomplete="tel" required value="{{ buyer_phone }}">
+                </label>
+                <label class="form-label">E-mail *
+                    <input type="email" name="buyer_email" class="form-control" autocomplete="email" required value="{{ buyer_email }}" placeholder="seuemail@exemplo.com">
+                </label>
+                <label class="form-label registration-wide">CPF (para identificação no prêmio)
+                    <input name="buyer_document" data-mask="cpf" placeholder="000.000.000-00" maxlength="14" class="form-control" inputmode="numeric" value="{{ buyer_doc }}">
+                </label>
+            </div>
+        </section>
+
+        <!-- Resumo e Botão Pix -->
+        <section class="payment-card" style="border: 1px solid #ea580c; background: #fffaf5;">
+            <div class="payment-total" style="margin-bottom: 12px;">
+                <span style="color: #374151;">Total a Pagar (Pix Instantâneo)</span>
+                <strong id="displayTotal" style="color: #ea580c; font-size: 1.6rem;">R$ 80,00</strong>
+            </div>
+
+            <p style="font-size: 0.85rem; color: #6b7280; line-height: 1.4; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 6px;">
+                <i data-lucide="zap" style="width: 16px; height: 16px; color: #ea580c; flex-shrink: 0; margin-top: 2px;"></i>
+                <span>O Pix é gerado imediatamente na próxima tela. Seus números da sorte oficiais são gerados de forma automática e segura assim que o pagamento for aprovado.</span>
+            </p>
+
+            <button type="submit" class="payment-button registration-submit" id="btnSubmitRaffle" style="background: #ea580c; font-size: 1.1rem; padding: 16px;">
+                Pagar com Pix <i data-lucide="arrow-right" aria-hidden="true"></i>
+            </button>
+        </section>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const qtyInput = document.getElementById('raffleQuantity');
+    const displayTotal = document.getElementById('displayTotal');
+    const submitBtn = document.getElementById('btnSubmitRaffle');
+    const comboCards = document.querySelectorAll('.raffle-combo-card');
+    const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    function calculatePrice(q) {
+        if (q <= 0) return 0;
+        const table = { 1: 2000, 5: 8000, 10: 15000, 15: 21000, 20: 26000 };
+        if (table[q]) return table[q];
+        let total = 0;
+        let rem = q;
+        while (rem >= 20) { total += 26000; rem -= 20; }
+        while (rem >= 15) { total += 21000; rem -= 15; }
+        while (rem >= 10) { total += 15000; rem -= 10; }
+        while (rem >= 5) { total += 8000; rem -= 5; }
+        total += rem * 2000;
+        return total;
+    }
+
+    function updatePrice() {
+        const q = Math.max(1, Math.min(100, parseInt(qtyInput.value) || 1));
+        qtyInput.value = q;
+        const cents = calculatePrice(q);
+        const formatted = formatter.format(cents / 100);
+        displayTotal.textContent = formatted;
+        submitBtn.innerHTML = 'Pagar ' + formatted + ' no Pix <i data-lucide="arrow-right" aria-hidden="true"></i>';
+        if (window.renderTrilhasIcons) window.renderTrilhasIcons();
+
+        comboCards.forEach(card => {
+            const cardQty = parseInt(card.dataset.comboQty);
+            card.classList.toggle('active', cardQty === q);
+        });
+    }
+
+    comboCards.forEach(card => {
+        card.addEventListener('click', function () {
+            qtyInput.value = this.dataset.comboQty;
+            updatePrice();
+        });
+    });
+
+    document.getElementById('btnRaffleMinus')?.addEventListener('click', () => {
+        const cur = parseInt(qtyInput.value) || 1;
+        if (cur > 1) { qtyInput.value = cur - 1; updatePrice(); }
+    });
+
+    document.getElementById('btnRafflePlus')?.addEventListener('click', () => {
+        const cur = parseInt(qtyInput.value) || 1;
+        if (cur < 100) { qtyInput.value = cur + 1; updatePrice(); }
+    });
+
+    qtyInput.addEventListener('input', updatePrice);
+    updatePrice();
+});
+</script>
+{% endblock %}

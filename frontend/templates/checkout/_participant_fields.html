@@ -10,8 +10,36 @@
         <label class="form-label">Oferta disponível *<select name="participant_lot[]" class="form-control" required>{% for lot in active_lots %}<option value="{{ lot.pk }}" data-product="{{ lot.product_id }}" data-cents="{{ lot.price_cents }}"{% if participant.lot == lot.pk|stringformat:'s' %} selected{% endif %}>{{ lot.title }} · R$ {{ lot.formatted_price }}</option>{% endfor %}</select></label>
         <label class="form-label">Veículo / modalidade *<select name="participant_vehicle[]" class="form-control" required>{% for value,label in vehicle_choices %}<option value="{{ value }}"{% if participant.vehicle == value or not participant.vehicle and value == 'MOTO' %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
         <label class="form-label">Tamanho da camiseta<select name="participant_shirt[]" class="form-control">{% for size in shirt_options %}<option value="{{ size.code }}" data-product="{{ size.product_id }}" data-extra-cents="{{ size.extra_cents }}" data-sold-out="{{ size.sold_out|yesno:'true,false' }}"{% if size.sold_out %} disabled{% endif %}{% if participant.shirt == size.code and participant.product == size.product_id %} selected{% endif %}>{{ size.label }}{% if size.sold_out %} — esgotada{% endif %}{% if size.extra_cents %} (+ R$ {{ size.extra_cents|money }}){% endif %}</option>{% endfor %}</select><small class="registration-caption">Acréscimos, quando houver, aparecem na opção e no subtotal.</small></label>
-        <label class="form-label">Equipe / motoclube<input name="participant_team[]" class="form-control" value="{{ participant.team|default:'' }}"></label>
-        <label class="form-label">Cidade<input name="participant_city[]" class="form-control" autocomplete="address-level2" value="{{ participant.city|default:'' }}"></label>
-        <label class="form-label">UF<input name="participant_state[]" data-mask="uf" class="form-control" maxlength="2" autocomplete="address-level1" value="{{ participant.state|default:'' }}"></label>
+        <label class="form-label">Equipe / motoclube<input name="participant_team[]" class="form-control" value="{{ participant.team|default:'' }}" placeholder="Ex: Morcegos da Serra"></label>
+        <label class="form-label">Cidade *<input name="participant_city[]" list="cidadesList" class="form-control" autocomplete="address-level2" required value="{{ participant.city|default:'Tianguá' }}" placeholder="Pesquise ou digite sua cidade"></label>
+        <label class="form-label">Estado (UF) *<select name="participant_state[]" class="form-control" required>
+            <option value="CE"{% if participant.state == 'CE' or not participant.state %} selected{% endif %}>CE - Ceará</option>
+            <option value="PI"{% if participant.state == 'PI' %} selected{% endif %}>PI - Piauí</option>
+            <option value="MA"{% if participant.state == 'MA' %} selected{% endif %}>MA - Maranhão</option>
+            <option value="RN"{% if participant.state == 'RN' %} selected{% endif %}>RN - Rio Grande do Norte</option>
+            <option value="PB"{% if participant.state == 'PB' %} selected{% endif %}>PB - Paraíba</option>
+            <option value="PE"{% if participant.state == 'PE' %} selected{% endif %}>PE - Pernambuco</option>
+            <option value="AL"{% if participant.state == 'AL' %} selected{% endif %}>AL - Alagoas</option>
+            <option value="SE"{% if participant.state == 'SE' %} selected{% endif %}>SE - Sergipe</option>
+            <option value="BA"{% if participant.state == 'BA' %} selected{% endif %}>BA - Bahia</option>
+            <option value="PA"{% if participant.state == 'PA' %} selected{% endif %}>PA - Pará</option>
+            <option value="TO"{% if participant.state == 'TO' %} selected{% endif %}>TO - Tocantins</option>
+            <option value="DF"{% if participant.state == 'DF' %} selected{% endif %}>DF - Distrito Federal</option>
+            <option value="GO"{% if participant.state == 'GO' %} selected{% endif %}>GO - Goiás</option>
+            <option value="MG"{% if participant.state == 'MG' %} selected{% endif %}>MG - Minas Gerais</option>
+            <option value="SP"{% if participant.state == 'SP' %} selected{% endif %}>SP - São Paulo</option>
+            <option value="RJ"{% if participant.state == 'RJ' %} selected{% endif %}>RJ - Rio de Janeiro</option>
+            <option value="ES"{% if participant.state == 'ES' %} selected{% endif %}>ES - Espírito Santo</option>
+            <option value="PR"{% if participant.state == 'PR' %} selected{% endif %}>PR - Paraná</option>
+            <option value="SC"{% if participant.state == 'SC' %} selected{% endif %}>SC - Santa Catarina</option>
+            <option value="RS"{% if participant.state == 'RS' %} selected{% endif %}>RS - Rio Grande do Sul</option>
+            <option value="MT"{% if participant.state == 'MT' %} selected{% endif %}>MT - Mato Grosso</option>
+            <option value="MS"{% if participant.state == 'MS' %} selected{% endif %}>MS - Mato Grosso do Sul</option>
+            <option value="RO"{% if participant.state == 'RO' %} selected{% endif %}>RO - Rondônia</option>
+            <option value="AC"{% if participant.state == 'AC' %} selected{% endif %}>AC - Acre</option>
+            <option value="AM"{% if participant.state == 'AM' %} selected{% endif %}>AM - Amazonas</option>
+            <option value="RR"{% if participant.state == 'RR' %} selected{% endif %}>RR - Roraima</option>
+            <option value="AP"{% if participant.state == 'AP' %} selected{% endif %}>AP - Amapá</option>
+        </select></label>
     </div>
 </article>

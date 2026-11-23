@@ -51,7 +51,19 @@
   document.getElementById('copy-pix')?.addEventListener('click', async function () {
     tick(); if (expired) return;
     const code = document.getElementById('pix-code');
-    try { await navigator.clipboard.writeText(code.value); this.textContent = 'Código copiado'; }
+    try {
+      await navigator.clipboard.writeText(code.value);
+      this.innerHTML = '<i data-lucide="check" style="width: 18px; height: 18px; display: inline-block; vertical-align: middle; margin-right: 6px;"></i> Código Pix Copiado!';
+      if (window.lucide) window.lucide.createIcons({ root: this });
+      this.style.backgroundColor = '#16a34a';
+      this.style.color = '#ffffff';
+      setTimeout(() => {
+        this.innerHTML = '<i data-lucide="copy" style="width: 18px; height: 18px; display: inline-block; vertical-align: middle; margin-right: 6px;"></i> Copiar código Pix';
+        if (window.lucide) window.lucide.createIcons({ root: this });
+        this.style.backgroundColor = '';
+        this.style.color = '';
+      }, 3500);
+    }
     catch (_) { document.getElementById('pix-code-details').open = true; code.focus(); code.select(); feedback.textContent = 'Selecione e copie o código exibido acima.'; }
   });
   async function poll() {

@@ -1,137 +1,183 @@
 {% extends "gestao/base_gestao.html" %}
-{% load trilhas_ui %}
+{% load trilhas_ui static %}
 
-{% block title %}Catálogo e lotes: {{ event.title }} | Painel Gestão{% endblock %}
-{% block gestao_header %}Catálogo e lotes: {{ event.title }}{% endblock %}
+{% block title %}Lotes de Inscrição | {{ event.title }}{% endblock %}
+{% block gestao_header %}Lotes de inscrição{% endblock %}
 
 {% block content %}
-<div class="mg-page-intro mg-section-gap">
-    <div class="page-heading"><h1>Catálogo e lotes</h1><a class="btn btn-primary" href="{% url 'gestao:catalog_create' event_id=event.id kind='produto' %}"><i data-lucide="plus" aria-hidden="true"></i>Novo produto</a></div>
-    <p class="text-muted">Crie e edite produtos, tamanhos, preços, períodos de venda, vagas e cupons desta edição.</p>
+<div class="page-heading">
+    <div>
+        <h1>Lotes de Inscrição</h1>
+        <p>{{ event.title }} · Gerencie os valores, datas de abertura/encerramento e vagas das inscrições dos pilotos.</p>
+    </div>
+    <div class="page-actions">
+        {% for prod in products %}
+            <a class="btn btn-primary" href="{% url 'gestao:catalog_create' event_id=event.id kind='lote' %}?product={{ prod.id }}">
+                <i data-lucide="plus" aria-hidden="true"></i> Novo lote de inscrição
+            </a>
+        {% empty %}
+            <a class="btn btn-primary" href="{% url 'gestao:catalog_create' event_id=event.id kind='produto' %}">
+                <i data-lucide="plus" aria-hidden="true"></i> Nova modalidade
+            </a>
+        {% endfor %}
+        <a class="btn btn-secondary" href="{% url 'gestao:addons' event.id %}">
+            <i data-lucide="shopping-bag" aria-hidden="true"></i> Produtos extras
+        </a>
+        <a class="btn btn-secondary" href="{% url 'gestao:shirt_stock' event.id %}">
+            <i data-lucide="shirt" aria-hidden="true"></i> Estoque de camisetas
+        </a>
+    </div>
 </div>
 
-<p class="page-actions"><a class="btn btn-secondary" href="{% url 'gestao:catalog_trash' event.id %}">Excluídos e inativos</a><a class="btn btn-secondary" href="{% url 'gestao:shirt_stock' event.id %}" aria-label="Gerenciar estoque de camisetas"><i data-lucide="shirt" aria-hidden="true"></i>Estoque</a></p>
-<!-- Produtos e Lotes -->
+<!-- Lotes de Inscrição -->
 <div class="card mg-section-gap">
     <div class="card-header">
-        <h2 class="section-title">Modalidades e lotes</h2>
-    </div>
-
-    <div class="mg-stack">
-        {% for prod in products %}
-            <div class="mg-inset-card">
-                <div class="mg-row mg-space-bottom-sm">
-                    <div>
-                        <span class="badge badge-warning">{{ prod.get_kind_display }}</span>
-                        <strong>{{ prod.name }}</strong><span class="badge {% if prod.active %}badge-success{% else %}badge-warning{% endif %}">{% if prod.active %}Ativo{% else %}Desativado{% endif %}</span>
-                    </div>
-                    <div class="page-actions"><a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:catalog_edit' event_id=event.id kind='produto' object_id=prod.id %}" aria-label="Editar produto" title="Editar produto"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar produto</span></a><a class="btn btn-danger btn-sm record-action" href="{% url 'gestao:catalog_remove' event.id 'produto' prod.id %}" aria-label="Excluir" title="Excluir"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir</span></a><a class="btn btn-primary btn-sm" href="{% url 'gestao:catalog_create' event_id=event.id kind='lote' %}?product={{ prod.id }}">Novo lote</a></div>
-                </div>
-
-                <div class="text-muted mg-space-bottom">
-                    Camiseta: {% if prod.includes_shirt %}Sim{% else %}Não{% endif %} &bull; 
-                    Alimentação: {% if prod.includes_meal %}Sim{% else %}Não{% endif %} &bull; 
-                    Kit: {% if prod.includes_kit %}Sim{% else %}Não{% endif %}
-                </div>
-
-                <details class="catalog-variants"><summary>Tamanhos de camiseta e acréscimos</summary><div class="mg-stack">
-                    <p class="text-muted">Sem tamanhos personalizados, o checkout usa P, M, G, GG e XG sem acréscimo. Ao personalizar, cadastre todos os tamanhos que deseja oferecer.</p>
-                    {% for variant in prod.variants.all %}{% if variant.kind == 'SHIRT_SIZE' %}<div class="mg-row"><span>{{ variant.code }} · {{ variant.label }} · R$ {{ variant.extra_price_cents|money }} de acréscimo</span><a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:catalog_edit' event_id=event.id kind='tamanho' object_id=variant.id %}" aria-label="Editar tamanho" title="Editar tamanho"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar tamanho</span></a><a class="btn btn-danger btn-sm record-action" href="{% url 'gestao:catalog_remove' event.id 'tamanho' variant.id %}" aria-label="Excluir" title="Excluir"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir</span></a></div>{% endif %}{% endfor %}
-                    <a class="btn btn-secondary" href="{% url 'gestao:catalog_create' event_id=event.id kind='tamanho' %}?product={{ prod.id }}">Adicionar tamanho</a></div></details>
-                <!-- Tabela de Lotes deste produto -->
-                <div class="table-responsive">
-                    <table class="table catalog-lots-table">
-                        <thead>
-                            <tr>
-                                <th scope="col">Lote</th>
-                                <th scope="col">Preço</th>
-                                <th scope="col">Abertura</th>
-                                <th scope="col">Fechamento</th>
-                                <th scope="col">Vagas</th>
-                                <th scope="col">Vendidos</th>
-                                <th scope="col">Status</th><th scope="col">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for lot in prod.lots.all %}
-                                <tr>
-                                    <td data-label="Lote" class="mg-strong">{{ lot.title }}</td>
-                                    <td data-label="Preço" class="mg-strong mg-text-brand">R$ {{ lot.formatted_price }}</td>
-                                    <td data-label="Abertura" class="mg-meta">{{ lot.opens_at|date:"d/m/Y H:i" }}</td>
-                                    <td data-label="Fechamento" class="mg-meta">{{ lot.closes_at|date:"d/m/Y H:i" }}</td>
-                                    <td data-label="Vagas">{{ lot.max_quantity }}</td>
-                                    <td data-label="Vendidos"><strong>{{ lot.current_sold }}</strong></td>
-                                    <td data-label="Status">
-                                        <span class="badge {% if lot.is_open %}badge-success{% else %}badge-warning{% endif %}">
-                                            {% if not lot.active %}Desativado{% elif lot.is_open %}Aberto{% else %}Fechado{% endif %}
-                                        </span>
-                                    </td>
-                                    <td data-label="Ações"><div class="page-actions"><a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:catalog_edit' event_id=event.id kind='lote' object_id=lot.id %}" aria-label="Editar lote {{ lot.title }}" title="Editar lote {{ lot.title }}"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar lote</span></a><a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:catalog_remove' event.id 'lote' lot.id %}" aria-label="Remover lote {{ lot.title }}" title="Remover lote {{ lot.title }}"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir lote</span></a></div></td>
-                                </tr>
-                            {% empty %}
-                                <tr>
-                                    <td colspan="8" class="text-muted mg-align-center mg-table-empty">Nenhum lote configurado para este produto.</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        {% empty %}
-            <div class="empty-state"><span class="empty-icon"><i data-lucide="tags" aria-hidden="true"></i></span><h3>Nenhuma modalidade cadastrada</h3><p>Os produtos e lotes desta edição aparecerão aqui.</p></div>
-        {% endfor %}
-    </div>
-</div>
-
-<section class="card mg-section-gap"><div class="card-header"><div><h2>Produtos extras</h2><p>Venda exclusiva para quem já tem inscrição paga. O comprador encontra estes produtos em sua inscrição, e a retirada usa o mesmo QR.</p></div><a class="btn btn-primary" href="{% url 'gestao:catalog_create' event_id=event.id kind='adicional' %}">Novo produto extra</a></div><div class="table-responsive"><table class="table" data-mobile-cards><thead><tr><th>Produto / variação</th><th>Preço</th><th>Estoque</th><th>Reservado</th><th>Vendido</th><th>Livre</th><th>Ações</th></tr></thead><tbody>{% for item in addons %}<tr><td>{{ item.title }} {{ item.variant_code }}{% if not item.active %}<span class="badge">Desativado</span>{% endif %}</td><td>R$ {{ item.formatted_price }}</td><td>{{ item.max_quantity }}</td><td>{{ item.reserved_quantity }}</td><td>{{ item.sold_quantity }}</td><td>{{ item.available_quantity }}</td><td><a class="btn btn-secondary record-action" href="{% url 'gestao:catalog_edit' event_id=event.id kind='adicional' object_id=item.pk %}" aria-label="Editar extra" title="Editar extra"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar extra</span></a><a class="btn btn-danger btn-sm record-action" href="{% url 'gestao:catalog_remove' event.id 'adicional' item.pk %}" aria-label="Excluir" title="Excluir"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir</span></a></td></tr>{% empty %}<tr><td colspan="7">Cadastre camisetas extras por tamanho, copos, bonés e outros produtos com seu próprio preço e estoque.</td></tr>{% endfor %}</tbody></table></div></section>
-<!-- Cupons de Desconto -->
-<div class="card">
-    <div class="card-header">
-        <h2 class="section-title">Cupons de desconto</h2><a class="btn btn-primary btn-sm" href="{% url 'gestao:catalog_create' event_id=event.id kind='cupom' %}">Novo cupom</a>
+        <h2 class="section-title">Lotes Ativos</h2>
     </div>
 
     <div class="table-responsive">
-        <table class="table catalog-coupons-table" aria-label="Cupons de desconto">
+        <table class="table catalog-lots-table" data-mobile-cards>
             <thead>
                 <tr>
-                    <th scope="col">Código</th>
-                    <th scope="col">Tipo</th>
-                    <th scope="col">Valor do Desconto</th>
-                    <th scope="col">Utilizados</th>
-                    <th scope="col">Limite</th>
-                    <th scope="col">Validade</th>
-                    <th scope="col">Status</th><th scope="col">Ações</th>
+                    <th scope="col">Lote</th>
+                    <th scope="col">Modalidade</th>
+                    <th scope="col">Preço</th>
+                    <th scope="col">Abertura</th>
+                    <th scope="col">Fechamento</th>
+                    <th scope="col">Vagas</th>
+                    <th scope="col">Vendidos</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Ações</th>
                 </tr>
             </thead>
             <tbody>
-                {% for cup in coupons %}
-                    <tr>
-                        <td class="mg-code mg-strong mg-text-brand">
-                            {{ cup.code_upper }}
-                        </td>
-                        <td>{{ cup.get_kind_display }}</td>
-                        <td class="mg-strong">
-                            {% if cup.kind == 'PERCENT' %}{{ cup.percent_off }}% OFF{% else %}R$ {{ cup.value_cents|money }}{% endif %}
-                        </td>
-                        <td><strong>{{ cup.used_count }}</strong></td>
-                        <td>{{ cup.max_uses }}</td>
-                        <td class="mg-meta">{{ cup.valid_until|date:"d/m/Y H:i" }}</td>
-                        <td>
-                            <span class="badge {% if cup.is_valid %}badge-success{% else %}badge-danger{% endif %}">
-                                {% if not cup.active %}Desativado{% elif cup.is_valid %}Ativo{% else %}Fora da validade / esgotado{% endif %}
-                            </span>
-                        </td>
-                        <td><a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:catalog_edit' event_id=event.id kind='cupom' object_id=cup.id %}" aria-label="Editar cupom" title="Editar cupom"><i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar cupom</span></a><a class="btn btn-danger btn-sm record-action" href="{% url 'gestao:catalog_remove' event.id 'cupom' cup.id %}" aria-label="Excluir" title="Excluir"><i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir</span></a></td>
-                    </tr>
+                {% for prod in products %}
+                    {% for lot in prod.lots.all %}
+                        <tr>
+                            <td data-label="Lote" class="mg-strong">
+                                <strong>{{ lot.title }}</strong>
+                            </td>
+                            <td data-label="Modalidade">
+                                <span class="badge badge-brand">{{ prod.name }}</span>
+                            </td>
+                            <td data-label="Preço" class="mg-strong text-brand">
+                                R$ {{ lot.formatted_price }}
+                            </td>
+                            <td data-label="Abertura" class="mg-meta">
+                                {{ lot.opens_at|date:"d/m/Y H:i" }}
+                            </td>
+                            <td data-label="Fechamento" class="mg-meta">
+                                {{ lot.closes_at|date:"d/m/Y H:i" }}
+                            </td>
+                            <td data-label="Vagas">
+                                {{ lot.max_quantity }}
+                            </td>
+                            <td data-label="Vendidos">
+                                <strong>{{ lot.current_sold }}</strong>
+                            </td>
+                            <td data-label="Status">
+                                <span class="badge {% if lot.is_open %}badge-success{% else %}badge-warning{% endif %}">
+                                    {% if not lot.active %}Desativado{% elif lot.is_open %}Aberto{% else %}Fechado{% endif %}
+                                </span>
+                            </td>
+                            <td data-label="Ações">
+                                <div class="page-actions">
+                                    <a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:catalog_edit' event_id=event.id kind='lote' object_id=lot.id %}" aria-label="Editar lote {{ lot.title }}" title="Editar lote {{ lot.title }}">
+                                        <i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar</span>
+                                    </a>
+                                    <a class="btn btn-danger btn-sm record-action" href="{% url 'gestao:catalog_remove' event.id 'lote' lot.id %}" aria-label="Remover lote {{ lot.title }}" title="Remover lote {{ lot.title }}">
+                                        <i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir</span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-muted mg-align-center mg-table-empty">Nenhum lote configurado para {{ prod.name }}.</td>
+                        </tr>
+                    {% endfor %}
                 {% empty %}
                     <tr>
-                        <td colspan="8" class="text-muted mg-align-center mg-table-empty">
-                            Nenhum cupom de desconto criado para este evento.
-                        </td>
+                        <td colspan="9" class="mg-table-empty">Nenhuma modalidade ou lote cadastrado.</td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<!-- Cupons de Desconto (Estilo Reduzido) -->
+<details class="card compact-details mg-section-gap">
+    <summary style="cursor: pointer; display: flex; align-items: center; justify-content: space-between;">
+        <span><i data-lucide="ticket-percent" aria-hidden="true"></i> Cupons de desconto ({{ coupons.count }})</span>
+        <a class="btn btn-primary btn-sm" href="{% url 'gestao:catalog_create' event_id=event.id kind='cupom' %}" onclick="event.stopPropagation();">
+            <i data-lucide="plus" aria-hidden="true"></i> Novo cupom
+        </a>
+    </summary>
+
+    <div style="padding-top: 14px;">
+        <div class="table-responsive">
+            <table class="table catalog-coupons-table" data-mobile-cards>
+                <thead>
+                    <tr>
+                        <th scope="col">Código</th>
+                        <th scope="col">Tipo</th>
+                        <th scope="col">Desconto</th>
+                        <th scope="col">Usos</th>
+                        <th scope="col">Limite</th>
+                        <th scope="col">Validade</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cup in coupons %}
+                        <tr>
+                            <td data-label="Código" class="mg-code mg-strong text-brand">
+                                <strong>{{ cup.code_upper }}</strong>
+                            </td>
+                            <td data-label="Tipo">{{ cup.get_kind_display }}</td>
+                            <td data-label="Desconto" class="mg-strong">
+                                {% if cup.kind == 'PERCENT' %}{{ cup.percent_off }}% OFF{% else %}R$ {{ cup.value_cents|money }}{% endif %}
+                            </td>
+                            <td data-label="Usos"><strong>{{ cup.used_count }}</strong></td>
+                            <td data-label="Limite">{{ cup.max_uses }}</td>
+                            <td data-label="Validade" class="mg-meta">{{ cup.valid_until|date:"d/m/Y H:i" }}</td>
+                            <td data-label="Status">
+                                <span class="badge {% if cup.is_valid %}badge-success{% else %}badge-danger{% endif %}">
+                                    {% if cup.is_valid %}Válido{% else %}Expirado / Esgotado{% endif %}
+                                </span>
+                            </td>
+                            <td data-label="Ações">
+                                <div class="page-actions">
+                                    <a class="btn btn-secondary btn-sm record-action" href="{% url 'gestao:catalog_edit' event_id=event.id kind='cupom' object_id=cup.id %}" aria-label="Editar cupom" title="Editar cupom">
+                                        <i data-lucide="pencil" aria-hidden="true"></i><span class="record-action-label">Editar</span>
+                                    </a>
+                                    <a class="btn btn-danger btn-sm record-action" href="{% url 'gestao:catalog_remove' event.id 'cupom' cup.id %}" aria-label="Excluir cupom" title="Excluir cupom">
+                                        <i data-lucide="trash-2" aria-hidden="true"></i><span class="record-action-label">Excluir</span>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-muted mg-align-center mg-table-empty">Nenhum cupom de desconto ativo.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</details>
+
+<!-- Acesso aos Itens Excluídos (Estilo Reduzido) -->
+<details class="card compact-details">
+    <summary><i data-lucide="archive" aria-hidden="true"></i> Itens excluídos e histórico</summary>
+    <div style="padding-top: 10px;">
+        <p class="text-muted">Itens removidos não aparecem nas novas inscrições, mas permanecem no histórico de pedidos anteriores.</p>
+        <a class="btn btn-secondary btn-sm" href="{% url 'gestao:catalog_trash' event.id %}">
+            <i data-lucide="trash-2" aria-hidden="true"></i> Ver excluídos e inativos
+        </a>
+    </div>
+</details>
 {% endblock %}
