@@ -184,18 +184,15 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
     # 3.1. Processar pontos extras do sorteio se solicitado
     if extra_raffle_tickets > 0:
         from apps.events.models_raffles import MotorcycleRaffle
-        raffle = MotorcycleRaffle.objects.filter(event=event).first()
+        from apps.events.raffle_sales import price_cents as raffle_price_cents, reserve_online_capacity
+        raffle = MotorcycleRaffle.objects.select_for_update().filter(event=event).first()
+        if not raffle or not raffle.purchase_available:
+            raise ValidationError("A venda de números extras do sorteio não está aberta. Remova os números extras para continuar.")
         if raffle:
-            raffle_unit_price = raffle.quota_price_cents or 2000
-            raffle_total_price = raffle_unit_price * extra_raffle_tickets
+            raffle_total_price = raffle_price_cents(raffle, extra_raffle_tickets)
+            raffle_unit_price = raffle_total_price // extra_raffle_tickets
             gross_total += raffle_total_price
-
-            raffle_resource, _ = CapacityResource.objects.select_for_update().get_or_create(
-                event=event, type="RAFFLE_TOTAL", reference_id=str(raffle.pk),
-                defaults={"capacity_total": raffle.quota_quantity or 10000}
-            )
-            raffle_resource.reserved_count += extra_raffle_tickets
-            raffle_resource.save(update_fields=["reserved_count"])
+            raffle_resource = reserve_online_capacity(raffle, extra_raffle_tickets)
 
             raffle_line = OrderLine.objects.create(
                 order=order,
@@ -304,14 +301,17 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
     # Ratear desconto entre as linhas
     if discount_total > 0 and num_participants > 0:
         lines = list(order.lines.order_by("pk"))
-        discounts = [discount_total * line.unit_cents // gross_total for line in lines]
+        # Rateio pelo valor cheio de cada linha (preço x quantidade); a soma das linhas fecha com o total do pedido.
+        line_gross = [line.net_cents for line in lines]
+        base = sum(line_gross) or 1
+        discounts = [discount_total * value // base for value in line_gross]
         remaining = discount_total - sum(discounts)
-        ranking = sorted(range(len(lines)), key=lambda i: (discount_total * lines[i].unit_cents) % gross_total, reverse=True)
+        ranking = sorted(range(len(lines)), key=lambda i: (discount_total * line_gross[i]) % base, reverse=True)
         for index in ranking[:remaining]:
             discounts[index] += 1
-        for line, allocated in zip(lines, discounts):
+        for line, value, allocated in zip(lines, line_gross, discounts):
             line.allocated_discount_cents = allocated
-            line.net_cents = line.unit_cents - allocated
+            line.net_cents = value - allocated
             line.save()
 
     # Criar obrigação de pagamento integral (ReceivableDue)

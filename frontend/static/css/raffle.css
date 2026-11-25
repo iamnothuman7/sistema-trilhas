@@ -28,3 +28,23 @@
   .raffle-public-hero .public-stats { grid-template-columns: minmax(0,1fr); }
   .raffle-public-hero .public-stats dd { font-size: 20px; overflow-wrap: anywhere; }
 }
+
+/* Visão geral, vendedores e dia do sorteio */
+.raffle-overview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.25rem;align-items:start}
+.raffle-checklist{list-style:none;padding:0;margin:.75rem 0 0;display:grid;gap:.7rem}
+.raffle-checklist li{display:flex;gap:.6rem;align-items:flex-start}
+.raffle-checklist li svg{width:20px;height:20px;flex-shrink:0;color:var(--text-muted,#8f857b)}
+.raffle-checklist li.is-done svg{color:#22c55e}
+.raffle-checklist small{display:block;color:var(--text-secondary,#aaa39b)}
+.raffle-channel{display:flex;flex-wrap:wrap;gap:.4rem .75rem;align-items:center;padding:.7rem 0;border-bottom:1px solid var(--border-color,rgba(160,145,128,.23))}
+.raffle-channel small{flex-basis:100%;color:var(--text-secondary,#aaa39b)}
+.raffle-prices,.raffle-help-list,.raffle-steps-list{padding-left:1.2rem;display:grid;gap:.45rem;line-height:1.55}
+.raffle-sale-done{border-color:rgba(34,197,94,.45)}
+.raffle-sale-numbers{display:flex;flex-wrap:wrap;gap:.5rem;margin:.75rem 0}
+.raffle-sale-numbers span{font-weight:850;font-size:1.35rem;color:#f17b37;border:1px solid rgba(235,100,28,.4);border-radius:.6rem;padding:.25rem .7rem}
+.raffle-sale-total{font-size:1.05rem}
+.raffle-quick-qty{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+.raffle-winner{display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:center;padding:.9rem 0;border-bottom:1px solid var(--border-color,rgba(160,145,128,.23))}
+.raffle-winner-number{font-size:2rem;font-weight:850;color:#f17b37;min-width:3.5rem;text-align:center}
+tr.is-muted{opacity:.6}
+@media(max-width:900px){.raffle-overview-grid{grid-template-columns:1fr}.raffle-winner{grid-template-columns:auto 1fr}.raffle-winner .btn{grid-column:1/-1}}

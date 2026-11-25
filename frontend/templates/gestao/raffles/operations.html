@@ -7,12 +7,12 @@
 <header class="page-heading">
     <div>
         <h1>Números da Sorte</h1>
-        <p>{{ raffle.title }} · Sistema 100% digital: cada piloto recebe 1 número incluso e extras são vendidos online.</p>
+        <p>{{ raffle.title }} · Todos os números emitidos: grátis da inscrição, comprados no site e vendidos pelos vendedores.</p>
     </div>
     <div class="page-actions">
         <a class="btn btn-primary" href="{% url 'gestao:reports' event.id %}?export=raffle"><i data-lucide="download" aria-hidden="true"></i> Exportar lista (CSV)</a>
         <a class="btn btn-secondary" href="{% url 'gestao:raffle_print' event.id %}?formato=globo" target="_blank" rel="noopener"><i data-lucide="printer" aria-hidden="true"></i> Imprimir para globo (PDF)</a>
-        <a class="btn btn-secondary" href="{% url 'gestao:raffle_management' event.id %}"><i data-lucide="settings" aria-hidden="true"></i> Configurar sorteio</a>
+        <a class="btn btn-secondary" href="{% url 'gestao:raffle_sellers' event.id %}"><i data-lucide="users" aria-hidden="true"></i> Registrar venda</a>
     </div>
 </header>
 
@@ -33,9 +33,9 @@
         <small class="text-muted">Comprados no Site e Checkout</small>
     </article>
     <article class="stat-card">
-        <div class="stat-label">Arrecadação de Extras</div>
-        <div class="stat-value text-brand">R$ {{ online_revenue_reais|money }}</div>
-        <small class="text-muted">Receita Bruta do Sorteio</small>
+        <div class="stat-label">Vendidos por vendedores</div>
+        <div class="stat-value text-brand">{{ seller_count }}</div>
+        <small class="text-muted">Venda presencial registrada</small>
     </article>
 </div>
 
@@ -56,7 +56,8 @@
             <select class="form-control" name="source">
                 <option value="">Todas as origens</option>
                 <option value="REGISTRATION"{% if source_filter == 'REGISTRATION' %} selected{% endif %}>Inscrição de Piloto</option>
-                <option value="ONLINE"{% if source_filter == 'ONLINE' %} selected{% endif %}>Compra Online Avulsa</option>
+                <option value="ONLINE"{% if source_filter == 'ONLINE' %} selected{% endif %}>Compra pelo site</option>
+                <option value="SELLER"{% if source_filter == 'SELLER' %} selected{% endif %}>Vendedores</option>
             </select>
         </label>
         <button class="btn btn-primary" type="submit"><i data-lucide="search" aria-hidden="true"></i> Filtrar</button>
@@ -85,7 +86,9 @@
                         {% if ticket.source == 'REGISTRATION' %}
                             <span class="badge badge-success" style="display: inline-flex; align-items: center; gap: 4px;"><i data-lucide="gift" style="width: 14px; height: 14px;"></i> Inscrição Piloto</span>
                         {% elif ticket.source == 'ONLINE' %}
-                            <span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><i data-lucide="ticket" style="width: 14px; height: 14px;"></i> Compra Online</span>
+                            <span class="badge badge-warning" style="display: inline-flex; align-items: center; gap: 4px;"><i data-lucide="ticket" style="width: 14px; height: 14px;"></i> Compra no site</span>
+                        {% elif ticket.source == 'SELLER' %}
+                            <span class="badge badge-info" style="display: inline-flex; align-items: center; gap: 4px;"><i data-lucide="user" style="width: 14px; height: 14px;"></i> {{ ticket.point.name }}</span>
                         {% else %}
                             <span class="badge">Avulso</span>
                         {% endif %}
@@ -109,11 +112,13 @@
                         {{ ticket.created_at|date:"d/m/Y H:i" }}
                     </td>
                     <td data-label="Situação">
-                        <span class="badge badge-success">Confirmado</span>
+                        {% if ticket.state == 'VOID' %}<span class="badge badge-danger">Cancelado</span>{% elif ticket.state == 'SOLD' %}<span class="badge badge-success">Confirmado</span>{% else %}<span class="badge">{{ ticket.get_state_display }}</span>{% endif %}
                     </td>
                     <td data-label="Ações">
                         {% if ticket.registration %}
                             <a class="btn btn-secondary btn-sm" href="{% url 'gestao:registration_detail' event.id ticket.registration_id %}">Ver inscrição</a>
+                        {% elif ticket.source == 'SELLER' %}
+                            <a class="btn btn-secondary btn-sm" href="{% url 'gestao:raffle_seller_detail' event.id ticket.point_id %}">Ver venda</a>
                         {% elif ticket.order_line_id %}
                             <a class="btn btn-secondary btn-sm" href="{% url 'gestao:raffle_finance' event.id %}">Ver pedido</a>
                         {% else %}
@@ -127,7 +132,7 @@
                         {% if q or source_filter %}
                             Nenhum número encontrado para os filtros aplicados.
                         {% else %}
-                            Nenhum número da sorte emitido ainda. Os números aparecerão automaticamente conforme as inscrições e compras forem confirmadas.
+                            Nenhum número da sorte emitido ainda. Os números aparecem aqui quando uma inscrição é paga, quando alguém compra pelo site ou quando um vendedor registra uma venda.
                         {% endif %}
                     </td>
                 </tr>

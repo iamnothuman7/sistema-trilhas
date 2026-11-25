@@ -9,6 +9,7 @@ from apps.events import views_records, views_raffle_crud
 from apps.events import views_raffles
 from apps.events import views_raffle_operations
 from apps.events import views_raffle_results
+from apps.events import views_raffle_sellers
 from apps.events.views_raffle_finance import raffle_finance
 from apps.events import views_rankings
 from apps.mediaframes import views_management as frame_views
@@ -140,6 +141,9 @@ urlpatterns = [
     path("eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/receber/", views_sponsors.sponsor_receipt, name="sponsor_receipt"),
     path("eventos/<uuid:event_id>/patrocinadores/<int:sponsor_id>/recebimentos/<uuid:payment_id>/reverter/", views_sponsors.sponsor_reversal, name="sponsor_reversal"),
     path("eventos/<uuid:event_id>/sorteio/", views_raffles.raffle_management, name="raffle_management"),
+    path("eventos/<uuid:event_id>/sorteio/visao-geral/", views_raffle_sellers.raffle_overview, name="raffle_overview"),
+    path("eventos/<uuid:event_id>/sorteio/vendedores/", views_raffle_sellers.raffle_sellers, name="raffle_sellers"),
+    path("eventos/<uuid:event_id>/sorteio/vendedores/<uuid:point_id>/", views_raffle_sellers.raffle_seller_detail, name="raffle_seller_detail"),
     path('eventos/<uuid:event_id>/sorteio/resultado/',views_raffle_results.raffle_result,name='raffle_result'),
     path("eventos/<uuid:event_id>/sorteio/financeiro/", raffle_finance, name="raffle_finance"),
     path('eventos/<uuid:event_id>/sorteio/pedidos/<uuid:order_id>/devolucao/',registration_views.raffle_order_refund,name='raffle_order_refund'),

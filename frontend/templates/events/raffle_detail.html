@@ -1,41 +1,43 @@
 {% extends 'base.html' %}
 {% load trilhas_ui tz static %}
-{% block extra_head %}<link rel="stylesheet" href="{% static 'css/raffle.css' %}?v=20261028-audit">{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/raffle.css' %}?v=20261125">{% endblock %}
 {% block title %}Sorteio de moto | {{ event.title }}{% endblock %}
 {% block content %}
 {% timezone event.timezone %}
 <div class="public-page public-page--narrow">
     <a href="{% url 'events:detail' slug=event.slug %}" class="public-back"><i data-lucide="arrow-left" aria-hidden="true"></i>Voltar ao evento</a>
     {% include 'events/_event_navigation.html' with current='raffle' %}
-    <header class="public-intro"><span class="public-eyebrow">{{ event.title }}</span><h1>{% if raffle %}{{ raffle.title }}{% else %}Sorteio de moto{% endif %}</h1><p>{% if raffle %}{% if raffle.registration_tickets_enabled %}Cada inscrição paga recebe um número para este sorteio. Os detalhes e as regras serão publicados pela organização.{% else %}Os detalhes serão publicados aqui pela organização.{% endif %}{% else %}Nenhum sorteio divulgado para esta edição.{% endif %}</p></header>
+    <header class="public-intro"><span class="public-eyebrow">{{ event.title }}</span><h1>{% if raffle %}{{ raffle.title }}{% else %}Sorteio de moto{% endif %}</h1><p>{% if raffle %}{% if public_winners %}O sorteio já foi realizado. Confira os ganhadores abaixo.{% elif raffle.registration_tickets_enabled %}Cada inscrição paga recebe 1 número grátis. Quem quiser mais chances pode comprar números extras.{% else %}Garanta seus números e concorra.{% endif %}{% else %}Nenhum sorteio divulgado para esta edição.{% endif %}</p></header>
     {% if raffle_preview %}<div class="alert alert-warning" role="status">Prévia da organização. Este rascunho ainda não está público.</div>{% endif %}
     {% if raffle %}
+    {% if public_winners %}<section class="public-card raffle-number-card"><h2>Ganhadores</h2>{% for winner in public_winners %}<p><strong class="raffle-ticket-number">{{ winner.number }}</strong><br>{{ winner.prize }}º prêmio · {{ winner.name }}</p>{% endfor %}</section>{% endif %}
     <section class="public-card raffle-public-hero">
         <span class="public-icon"><i data-lucide="gift" aria-hidden="true"></i></span>
         <h2>{% if raffle.motorcycle_model %}{{ raffle.motorcycle_model }}{% else %}{% if raffle.motorcycle_count > 1 %}{{ raffle.motorcycle_count }} motos no sorteio{% else %}A moto será apresentada em breve{% endif %}{% endif %}</h2>
-        <p class="public-document">{{ raffle.description|default:'A organização está preparando a apresentação da moto, as regras e os detalhes das cotas.' }}</p>
+        <p class="public-document">{{ raffle.description|default:'A organização está preparando a apresentação das motos e as regras do sorteio.' }}</p>
         {% include 'events/_raffle_images.html' %}
         <dl class="public-stats">
-            <div><dt>Cotas do sorteio</dt><dd>{% if raffle.quota_price_cents %}R$ {{ raffle.quota_price_cents|money }}{% else %}Em breve{% endif %}</dd></div>
-            <div><dt>Quantidade prevista de cotas</dt><dd>{{ raffle.quota_quantity|default:'Em breve' }}</dd></div>
-            <div><dt>Data prevista</dt><dd>{% if raffle.draw_at %}{{ raffle.draw_at|date:'d/m/Y · H:i' }}{% else %}Em breve{% endif %}</dd></div>
+            <div><dt>Prêmios</dt><dd>{{ raffle.motorcycle_count }} moto{{ raffle.motorcycle_count|pluralize }}</dd></div>
+            <div><dt>Número da sorte</dt><dd>{% if raffle.quota_price_cents %}R$ {{ raffle.quota_price_cents|money }}{% else %}Em breve{% endif %}</dd></div>
+            <div><dt>Data do sorteio</dt><dd>{% if raffle.draw_at %}{{ raffle.draw_at|date:'d/m/Y · H:i' }}{% else %}Em breve{% endif %}</dd></div>
         </dl>
-        {% if raffle.purchase_available %}
-        <p class="public-muted">Sua inscrição paga já inclui um número. Se quiser mais chances, garanta pontos extras com descontos progressivos.</p>
+        {% if price_options|length > 1 %}<ul class="raffle-prices">{% for option in price_options %}<li>{{ option.qty }} número{{ option.qty|pluralize }}: <strong>R$ {{ option.cents|money }}</strong>{% if option.economy_cents %} (economia de R$ {{ option.economy_cents|money }}){% endif %}</li>{% endfor %}</ul>{% endif %}
+        {% if public_winners %}
+        {% elif raffle.purchase_available %}
         <div class="public-actions" style="margin-top: 16px;">
             <a class="public-button public-button--primary" style="background: #ea580c; font-size: 1.1rem; padding: 14px 24px; display: inline-flex; align-items: center; gap: 8px;" href="{% url 'events:raffle_buy' slug=event.slug %}">
-                <i data-lucide="ticket" style="width: 20px; height: 20px;"></i> Comprar Pontos da Sorte (a partir de R$ 20) <i data-lucide="arrow-right" aria-hidden="true"></i>
+                <i data-lucide="ticket" style="width: 20px; height: 20px;"></i> Comprar números da sorte <i data-lucide="arrow-right" aria-hidden="true"></i>
             </a>
         </div>
-        <p class="public-muted" style="margin-top: 10px;">Também disponível desconto de 5 em 5 pontos (Combo 5 por R$ 80, Combo 10 por R$ 150, etc.).</p>
+        <p class="public-muted" style="margin-top: 10px;">Pagamento por Pix. Seus números são gerados assim que o pagamento é aprovado. Também é possível comprar com os vendedores da Equipe Morcego.</p>
         {% else %}
-        <p class="public-muted">A compra de cotas ainda não está disponível. Nenhum pagamento ou reserva de número pode ser feito nesta página.</p>
-        <div class="public-actions"><button type="button" class="public-button public-button--secondary" disabled aria-disabled="true"><i data-lucide="lock-keyhole" aria-hidden="true"></i>Cotas em breve</button></div>
+        <p class="public-muted">A venda pelo site ainda não está aberta. Fale com um vendedor da Equipe Morcego ou volte em breve.</p>
+        <div class="public-actions"><button type="button" class="public-button public-button--secondary" disabled aria-disabled="true"><i data-lucide="lock-keyhole" aria-hidden="true"></i>Venda em breve</button></div>
         {% endif %}
     </section>
     {% if raffle.registration_tickets_enabled %}<section class="public-card"><h2>Sua inscrição já inclui um número</h2><div class="raffle-public-steps"><article><h3>Garanta sua inscrição</h3><p>Preencha os dados do participante e pague pelo Pix ou cartão disponível no evento.</p></article><article><h3>Receba seu número</h3><p>Quando o pagamento for aprovado, a inscrição será confirmada e seu número será gerado automaticamente.</p></article><article><h3>Leve seu comprovante com QR</h3><p>Entre na sua conta e baixe o comprovante oficial em PDF ou salve o cartão com QR Code para o credenciamento.</p></article></div><div class="public-actions"><a class="public-button public-button--primary" href="{% url 'events:detail' event.slug %}#inscricao">Garantir inscrição + 1 número<i data-lucide="arrow-right" aria-hidden="true"></i></a><a class="public-button public-button--secondary" href="{% url 'minha_conta:dashboard' %}">Já tenho inscrição</a></div></section>{% endif %}
-    {% for ticket in my_raffle_tickets %}<section class="public-card raffle-number-card"><h2>Seu número incluído</h2><strong class="raffle-ticket-number">{{ ticket.number }}</strong><p>Inscrição de {{ ticket.registration.person.full_name }}. Consulte o regulamento para os detalhes da participação.</p><a class="public-button public-button--secondary" href="{% url 'minha_conta:registration_detail' ticket.registration.pk %}">Ver minha inscrição e QR</a></section>{% endfor %}
-    <section class="public-card"><h2>Regras do sorteio</h2><p class="public-document">{{ raffle.rules_text|default:'As regras ainda não foram divulgadas. Elas serão publicadas aqui antes de qualquer abertura de cotas.' }}</p></section>
+    {% if my_raffle_tickets %}<section class="public-card raffle-number-card"><h2>Seus números</h2><p class="raffle-sale-numbers">{% for ticket in my_raffle_tickets %}<span>{{ ticket.number }}</span>{% endfor %}</p><p>Consulte o regulamento para os detalhes da participação.</p><a class="public-button public-button--secondary" href="{% url 'minha_conta:dashboard' %}">Ver minhas inscrições</a></section>{% endif %}
+    <section class="public-card"><h2>Regras do sorteio</h2>{% if raffle.authorization_reference %}<p class="public-muted">Autorização: {{ raffle.authorization_reference }}</p>{% endif %}<p class="public-document">{{ raffle.rules_text|default:'As regras ainda não foram divulgadas. Elas serão publicadas aqui antes da abertura das vendas.' }}</p></section>
     {% if interest_registered %}
     <section class="public-card"><h2>Seu interesse está registrado</h2><p>Esse registro não compra nem reserva uma cota. A inscrição no evento continua sendo um processo separado.</p></section>
     {% elif interest_open %}

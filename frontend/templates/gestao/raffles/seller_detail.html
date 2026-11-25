@@ -1,0 +1,57 @@
+{% extends 'gestao/base_gestao.html' %}{% load static trilhas_ui %}
+{% block title %}{{ seller.name }} | Vendedores do sorteio{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/raffle.css' %}?v=20261125">{% endblock %}
+{% block gestao_header %}Vendedor do sorteio{% endblock %}
+{% block content %}
+<header class="page-heading"><div><h1>{{ seller.name }}</h1><p>{{ seller.contact|default:'Sem contato informado' }}{% if not seller.active %} · desativado{% endif %}</p></div>
+<a class="btn btn-secondary" href="{% url 'gestao:raffle_sellers' event.id %}"><i data-lucide="arrow-left" aria-hidden="true"></i>Todos os vendedores</a></header>
+{% include 'gestao/raffles/_tabs.html' with current='sellers' %}
+
+<div class="stat-grid mg-section-gap">
+  <article class="stat-card"><div class="stat-label">Números vendidos</div><div class="stat-value">{{ seller.numbers }}</div></article>
+  <article class="stat-card"><div class="stat-label">Vendido</div><div class="stat-value">R$ {{ seller.sold_cents|money }}</div></article>
+  <article class="stat-card"><div class="stat-label">Repassado</div><div class="stat-value text-success">R$ {{ seller.settled_cents|money }}</div></article>
+  <article class="stat-card"><div class="stat-label">Falta repassar</div><div class="stat-value text-brand">R$ {{ seller.pending_cents|money }}</div></article>
+</div>
+
+<div class="raffle-overview-grid">
+<section class="card">
+  <h2>Registrar repasse</h2>
+  {% if can_finance %}
+  <form method="post" action="{% url 'gestao:raffle_sellers' event.id %}" class="mg-stack">{% csrf_token %}
+    <input type="hidden" name="action" value="settle"><input type="hidden" name="seller" value="{{ seller.pk }}">
+    <input type="hidden" name="request_key" value="{{ request_key }}"><input type="hidden" name="return_to" value="{{ request.path }}">
+    <div class="form-group"><label class="form-label" for="settle-amount">Valor recebido (R$)</label><input class="form-control" id="settle-amount" name="amount" inputmode="decimal" required value="{% if seller.pending_cents > 0 %}{{ seller.pending_cents|money }}{% endif %}"></div>
+    <div class="form-group"><label class="form-label" for="settle-date">Recebido em</label><input class="form-control" id="settle-date" name="received_on" type="date" max="{{ today }}" value="{{ today }}" required></div>
+    <div class="form-group"><label class="form-label" for="settle-method">Forma</label><select class="form-control" id="settle-method" name="method"><option value="PIX">Pix</option><option value="CASH">Dinheiro</option><option value="TRANSFER">Transferência</option><option value="OTHER">Outro</option></select></div>
+    <div class="form-group"><label class="form-label" for="settle-notes">Observação</label><input class="form-control" id="settle-notes" name="notes" maxlength="300"></div>
+    <div class="mg-form-actions"><button class="btn btn-primary" type="submit">Registrar repasse</button></div>
+  </form>
+  {% else %}<p class="text-muted">Registrar repasse exige acesso ao financeiro.</p>{% endif %}
+  <form method="post" action="{% url 'gestao:raffle_sellers' event.id %}" class="mg-space-top">{% csrf_token %}<input type="hidden" name="action" value="toggle_seller"><input type="hidden" name="seller" value="{{ seller.pk }}"><input type="hidden" name="return_to" value="{{ request.path }}">
+    <button class="btn btn-secondary btn-sm" type="submit">{% if seller.active %}Desativar vendedor{% else %}Reativar vendedor{% endif %}</button></form>
+</section>
+
+<section class="card">
+  <h2>Repasses</h2>
+  {% for item in settlements %}<div class="compact-record"><strong>R$ {{ item.amount_cents|money }}</strong> · {{ item.received_on|date:'d/m/Y' }} · {{ item.get_method_display }}<p class="form-help">{{ item.notes|default:'' }} Registrado por {{ item.recorded_by.full_name|default:item.recorded_by.email|default:'—' }}.</p></div>
+  {% empty %}<p class="text-muted">Nenhum repasse registrado.</p>{% endfor %}
+</section>
+</div>
+
+<section class="card mg-space-top"><h2>Vendas</h2>
+  <div class="table-responsive"><table class="table" data-mobile-cards>
+    <thead><tr><th scope="col">Data</th><th scope="col">Comprador</th><th scope="col">Números</th><th scope="col">Valor</th><th scope="col">Ações</th></tr></thead>
+    <tbody>{% for sale in sales %}<tr{% if sale.void %} class="is-muted"{% endif %}>
+      <td data-label="Data">{{ sale.created_at|date:'d/m/Y H:i' }}</td>
+      <td data-label="Comprador"><strong>{{ sale.buyer }}</strong><small class="text-muted" style="display:block">{{ sale.phone|default:'' }}</small></td>
+      <td data-label="Números">{{ sale.numbers|join:', ' }}{% if sale.void %} <span class="badge badge-danger">Cancelada</span>{% endif %}</td>
+      <td data-label="Valor">R$ {{ sale.total|money }}</td>
+      <td data-label="Ações">{% if not sale.void %}{% if sale.whatsapp %}<a class="btn btn-secondary btn-sm" href="{{ sale.whatsapp }}" target="_blank" rel="noopener">Reenviar WhatsApp</a>{% endif %}
+        {% if not locked %}<details class="compact-details"><summary>Cancelar venda</summary><form method="post" action="{% url 'gestao:raffle_sellers' event.id %}">{% csrf_token %}<input type="hidden" name="action" value="void_sale"><input type="hidden" name="sale" value="{{ sale.reference }}"><input type="hidden" name="return_to" value="{{ request.path }}">
+          <label class="form-label" for="void-{{ sale.reference }}">Motivo</label><input class="form-control" id="void-{{ sale.reference }}" name="reason" minlength="10" maxlength="500" required placeholder="Ex.: comprador desistiu e recebeu o dinheiro de volta">
+          <button class="btn btn-danger btn-sm" type="submit">Confirmar cancelamento</button></form></details>{% endif %}{% endif %}</td>
+    </tr>{% empty %}<tr><td colspan="5" class="mg-table-empty">Nenhuma venda registrada por este vendedor.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

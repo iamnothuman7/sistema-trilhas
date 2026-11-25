@@ -9,8 +9,8 @@ from .models_raffles import MotorcycleRaffle, RaffleTicket
 
 
 def _next_digital_number(raffle):
-    number=(raffle.tickets.exclude(source='PAPER').aggregate(n=Max('number'))['n'] or 0)+1
-    return raffle.paper_end+1 if raffle.paper_start<=number<=raffle.paper_end else number
+    from .raffle_sales import next_number
+    return next_number(raffle)
 
 
 @transaction.atomic
@@ -36,12 +36,10 @@ def activate_purchased_numbers(order):
                 raise ValidationError('A quantidade de números emitidos exige conferência.')
             continue
         beneficiary_reg_id = line.linked_registration_id or (first_reg.pk if first_reg else None)
-        number = _next_digital_number(raffle)
-        for _ in range(line.quantity):
-            if raffle.paper_start <= number <= raffle.paper_end:
-                number = raffle.paper_end + 1
-            while raffle.tickets.filter(number=number).exists():
-                number += 1
+        from .raffle_sales import next_number
+        for index in range(line.quantity):
+            share = line.net_cents // line.quantity + (1 if index < line.net_cents % line.quantity else 0)
+            number = next_number(raffle)
             RaffleTicket.objects.create(
                 raffle=raffle,
                 number=number,
@@ -51,10 +49,9 @@ def activate_purchased_numbers(order):
                 beneficiary_registration_id=beneficiary_reg_id,
                 buyer_name=line.intended_person_name or order.purchaser_name,
                 buyer_phone=line.intended_person_phone or order.purchaser_phone,
-                amount_cents=line.unit_cents,
+                amount_cents=share,
                 paid_at=timezone.now()
             )
-            number += 1
 
 
 def confirmed_registration_tickets(reg):

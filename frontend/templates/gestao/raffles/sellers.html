@@ -1,0 +1,88 @@
+{% extends 'gestao/base_gestao.html' %}{% load static trilhas_ui %}
+{% block title %}Vendedores do sorteio | {{ event.title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/raffle.css' %}?v=20261125">{% endblock %}
+{% block gestao_header %}Vendedores do sorteio{% endblock %}
+{% block content %}
+<header class="page-heading"><div><h1>Vendedores</h1><p>Registre cada venda feita pessoalmente. Os números são gerados na hora e vão direto para o sorteio.</p></div></header>
+{% include 'gestao/raffles/_tabs.html' with current='sellers' %}
+
+{% if last_sale %}
+<section class="card mg-section-gap raffle-sale-done" aria-live="polite">
+  <h2 class="section-title">Venda registrada</h2>
+  <p><strong>{{ last_sale.buyer }}</strong> · vendedor {{ last_sale.seller.name }} · R$ {{ last_sale.total|money }}</p>
+  <p class="raffle-sale-numbers">{% for n in last_sale.numbers %}<span>{{ n }}</span>{% endfor %}</p>
+  <div class="mg-form-actions">
+    {% if last_sale.whatsapp %}<a class="btn btn-primary" href="{{ last_sale.whatsapp }}" target="_blank" rel="noopener"><i data-lucide="message-circle" aria-hidden="true"></i>Enviar números pelo WhatsApp</a>{% endif %}
+    <button class="btn btn-secondary" type="button" onclick="navigator.clipboard.writeText(this.dataset.text);this.textContent='Mensagem copiada'" data-text="{{ last_sale.text }}">Copiar mensagem</button>
+  </div>
+</section>
+{% endif %}
+
+<div class="stat-grid mg-section-gap">
+  <article class="stat-card"><div class="stat-label">Números vendidos</div><div class="stat-value">{{ totals.numbers }}</div></article>
+  <article class="stat-card"><div class="stat-label">Valor vendido</div><div class="stat-value">R$ {{ totals.sold|money }}</div></article>
+  <article class="stat-card"><div class="stat-label">Já repassado</div><div class="stat-value text-success">R$ {{ totals.settled|money }}</div></article>
+  <article class="stat-card"><div class="stat-label">Falta repassar</div><div class="stat-value text-brand">R$ {{ totals.pending|money }}</div></article>
+</div>
+
+<div class="raffle-overview-grid">
+<section class="card">
+  <h2>Registrar venda</h2>
+  {% if blockers %}
+    <p class="alert alert-warning" role="status">A venda ainda não pode abrir. Falta: {{ blockers|join:', ' }}. <a href="{% url 'gestao:raffle_management' event.id %}">Abrir configuração</a></p>
+  {% elif not active_sellers %}
+    <p class="text-muted">Cadastre um vendedor ao lado para começar.</p>
+  {% else %}
+  <form method="post" action="{% url 'gestao:raffle_sellers' event.id %}" class="mg-stack" id="raffleSaleForm">{% csrf_token %}
+    <input type="hidden" name="action" value="sale">
+    <div class="form-group"><label class="form-label" for="sale-seller">Vendedor</label>
+      <select class="form-control" id="sale-seller" name="seller" required>{% for seller in active_sellers %}<option value="{{ seller.pk }}">{{ seller.name }}</option>{% endfor %}</select></div>
+    <div class="form-group"><label class="form-label" for="sale-buyer">Nome do comprador</label><input class="form-control" id="sale-buyer" name="buyer_name" maxlength="150" required autocomplete="off"></div>
+    <div class="form-group"><label class="form-label" for="sale-phone">WhatsApp do comprador</label><input class="form-control" id="sale-phone" name="buyer_phone" maxlength="30" inputmode="tel" data-mask="phone" placeholder="(88) 99999-9999"><p class="form-help">Usado para mandar os números. Opcional, mas recomendado.</p></div>
+    <div class="form-group"><label class="form-label" for="sale-qty">Quantidade de números</label>
+      <input class="form-control" id="sale-qty" name="quantity" type="number" min="1" max="{{ max_per_sale }}" value="1" required>
+      {% if options|length > 1 %}<div class="raffle-quick-qty">{% for option in options %}<button type="button" class="btn btn-secondary btn-sm" data-qty="{{ option.qty }}">{{ option.qty }}</button>{% endfor %}</div>{% endif %}</div>
+    <p class="raffle-sale-total">Total a receber: <strong id="saleTotal">—</strong></p>
+    <div class="mg-form-actions"><button class="btn btn-primary" type="submit">Registrar venda e gerar números</button></div>
+  </form>
+  {{ price_table|json_script:"raffle-seller-prices" }}
+  <script>
+  (function () {
+    const form = document.getElementById('raffleSaleForm'); if (!form) return;
+    const table = JSON.parse(document.getElementById('raffle-seller-prices').textContent || '{}');
+    const qty = form.querySelector('[name=quantity]'), out = document.getElementById('saleTotal');
+    const fmt = new Intl.NumberFormat('pt-BR', {style: 'currency', currency: 'BRL'});
+    const update = () => { const c = table[String(parseInt(qty.value) || 0)]; out.textContent = c ? fmt.format(c / 100) : '—'; };
+    form.querySelectorAll('[data-qty]').forEach(b => b.addEventListener('click', () => { qty.value = b.dataset.qty; update(); }));
+    qty.addEventListener('input', update); update();
+  })();
+  </script>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Cadastrar vendedor</h2>
+  <form method="post" action="{% url 'gestao:raffle_sellers' event.id %}" class="mg-stack">{% csrf_token %}
+    <input type="hidden" name="action" value="add_seller">
+    <div class="form-group"><label class="form-label" for="seller-name">Nome</label><input class="form-control" id="seller-name" name="name" maxlength="120" required placeholder="Ex.: João - Loja Moto Peças"></div>
+    <div class="form-group"><label class="form-label" for="seller-contact">WhatsApp ou contato</label><input class="form-control" id="seller-contact" name="contact" maxlength="150"></div>
+    <div class="mg-form-actions"><button class="btn btn-secondary" type="submit">Cadastrar vendedor</button></div>
+  </form>
+</section>
+</div>
+
+<section class="card mg-space-top">
+  <div class="card-header"><div><h2>Acerto com cada vendedor</h2><p>O valor vendido fica com o vendedor até ele repassar. Registre cada repasse para o dinheiro entrar no caixa do evento.</p></div></div>
+  <div class="table-responsive"><table class="table" data-mobile-cards>
+    <thead><tr><th scope="col">Vendedor</th><th scope="col">Números</th><th scope="col">Vendido</th><th scope="col">Repassado</th><th scope="col">Falta repassar</th><th scope="col">Ações</th></tr></thead>
+    <tbody>{% for seller in sellers %}<tr{% if not seller.active %} class="is-muted"{% endif %}>
+      <td data-label="Vendedor"><strong>{{ seller.name }}</strong>{% if seller.contact %}<small class="text-muted" style="display:block">{{ seller.contact }}</small>{% endif %}{% if not seller.active %}<span class="badge">Desativado</span>{% endif %}</td>
+      <td data-label="Números">{{ seller.numbers }}</td>
+      <td data-label="Vendido">R$ {{ seller.sold_cents|money }}</td>
+      <td data-label="Repassado">R$ {{ seller.settled_cents|money }}</td>
+      <td data-label="Falta repassar"><strong{% if seller.pending_cents > 0 %} class="text-brand"{% endif %}>R$ {{ seller.pending_cents|money }}</strong>{% if seller.pending_cents < 0 %}<small style="display:block">Repassou a mais</small>{% endif %}</td>
+      <td data-label="Ações"><a class="btn btn-secondary btn-sm" href="{% url 'gestao:raffle_seller_detail' event.id seller.pk %}">Vendas e repasses</a></td>
+    </tr>{% empty %}<tr><td colspan="6" class="mg-table-empty">Nenhum vendedor cadastrado.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

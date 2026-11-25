@@ -75,13 +75,19 @@ def _registration_context(request, event, products, active_lots):
     from apps.events.models import MotorcycleRaffle
     available_addons = list(AddOn.objects.filter(event=event, active=True))
     raffle = MotorcycleRaffle.objects.filter(event=event, is_public=True).first()
+    raffle_price_table = {}
+    if raffle and raffle.purchase_available:
+        from apps.events.raffle_sales import price_cents as raffle_price_cents, online_remaining
+        remaining = online_remaining(raffle)
+        raffle_price_table = {q: raffle_price_cents(raffle, q) for q in range(1, min(50, remaining if remaining is not None else 50) + 1)}
     return {"event": event, "products": products, "active_lots": active_lots, "shirt_options": shirt_options, "vehicle_choices": VehicleType.choices,
             "buyer_is_participant": request.method == "POST" and request.POST.get("buyer_is_participant") == "on",
             "buyer": buyer, "participant_rows": rows, "coupon_code": request.POST.get("coupon_code", ""),
             "max_participants": settings.CHECKOUT_MAX_PARTICIPANTS,
             "payments_available": not MercadoPagoGateway().configuration_issues(),
             "available_addons": available_addons,
-            "raffle": raffle}
+            "raffle": raffle, "raffle_price_table": raffle_price_table,
+            "raffle_unit_cents": raffle_price_table.get(1)}
 
 
 @private_checkout

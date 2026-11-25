@@ -16,6 +16,7 @@ from apps.reporting.forms import DateRangeForm
 from apps.reporting.selectors import in_period
 from apps.checkout.models import Order
 from .models_raffles import MotorcycleRaffle
+from .raffle_sales import seller_summaries
 
 
 @management_required
@@ -58,5 +59,7 @@ def raffle_finance(request,event_id):
         'digital_count':eligible_tickets(raffle).filter(source='REGISTRATION').count(),
         'paper_sold':eligible_tickets(raffle).filter(source='PAPER').count(),
         'online_count':eligible_tickets(raffle).filter(source='ONLINE').count(),
+        'seller_count':eligible_tickets(raffle).filter(source='SELLER').count(),
+        'seller_pending':sum(max(0,s.pending_cents) for s in seller_summaries(raffle)),
         'orders_page':Paginator(Order.objects.filter(event=event,lines__raffle=raffle).distinct().order_by('-created_at','-pk'),20).get_page(request.GET.get('orders_page')),
         'filter_query':urlencode({k:v.isoformat() for k,v in form.cleaned_data.items() if v}) if valid else ''},status=200 if valid else 400)

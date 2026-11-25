@@ -238,6 +238,7 @@ ACTION_ROLES = {
 }
 VIEW_ACTIONS = {
     'access_recovery':'team',
+    'raffle_overview':'events','raffle_sellers':'events','raffle_seller_detail':'events',
     'event_action':'events','catalog_trash':'catalog','catalog_action':'catalog','team_edit':'team',
     'sponsor_action':'content','sponsor_profile_action':'content','sponsor_history_editor':'finance','sponsor_payment_editor':'finance',
     'raffle_point_editor':'events','raffle_ticket_editor':'finance',
@@ -383,6 +384,8 @@ def accessible_events(user, action="view"):
 def can_manage_event(user, event, action="view"):
     if action not in ACTION_ROLES:
         return False
+    if not getattr(user, "is_authenticated", False) or not user.is_active:
+        return False  # visitante sem login nunca gerencia (evita erro 500 em páginas de rascunho)
     if is_administrator(user):
         return True
 

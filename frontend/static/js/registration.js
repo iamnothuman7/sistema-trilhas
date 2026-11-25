@@ -70,8 +70,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const raffleInput = form.querySelector('[name="extra_raffle_qty"]');
         if (raffleInput) {
             const raffleQty = Number(raffleInput.value) || 0;
-            const rafflePrice = Number(raffleInput.dataset.priceCents) || 2000;
-            cents += raffleQty * rafflePrice;
+            const table = JSON.parse(document.getElementById('raffle-price-table')?.textContent || '{}');
+            cents += raffleQty ? Number(table[String(raffleQty)] || 0) : 0;
         }
 
         // Itens adicionais (AddOns)

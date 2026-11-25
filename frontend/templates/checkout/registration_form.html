@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static trilhas_ui %}
 {% block title %}Inscrição | {{ event.title }}{% endblock %}
 {% block extra_head %}
 {% include "checkout/_payment_styles.html" %}
@@ -272,7 +272,7 @@
         </section>
 
         <!-- Seção: Sorteio da Moto - 1 Ponto Grátis Incluso + Pontos Adicionais -->
-        {% if raffle %}
+        {% if raffle and raffle.registration_tickets_enabled or raffle_price_table %}
         <section class="registration-card raffle-checkout-card">
             <header class="card-header">
                 <div>
@@ -283,23 +283,24 @@
                 </div>
             </header>
             <div class="raffle-inner-box">
-                <div>
+                {% if raffle.registration_tickets_enabled %}<div>
                     <span style="background: rgba(34, 197, 94, 0.18); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.35); font-weight: 800; padding: 4px 12px; border-radius: 999px; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 6px;">
-                        <i data-lucide="gift" style="width: 14px; height: 14px;"></i> 1 PONTO GRÁTIS INCLUSO
+                        <i data-lucide="gift" style="width: 14px; height: 14px;"></i> 1 NÚMERO GRÁTIS INCLUSO
                     </span>
-                    <p style="margin: 8px 0 0 0; font-size: 0.9rem; color: var(--ui-muted, #c0b4a8);">Sua inscrição já garante 1 número oficial da sorte.</p>
-                </div>
-                <div style="display: flex; align-items: center; gap: 14px;">
+                    <p style="margin: 8px 0 0 0; font-size: 0.9rem; color: var(--ui-muted, #c0b4a8);">Cada inscrição paga já garante 1 número oficial da sorte.</p>
+                </div>{% endif %}
+                {% if raffle_price_table %}<div style="display: flex; align-items: center; gap: 14px;">
                     <div style="text-align: right;">
-                        <span style="display: block; font-size: 0.8rem; color: var(--ui-muted, #c0b4a8);">Deseja mais pontos?</span>
-                        <strong style="color: #ea580c; font-size: 1rem;">R$ 20,00 cada</strong>
+                        <span style="display: block; font-size: 0.8rem; color: var(--ui-muted, #c0b4a8);">Quer mais números?</span>
+                        <strong style="color: #ea580c; font-size: 1rem;">R$ {{ raffle_unit_cents|money }} cada</strong>
+                        {% if raffle.package_prices %}<small style="display:block;color:var(--ui-muted,#c0b4a8)">Pacotes com desconto aplicados no total</small>{% endif %}
                     </div>
                     <div class="custom-stepper">
-                        <button type="button" class="btn-stepper" data-step-target="extraRaffleQty" data-delta="-1" aria-label="Diminuir cotas">−</button>
-                        <input type="number" id="extraRaffleQty" name="extra_raffle_qty" min="0" max="50" value="0" data-price-cents="{{ raffle.quota_price_cents|default:2000 }}" readonly>
-                        <button type="button" class="btn-stepper" data-step-target="extraRaffleQty" data-delta="1" aria-label="Aumentar cotas">+</button>
+                        <button type="button" class="btn-stepper" data-step-target="extraRaffleQty" data-delta="-1" aria-label="Diminuir números">−</button>
+                        <input type="number" id="extraRaffleQty" name="extra_raffle_qty" min="0" max="{{ raffle_price_table|length }}" value="0" readonly>
+                        <button type="button" class="btn-stepper" data-step-target="extraRaffleQty" data-delta="1" aria-label="Aumentar números">+</button>
                     </div>
-                </div>
+                </div>{{ raffle_price_table|json_script:"raffle-price-table" }}{% endif %}
             </div>
         </section>
         {% endif %}

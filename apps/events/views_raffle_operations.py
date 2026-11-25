@@ -105,7 +105,7 @@ def raffle_operations(request, event_id):
         else:
             tickets = tickets.filter(Q(buyer_name__icontains=q) | Q(registration__person__full_name__icontains=q))
             
-    if source_filter in ('REGISTRATION', 'ONLINE', 'PAPER'):
+    if source_filter in ('REGISTRATION', 'ONLINE', 'PAPER', 'SELLER'):
         tickets = tickets.filter(source=source_filter)
         
     if state in RaffleTicket.State.values:
@@ -128,6 +128,7 @@ def raffle_operations(request, event_id):
         'registration_count': registration_count,
         'online_count': online_count,
         'online_revenue_reais': Decimal(online_revenue) / 100,
+        'seller_count': raffle.tickets.filter(source='SELLER', state='SOLD').count(),
         'q': q,
         'source_filter': source_filter,
         'state_filter': state,

@@ -1,0 +1,44 @@
+{% extends 'gestao/base_gestao.html' %}{% load static trilhas_ui %}
+{% block title %}Sorteio da moto | {{ event.title }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'css/raffle.css' %}?v=20261125">{% endblock %}
+{% block gestao_header %}Sorteio da moto{% endblock %}
+{% block content %}
+<header class="page-heading"><div><h1>{{ raffle.title }}</h1><p>{{ raffle.motorcycle_count }} moto{{ raffle.motorcycle_count|pluralize }}{% if raffle.motorcycle_model %}: {{ raffle.motorcycle_model }}{% endif %} · {% if raffle.draw_at %}sorteio em {{ raffle.draw_at|date:'d/m/Y \à\s H:i' }}{% else %}data a definir{% endif %}</p></div>
+<a class="btn btn-secondary" href="{% url 'events:raffle' event.slug %}" target="_blank" rel="noopener"><i data-lucide="external-link" aria-hidden="true"></i>Ver página pública</a></header>
+{% include 'gestao/raffles/_tabs.html' with current='overview' %}
+
+{% if raffle.result %}
+<section class="card mg-section-gap"><h2 class="section-title">Sorteio realizado</h2><p>Resultado registrado em {{ raffle.result.recorded_at|date:'d/m/Y H:i' }}.</p>
+{% for winner in raffle.result.winners %}<p><strong>{{ winner.prize }}º prêmio:</strong> número {{ winner.number }} — {{ winner.name }}</p>{% endfor %}
+<a class="btn btn-secondary" href="{% url 'gestao:raffle_result' event.id %}">Ver detalhes do resultado</a></section>
+{% endif %}
+
+<div class="stat-grid mg-section-gap">
+  <article class="stat-card"><div class="stat-label">Números concorrendo</div><div class="stat-value">{{ total_eligible }}</div><small class="text-muted">Só números pagos e válidos</small></article>
+  <article class="stat-card"><div class="stat-label">Grátis das inscrições</div><div class="stat-value">{{ from_registrations }}</div><small class="text-muted">1 por inscrição paga</small></article>
+  <article class="stat-card"><div class="stat-label">Comprados no site</div><div class="stat-value">{{ from_site }}</div><small class="text-muted">R$ {{ site_revenue|money }}</small></article>
+  <article class="stat-card"><div class="stat-label">Vendidos por vendedores</div><div class="stat-value">{{ from_sellers }}</div><small class="text-muted">R$ {{ seller_revenue|money }} · falta repassar R$ {{ seller_pending|money }}</small></article>
+</div>
+{% if from_paper %}<p class="form-help">Também concorrem {{ from_paper }} bilhete(s) em papel registrados antes da mudança para venda só digital.</p>{% endif %}
+
+<div class="raffle-overview-grid">
+<section class="card"><div class="card-header"><div><h2>Preparação</h2><p>{{ checklist_done }} de {{ checklist|length }} itens prontos.</p></div><a class="btn btn-secondary btn-sm" href="{% url 'gestao:raffle_management' event.id %}">Abrir configuração</a></div>
+<ul class="raffle-checklist">{% for label, done, hint in checklist %}<li class="{% if done %}is-done{% endif %}"><i data-lucide="{% if done %}check-circle-2{% else %}circle{% endif %}" aria-hidden="true"></i><div><strong>{{ label }}</strong>{% if not done %}<small>{{ hint }}</small>{% endif %}</div></li>{% endfor %}</ul></section>
+
+<section class="card"><h2>Onde os números são vendidos</h2>
+<div class="raffle-channel"><strong>Inscrição</strong><span class="badge {% if raffle.registration_tickets_enabled %}badge-success{% else %}badge-secondary{% endif %}">{% if raffle.registration_tickets_enabled %}1 número grátis por inscrição{% else %}Desligado{% endif %}</span></div>
+<div class="raffle-channel"><strong>Site e números extras na inscrição</strong><span class="badge {% if site_open %}badge-success{% else %}badge-warning{% endif %}">{% if site_open %}Aberta{% else %}Fechada{% endif %}</span>
+{% if not site_open and site_pending %}<small>Falta: {{ site_pending|join:', ' }}.</small>{% elif site_open and online_remaining is not None %}<small>Restam {{ online_remaining }} números para venda online.</small>{% endif %}</div>
+<div class="raffle-channel"><strong>Vendedores</strong><span class="badge {% if seller_blockers %}badge-warning{% else %}badge-success{% endif %}">{% if seller_blockers %}Fechada{% else %}Aberta · {{ seller_count }} vendedor{{ seller_count|pluralize:'es' }}{% endif %}</span>
+{% if seller_blockers %}<small>Falta: {{ seller_blockers|join:', ' }}.</small>{% endif %}</div>
+{% if options %}<h3 class="mg-space-top">Preços</h3><ul class="raffle-prices">{% for option in options %}<li>{{ option.qty }} número{{ option.qty|pluralize }}: <strong>R$ {{ option.cents|money }}</strong>{% if option.economy_cents %} <small>(economia de R$ {{ option.economy_cents|money }})</small>{% endif %}</li>{% endfor %}</ul>{% endif %}
+</section>
+</div>
+
+<section class="card mg-space-top"><h2>Passo a passo</h2><ol class="raffle-steps-list">
+<li><strong>Configuração:</strong> motos, fotos, preço, pacotes, regulamento, data e autorização. Depois publique a página.</li>
+<li><strong>Vendedores:</strong> cadastre quem vai vender. Cada venda gera os números na hora e o sistema monta a mensagem de WhatsApp para o comprador.</li>
+<li><strong>Repasses:</strong> quando o vendedor entregar o dinheiro, registre o repasse. Só então o valor entra no caixa do evento.</li>
+<li><strong>Dia do sorteio:</strong> baixe a lista de números concorrendo, faça o sorteio e registre os ganhadores.</li>
+</ol></section>
+{% endblock %}

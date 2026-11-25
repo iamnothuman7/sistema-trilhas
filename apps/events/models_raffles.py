@@ -38,6 +38,8 @@ class MotorcycleRaffle(models.Model):
     registration_tickets_enabled = models.BooleanField("Gerar um número para cada inscrição paga", default=True)
     paper_start = models.PositiveIntegerField("Primeiro número em papel", default=2000)
     paper_end = models.PositiveIntegerField("Último número em papel", default=3000)
+    package_prices = models.JSONField("Pacotes com desconto", default=list, blank=True,
+        help_text="Lista de pacotes {qty, cents}. O preço avulso continua valendo para o que não fechar um pacote.")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -62,9 +64,9 @@ class MotorcycleRaffle(models.Model):
     def sales_pending_requirements(self):
         pending=[]
         if hasattr(self,'result'):pending.append('O resultado deste sorteio já foi registrado')
-        for field,label in [('quota_price_cents','Preço de cada número extra'),('quota_quantity','Limite de números extras online'),
-            ('rules_text','Regulamento'),('authorization_reference','Referência da autorização/enquadramento'),
-            ('provider_review_reference','Confirmação/protocolo do Mercado Pago'),('operation_review_confirmed','Conferência da operação'),('is_public','Publicar apresentação')]:
+        for field,label in [('quota_price_cents','Preço do número'),('quota_quantity','Limite de números vendidos online'),
+            ('rules_text','Regulamento'),('authorization_reference','Número da autorização do sorteio'),
+            ('provider_review_reference','Protocolo de aprovação no Mercado Pago'),('operation_review_confirmed','Conferência da autorização e do Mercado Pago'),('is_public','Publicar apresentação')]:
             if not getattr(self,field):pending.append(label)
         if not self.draw_at or self.draw_at<=timezone.now():pending.append('Data futura do sorteio')
         return pending
@@ -77,7 +79,7 @@ class MotorcycleRaffle(models.Model):
 class RaffleSalesPoint(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     raffle = models.ForeignKey(MotorcycleRaffle, on_delete=models.PROTECT, related_name='sales_points')
-    name = models.CharField('Nome do ponto / vendedor', max_length=120)
+    name = models.CharField('Nome do vendedor', max_length=120)
     contact = models.CharField('Contato', max_length=150, blank=True)
     active = models.BooleanField('Ativo', default=True)
 
@@ -92,6 +94,7 @@ class RaffleTicket(models.Model):
         REGISTRATION = 'REGISTRATION', 'Inscrição paga'
         PAPER = 'PAPER', 'Bilhete em papel'
         ONLINE = 'ONLINE', 'Número extra online'
+        SELLER = 'SELLER', 'Venda por vendedor'
     class State(models.TextChoices):
         AVAILABLE = 'AVAILABLE', 'Disponível'
         DISTRIBUTED = 'DISTRIBUTED', 'Entregue ao ponto'
@@ -112,11 +115,30 @@ class RaffleTicket(models.Model):
     amount_cents = models.PositiveIntegerField(default=0)
     paid_at = models.DateTimeField(null=True, blank=True)
     recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    sale_reference = models.CharField('Venda', max_length=40, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['number']
         constraints = [models.UniqueConstraint(fields=['raffle','number'], name='unique_raffle_number')]
+
+
+class RaffleSellerSettlement(models.Model):
+    """Dinheiro que o vendedor entregou à organização. Só aqui a venda presencial entra no caixa."""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    seller = models.ForeignKey(RaffleSalesPoint, on_delete=models.PROTECT, related_name='settlements')
+    amount_cents = models.PositiveIntegerField('Valor repassado', validators=[MinValueValidator(1)])
+    received_on = models.DateField('Recebido em')
+    method = models.CharField('Forma', max_length=20, default='PIX',
+        choices=[('PIX', 'Pix'), ('CASH', 'Dinheiro'), ('TRANSFER', 'Transferência'), ('OTHER', 'Outro')])
+    notes = models.CharField('Observação', max_length=300, blank=True)
+    ledger_entry = models.OneToOneField('finance.FinancialEntry', on_delete=models.PROTECT, related_name='raffle_settlement')
+    request_key = models.CharField(max_length=64, unique=True)
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-received_on', '-created_at']
 
 
 class RaffleInterest(models.Model):

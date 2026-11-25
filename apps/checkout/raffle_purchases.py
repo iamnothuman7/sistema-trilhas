@@ -43,12 +43,13 @@ def reserve_raffle_numbers(*,registration_id,user,quantity,request_key,rules_acc
     resource,_=CapacityResource.objects.select_for_update().get_or_create(event=reg.event,type='RAFFLE_TOTAL',reference_id=str(raffle.pk),defaults={'capacity_total':raffle.quota_quantity})
     resource.capacity_total=raffle.quota_quantity
     if resource.available_count<quantity:raise ValidationError(f'Quantidade indisponível. Restam {resource.available_count} números extras.')
-    now=timezone.now();total=raffle.quota_price_cents*quantity
+    from apps.events.raffle_sales import price_cents as raffle_price_cents
+    now=timezone.now();total=raffle_price_cents(raffle,quantity)
     order=Order.objects.create(event=reg.event,purchaser_user=user,purchaser_name=user.full_name or reg.person.full_name,
         purchaser_email=user.email,purchaser_phone=user.phone or reg.person.phone or '',purchaser_document=reg.participant_cpf or reg.person.document_number,
         merchant_reference='SO-'+secrets.token_hex(6).upper(),gross_cents=total,total_cents=total,
         expires_at=min(now+timedelta(minutes=35),raffle.draw_at))
-    line=OrderLine.objects.create(order=order,raffle=raffle,linked_registration_id=reg.pk,quantity=quantity,unit_cents=raffle.quota_price_cents,
+    line=OrderLine.objects.create(order=order,raffle=raffle,linked_registration_id=reg.pk,quantity=quantity,unit_cents=total//quantity,
         net_cents=total,intended_person_name=reg.person.full_name,item_snapshot_json={'kind':'RAFFLE','product_name':f'Números extras — {raffle.title}',
             'price_cents':raffle.quota_price_cents,'rules_text':raffle.rules_text,'draw_at':raffle.draw_at.isoformat(),
             'authorization_reference':raffle.authorization_reference,'rules_accepted_at':now.isoformat(),

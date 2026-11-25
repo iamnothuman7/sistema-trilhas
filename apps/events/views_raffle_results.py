@@ -38,5 +38,19 @@ def raffle_result(request,event_id):
         else:
             messages.success(request,'Resultado registrado e protegido contra nova execução.' if created else 'Este resultado já estava registrado; nada foi duplicado.')
             return redirect('gestao:raffle_result',event_id=event_id)
+    from django.utils import timezone
+    from urllib.parse import quote
+    result=RaffleResult.objects.filter(raffle=raffle).first()
+    winners=[]
+    for winner in (result.winners if result else []):
+        digits=''.join(ch for ch in winner.get('phone','') if ch.isdigit())
+        if digits and not digits.startswith('55') and len(digits) in (10,11):digits='55'+digits
+        text=f"Parabéns, {winner['name'].split()[0] if winner.get('name') else ''}! O número {winner['number']} ganhou o {winner['prize']}º prêmio do {raffle.title} ({raffle.event.title}). A Equipe Morcego vai combinar a entrega com você."
+        winners.append({**winner,'whatsapp':f'https://wa.me/{digits}?text={quote(text)}' if digits else ''})
+    checks=[('Regulamento escrito',bool(raffle.rules_text.strip())),
+            ('Data do sorteio marcada',bool(raffle.draw_at)),
+            ('Horário do sorteio já chegou',bool(raffle.draw_at and raffle.draw_at<=timezone.now())),
+            ('Há números concorrendo',eligible_tickets(raffle).exists())]
     return render(request,'gestao/raffles/result.html',{'event':request.management_event,'raffle':raffle,'saved_raffle':True,
-        'result':RaffleResult.objects.filter(raffle=raffle).first(),'eligible_count':eligible_tickets(raffle).count(),'form':form},status=400 if form.errors else 200)
+        'result':result,'winners':winners,'checks':checks,'ready':all(ok for _,ok in checks),
+        'eligible_count':eligible_tickets(raffle).count(),'form':form},status=400 if form.errors else 200)

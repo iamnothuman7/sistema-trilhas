@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Comprar Pontos da Sorte — {{ raffle.motorcycle_model|default:raffle.title }} | Equipe Morcego{% endblock %}
+{% block title %}Comprar números da sorte — {{ raffle.motorcycle_model|default:raffle.title }} | Equipe Morcego{% endblock %}
 
 {% block extra_head %}
 {% include "checkout/_payment_styles.html" %}
@@ -85,7 +85,7 @@
         <span class="payment-kicker">Sorteio da Moto · Concorra Agora</span>
         <h1>{{ raffle.title }}</h1>
         <p class="payment-muted">
-            Adquira seus pontos da sorte avulsos com desconto progressivo (de 5 em 5 pontos). Não é necessário ser piloto inscrito.
+            Compre seus números da sorte pelo site. Não é preciso ser piloto inscrito.
         </p>
     </header>
 
@@ -104,6 +104,13 @@
         {% endif %}
     </div>
 
+    {% if not sales_open %}
+    <section class="payment-card">
+        <h2>Venda pelo site fechada</h2>
+        <p>{% if raffle.result %}O sorteio já foi realizado. Confira o resultado na página do sorteio.{% elif remaining == 0 %}Os números para venda online esgotaram.{% else %}A venda de números pelo site ainda não começou. Fale com um vendedor da Equipe Morcego ou volte mais tarde.{% endif %}</p>
+        <a class="public-button public-button--primary" href="{% url 'events:raffle' slug=event.slug %}">Ver página do sorteio</a>
+    </section>
+    {% else %}
     <form method="post" id="raffleBuyForm">
         {% csrf_token %}
 
@@ -112,17 +119,17 @@
             <header class="card-header">
                 <div>
                     <h2>1. Escolha a quantidade de pontos</h2>
-                    <span class="registration-caption">Aproveite os combos promocionais com desconto automático</span>
+                    <span class="registration-caption">{% if combos|length > 1 %}Pacotes com desconto aplicado automaticamente{% else %}Escolha quantos números você quer{% endif %}</span>
                 </div>
             </header>
 
             <div class="raffle-combos-grid">
                 {% for combo in combos %}
-                <div class="raffle-combo-card{% if combo.qty == quantity %} active{% endif %}" data-combo-qty="{{ combo.qty }}">
-                    {% if combo.popular %}<span class="badge-popular">Mais Vendido</span>{% endif %}
-                    <div class="raffle-combo-qty">{{ combo.label }}</div>
-                    <div class="raffle-combo-price">R$ {{ combo.price_reais }}</div>
-                    {% if combo.economy %}<span class="raffle-combo-economy">{{ combo.economy }}</span>{% endif %}
+                <div class="raffle-combo-card{% if combo.qty == quantity %} active{% endif %}" data-combo-qty="{{ combo.qty }}" role="button" tabindex="0">
+                    {% if combo.popular %}<span class="badge-popular">Melhor preço</span>{% endif %}
+                    <div class="raffle-combo-qty">{{ combo.qty }} número{{ combo.qty|pluralize }}</div>
+                    <div class="raffle-combo-price" data-cents="{{ combo.cents }}"></div>
+                    {% if combo.economy_cents %}<span class="raffle-combo-economy" data-economy-cents="{{ combo.economy_cents }}"></span>{% endif %}
                 </div>
                 {% endfor %}
             </div>
@@ -130,11 +137,11 @@
             <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #27272a; border-radius: 8px; margin-top: 12px; flex-wrap: wrap; gap: 8px;">
                 <div>
                     <span style="font-size: 0.85rem; color: #d4d4d8; display: block;">Ou digite outra quantidade:</span>
-                    <small style="color: #a1a1aa;">Descontos aplicados automaticamente a cada 5 pontos</small>
+                    <small style="color: #a1a1aa;">O sistema monta o menor preço com os pacotes{% if remaining is not None %} · restam {{ remaining }} números{% endif %}</small>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <button type="button" class="btn-stepper" id="btnRaffleMinus" style="padding: 6px 14px; background: #3f3f46; color: #fff; border: 0; border-radius: 6px; font-size: 1.1rem; cursor: pointer;">-</button>
-                    <input type="number" id="raffleQuantity" name="quantity" min="1" max="100" value="{{ quantity }}" style="width: 54px; text-align: center; font-weight: 800; font-size: 1.1rem; padding: 6px 0; border-radius: 6px; border: 1px solid #52525b; background: #18181b; color: #fff;">
+                    <input type="number" id="raffleQuantity" name="quantity" min="1" max="{{ max_quantity }}" value="{{ quantity }}" style="width: 54px; text-align: center; font-weight: 800; font-size: 1.1rem; padding: 6px 0; border-radius: 6px; border: 1px solid #52525b; background: #18181b; color: #fff;">
                     <button type="button" class="btn-stepper" id="btnRafflePlus" style="padding: 6px 14px; background: #3f3f46; color: #fff; border: 0; border-radius: 6px; font-size: 1.1rem; cursor: pointer;">+</button>
                 </div>
             </div>
@@ -163,13 +170,17 @@
                     <input name="buyer_document" data-mask="cpf" placeholder="000.000.000-00" maxlength="14" class="form-control" inputmode="numeric" value="{{ buyer_doc }}">
                 </label>
             </div>
+            {% if raffle.rules_text %}
+            <details style="margin-top: 12px;"><summary>Ler o regulamento do sorteio</summary><div style="white-space: pre-line; font-size: 0.9rem; margin-top: 8px;">{{ raffle.rules_text }}</div></details>
+            {% endif %}
+            <label style="display: flex; gap: 8px; align-items: flex-start; margin-top: 12px;"><input type="checkbox" name="rules_accepted" required> <span>Li e aceito o regulamento do sorteio.{% if raffle.authorization_reference %} Autorização: {{ raffle.authorization_reference }}.{% endif %}</span></label>
         </section>
 
         <!-- Resumo e Botão Pix -->
         <section class="payment-card" style="border: 1px solid #ea580c; background: #fffaf5;">
             <div class="payment-total" style="margin-bottom: 12px;">
                 <span style="color: #374151;">Total a Pagar (Pix Instantâneo)</span>
-                <strong id="displayTotal" style="color: #ea580c; font-size: 1.6rem;">R$ 80,00</strong>
+                <strong id="displayTotal" style="color: #ea580c; font-size: 1.6rem;"></strong>
             </div>
 
             <p style="font-size: 0.85rem; color: #6b7280; line-height: 1.4; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 6px;">
@@ -182,34 +193,29 @@
             </button>
         </section>
     </form>
+    {{ price_table|json_script:"raffle-price-table" }}
+    {% endif %}
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+(function (start) { document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', start) : start(); })(function () {
     const qtyInput = document.getElementById('raffleQuantity');
+    if (!qtyInput) return;
     const displayTotal = document.getElementById('displayTotal');
     const submitBtn = document.getElementById('btnSubmitRaffle');
     const comboCards = document.querySelectorAll('.raffle-combo-card');
     const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-    function calculatePrice(q) {
-        if (q <= 0) return 0;
-        const table = { 1: 2000, 5: 8000, 10: 15000, 15: 21000, 20: 26000 };
-        if (table[q]) return table[q];
-        let total = 0;
-        let rem = q;
-        while (rem >= 20) { total += 26000; rem -= 20; }
-        while (rem >= 15) { total += 21000; rem -= 15; }
-        while (rem >= 10) { total += 15000; rem -= 10; }
-        while (rem >= 5) { total += 8000; rem -= 5; }
-        total += rem * 2000;
-        return total;
-    }
+    const priceTable = JSON.parse(document.getElementById('raffle-price-table')?.textContent || '{}');
+    const maxQty = parseInt(qtyInput?.max) || 1;
+    function calculatePrice(q) { return priceTable[String(q)] || 0; }
+    document.querySelectorAll('[data-cents]').forEach(el => { el.textContent = formatter.format(parseInt(el.dataset.cents) / 100); });
+    document.querySelectorAll('[data-economy-cents]').forEach(el => { el.textContent = 'Economize ' + formatter.format(parseInt(el.dataset.economyCents) / 100); });
 
     function updatePrice() {
-        const q = Math.max(1, Math.min(100, parseInt(qtyInput.value) || 1));
+        const q = Math.max(1, Math.min(maxQty, parseInt(qtyInput.value) || 1));
         qtyInput.value = q;
         const cents = calculatePrice(q);
         const formatted = formatter.format(cents / 100);
@@ -237,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('btnRafflePlus')?.addEventListener('click', () => {
         const cur = parseInt(qtyInput.value) || 1;
-        if (cur < 100) { qtyInput.value = cur + 1; updatePrice(); }
+        if (cur < maxQty) { qtyInput.value = cur + 1; updatePrice(); }
     });
 
     qtyInput.addEventListener('input', updatePrice);

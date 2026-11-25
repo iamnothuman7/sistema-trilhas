@@ -14,6 +14,9 @@ def eligible_tickets(raffle):
         Q(source='PAPER',paid_at__isnull=False,amount_cents__gt=0) |
         Q(source='REGISTRATION',registration__commercial_state='ACTIVE',registration__archived_at__isnull=True,
           registration__source_order_line__order__status='PAID',registration__source_order_line__order__is_test=False) |
+        Q(source='SELLER',paid_at__isnull=False,amount_cents__gt=0,point__isnull=False) |
+        # Compra avulsa no site (sem inscrição vinculada) concorre; extra ligado a um piloto exige a inscrição ativa.
+        Q(source='ONLINE',order_line__order__status='PAID',order_line__order__is_test=False,beneficiary_registration__isnull=True) |
         Q(source='ONLINE',order_line__order__status='PAID',order_line__order__is_test=False,
           beneficiary_registration__commercial_state='ACTIVE',beneficiary_registration__archived_at__isnull=True,
           beneficiary_registration__source_order_line__order__status='PAID',beneficiary_registration__source_order_line__order__is_test=False))
@@ -32,7 +35,7 @@ def record_draw_result(*,raffle,actor,numbers,notes,confirmed,request=None):
         raise ValidationError('Defina o regulamento e aguarde a data do sorteio antes de registrar o resultado.')
     if len(numbers)!=raffle.motorcycle_count or len(set(numbers))!=len(numbers):
         raise ValidationError(f'Informe {raffle.motorcycle_count} número(s) vencedor(es) distinto(s), na ordem dos prêmios.')
-    tickets=list(eligible_tickets(raffle).select_related('registration__person','beneficiary_registration__person').order_by('number'))
+    tickets=list(eligible_tickets(raffle).select_related('registration__person','beneficiary_registration__person','point').order_by('number'))
     by_number={ticket.number:ticket for ticket in tickets}
     if any(number not in by_number for number in numbers):raise ValidationError('Um dos números não está confirmado e elegível para esta edição.')
     snapshot=[{'id':str(t.pk),'number':t.number,'source':t.source} for t in tickets]
@@ -40,7 +43,10 @@ def record_draw_result(*,raffle,actor,numbers,notes,confirmed,request=None):
     for prize,number in enumerate(numbers,1):
         ticket=by_number[number]
         reg=ticket.registration or ticket.beneficiary_registration
-        winners.append({'prize':prize,'number':number,'ticket_id':str(ticket.pk),'name':reg.person.full_name if reg else ticket.buyer_name})
+        phone=(reg.person.phone if reg else '') or ticket.buyer_phone or ''
+        origin={'REGISTRATION':'Inscrição','ONLINE':'Compra no site','SELLER':f'Vendedor {ticket.point.name}' if ticket.point else 'Vendedor','PAPER':'Bilhete em papel'}.get(ticket.source,ticket.source)
+        winners.append({'prize':prize,'number':number,'ticket_id':str(ticket.pk),'name':reg.person.full_name if reg else ticket.buyer_name,
+            'phone':phone,'origin':origin})
     result=RaffleResult.objects.create(raffle=raffle,winners=winners,eligible_snapshot=snapshot,
         snapshot_sha256=hashlib.sha256(json.dumps(snapshot,sort_keys=True).encode()).hexdigest(),method_notes=notes.strip(),recorded_by=actor)
     raffle.online_sales_enabled=False;raffle.save(update_fields=['online_sales_enabled','updated_at'])
