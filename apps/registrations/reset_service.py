@@ -3,6 +3,7 @@ Service to safely reset test registrations, test orders, and operational test da
 Preserves events, lot definitions, categories, sponsor settings, inventory configurations,
 and administrator accounts.
 """
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 from apps.core.utils import log_audit
@@ -69,12 +70,31 @@ def get_reset_preview(event=None):
     }
 
 
+REAL_MONEY_STATUSES = ("PAID", "PARTIALLY_REFUNDED", "PAID_NEEDS_REVIEW", "REFUNDED")
+
+
+def real_money_orders(event):
+    """Pedidos não marcados como teste que já movimentaram dinheiro. Com eles, o reset é recusado."""
+    orders = Order.objects.filter(event=event, is_test=False)
+    return orders.filter(status__in=REAL_MONEY_STATUSES) | orders.filter(pk__in=FinancialEntry.objects.filter(
+        order__event=event).values("order_id")) | orders.filter(pk__in=PaymentTransaction.objects.filter(
+        charge_attempt__order__event=event).values("charge_attempt__order_id")) | orders.filter(
+        pk__in=ManualPaymentEvidence.objects.filter(order__event=event).values("order_id"))
+
+
 @transaction.atomic
 def reset_test_registrations(*, event=None, dry_run=False, performed_by=None):
     """
-    Safely resets all test registrations, test orders, and tied operational records.
+    Apaga inscrições e pedidos de teste de UM evento. Recusa se houver pedido real com dinheiro
+    (pago, devolvido ou com lançamento/pagamento), para nunca apagar vendas de verdade.
     If dry_run=True, returns stats without persisting changes.
     """
+    if event is None:
+        raise ValidationError("Escolha um evento. O reset de todos os eventos de uma vez foi desativado.")
+    real = list(real_money_orders(event).distinct().values_list("merchant_reference", flat=True)[:5])
+    if real:
+        raise ValidationError("Este evento já tem pedidos reais com pagamento (" + ", ".join(real) + "). "
+            "Zerar testes apagaria vendas de verdade e foi bloqueado. Cancele ou devolva os testes individualmente.")
     reg_qs = Registration.objects.all()
     if event:
         reg_qs = reg_qs.filter(event=event)
@@ -100,12 +120,8 @@ def reset_test_registrations(*, event=None, dry_run=False, performed_by=None):
         beneficiary_registration_id__in=reg_ids
     ) | RaffleTicket.objects.filter(
         order_line__order_id__in=order_ids
-    ) | RaffleTicket.objects.filter(
-        source__in=["REGISTRATION", "ONLINE"]
     )
-    if event:
-        raffle_qs = raffle_qs.filter(raffle__event=event)
-    raffle_qs = raffle_qs.distinct()
+    raffle_qs = raffle_qs.filter(raffle__event=event).distinct()
 
     stats = {
         "registrations_deleted": len(reg_ids),

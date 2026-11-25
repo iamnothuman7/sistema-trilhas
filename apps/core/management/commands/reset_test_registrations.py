@@ -43,7 +43,7 @@ class Command(BaseCommand):
             except Event.DoesNotExist:
                 raise CommandError(f"Event with slug '{event_slug}' not found.")
         else:
-            self.stdout.write("Target: ALL EVENTS")
+            raise CommandError("Informe --event-slug. O reset de todos os eventos foi desativado por segurança.")
 
         preview = get_reset_preview(event)
         self.stdout.write(self.style.WARNING("=== RESET PREVIEW ==="))

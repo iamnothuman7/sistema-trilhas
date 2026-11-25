@@ -369,6 +369,10 @@ def registration_change_status(request, event_id, reg_id):
             if reg.source_order_line.order.status in ('PAID','PARTIALLY_REFUNDED','REFUNDED') and new_status != old_status:
                 messages.error(request, 'Uma inscrição com pagamento deve ser cancelada pela opção Cancelar e registrar devolução. A confirmação após pagamento é automática.')
                 return redirect('gestao:registration_detail',event_id=event.id,reg_id=reg.id)
+            if reg.source_order_line.order.status in ('RESERVED','AWAITING_PAYMENT','PAID_NEEDS_REVIEW') and new_status != old_status:
+                # Mudar só a inscrição deixava o Pix aberto: se pago depois, ela voltava ativa ou o pagamento travava.
+                messages.error(request, 'Esta reserva ainda tem um pedido aberto. Use "Remover reserva sem pagamento" para cancelar o pedido e liberar a vaga, ou aguarde a conferência do pagamento.')
+                return redirect('gestao:registration_detail',event_id=event.id,reg_id=reg.id)
             if new_status == CommercialState.ACTIVE and reg.source_order_line.order.status != 'PAID':
                 messages.error(request,'Confirme o recebimento pela opção de pagamento manual ou aguarde a aprovação do Mercado Pago.')
                 return redirect('gestao:registration_detail',event_id=event.id,reg_id=reg.id)

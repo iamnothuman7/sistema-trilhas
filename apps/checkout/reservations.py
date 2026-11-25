@@ -237,8 +237,12 @@ def reserve_order(*, event, participants, buyer, purchaser_user=None, coupon_cod
                 event=event, type="ADDON_TOTAL", reference_id=str(addon.pk),
                 defaults={"capacity_total": addon.max_quantity}
             )
+            addon_resource.capacity_total = addon.max_quantity
+            # Confere o estoque agora: sem isso o pagamento era recebido e o pedido travava em conferência.
+            if addon_resource.reserved_count + addon_resource.committed_count + qty > addon_resource.capacity_total:
+                raise ValidationError(f"Restam {addon_resource.available_count} unidade(s) de “{addon.title}”. Diminua a quantidade para continuar.")
             addon_resource.reserved_count += qty
-            addon_resource.save(update_fields=["reserved_count"])
+            addon_resource.save(update_fields=["reserved_count", "capacity_total"])
 
             addon_line = OrderLine.objects.create(
                 order=order,

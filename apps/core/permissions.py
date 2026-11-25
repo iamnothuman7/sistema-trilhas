@@ -400,7 +400,8 @@ def can_manage_event(user, event, action="view"):
         return True
 
     # If any membership has custom non-empty permissions_json, check granular
-    has_custom = any(bool(m.permissions_json and any(m.permissions_json.values())) for m in memberships)
+    # Permissões configuradas (mesmo todas desmarcadas) valem como regra: perfil vazio não ganha acesso pelo cargo.
+    has_custom = any(isinstance(m.permissions_json, dict) and bool(m.permissions_json) for m in memberships)
     if has_custom:
         user_perms = get_user_event_permissions(user, event)
         if action == "view":

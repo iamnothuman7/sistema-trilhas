@@ -87,6 +87,38 @@ def _ledger(order, payment_id, kind, amount, suffix, description):
             amount_cents_signed=amount, source_reference=f"MP-{payment_id}-{suffix}"[:150], description=description)
 
 
+def _ledger_split(order, payment_id, amount, suffix, description, refund=False):
+    """Separa o valor por tipo de item (inscrição, extra, sorteio), na proporção de cada linha.
+
+    A tarifa repassada ao comprador fica junto da maior parte (normalmente a inscrição).
+    """
+    if not amount:
+        return
+    groups = {}
+    for line in order.lines.all():
+        if line.raffle_id:
+            key = (FinancialEntryKind.ESTORNO_SORTEIO if refund else FinancialEntryKind.RECEITA_SORTEIO, line.raffle_id, "RAFFLE")
+        elif line.addon_id:
+            key = (FinancialEntryKind.REEMBOLSO if refund else FinancialEntryKind.RECEITA_ADICIONAL, None, "ADDON")
+        else:
+            key = (FinancialEntryKind.REEMBOLSO if refund else FinancialEntryKind.RECEITA_INSCRICAO, None, "REG")
+        groups[key] = groups.get(key, 0) + line.net_cents
+    base = sum(groups.values())
+    if not groups or base <= 0:
+        _ledger(order, payment_id, FinancialEntryKind.REEMBOLSO if refund else FinancialEntryKind.RECEITA_INSCRICAO, amount, suffix, description)
+        return
+    sign = -1 if amount < 0 else 1
+    total = abs(amount)
+    keys = sorted(groups, key=lambda k: groups[k], reverse=True)
+    parts = {k: total * groups[k] // base if total <= base else groups[k] for k in keys}
+    parts[keys[0]] += total - sum(parts.values())
+    for (kind, raffle_id, tag) in keys:
+        value = parts[(kind, raffle_id, tag)]
+        if value:
+            FinancialEntry.objects.create(event=order.event, order=order, raffle_id=raffle_id, kind=kind, amount_cents_signed=sign * value,
+                source_reference=(f"MP-{payment_id}-{suffix}" if len(keys) == 1 else f"MP-{payment_id}-{suffix}-{tag}")[:150], description=description)
+
+
 def _holds_and_resources(order):
     holds = list(CapacityHold.objects.select_for_update().filter(order_id=order.id).order_by("resource_id", "pk"))
     resources = {item.pk: item for item in CapacityResource.objects.select_for_update().filter(
@@ -427,8 +459,7 @@ def reconcile_payment(payment, *, charge_id=None):
         raise PaymentValidationError("invalid_refund")
     settled = status in {"approved", "refunded", "charged_back"}
     if settled and not snapshot.posted_revenue_cents:
-        revenue_kind = FinancialEntryKind.RECEITA_SORTEIO if order.lines.filter(raffle__isnull=False).exists() else (FinancialEntryKind.RECEITA_ADICIONAL if order.lines.filter(addon__isnull=False).exists() and not order.lines.filter(registration__isnull=False).exists() else FinancialEntryKind.RECEITA_INSCRICAO)
-        _ledger(order, payment_id, revenue_kind, amount, "REVENUE", "Pagamento confirmado pelo Mercado Pago")
+        _ledger_split(order, payment_id, amount, "REVENUE", "Pagamento confirmado pelo Mercado Pago")
         snapshot.posted_revenue_cents = amount
     fees = payment.get("fee_details")
     if settled and isinstance(fees, list):
@@ -453,9 +484,8 @@ def reconcile_payment(payment, *, charge_id=None):
                     'posted_provider_refund_cents':snapshot.posted_refund_cents,'unknown_refund_ids':[str(pk) for pk in unknown_returns]})
     if refund > snapshot.posted_refund_cents and not refund_channel_review:
         refund_delta = refund-snapshot.posted_refund_cents
-        refund_kind=FinancialEntryKind.ESTORNO_SORTEIO if order.lines.filter(raffle__isnull=False).exists() else FinancialEntryKind.REEMBOLSO
-        _ledger(order, payment_id, refund_kind, -(refund - snapshot.posted_refund_cents),
-                f"REFUND-{refund}", "Devolução ou contestação confirmada pelo Mercado Pago")
+        _ledger_split(order, payment_id, -(refund - snapshot.posted_refund_cents),
+                f"REFUND-{refund}", "Devolução ou contestação confirmada pelo Mercado Pago", refund=True)
         snapshot.posted_refund_cents = refund
         Refund.objects.get_or_create(request_key=f"MP-{payment_id}-REFUND-{refund}", defaults={
             "order": order, "charge_attempt": charge, "amount_cents": refund_delta,

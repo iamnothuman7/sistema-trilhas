@@ -9,57 +9,17 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 
 from apps.core.models import PageViewRecord
-from apps.core.permissions import management_required
+from django.core.exceptions import PermissionDenied
+from apps.core.permissions import management_required, is_administrator
 from apps.events.models import Event
-
-
-def seed_initial_traffic_if_empty(event=None):
-    """Semeia um histórico inicial elegante se o sistema acabou de subir."""
-    if PageViewRecord.objects.exists():
-        return
-    
-    now = timezone.now()
-    sample_pages = [
-        ("Página Inicial (Site)", "/", "Instagram", "MOBILE", "iOS", "Instagram In-App"),
-        ("Inscrições & Checkout", "/checkout/inscricao/", "WhatsApp", "MOBILE", "Android", "WhatsApp In-App"),
-        ("Página Inicial (Site)", "/", "WhatsApp", "MOBILE", "Android", "Chrome"),
-        ("Sorteio da Moto", "/sorteio/", "Instagram", "MOBILE", "iOS", "Safari"),
-        ("Inscrições & Checkout", "/checkout/inscricao/", "Direto / Link", "MOBILE", "iOS", "Safari"),
-        ("Mural de Patrocinadores", "/patrocinadores/", "Direto / Link", "DESKTOP", "Windows", "Chrome"),
-        ("Regulamento e Termos", "/regulamento/", "WhatsApp", "MOBILE", "Android", "Chrome"),
-        ("Página Inicial (Site)", "/", "Google", "DESKTOP", "Windows", "Chrome"),
-        ("Sorteio da Moto", "/sorteio/", "WhatsApp", "MOBILE", "Android", "WhatsApp In-App"),
-        ("Inscrições & Checkout", "/checkout/inscricao/", "Instagram", "MOBILE", "iOS", "Instagram In-App"),
-        ("Área do Participante", "/minha-conta/", "Direto / Link", "MOBILE", "iOS", "Safari"),
-        ("Scanner / Credenciamento", "/gestao/credenciamento/", "Direto / Link", "MOBILE", "Android", "Chrome"),
-    ]
-    
-    records = []
-    event_id = event.id if event else None
-    for i, (name, path, ref, dev, os_n, brw) in enumerate(sample_pages * 5):
-        time_offset = timedelta(hours=(i * 1.5) % 96, minutes=(i * 13) % 60)
-        t = now - time_offset
-        records.append(
-            PageViewRecord(
-                path=path,
-                page_name=name,
-                visitor_hash=f"seed_visitor_{i % 14}",
-                device_type=dev,
-                os_name=os_n,
-                browser=brw,
-                referrer_source=ref,
-                is_staff_view=path.startswith("/gestao/"),
-                event_id=event_id,
-                created_at=t,
-            )
-        )
-    PageViewRecord.objects.bulk_create(records)
 
 
 @management_required
 @never_cache
 def analytics_overview(request):
-    """Dashboard de Métricas e Tráfego do Sistema."""
+    """Dashboard de Métricas e Tráfego do Sistema (somente administração geral: mostra o tráfego de todo o site)."""
+    if not is_administrator(request.user):
+        raise PermissionDenied("As métricas de acesso do site são restritas à administração geral.")
     event_id = request.GET.get("event_id")
     event = None
     if event_id:
@@ -68,7 +28,6 @@ def analytics_overview(request):
         except (Event.DoesNotExist, ValueError):
             pass
 
-    seed_initial_traffic_if_empty(event)
 
     now = timezone.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)

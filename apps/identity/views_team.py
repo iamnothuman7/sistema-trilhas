@@ -18,6 +18,13 @@ from apps.core.permissions import (
 from apps.core.utils import log_audit
 from .models import User, EventMembership, RoleChoices
 
+_SCRIPT_UNSAFE = {ord("<"): "\\u003c", ord(">"): "\\u003e", ord("&"): "\\u0026"}
+
+
+def _script_json(value):
+    """JSON seguro dentro de <script>: nomes digitados por usuários não fecham a tag."""
+    return json.dumps(value).translate(_SCRIPT_UNSAFE)
+
 
 def protected_user(actor, user):
     return (user.pk == actor.pk or user.is_staff or user.is_superuser or (not is_administrator(actor) and
@@ -70,6 +77,9 @@ def team_management(request, event_id):
                     form_errors.append("Esta conta tem acesso administrativo protegido e não pode ser editada por aqui.")
                 elif user and not user.is_active:
                     form_errors.append("Esta conta está desativada no sistema. Contate a administração geral.")
+                elif user and password and not request.user.is_superuser and user.pk != request.user.pk:
+                    # Gerente de evento não troca senha de conta existente: seria tomar a conta de outra pessoa.
+                    form_errors.append("Esta conta já existe. Deixe a senha em branco para só dar o acesso; para trocar a senha, o administrador geral gera um link em Recuperar acesso.")
                 else:
                     if user is None:
                         generated_pass = password or ('Trilha' + ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(8)))
@@ -157,10 +167,10 @@ def team_management(request, event_id):
     context = {
         'event': event,
         'members': members_data,
-        'members_json': json.dumps(members_client_map),
+        'members_json': _script_json(members_client_map),
         'tab_definitions': TAB_DEFINITIONS,
         'role_presets': ROLE_PRESETS,
-        'role_presets_json': json.dumps({k: v["permissions"] for k, v in ROLE_PRESETS.items()}),
+        'role_presets_json': _script_json({k: v["permissions"] for k, v in ROLE_PRESETS.items()}),
         'new_access': new_access,
         'form_errors': form_errors,
         'selected_user_id': selected_user_id,

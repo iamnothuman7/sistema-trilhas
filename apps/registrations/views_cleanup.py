@@ -1,6 +1,6 @@
 """Remove unpaid reservations from the working list while preserving payment history."""
 from django.contrib import messages
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -33,7 +33,11 @@ def reset_test_data_view(request, event_id):
         if confirm_text != 'ZERAR':
             error = 'Digite a palavra ZERAR para confirmar o reset permanente dos dados de teste.'
         else:
-            stats = reset_test_registrations(event=event, dry_run=False, performed_by=request.user)
+            try:
+                stats = reset_test_registrations(event=event, dry_run=False, performed_by=request.user)
+            except ValidationError as exc:
+                messages.error(request, " ".join(exc.messages))
+                return redirect('gestao:registration_list', event_id=event_id)
             messages.success(
                 request,
                 f"Inscrições de teste zeradas com sucesso! {stats['registrations_deleted']} inscrições, "
