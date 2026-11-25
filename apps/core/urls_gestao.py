@@ -21,7 +21,7 @@ from apps.registrations import views_cleanup
 from apps.registrations import views_management as registration_views
 from apps.finance import views_management as finance_views
 from apps.finance import views_crud as finance_crud
-from apps.identity import views_team
+from apps.identity import views_team, views_access
 from .management_navigation import switch_management_event
 
 app_name = "gestao"
@@ -152,6 +152,7 @@ urlpatterns = [
 
     # Auditoria
     path("auditoria/", views_gestao.audit_log_view, name="audit_log"),
+    path("acessos/", views_access.access_recovery, name="access_recovery"),
 
     # Métricas de Acessos e Tráfego
     path("metricas/", views_analytics.analytics_overview, name="analytics"),

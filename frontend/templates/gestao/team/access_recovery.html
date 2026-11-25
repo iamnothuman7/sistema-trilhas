@@ -1,0 +1,51 @@
+{% extends "gestao/base_gestao.html" %}
+
+{% block title %}Recuperar acesso | Painel Gestão{% endblock %}
+{% block gestao_header %}Recuperar acesso{% endblock %}
+
+{% block content %}
+<div class="mg-page-intro mg-section-gap">
+    <h1>Recuperar acesso</h1>
+    <p class="text-muted">O site não envia e-mail. Quando alguém esquecer a senha, busque a pessoa aqui, gere o link e envie pelo WhatsApp. Pelo link ela cria uma senha nova.</p>
+</div>
+
+{% if generated %}
+<section class="card mg-element-gap" aria-live="polite">
+    {% if generated.error %}
+        <p class="alert alert-error" role="alert">{{ generated.error }}</p>
+    {% else %}
+        <h2 class="section-title">Link para {{ generated.user.full_name|default:generated.user.email }}</h2>
+        <p class="form-help">Vale por {{ generated.hours }} horas e só funciona uma vez. Envie apenas para a própria pessoa: quem tiver o link consegue entrar na conta.</p>
+        <div class="form-group"><label class="form-label" for="access-link">Link de nova senha</label>
+            <input class="form-control" id="access-link" type="text" readonly value="{{ generated.link }}" onclick="this.select()"></div>
+        <div class="mg-form-actions">
+            <button class="btn btn-primary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('access-link').value);this.textContent='Link copiado'">Copiar link</button>
+            {% if generated.user.phone %}<a class="btn btn-secondary" target="_blank" rel="noopener" href="https://wa.me/55{{ generated.user.phone|cut:' '|cut:'('|cut:')'|cut:'-'|cut:'+55' }}?text={{ 'Olá! Use este link para criar sua nova senha da Equipe Morcego: '|urlencode }}{{ generated.link|urlencode }}">Enviar pelo WhatsApp</a>{% endif %}
+        </div>
+    {% endif %}
+</section>
+{% endif %}
+
+<section class="card mg-element-gap" aria-label="Buscar conta">
+    <form method="get" class="mg-finance-filters">
+        <div class="form-group"><label class="form-label" for="access-search">Nome, e-mail ou telefone</label>
+            <input type="search" class="form-control" name="q" id="access-search" value="{{ q }}" placeholder="Ex.: maria ou 88999" autofocus></div>
+        <button type="submit" class="btn btn-primary">Buscar</button>
+    </form>
+</section>
+
+{% if q %}
+<div class="card">
+    {% if users %}
+    <div class="table-responsive"><table class="table">
+        <thead><tr><th scope="col">Nome</th><th scope="col">E-mail</th><th scope="col">Telefone</th><th scope="col"><span class="sr-only">Ação</span></th></tr></thead>
+        <tbody>{% for user in users %}<tr>
+            <td>{{ user.full_name|default:"—" }}</td><td>{{ user.email }}</td><td>{{ user.phone|default:"—" }}</td>
+            <td>{% if user.pk == request.user.pk %}<span class="text-muted">Sua conta</span>{% elif not user.is_active %}<span class="text-muted">Desativada</span>{% else %}
+                <form method="post" action="{% url 'gestao:access_recovery' %}">{% csrf_token %}<input type="hidden" name="q" value="{{ q }}"><input type="hidden" name="user_id" value="{{ user.pk }}"><button class="btn btn-secondary btn-sm" type="submit">Gerar link</button></form>{% endif %}</td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="text-muted">Nenhuma conta encontrada para “{{ q }}”.</p>{% endif %}
+</div>
+{% endif %}
+{% endblock %}
