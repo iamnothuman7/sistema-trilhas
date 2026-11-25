@@ -5,17 +5,22 @@ from apps.core.middleware import HtmxNavigationMiddleware
 
 
 class HtmxNavigationTests(SimpleTestCase):
-    def response(self, response, htmx=False):
-        request = RequestFactory().get("/gestao/", **({"HTTP_HX_REQUEST": "true"} if htmx else {}))
+    def response(self, response, htmx=False, method="get"):
+        request = getattr(RequestFactory(), method)("/gestao/", **({"HTTP_HX_REQUEST": "true"} if htmx else {}))
         return HtmxNavigationMiddleware(lambda request: response)(request)
 
-    def test_successful_post_redirect_preserves_session_cookie_and_no_cache(self):
-        original = HttpResponseRedirect("/gestao/patrocinadores/")
-        original.set_cookie("sessionid", "test-session", httponly=True, secure=True)
-        response = self.response(original, htmx=True)
-        self.assertEqual(response.status_code, 200)
+    def test_get_redirect_stays_inside_htmx(self):
+        response = self.response(HttpResponseRedirect("/gestao/patrocinadores/"), htmx=True)
         self.assertEqual(response["HX-Location"], "/gestao/patrocinadores/")
         self.assertNotIn("HX-Redirect", response)
+
+    def test_successful_post_redirect_reloads_page_and_preserves_session_cookie(self):
+        original = HttpResponseRedirect("/gestao/patrocinadores/")
+        original.set_cookie("sessionid", "test-session", httponly=True, secure=True)
+        response = self.response(original, htmx=True, method="post")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["HX-Redirect"], "/gestao/patrocinadores/")
+        self.assertNotIn("HX-Location", response)
         self.assertEqual(response["Cache-Control"], "no-store")
         self.assertEqual(response.cookies["sessionid"].value, "test-session")
         self.assertTrue(response.cookies["sessionid"]["httponly"])

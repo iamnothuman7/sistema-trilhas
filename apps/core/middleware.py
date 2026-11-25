@@ -19,7 +19,11 @@ class HtmxNavigationMiddleware:
                 response.content = b""
                 del response["Location"]
                 destination = urlsplit(target)
-                internal = (request.path.startswith('/gestao/') and target.startswith('/gestao/')
+                # Depois de salvar (POST), recarrega a página inteira: no Safari do iPhone a troca
+                # parcial às vezes mudava o endereço sem trocar a tela, e o próximo envio caía na
+                # página errada (405, "confira sua conexão").
+                internal = (request.method == "GET"
+                            and request.path.startswith('/gestao/') and target.startswith('/gestao/')
                             and not destination.netloc and not destination.scheme)
                 response["HX-Location" if internal else "HX-Redirect"] = target
                 response["Cache-Control"] = "no-store"

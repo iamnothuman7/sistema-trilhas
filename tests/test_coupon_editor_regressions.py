@@ -70,7 +70,7 @@ class CouponEditorRegressionTests(TestCase):
         changed = self.payload(coupon, amount='118,50', percent_off='', valid_until='2026-12-31T16:30', max_uses='60')
         response = self.client.post(self.url(coupon), changed, HTTP_HX_REQUEST='true', HTTP_HX_BOOSTED='true')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['HX-Location'], reverse('gestao:catalog', args=[self.event.pk]))
+        self.assertEqual(response['HX-Redirect'], reverse('gestao:catalog', args=[self.event.pk]))
         coupon.refresh_from_db()
         self.assertEqual((coupon.value_cents, coupon.used_count, coupon.max_uses, coupon.percent_off), (11850, 3, 60, 10))
         self.assertEqual(coupon.valid_until, datetime(2026, 12, 31, 19, 30, tzinfo=dt_timezone.utc))
